@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Documento | Regra de negócio do terminal de execução (a mesa) e dos seus dois plugins |
-| Versão | v1 (rascunho para revisão do dono) |
+| Versão | v2 (rascunho para revisão do dono) |
 | Data | 27 set 2026 |
 | Papel | **Fonte da verdade das regras.** As especificações do Spec Kit derivam daqui, uma por recorte, e cada uma referencia as regras `RN-*` citadas. |
 
@@ -26,9 +26,9 @@ própria (a posição verdadeira é a que a corretora reporta) e **NÃO** é a c
 
 | Anel | Decide | NUNCA faz |
 |---|---|---|
-| **Mandato** (o dono) | instrumento, risco, tamanho, stop, janela de operação | nada em tempo real |
+| **Mandato** (o dono) | instrumentos, conta e corretora, perda máxima, capital base, teto de nocional | não decide estratégia, stop nem limiares de setup |
 | **Mesa** (o terminal) | nada de estratégia: normaliza o mercado, preenche a boleta, envia, reconcilia, registra, executa o mandato | não escolhe lado, tamanho nem risco |
-| **Setup** (plugin) | o lado: buy / sell / hold / caixa | não vê tamanho, risco, execução nem a corretora |
+| **Setup** (plugin) | o lado (buy / sell / hold / caixa) **e todo o parâmetro de estratégia, pelo seu template**: stop sim/não, distância, janela, limiares, parcial, aumentos | não vê tamanho, risco, execução nem a corretora |
 | **Boleta** | — | não é decisão de ninguém: é documento |
 | **Conector** (plugin) | nada: traduz e transporta | não altera lado, quantidade, preço nem momento |
 
@@ -36,13 +36,18 @@ própria (a posição verdadeira é a que a corretora reporta) e **NÃO** é a c
 fora**. O setup pode ser uma regra de cruzamento de médias ou um modelo de linguagem — a mesa não
 sabe nem precisa de saber.
 
+1.5. **O core não conhece nenhum parâmetro de estratégia por nome.** Um setup que usa stop e um setup
+que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template** que cada um publica
+(§5). É esta indiferença que impede o core de engessar os setups.
+
 ---
 
 ## 2. Vocabulário
 
-- **Mandato** — o que o dono declara: instrumento, limites de risco, tamanho, stop, janela.
-- **Setup** — o plugin que propõe lado. Tem nome e versão.
-- **Mesa** — este sistema: o terminal.
+- **Mandato** — o que o dono declara: instrumentos, conta, limites de risco e capital.
+- **Setup** — o plugin que propõe lado e publica o seu template de configuração. Tem nome e versão.
+- **Ficha** — uma configuração concreta de um setup (o mesmo plugin com parâmetros diferentes).
+- **Mesa** — este sistema: o terminal. Uma mesa corre uma conta.
 - **Ciclo** — uma passagem da mesa: ler mercado, (eventualmente) consultar o setup, agir, registrar.
   Tem identificador próprio.
 - **Proposta** — o que o setup devolve: `buy`, `sell`, `hold` ou `caixa`.
@@ -59,21 +64,25 @@ sabe nem precisa de saber.
 | De → Para | O que cruza | Quem pode recusar |
 |---|---|---|
 | Dono → Mesa | mandato (arquivo de configuração) | a mesa, no arranque (valor fora de banda) |
+| Setup → Mesa | o template de configuração e a proposta | a mesa (template inválido; proposta fora dos quatro valores) |
 | Corretora → Conector → Mesa | factos de mercado e conta, normalizados | o conector (falha) e a mesa (dado velho) |
 | Mesa → Setup | o objecto normalizado de mercado e conta | ninguém: o setup recebe sempre o mesmo objecto |
-| Setup → Mesa | a proposta (um de quatro valores) | a mesa (proposta inválida = hold registrado) |
 | Mesa → Conector | a boleta | a mesa (sem capacidade declarada) e o conector (recusa da corretora) |
+| Mesa → Web | a leitura (posição, ciclos, resultado, ledger) | ninguém |
 | Mesa → Ledger | snapshot, proposta, boleta, desfecho | ninguém |
 
 3.1. **Uma normalização só.** A mesa normaliza uma vez e entrega **o mesmo objecto** ao setup e ao
-humano. Duas contas para o mesmo número (PnL, velas, posição) são defeito, não otimização.
+humano. Duas contas para o mesmo número (resultado, velas, posição) são defeito, não otimização.
+
+3.2. **As duas pontas não participam na operação de forma ativa.** O setup propõe; o conector
+transporta. Quem decide é a mesa, dentro do mandato.
 
 ---
 
-## 4. Regras do mandato (o dono fala)
+## 4. Mandato da conta (o dono fala)
 
-- **RN-M1.** O mandato declara o instrumento, a corretora e a conta. A mesa DEVE recusar arrancar se o
-  conector não declarar aquele instrumento.
+- **RN-M1.** O mandato declara os instrumentos, a conta e a corretora. A mesa DEVE recusar arrancar se
+  o conector não declarar aquele instrumento.
 - **RN-M2.** O mandato vive em arquivo de configuração do dono, versionado. O valor em vigor e a sua
   **origem** (arquivo ou ambiente) DEVEM ser registrados no arranque, para que a divergência entre o
   que se quis e o que corre nunca seja silenciosa.
@@ -84,25 +93,57 @@ humano. Duas contas para o mesmo número (PnL, velas, posição) são defeito, n
     não abre nada novo até intervenção explícita do dono. O evento é registrado.
   - **RN-M3.2.** A verificação do limite é da mesa, **em cada ciclo**, e não depende do setup nem da
     sua proposta.
-- **RN-M4.** O tamanho vem do mandato: base de capital, fatia por instrumento (com `n` instrumentos a
-  base é dividida por `n`), alavancagem máxima e teto de nocional. Nocional = (base / n) × alavancagem,
-  limitado pelo teto.
+- **RN-M4.** O capital vem do mandato: base de capital da conta, fatia por instrumento (com `n`
+  instrumentos a base é dividida por `n`), alavancagem máxima e teto de nocional. Nocional =
+  (base / n) × alavancagem, limitado pelo teto.
   - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho.
   - **RN-M4.2.** Tamanho que não caiba no instrumento (mínimo ou passo) DEVE ser recusado pela mesa,
     com registro. NUNCA se arredonda em silêncio.
-- **RN-M5.** O mandato declara **stop**: existe ou não existe; se existe, a distância (`ABERTA`:
-  percentagem do nocional ou preço absoluto). O stop é **campo da boleta**, não lógica do setup.
-- **RN-M6.** O mandato declara a **janela de operação**. Fora dela a mesa não **abre**; fechar e
-  reduzir são sempre permitidos, a qualquer hora.
-- **RN-M7.** O mandato declara o **inventário máximo** por instrumento e se é permitido aumentar
-  posição já aberta no mesmo sentido (`ABERTA`).
+- **RN-M5.** O mandato da conta é o **único limite global**: perda máxima (RN-M3) e teto de nocional
+  (RN-M4). Nada de estratégia entra aqui. Stop, janela de operação, aumentos de posição, limiares e
+  política de parcial são **do setup**, declarados no template dele (RN-S3).
+- **RN-M6.** O mandato declara a **ficha de cada instrumento**: que setup corre em que instrumento e
+  com que fatia do capital da conta. Um instrumento sem ficha não é operado.
+- **RN-M7.** A mesa só conhece parâmetros de estratégia **pelo template** do setup (RN-S4). Um item de
+  estratégia que precise de aparecer no mandato é sinal de que o desenho se enganou de anel.
 - **RN-M8.** O mandato em vigor é gravado no ledger. Ciclo sem mandato conhecido NUNCA abre posição.
 - **RN-M9.** Valor de mandato fora de banda (zero, negativo, absurdo) DEVE fazer a mesa **recusar o
   arranque**. Validação é alarme que recusa, nunca autocorreção.
 
 ---
 
-## 5. Regras da mesa (o terminal)
+## 5. Regras do setup (o plugin)
+
+O setup é a parte inteligente e é **variável por natureza**: há setups que usam stop e setups que não
+usam, setups que operam janelas e setups que operam sempre, e cada setup tem muitas variantes. Por
+isso o core NÃO conhece nenhum parâmetro de estratégia por nome — ele conhece o **template** que o
+setup publica.
+
+- **RN-S1.** O setup entrega uma proposta com um de quatro valores: `buy`, `sell`, `hold`, `caixa`.
+  Nada mais: não vê tamanho, risco, execução nem a corretora.
+- **RN-S2.** O setup declara o seu **relógio** (quando quer ser consultado). Nos ciclos em que não quer,
+  a mesa mantém a posição (RN-T5).
+- **RN-S3.** O setup publica um **template de configuração**: um item por parâmetro, com nome, tipo,
+  unidade, valor por omissão e significado. **Toda** decisão de estratégia vive aí — inclusive se há
+  stop (e a distância), a janela de operação do setup, a política de execução parcial, se aumenta
+  posição no mesmo sentido, e os próprios limiares.
+- **RN-S4.** O template é a **única** fonte da verdade desses itens: a mesa valida e a web apresenta a
+  configuração **a partir do template**, e nenhuma das duas conhece os itens por nome. Um setup novo
+  entra no sistema sem tocar no core nem na web.
+- **RN-S5.** **Variantes são fichas**: a mesma regra com configurações diferentes são duas fichas do
+  mesmo plugin, e cada ficha tem identidade própria e vai assinada no ledger (RN-L1).
+- **RN-S6.** O setup persiste o **seu próprio estado**, com namespace e versão
+  (`estado/<setup>/<versão>/<instrumento>`) e schema declarado. A mesa não lê nem interpreta esse
+  estado.
+- **RN-S7.** O setup declara nome e versão; a proposta entra no ledger com essa assinatura.
+- **RN-S8.** Falha do setup (excepção, resposta fora dos quatro valores, silêncio além do prazo): a mesa
+  **congela** (RN-T10) e registra. NUNCA se substitui a proposta por um valor por omissão.
+- **RN-S9.** O template declara **política**, não execução: quem preenche a boleta é a mesa. O setup
+  NUNCA manda na boleta, e uma proposta pode ser recusada pelo mandato sem que o setup saiba porquê.
+
+---
+
+## 6. Regras da mesa (o terminal)
 
 - **RN-T1.** A mesa recebe o mercado **do conector** e normaliza-o numa única representação: preços,
   livro, posição e equity, funding, tempo e idade do dado.
@@ -114,8 +155,9 @@ humano. Duas contas para o mesmo número (PnL, velas, posição) são defeito, n
   (`ABERTA`: quantos inválidos seguidos inibem a mesa até intervenção).
 - **RN-T5.** **Quem decide quando o setup é consultado é o setup**: ele declara o seu relógio. Nos
   ciclos em que o setup não quer ser consultado, a mesa mantém a posição e NÃO re-cotiza.
-- **RN-T6.** A mesa transforma a proposta em boleta **respeitando o mandato** (tamanho, stop, janela,
-  inventário). Se o mandato proíbe, a mesa NÃO envia e registra o motivo.
+- **RN-T6.** A mesa transforma a proposta em boleta **respeitando o mandato** (tamanho, teto, perda
+  máxima, ficha do instrumento) e o template do setup (stop, parcial). Se algum dos dois proíbe, a
+  mesa NÃO envia e registra o motivo.
 - **RN-T7.** O desfecho tem quatro estados, e são tratados de forma diferente:
   - **aceite** — a ordem vive na corretora;
   - **parcial** — executou parte; o que fazer com o resto é campo da boleta;
@@ -135,7 +177,7 @@ humano. Duas contas para o mesmo número (PnL, velas, posição) são defeito, n
 
 ---
 
-## 6. Regras do contrato de dados (corretora → mesa → setup)
+## 7. Regras do contrato de dados (corretora → mesa → setup)
 
 - **RN-D1.** O objecto normalizado contém apenas factos: preço (bid, ask, último), livro quando a
   corretora o der (com a profundidade declarada), posição e equity, funding quando existir, o tempo do
@@ -150,10 +192,10 @@ humano. Duas contas para o mesmo número (PnL, velas, posição) são defeito, n
 
 ---
 
-## 7. Regras da boleta
+## 8. Regras da boleta
 
 Campos: ciclo, instrumento, lado, tipo, quantidade (na unidade do instrumento), preço (quando
-limite), política de execução parcial, desvio máximo, reduce-only, stop (quando o mandato manda),
+limite), política de execução parcial, desvio máximo, reduce-only, stop (quando o template o pedir),
 referência do cliente.
 
 - **RN-B1.** A boleta é o documento; **a execução é do conector**.
@@ -171,7 +213,7 @@ referência do cliente.
 
 ---
 
-## 8. Regras do conector (a corretora)
+## 9. Regras do conector (a corretora)
 
 - **RN-C1.** O conector declara um **manifesto mínimo**, **sondado** no arranque (nunca constante de
   código): instrumentos e unidades (mínimo, passo, tick); tipos de ordem disponíveis; política de
@@ -195,10 +237,10 @@ referência do cliente.
 
 ---
 
-## 9. Regras do ledger
+## 10. Regras do ledger
 
-- **RN-L1.** Envelope comum a todas as linhas: ciclo, instante, instrumento, tipo de linha, mandato em
-  vigor, versão da mesa, nome e versão do conector, nome e versão do setup.
+- **RN-L1.** Envelope comum a todas as linhas: ciclo, instante, instrumento, tipo de linha, ficha e
+  versão do setup, versão do mandato, versão da mesa, nome e versão do conector.
 - **RN-L2.** Por ciclo grava-se: **snapshot normalizado, proposta do setup, boleta e desfecho**. Nada
   mais.
 - **RN-L3.** O que é privado do setup vive dentro de um campo próprio (`payload`), NUNCA no envelope.
@@ -210,7 +252,52 @@ referência do cliente.
 
 ---
 
-## 10. O que fica de fora (por decisão, não por esquecimento)
+## 11. Estrutura do projeto, topologia e superfície
+
+### 11.1. Diretórios
+
+```
+/contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho
+/core           a mesa: ciclo, normalização, boleta, ledger, mandato da conta, servidor de leitura
+/setups/<nome>  o plugin, o seu template de configuração, o schema do seu estado, os seus testes
+/brokers/<nome> o conector, o seu manifesto, a bateria de conformidade, as suas fixtures
+/web            a superfície: sem cálculo próprio e sem conhecer a topologia
+/docs           a regra de negócio e as especificações
+```
+
+- **RN-E1.** A direcção das dependências é fixa: `/setups/<nome>` e `/brokers/<nome>` importam
+  `/contracts`; `/core` importa `/contracts`; **ninguém importa `/core`**. O invariante é verificado
+  por teste (alarme que recusa), e o próprio teste é testado contra uma cópia corrompida.
+- **RN-E2.** Nada no core conhece o nome de um setup nem de uma corretora. Nada num setup ou num
+  conector conhece as tripas da mesa.
+
+### 11.2. Topologia de processos
+
+- **RN-E3.** A unidade de execução é **uma conta**: uma corretora, uma conta, `n` instrumentos. Uma
+  ligação e uma chave por processo; um escritor por ledger; falha isolada por conta.
+- **RN-E4.** NÃO um processo por instrumento: multiplica ligações, chaves e processos sem ganho de
+  isolamento que interesse — a correlação entre instrumentos da mesma conta é governada pelo mandato,
+  não pelo processo.
+- **RN-E5.** NÃO um processo com várias corretoras: juntaria chaves e ligações de corretoras diferentes
+  e faria a falha de uma derrubar as outras.
+- **RN-E6.** O core DEVE ser **indiferente à topologia**: nada nele pode saber quantos processos
+  existem nem onde corre cada instrumento. A topologia é decisão de implantação, não de código.
+- **RN-E7.** O ledger é escrito por (mesa, instrumento, dia); processos diferentes NUNCA escrevem no
+  mesmo ficheiro.
+
+### 11.3. Superfície (a web)
+
+- **RN-E8.** A web fala com um **registo de mesas** — uma lista de identidades e endereços —, NUNCA com
+  um endereço único. Cada mesa publica a sua identidade num caminho fixo, para o registo poder ser
+  descoberto em vez de mantido à mão.
+- **RN-E9.** A web reúne as mesas e apresenta-as como **uma só superfície**; não calcula nada que a
+  mesa já saiba (resultado, velas, posição) nem mostra a topologia.
+- **RN-E10.** Uma mesa com três instrumentos e três mesas com um instrumento cada DEVEM parecer iguais
+  na web. É esta propriedade que mantém a topologia no campo da operação.
+
+---
+
+## 12. O que fica de fora (por decisão, não por esquecimento)
 
 - A regra do sinal, os indicadores, as médias, a classificação e os adjectivos — são do **setup**.
 - Circuit breaker, veto de pavio, limiares de confiança e hostilidade — são do **setup** que os
@@ -222,7 +309,7 @@ referência do cliente.
 
 ---
 
-## 11. Como se sabe que está cumprida
+## 13. Como se sabe que está cumprida
 
 - Cada regra `RN-*` DEVE ter um teste que a **recusa quando falhada**. Regra sem teste não está em
   vigor.
@@ -234,7 +321,7 @@ referência do cliente.
 
 ---
 
-## 12. Rastreabilidade e referência
+## 14. Rastreabilidade e referência
 
 - O motor que roda hoje (`~/Projects/jev-trade-fusao`, repo `hl-jev`) é **fonte de consulta** para o
   que só se sabe por ter corrido contra a corretora de verdade: a mecânica de ordem passiva seguida de
@@ -248,12 +335,23 @@ referência do cliente.
 
 ---
 
-## 13. Perguntas abertas para o dono
+## 15. Decisões: confirmadas e abertas
 
-1. **Janela da perda máxima** (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
-2. **Stop** (RN-M5): existe? em percentagem do nocional ou em preço absoluto? quem o move, se o preço
-   andar a favor?
-3. **Aumentar posição** no mesmo sentido (RN-M7): permitido ou proibido.
-4. **Propostas inválidas** (RN-T4): quantas seguidas inibem a mesa até intervenção.
-5. **Mandato por instrumento ou por processo?** (afeta a fatia de capital de RN-M4).
-6. **Funding/swap** (RN-D1): entra no cálculo do resultado do ciclo ou é apenas registrado?
+**Confirmadas pelo dono (27 set 2026)**
+
+1. As regras de estratégia que eu tinha posto no mandato — stop ou não, janela de operação, aumentos de
+   posição, limiares — vivem no **config do setup**, e cada setup publica um **template com um item por
+   parâmetro** (RN-S3/S4). O core não as conhece por nome.
+2. Variantes de um setup são **fichas** do mesmo plugin (RN-S5).
+3. Estrutura de diretórios `/core`, `/setups`, `/brokers`, `/web` (mais `/contracts` e `/docs`).
+
+**Proposta minha, à espera da tua palavra**
+
+4. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
+   mesas (RN-E8), para a topologia não aparecer na superfície.
+
+**Abertas (só de conta)**
+
+5. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
+6. Tecto de nocional: é por conta ou por instrumento.
+7. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).

@@ -10,26 +10,45 @@ A mesa de operações: um terminal de execução com duas pontas de plugin.
 
 ## Os cinco anéis
 
-| Anel | Decide | Fala com |
+| Anel | Decide | NUNCA faz |
 |---|---|---|
-| Mandato (o dono) | instrumento, risco, tamanho, stop, janela | a mesa, por arquivo de configuração |
-| Mesa (este projeto) | nada de estratégia: normaliza, preenche a boleta, envia, reconcilia, registra | setup e conector |
-| Setup (plugin) | o lado: buy / sell / hold / caixa | só a mesa |
-| Boleta | — | é o documento que atravessa mesa → conector |
-| Conector (plugin) | nada: traduz e transporta | a corretora |
+| Mandato (o dono) | instrumentos, conta, perda máxima, capital, teto de nocional | não decide estratégia nem stop |
+| Mesa (este projeto) | normaliza, preenche a boleta, envia, reconcilia, registra, executa o mandato | não escolhe lado, tamanho nem risco |
+| Setup (plugin) | o lado, **e a estratégia pelo seu template** (stop, janela, limiares) | não vê tamanho, risco, execução nem a corretora |
+| Boleta | — | é documento, não decisão |
+| Conector (plugin) | nada: traduz e transporta | não altera lado, quantidade, preço nem momento |
+
+**O core não conhece nenhum parâmetro de estratégia por nome.** Um setup com stop e um setup sem stop
+são o mesmo tipo de plugin: o que a mesa lê é o **template** que cada um publica. É isto que impede o
+core de engessar os setups — e é por isso que as variantes de um setup são apenas **fichas**.
+
+## Estrutura
+
+```
+/contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho
+/core           a mesa: ciclo, normalização, boleta, ledger, mandato da conta, servidor de leitura
+/setups/<nome>  o plugin, o template de configuração, o schema do seu estado, os testes
+/brokers/<nome> o conector, o manifesto, a bateria de conformidade, as fixtures
+/web            a superfície
+/docs           a regra de negócio e as especificações
+```
+
+Regra de dependência: setups e brokers importam `contracts`; `core` importa `contracts`; **ninguém
+importa `core`** (verificado por teste).
 
 ## Estado
 
-- `docs/regra-de-negocio.md` — a regra detalhada (fonte da verdade das regras). **Rascunho v1 para
-  revisão do dono.**
-- As especificações são escritas depois, com o Spec Kit (`.specify/`), uma por recorte, e cada uma
-  referencia as regras `RN-*` deste documento.
+- `docs/regra-de-negocio.md` — **v2**, a regra detalhada (fonte da verdade). Regras `RN-M*` (mandato),
+  `RN-S*` (setup), `RN-T*` (mesa), `RN-D*` (dados), `RN-B*` (boleta), `RN-C*` (conector), `RN-L*`
+  (ledger) e `RN-E*` (estrutura e topologia).
+- Especificações: ainda não escritas. Serão feitas com o Spec Kit (`.specify/`), uma por recorte, cada
+  uma referenciando as regras `RN-*`.
 
 ## Ordem de trabalho
 
 1. Regra de negócio detalhada (este repositório, `docs/`).
 2. Constituição do projeto (Spec Kit) — deriva da regra.
-3. Especificações por recorte: mandato, contrato de dados, mesa, boleta, conector, ledger.
+3. Especificações por recorte: mandato, contrato de dados, setup, mesa, boleta, conector, ledger.
 4. Implementação.
 
 ## Referência
