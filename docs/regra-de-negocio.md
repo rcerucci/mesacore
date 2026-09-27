@@ -517,11 +517,24 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 14. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
     lança o processo é o vigia, não a web.
 
-**Abertas**
+**Formas que eu proponho — à espera de confirmação**
 
-15. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
-16. **Margem total máxima da conta** (RN-M4.7) — o número não existe ainda.
-17. **Distância mínima de liquidação** (RN-M4.4) — sem ela a mesa não abre posição.
-18. Quais os itens do setup que o arquivo de risco tem de **limitar** (por exemplo o stop: entre que
-    valores?).
-19. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
+15. **Janela da perda máxima**: uma de `pico_da_sessao`, `equity_do_inicio_do_dia`, ou outra declarada. O
+    equity é o da **corretora**, com resultado não realizado, lido em cada ciclo. O **número** (o limite)
+    fica na config macro.
+16. **Itens que o arquivo de risco limita**: só os que mexem em dinheiro ou em exposição — `stop_pct`,
+    `tp_pct`, `alavancagem`, `tempo_maximo_em_posicao`. Períodos de média (ema_fast, ema_slow) NÃO se
+    limitam: limitar isso é falso rigor, não protege nada.
+17. **Distância mínima de liquidação**: é **porteiro na abertura** (não abre a posição) e **leitura
+    registada** em cada ciclo. Violá-la com posição aberta é **alarme para o dono**, não fecho
+    automático da mesa.
+18. **Funding/swap**: a corretora já o desconta da conta, logo já está no equity, no resultado e no dd —
+    não há que decidir se entra. A única decisão é **mostrá-lo separado**, como linha própria no ledger
+    e na leitura. Recomendo que sim.
+
+**Abertas — só faltam os números**
+
+19. Limite da perda máxima (ex.: 5%) e a janela escolhida.
+20. Margem total máxima da conta, em % do saldo.
+21. Distância mínima de liquidação, em % de movimento.
+22. As bandas de cada item limitável (ex.: stop entre X% e Y%).
