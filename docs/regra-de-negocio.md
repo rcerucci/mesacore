@@ -55,6 +55,9 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
 - **Desfecho** — o que a corretora responde: **aceite**, **parcial**, **desconhecido** ou **recusado**.
 - **Conector** — o plugin que fala com a corretora. Tem nome e versão.
 - **Instrumento** — símbolo + unidade + mínimo + passo + tick, conforme declarados pela corretora.
+- **Nocional** — o valor de exposição da posição (quantidade × preço). É isto que o mandato limita.
+- **Distância de liquidação** — quanto o preço tem de andar contra a posição para a corretora a
+  liquidar. Resulta da alavancagem que a corretora aplica, não de uma escolha nossa.
 - **Ledger** — o registro append-only dos ciclos.
 
 ---
@@ -93,12 +96,24 @@ transporta. Quem decide é a mesa, dentro do mandato.
     não abre nada novo até intervenção explícita do dono. O evento é registrado.
   - **RN-M3.2.** A verificação do limite é da mesa, **em cada ciclo**, e não depende do setup nem da
     sua proposta.
-- **RN-M4.** O capital vem do mandato: base de capital da conta, fatia por instrumento (com `n`
-  instrumentos a base é dividida por `n`), alavancagem máxima e teto de nocional. Nocional =
-  (base / n) × alavancagem, limitado pelo teto.
+- **RN-M4.** O mandato declara o **nocional máximo** por instrumento, em moeda. Nocional é
+  **exposição** — o valor que a posição move quando o preço anda —, não margem e não alavancagem: é
+  assim que o número se compara entre corretoras.
   - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho.
   - **RN-M4.2.** Tamanho que não caiba no instrumento (mínimo ou passo) DEVE ser recusado pela mesa,
     com registro. NUNCA se arredonda em silêncio.
+- **RN-M4.3.** O capital vem do mandato: base de capital da conta e fatia por instrumento (com `n`
+  instrumentos, a base é dividida por `n`). O tamanho da posição é derivado do **nocional máximo
+  autorizado** e do preço — nunca de um número de alavancagem escolhido pelo dono.
+- **RN-M4.4.** A **alavancagem NÃO é parâmetro do dono**: é facto do instrumento, declarado pelo
+  conector (RN-C1) e variável com o valor da posição. O que o mandato protege é outra coisa — a
+  **distância mínima até à liquidação** (o movimento adverso, em %, que a posição tem de suportar).
+- **RN-M4.5.** Antes de enviar, a mesa DEVE calcular a distância até à liquidação com a alavancagem
+  que a corretora aplica àquele tamanho. Se ficar mais perto do que o mandato exige, a mesa **baixa a
+  alavancagem na corretora** (RN-C8) ou **reduz o tamanho**; se nenhum dos dois couber, **recusa** e
+  registra.
+- **RN-M4.6.** A alavancagem efectiva e o preço de liquidação são **observados na corretora** em cada
+  ciclo e gravados no ledger. São facto da corretora: a mesa NUNCA os estima nem os presume.
 - **RN-M5.** O mandato da conta é o **único limite global**: perda máxima (RN-M3) e teto de nocional
   (RN-M4). Nada de estratégia entra aqui. Stop, janela de operação, aumentos de posição, limiares e
   política de parcial são **do setup**, declarados no template dele (RN-S3).
@@ -216,9 +231,12 @@ referência do cliente.
 ## 9. Regras do conector (a corretora)
 
 - **RN-C1.** O conector declara um **manifesto mínimo**, **sondado** no arranque (nunca constante de
-  código): instrumentos e unidades (mínimo, passo, tick); tipos de ordem disponíveis; política de
-  execução parcial suportada; desvio máximo; se garante `reduce-only` nativamente; se aceita stop
-  anexado à ordem; profundidade de livro; funding; relógio do fecho de barra; e se tem idempotência.
+  código): instrumentos e unidades (mínimo, passo, tick); **alavancagem máxima por instrumento e por
+  escalão de valor da posição**, e se o conector sabe **ajustar** a alavancagem (e em que modos, cruzado
+  ou isolado); teto de valor por ordem; modelo de posição (netting ou hedging); tipos de ordem
+  disponíveis; política de execução parcial suportada; desvio máximo; se garante `reduce-only`
+  nativamente; se aceita stop anexado à ordem; profundidade de livro; funding; relógio do fecho de
+  barra; e se tem idempotência.
 - **RN-C2.** O conector devolve SEMPRE um desfecho normalizado; a recusa traz motivo.
 - **RN-C3.** O conector NUNCA adapta uma boleta em silêncio.
 - **RN-C4.** Reenvio com a mesma referência de cliente não duplica ordem. Quando a corretora não tiver
@@ -234,6 +252,10 @@ referência do cliente.
   7. o **relógio de fecho de barra** da corretora é conferido contra UTC e o desvio é publicado.
 - **RN-C7.** O resultado da bateria é registrado por versão. Mudança de condições na corretora tem de
   ser **detectada**, não sofrida.
+- **RN-C8.** Onde o conector tiver verbo para **ajustar a alavancagem** de um instrumento (a HL tem:
+  `updateLeverage`, de 1x até ao máximo do activo, em modo cruzado ou isolado), a mesa usa-o para
+  levar a posição à distância de liquidação que o mandato exige, e registra a mudança. Onde o verbo
+  não existir, a mesa **reduz o tamanho** em vez de aceitar menos distância do que o mandato manda.
 
 ---
 
@@ -349,9 +371,16 @@ referência do cliente.
 
 4. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
    mesas (RN-E8), para a topologia não aparecer na superfície.
+5. Nocional e alavancagem: o mandato limita **exposição (nocional)** e **distância mínima até à
+   liquidação**; a alavancagem passa a ser facto do instrumento (RN-M4.3 a RN-M4.6). É o que resolve o
+   caso HL (3x a 40x, com degraus por valor de posição) contra o caso FX (até 500x), onde o **mesmo
+   nocional** significa uma liquidação muito mais perto.
+6. A web pode editar fichas e mandato (validado, versionado, assinado) e **pedir** arranque; quem
+   lança o processo é o supervisor do host, não a web.
 
-**Abertas (só de conta)**
+**Abertas**
 
-5. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
-6. Tecto de nocional: é por conta ou por instrumento.
-7. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
+7. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
+8. Nocional: por conta ou por instrumento — e qual a **distância mínima de liquidação** (sem ela a
+   mesa não abre posição).
+9. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
