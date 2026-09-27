@@ -8,7 +8,11 @@ Cada conector entrega:
   unidades (mínimo, passo, tick), tipos de ordem, política de parcial, desvio máximo, reduce-only
   nativo ou não, stop anexo ou não, profundidade de livro, funding, relógio de fecho de barra,
   idempotência (RN-C1);
-- a **tradução** da boleta e o **transporte**;
+- a **tradução** da boleta e o **transporte**: a mesa manda percentagem do saldo, alavancagem e
+  percentagens de movimento; o conector resolve em quantidade da sua unidade, atende à especificação
+  de ordem da sua corretora e cuida dos cálculos dela (RN-C9);
+- a **resolução** que devolve antes de executar: quantidade, nocional, margem, alavancagem efectiva e
+  preço de liquidação (RN-C10) — é ela que a mesa confere contra a banda e grava no ledger;
 - o **desfecho normalizado** (aceite, parcial, desconhecido, recusado) com motivo na recusa (RN-C2);
 - as **leituras** de posição, equity e marcas;
 - a **bateria de conformidade** de sete provas (RN-C6) e as suas fixtures.

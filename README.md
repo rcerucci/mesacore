@@ -16,7 +16,7 @@ A mesa de operações: um terminal de execução com duas pontas de plugin.
 | Mesa (este projeto) | normaliza, preenche a boleta, envia, reconcilia, registra, executa o mandato | não escolhe lado, tamanho nem risco |
 | Setup (plugin) | o lado, **e a estratégia pelo seu template** (stop, janela, limiares) | não vê tamanho, risco, execução nem a corretora |
 | Boleta | — | é documento, não decisão |
-| Conector (plugin) | nada: traduz e transporta | não altera lado, quantidade, preço nem momento |
+| Conector (plugin) | nada de estratégia: traduz a boleta (percentagem do saldo, alavancagem, % de movimento) em quantidade, preço e pontos da **sua** corretora | não altera lado nem momento; nunca arredonda em silêncio |
 
 **O core não conhece nenhum parâmetro de estratégia por nome.** Um setup com stop e um setup sem stop
 são o mesmo tipo de plugin: o que a mesa lê é o **template** que cada um publica. É isto que impede o
@@ -26,7 +26,7 @@ core de engessar os setups — e é por isso que as variantes de um setup são a
 
 ```
 /contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho
-/core           a mesa: ciclo, normalização, boleta, ledger, mandato da conta, servidor de leitura
+/core           a mesa (ciclo, boleta, ledger, mandato, servidor) e o vigia (start/stop/pause/reset)
 /setups/<nome>  o plugin, o template de configuração, o schema do seu estado, os testes
 /brokers/<nome> o conector, o manifesto, a bateria de conformidade, as fixtures
 /web            a superfície

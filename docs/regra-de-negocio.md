@@ -55,7 +55,12 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
 - **Desfecho** — o que a corretora responde: **aceite**, **parcial**, **desconhecido** ou **recusado**.
 - **Conector** — o plugin que fala com a corretora. Tem nome e versão.
 - **Instrumento** — símbolo + unidade + mínimo + passo + tick, conforme declarados pela corretora.
-- **Nocional** — o valor de exposição da posição (quantidade × preço). É isto que o mandato limita.
+- **Percentagem do saldo** — quanto do saldo da conta a posição pode empenhar em margem. É o termo em
+  que a mesa pede o tamanho, porque vale em qualquer corretora.
+- **Resolução** — o que o conector devolve depois de traduzir a boleta: quantidade na unidade da sua
+  corretora, nocional, margem, alavancagem efectiva e preço de liquidação.
+- **Nocional** — o valor de exposição da posição, resultado da resolução. É o que a mesa confere
+  contra a banda do mandato.
 - **Distância de liquidação** — quanto o preço tem de andar contra a posição para a corretora a
   liquidar. Resulta da alavancagem que a corretora aplica, não de uma escolha nossa.
 - **Ledger** — o registro append-only dos ciclos.
@@ -70,9 +75,11 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
 | Setup → Mesa | o template de configuração e a proposta | a mesa (template inválido; proposta fora dos quatro valores) |
 | Corretora → Conector → Mesa | factos de mercado e conta, normalizados | o conector (falha) e a mesa (dado velho) |
 | Mesa → Setup | o objecto normalizado de mercado e conta | ninguém: o setup recebe sempre o mesmo objecto |
-| Mesa → Conector | a boleta | a mesa (sem capacidade declarada) e o conector (recusa da corretora) |
+| Mesa → Conector | a boleta — mensagem padrão (percentagem do saldo, alavancagem, percentagens de movimento) | a mesa (sem capacidade declarada) e o conector (recusa da corretora) |
+| Conector → Mesa | a **resolução** (quantidade, nocional, margem, alavancagem efectiva, preço de liquidação) e o desfecho | a mesa (exposição fora da banda do mandato) |
+| Vigia → Mesa | os quatro verbos: start, stop, pause, reset | a mesa (mandato fora de banda: o start falha) |
 | Mesa → Web | a leitura (posição, ciclos, resultado, ledger) | ninguém |
-| Mesa → Ledger | snapshot, proposta, boleta, desfecho | ninguém |
+| Mesa → Ledger | snapshot, proposta, boleta, resolução e desfecho | ninguém |
 
 3.1. **Uma normalização só.** A mesa normaliza uma vez e entrega **o mesmo objecto** ao setup e ao
 humano. Duas contas para o mesmo número (resultado, velas, posição) são defeito, não otimização.
@@ -96,29 +103,35 @@ transporta. Quem decide é a mesa, dentro do mandato.
     não abre nada novo até intervenção explícita do dono. O evento é registrado.
   - **RN-M3.2.** A verificação do limite é da mesa, **em cada ciclo**, e não depende do setup nem da
     sua proposta.
-- **RN-M4.** O mandato declara o **nocional máximo** por instrumento, em moeda. Nocional é
-  **exposição** — o valor que a posição move quando o preço anda —, não margem e não alavancagem: é
-  assim que o número se compara entre corretoras.
-  - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho.
-  - **RN-M4.2.** Tamanho que não caiba no instrumento (mínimo ou passo) DEVE ser recusado pela mesa,
-    com registro. NUNCA se arredonda em silêncio.
-- **RN-M4.3.** O capital vem do mandato: base de capital da conta e fatia por instrumento (com `n`
-  instrumentos, a base é dividida por `n`). O tamanho da posição é derivado do **nocional máximo
-  autorizado** e do preço — nunca de um número de alavancagem escolhido pelo dono.
-- **RN-M4.4.** A **alavancagem NÃO é parâmetro do dono**: é facto do instrumento, declarado pelo
-  conector (RN-C1) e variável com o valor da posição. O que o mandato protege é outra coisa — a
-  **distância mínima até à liquidação** (o movimento adverso, em %, que a posição tem de suportar).
-- **RN-M4.5.** Antes de enviar, a mesa DEVE calcular a distância até à liquidação com a alavancagem
-  que a corretora aplica àquele tamanho. Se ficar mais perto do que o mandato exige, a mesa **baixa a
-  alavancagem na corretora** (RN-C8) ou **reduz o tamanho**; se nenhum dos dois couber, **recusa** e
-  registra.
-- **RN-M4.6.** A alavancagem efectiva e o preço de liquidação são **observados na corretora** em cada
-  ciclo e gravados no ledger. São facto da corretora: a mesa NUNCA os estima nem os presume.
-- **RN-M5.** O mandato da conta é o **único limite global**: perda máxima (RN-M3) e teto de nocional
-  (RN-M4). Nada de estratégia entra aqui. Stop, janela de operação, aumentos de posição, limiares e
-  política de parcial são **do setup**, declarados no template dele (RN-S3).
-- **RN-M6.** O mandato declara a **ficha de cada instrumento**: que setup corre em que instrumento e
-  com que fatia do capital da conta. Um instrumento sem ficha não é operado.
+- **RN-M4.** O mandato declara uma **banda**, não um tamanho: a **percentagem máxima do saldo** que uma
+  posição pode empenhar e a **alavancagem máxima** que a mesa aceita para aquele instrumento. O nocional
+  máximo é derivado — saldo × percentagem × alavancagem — e é em **exposição** que a mesa confere,
+  porque é isso que se compara entre corretoras.
+  - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho, a percentagem nem a alavancagem.
+  - **RN-M4.2.** Quando o mínimo do instrumento exigir mais do que a banda autoriza, **recusa-se** a
+    ordem — quem a recusa é o conector, com motivo (RN-C9). NUNCA se arredonda em silêncio.
+- **RN-M4.3.** A **percentagem do saldo** e a **alavancagem** vão na boleta em termos que valem em
+  qualquer corretora; quem as converte em quantidade da sua unidade é o conector (RN-C9).
+- **RN-M4.4.** A alavancagem pedida NUNCA excede o máximo que o instrumento permite, lido no manifesto
+  (RN-C1) e variável com o valor da posição. O que o mandato protege é a **distância mínima até à
+  liquidação** (o movimento adverso, em %, que a posição tem de suportar).
+- **RN-M4.5.** Antes de enviar, a mesa DEVE ter a **resolução** do conector (RN-C10) e conferir a
+  exposição e a distância de liquidação contra a banda. Resolução fora da banda NÃO vira ordem:
+  registra-se e alarmiza-se como falha de conformidade.
+- **RN-M4.6.** Quantidade resolvida, nocional, margem, alavancagem efectiva e preço de liquidação são
+  **resolvidos pelo conector** e gravados no ledger. A mesa NUNCA os estima nem os presume.
+- **RN-M5.** O mandato da conta é o **único limite global**: perda máxima (RN-M3), percentagem do saldo
+  e alavancagem máxima (RN-M4). Nada de estratégia entra aqui. Stop, janela de operação, aumentos de
+  posição, limiares e política de parcial são **do setup**, declarados no template dele (RN-S3).
+- **RN-M6.** O mandato declara a **ficha de cada instrumento**: que setup (e que variante) corre em
+  qual instrumento, e os valores que o template desse setup pediu (stop, tp, janela, limiares). Um
+  instrumento sem ficha não é operado.
+- **RN-M6.1.** Três coisas diferentes, que se confundem com facilidade: o **template** é do setup (que
+  itens existem e o que significam, RN-S3); a **ficha** é do dono (os valores preenchidos para um
+  instrumento); a **banda** é do dono e é executada pela mesa (perda máxima, percentagem do saldo,
+  alavancagem, distância de liquidação, janela).
+- **RN-M6.2.** A ficha NUNCA afrouxa a banda. Valor de ficha fora da banda é **recusado** na validação
+  (RN-M9), nunca corrigido.
 - **RN-M7.** A mesa só conhece parâmetros de estratégia **pelo template** do setup (RN-S4). Um item de
   estratégia que precise de aparecer no mandato é sinal de que o desenho se enganou de anel.
 - **RN-M8.** O mandato em vigor é gravado no ledger. Ciclo sem mandato conhecido NUNCA abre posição.
@@ -141,7 +154,8 @@ setup publica.
 - **RN-S3.** O setup publica um **template de configuração**: um item por parâmetro, com nome, tipo,
   unidade, valor por omissão e significado. **Toda** decisão de estratégia vive aí — inclusive se há
   stop (e a distância), a janela de operação do setup, a política de execução parcial, se aumenta
-  posição no mesmo sentido, e os próprios limiares.
+  posição no mesmo sentido, e os próprios limiares. O template declara **itens**; quem lhes dá
+  **valores**, por instrumento, é a ficha (RN-M6.1).
 - **RN-S4.** O template é a **única** fonte da verdade desses itens: a mesa valida e a web apresenta a
   configuração **a partir do template**, e nenhuma das duas conhece os itens por nome. Um setup novo
   entra no sistema sem tocar no core nem na web.
@@ -209,22 +223,37 @@ setup publica.
 
 ## 8. Regras da boleta
 
-Campos: ciclo, instrumento, lado, tipo, quantidade (na unidade do instrumento), preço (quando
-limite), política de execução parcial, desvio máximo, reduce-only, stop (quando o template o pedir),
-referência do cliente.
+A boleta é uma **mensagem padrão**: escrita pela mesa em termos que valem em qualquer corretora —
+**percentagem do saldo, alavancagem e percentagens de movimento** —, nunca em quantidades, preços
+absolutos ou pontos, que são unidades de uma corretora concreta.
 
+- **Metade da mesa:** ciclo, instrumento, lado, tipo, percentagem do saldo, alavancagem, stop
+  (percentagem de movimento, ou ausente), tp (idem), política de execução parcial, desvio máximo,
+  reduce-only, referência do cliente.
+- **Metade da corretora (a resolução, RN-C10):** quantidade na unidade do instrumento, nocional,
+  margem empenhada, alavancagem efectiva, preço de liquidação — e o desfecho.
+
+- **RN-B0.** Nenhum campo da boleta está em unidade de corretora. Quem traduz — quantidade, contrato,
+  lote, ponto, tick, preço absoluto — é o **conector**, que atende à especificação de ordem da sua
+  corretora e cuida dos cálculos dela.
 - **RN-B1.** A boleta é o documento; **a execução é do conector**.
-- **RN-B2.** A boleta vai para o ledger **integral**, junto com a resposta da corretora. É o que
-  permite re-correr o setup e comparar **boletas**, em vez de comparar código.
+- **RN-B2.** A boleta vai para o ledger **integral**, junto com a **resolução** do conector
+  (quantidade, nocional, margem, alavancagem efectiva, preço de liquidação) e a resposta da corretora.
+  É o que permite re-correr o setup e comparar **boletas**, em vez de comparar código.
 - **RN-B3.** Antes de enviar, a mesa verifica a boleta contra o **manifesto do conector** (RN-C1). Sem
   capacidade declarada para o que a boleta pede, a mesa **recusa** — não adapta.
-- **RN-B4.** A quantidade DEVE ser honrada dentro do erro declarado pelo conector, ou a boleta é
-  recusada. NUNCA há arredondamento silencioso: arredondar para baixo pode dar zero (ordem que nunca
-  existe, mesa a pensar que entrou) e para cima dá posição maior do que o mandato autorizou.
+- **RN-B4.** A quantidade resolvida DEVE caber na banda autorizada (percentagem do saldo ×
+  alavancagem). O conector NUNCA a arredonda em silêncio: para baixo pode dar zero (ordem que nunca
+  existe, mesa a pensar que entrou) e para cima estoura o mandato. Não cabendo o mínimo do instrumento,
+  o conector **recusa** (RN-C9).
 - **RN-B5.** `reduce-only` é **intenção**. Onde a corretora não a garante nativamente, a garantia é da
   mesa: nunca enviar mais do que a posição e reconciliar depois.
 - **RN-B6.** A política de execução parcial (tudo-ou-nada / o-que-der) é campo obrigatório da boleta,
   porque altera o desfecho da entrada. Sem ela declarada, a boleta não sai.
+- **RN-B7.** O stop e o tp são declarados em **percentagem de movimento do preço** da posição. Um stop
+  de 1% é o mesmo pedido na HL e em FX: o conector resolve-o para o protocolo do seu venue (preço
+  absoluto, pontos, distância em ticks) e recusa quando o instrumento não o permite. É esta unidade que
+  impede a salada de configurações — e é a mesma unidade da distância de liquidação (RN-M4.4).
 
 ---
 
@@ -254,8 +283,16 @@ referência do cliente.
   ser **detectada**, não sofrida.
 - **RN-C8.** Onde o conector tiver verbo para **ajustar a alavancagem** de um instrumento (a HL tem:
   `updateLeverage`, de 1x até ao máximo do activo, em modo cruzado ou isolado), a mesa usa-o para
-  levar a posição à distância de liquidação que o mandato exige, e registra a mudança. Onde o verbo
-  não existir, a mesa **reduz o tamanho** em vez de aceitar menos distância do que o mandato manda.
+  levar a posição à alavancagem pedida, e registra a mudança. Onde o verbo não existir, a mesa
+  **reduz o tamanho** em vez de aceitar menos distância do que o mandato manda.
+- **RN-C9.** O conector **traduz** a boleta — percentagem do saldo, alavancagem e percentagens de
+  movimento — em quantidade da sua unidade, atendendo à especificação de ordem da sua corretora. Se o
+  mínimo do instrumento exigir mais do que a banda autorizada, **recusa** com motivo. NUNCA arredonda
+  em silêncio.
+- **RN-C10.** Antes de executar, o conector devolve a **resolução** (quantidade, nocional, margem,
+  alavancagem efectiva, preço de liquidação). É ela que a mesa confere contra a banda (RN-M4.5) e grava
+  no ledger (RN-B2). A resolução faz parte do desfecho, e é ela que torna o replay possível quando o
+  cálculo é da corretora.
 
 ---
 
@@ -280,7 +317,7 @@ referência do cliente.
 
 ```
 /contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho
-/core           a mesa: ciclo, normalização, boleta, ledger, mandato da conta, servidor de leitura
+/core           a mesa (ciclo, normalização, boleta, ledger, mandato, servidor) e o vigia (RN-V*)
 /setups/<nome>  o plugin, o seu template de configuração, o schema do seu estado, os seus testes
 /brokers/<nome> o conector, o seu manifesto, a bateria de conformidade, as suas fixtures
 /web            a superfície: sem cálculo próprio e sem conhecer a topologia
@@ -292,6 +329,8 @@ referência do cliente.
   por teste (alarme que recusa), e o próprio teste é testado contra uma cópia corrompida.
 - **RN-E2.** Nada no core conhece o nome de um setup nem de uma corretora. Nada num setup ou num
   conector conhece as tripas da mesa.
+- **RN-E11.** `/core` tem dois pontos de entrada: a **mesa** (o ciclo de operação) e o **vigia**
+  (RN-V1 a RN-V6). O vigia não importa a mesa, nenhum setup e nenhum conector.
 
 ### 11.2. Topologia de processos
 
@@ -316,6 +355,28 @@ referência do cliente.
   mesa já saiba (resultado, velas, posição) nem mostra a topologia.
 - **RN-E10.** Uma mesa com três instrumentos e três mesas com um instrumento cada DEVEM parecer iguais
   na web. É esta propriedade que mantém a topologia no campo da operação.
+
+---
+
+### 11.4. O vigia (start, stop, pause, reset)
+
+O servidor é **puro** e não há agente administrador: na inicialização sobe um processo pequeno e
+determinístico que só obedece a quatro verbos. Não sabe de estratégia, de mercado nem de ledger.
+
+- **RN-V1.** Os verbos são quatro e determinísticos: **start** (põe uma mesa a correr), **stop**
+  (termina a mesa), **pause** (a mesa continua viva, para de abrir, continua a reconciliar) e
+  **reset** (repõe um estado nominal declarado).
+- **RN-V2.** **Pause não é stop.** Terminar o processo com posição aberta deixaria a posição sem
+  governo: em `pause` a mesa mantém-se a reconciliar e apenas NÃO abre — é a mesma inibição do
+  RN-M3.1.
+- **RN-V3.** **Reset** repõe o estado nominal e NUNCA apaga o ledger. O estado próprio de um setup só
+  é reposto com autorização declarada do setup (RN-S6). Reset é registrado com autor e hora.
+- **RN-V4.** Toda transição é registrada com autor, hora, verbo e estado anterior e posterior: o vigia
+  é auditável por leitura do seu registro.
+- **RN-V5.** O vigia NÃO valida mandato nem substitui o porteiro: se o arranque for recusado, o `start`
+  falha e a recusa é o resultado (RN-M9).
+- **RN-V6.** Uma mesa em operação NUNCA depende de o vigia estar vivo: se ele morre, as mesas continuam
+  a operar e a reconciliar. O vigia é conveniência de operação, não caminho crítico.
 
 ---
 
@@ -366,21 +427,25 @@ referência do cliente.
    parâmetro** (RN-S3/S4). O core não as conhece por nome.
 2. Variantes de um setup são **fichas** do mesmo plugin (RN-S5).
 3. Estrutura de diretórios `/core`, `/setups`, `/brokers`, `/web` (mais `/contracts` e `/docs`).
+4. O servidor é puro e **não há agente administrador**: um processo pequeno e determinístico obedece a
+   start, stop, pause e reset (RN-V1 a RN-V6). `pause` não é `stop`; `reset` nunca apaga o ledger.
+5. **A tradução é do conector.** A boleta é uma mensagem padrão em percentagem do saldo, alavancagem e
+   percentagens de movimento; quem calcula quantidade, unidade, pontos, tick e o protocolo de ordem da
+   sua corretora é o plugin (RN-B0, RN-B7, RN-C9). O core deixa de ter aritmética de corretora.
 
 **Proposta minha, à espera da tua palavra**
 
-4. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
+6. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
    mesas (RN-E8), para a topologia não aparecer na superfície.
-5. Nocional e alavancagem: o mandato limita **exposição (nocional)** e **distância mínima até à
-   liquidação**; a alavancagem passa a ser facto do instrumento (RN-M4.3 a RN-M4.6). É o que resolve o
-   caso HL (3x a 40x, com degraus por valor de posição) contra o caso FX (até 500x), onde o **mesmo
-   nocional** significa uma liquidação muito mais perto.
-6. A web pode editar fichas e mandato (validado, versionado, assinado) e **pedir** arranque; quem
-   lança o processo é o supervisor do host, não a web.
+7. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+   liquidação) **antes** de mandar executar, e confere-a contra a banda (RN-M4.5, RN-C10). É o que
+   impede uma ordem maior do que o autorizado quando o cálculo é de fora.
+8. A web pode editar fichas e mandato (validado, versionado, assinado) e **pedir** arranque; quem
+   lança o processo é o vigia, não a web.
 
 **Abertas**
 
-7. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
-8. Nocional: por conta ou por instrumento — e qual a **distância mínima de liquidação** (sem ela a
-   mesa não abre posição).
-9. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
+9. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
+10. Bandas por conta ou por instrumento — e qual a **distância mínima de liquidação** (sem ela a mesa
+    não abre posição).
+11. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
