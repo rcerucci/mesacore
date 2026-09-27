@@ -55,6 +55,9 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
   do setup têm de caber. O setup **serve-o**; não o inventa.
 - **Arquivo do setup** — o arquivo cuja forma o **setup** publica (ema_fast, ema_slow, stop, limiares).
   Nem o core nem a web conhecem nenhum destes nomes.
+- **Arquivo macro da conta** — o arquivo do que é da **conta**: instrumentos, corretora e conta, perda
+  máxima e a janela da sua medição, margem total máxima, e a política de contenção de margem. Mesmo
+  padrão dos outros: forma declarada, versionado, origem registrada (RN-M2).
 - **Mesa** — este sistema: o terminal. Uma mesa corre uma conta.
 - **Ciclo** — uma passagem da mesa: ler mercado, (eventualmente) consultar o setup, agir, registrar.
   Tem identificador próprio.
@@ -118,8 +121,8 @@ transporta. Quem decide é a mesa, dentro do mandato.
   - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho, a percentagem, a alavancagem nem a margem
     total.
   - **RN-M4.2.** A **soma** é conferida pela mesa, que é o único sítio que vê todas as fichas. Ficha que
-    não couber no que resta da margem total é **recusada**: a mesa não reparte, não reduz em silêncio e
-    não escolhe qual instrumento cede.
+    não couber no que resta da margem total **não abre**: a mesa não reparte, não reduz em silêncio e
+    não arredonda para caber.
 - **RN-M4.3.** A **percentagem do saldo** e a **alavancagem** (do arquivo de risco) vão na boleta em
   termos que valem em qualquer corretora; quem as converte em quantidade da sua unidade é o conector
   (RN-C9).
@@ -131,6 +134,17 @@ transporta. Quem decide é a mesa, dentro do mandato.
   ordem: registra-se e alarmiza-se como falha de conformidade.
 - **RN-M4.6.** Quantidade resolvida, nocional, margem, alavancagem efectiva e preço de liquidação são
   **resolvidos pelo conector** e gravados no ledger. A mesa NUNCA os estima nem os presume.
+- **RN-M4.7.** No arranque, a mesa **compara as fichas com o teto da conta** e, quando a soma puder
+  exceder o teto — o caso normal, três instrumentos com 50% do saldo cada —, **avisa** e exige que a
+  **política de contenção** esteja declarada no arquivo macro. Sem declaração, o arranque **recusa**:
+  contenda não se resolve sozinha nem por omissão.
+- **RN-M4.8.** Com a política `espera`, o instrumento que não encontra margem fica **à espera de saldo**
+  e entra quando houver lugar. Esperar NÃO é uma ordem em fila: a mesa não guarda a intenção pendente,
+  registra o motivo (`sem_margem`) e o ciclo seguinte corre o seu caminho normal — sinal velho não é
+  sinal.
+- **RN-M4.9.** Quando mais do que um instrumento quer o mesmo lugar no mesmo ciclo, a ordem é
+  **declarada** no arquivo macro (por omissão, a ordem de declaração no arquivo). A mesa não escolhe
+  quem cede: segue a ordem declarada, e o registro mostra quem entrou e quem esperou.
 - **RN-M5.** Repartição de responsabilidade, por escrito: **o que é soma** (perda máxima e margem total
   da conta) é do **mandato**; **o que é da posição** (percentagem do saldo, alavancagem, distância de
   liquidação, janela) é do **arquivo de risco**, de forma fixa, em cada ficha (RN-S10); **o que é da
@@ -341,6 +355,7 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 /core           a mesa (ciclo, normalização, boleta, ledger, mandato, servidor) e o vigia (RN-V*)
 /setups/<nome>  o plugin, o seu template de configuração, o schema do seu estado, os seus testes
 /brokers/<nome> o conector, o seu manifesto, a bateria de conformidade, as suas fixtures
+/config         os arquivos do dono: `conta.*` (macro) e `fichas/<instrumento>.{risco,setup}.*`
 /web            a superfície: sem cálculo próprio e sem conhecer a topologia
 /docs           a regra de negócio e as especificações
 ```
@@ -352,6 +367,9 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   conector conhece as tripas da mesa.
 - **RN-E11.** `/core` tem dois pontos de entrada: a **mesa** (o ciclo de operação) e o **vigia**
   (RN-V1 a RN-V6). O vigia não importa a mesa, nenhum setup e nenhum conector.
+- **RN-E12.** `/config` é do **dono**: a mesa lê-o, valida-o e **nunca o escreve**. A web edita-o com
+  validação e assinatura (RN-M2). Três famílias de arquivo, e só três: o **macro** da conta, o de
+  **risco** por ficha e o do **setup** por ficha.
 
 ### 11.2. Topologia de processos
 
@@ -473,22 +491,30 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 8. **Reset é um reinício sem mexer em nada**, para destravar (RN-V3). E o encerramento é **gracioso**:
    pergunta se se fecham as posições a preço de mercado, com o **resumo** à frente; sem decisão, a mesa
    continua a correr (RN-V7 a RN-V9).
+9. **A config macro é um arquivo do mesmo padrão**: `conta` traz os parâmetros da conta (instrumentos,
+   corretora, perda máxima e janela, margem total máxima) e a **política de contenção**. As três
+   famílias de arquivo do dono são: **macro** (conta), **risco** (por ficha) e **setup** (por ficha).
+10. **Contenda declarada, não recusada à força.** No arranque a mesa compara as fichas com o teto e
+    **avisa**; o dono corrige ou **declara** a política (`espera`), e o instrumento sem margem fica à
+    espera de saldo em vez de ser recusado (RN-M4.7, RN-M4.8). Esperar nunca é fila de intenções.
 
 **Proposta minha, à espera da tua palavra**
 
-9. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
-   mesas (RN-E8), para a topologia não aparecer na superfície.
-10. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+11. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
+    de mesas (RN-E8), para a topologia não aparecer na superfície.
+12. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
     liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
     impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-11. A web pode editar fichas e mandato (validado, versionado, assinado) e **pedir** arranque; quem
+13. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
     lança o processo é o vigia, não a web.
 
 **Abertas**
 
-12. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
-13. **Margem total máxima da conta** (RN-M4) — o número não existe ainda.
-14. **Distância mínima de liquidação** (RN-M4.4) — sem ela a mesa não abre posição.
-15. Quais os itens do setup que o arquivo de risco tem de limitar (por exemplo: o stop. Entre que
+14. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
+15. **Margem total máxima da conta** (RN-M4.7) — o número não existe ainda.
+16. **Distância mínima de liquidação** (RN-M4.4) — sem ela a mesa não abre posição.
+17. **Ordem de atendimento** (RN-M4.9) quando dois instrumentos disputam a mesma margem: ordem de
+    declaração no arquivo é aceitável, ou queres outro critério?
+18. Quais os itens do setup que o arquivo de risco tem de **limitar** (por exemplo o stop: entre que
     valores?).
-16. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
+19. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
