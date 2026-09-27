@@ -20,5 +20,7 @@ não é erro de nenhuma ficha — é decisão de conta:
 - com a política `espera`, o instrumento sem margem fica **à espera de saldo** e entra quando houver
   lugar. Esperar **não** é uma ordem em fila: registra-se o motivo (`sem_margem`) e o ciclo seguinte
   corre o seu caminho normal — sinal velho não é sinal (RN-M4.8);
-- quando dois instrumentos disputam o mesmo lugar, vale a **ordem declarada** (RN-M4.9): a mesa não
-  escolhe quem cede.
+- quando dois instrumentos disputam o mesmo lugar, vale a **lista declarada** no macro (RN-M4.9); sem
+  lista, a ordem é **alfabética pelo símbolo**, e o registro diz qual critério decidiu — com o nome
+  `alfabetica_sem_criterio` quando o dono não declarou nenhum. A ordem só decide quem fica de fora:
+  havendo lugar para todos, entram todos (RN-M4.10).

@@ -142,9 +142,15 @@ transporta. Quem decide é a mesa, dentro do mandato.
   e entra quando houver lugar. Esperar NÃO é uma ordem em fila: a mesa não guarda a intenção pendente,
   registra o motivo (`sem_margem`) e o ciclo seguinte corre o seu caminho normal — sinal velho não é
   sinal.
-- **RN-M4.9.** Quando mais do que um instrumento quer o mesmo lugar no mesmo ciclo, a ordem é
-  **declarada** no arquivo macro (por omissão, a ordem de declaração no arquivo). A mesa não escolhe
-  quem cede: segue a ordem declarada, e o registro mostra quem entrou e quem esperou.
+- **RN-M4.9.** Quando mais do que um instrumento quer o mesmo lugar no mesmo ciclo, a ordem é uma
+  **lista declarada** no arquivo macro. Sem lista declarada, a ordem é **alfabética pelo símbolo do
+  instrumento** — porque, não havendo critério do dono, os pesos são iguais e não há nada a julgar. A
+  mesa NUNCA escolhe, e o registro diz sempre qual critério decidiu: `ordem_declarada` ou
+  `alfabetica_sem_criterio`.
+- **RN-M4.10.** A ordem só decide **quem fica de fora**, nunca a ordem de execução: havendo lugar para
+  todos, entram todos e a lista não é consultada.
+- **RN-M4.11.** O desempate alfabético é pelo **símbolo do instrumento**, em comparação simples de
+  caracteres (não por regras de idioma), para que a mesma situação dê sempre o mesmo resultado.
 - **RN-M5.** Repartição de responsabilidade, por escrito: **o que é soma** (perda máxima e margem total
   da conta) é do **mandato**; **o que é da posição** (percentagem do saldo, alavancagem, distância de
   liquidação, janela) é do **arquivo de risco**, de forma fixa, em cada ficha (RN-S10); **o que é da
@@ -497,24 +503,25 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 10. **Contenda declarada, não recusada à força.** No arranque a mesa compara as fichas com o teto e
     **avisa**; o dono corrige ou **declara** a política (`espera`), e o instrumento sem margem fica à
     espera de saldo em vez de ser recusado (RN-M4.7, RN-M4.8). Esperar nunca é fila de intenções.
+11. **Prioridade de atendimento**: uma **lista declarada** no arquivo macro; sem lista, ordem
+    **alfabética pelo símbolo** — quando o dono não tem critério, os pesos são iguais e não há nada a
+    julgar. O registro diz qual critério decidiu (RN-M4.9 a RN-M4.11).
 
 **Proposta minha, à espera da tua palavra**
 
-11. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
+12. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
     de mesas (RN-E8), para a topologia não aparecer na superfície.
-12. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+13. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
     liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
     impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-13. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
+14. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
     lança o processo é o vigia, não a web.
 
 **Abertas**
 
-14. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
-15. **Margem total máxima da conta** (RN-M4.7) — o número não existe ainda.
-16. **Distância mínima de liquidação** (RN-M4.4) — sem ela a mesa não abre posição.
-17. **Ordem de atendimento** (RN-M4.9) quando dois instrumentos disputam a mesma margem: ordem de
-    declaração no arquivo é aceitável, ou queres outro critério?
+15. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
+16. **Margem total máxima da conta** (RN-M4.7) — o número não existe ainda.
+17. **Distância mínima de liquidação** (RN-M4.4) — sem ela a mesa não abre posição.
 18. Quais os itens do setup que o arquivo de risco tem de **limitar** (por exemplo o stop: entre que
     valores?).
 19. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
