@@ -7,6 +7,9 @@ Cada setup entrega:
 - a **regra**: o lado (buy, sell, hold, caixa) e o seu **relógio** (RN-S1, RN-S2);
 - o **template de configuração**: um item por parâmetro (nome, tipo, unidade, omissão, significado) —
   toda a estratégia vive aí, inclusive se há stop ou não (RN-S3);
+- **os dois arquivos de configuração por instrumento**: o de **risco**, de forma fixa (schema do core:
+  percentagem do saldo, alavancagem, distância mínima de liquidação, janela, bandas) e o **seu**, cuja
+  forma publica no template (RN-S10, RN-S11);
 - o **schema do seu próprio estado**, com namespace e versão `estado/<setup>/<versão>/<instrumento>`
   (RN-S6);
 - os seus **testes**.

@@ -44,9 +44,17 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
 
 ## 2. Vocabulário
 
-- **Mandato** — o que o dono declara: instrumentos, conta, limites de risco e capital.
-- **Setup** — o plugin que propõe lado e publica o seu template de configuração. Tem nome e versão.
-- **Ficha** — uma configuração concreta de um setup (o mesmo plugin com parâmetros diferentes).
+- **Mandato** — o que o dono declara e que é **soma**, não posição: instrumentos, conta, perda máxima da
+  conta e margem total máxima.
+- **Setup** — o plugin que propõe lado e publica o template do seu arquivo de configuração. Tem nome e
+  versão.
+- **Ficha** — a configuração concreta de um instrumento: **dois arquivos**, um de risco e um do setup,
+  mais o nome do setup e da variante.
+- **Arquivo de risco** — o arquivo de forma **fixa** (vem do core, igual em todos os setups):
+  percentagem do saldo, alavancagem, distância mínima de liquidação, janela, e as bandas onde os itens
+  do setup têm de caber. O setup **serve-o**; não o inventa.
+- **Arquivo do setup** — o arquivo cuja forma o **setup** publica (ema_fast, ema_slow, stop, limiares).
+  Nem o core nem a web conhecem nenhum destes nomes.
 - **Mesa** — este sistema: o terminal. Uma mesa corre uma conta.
 - **Ciclo** — uma passagem da mesa: ler mercado, (eventualmente) consultar o setup, agir, registrar.
   Tem identificador próprio.
@@ -103,35 +111,39 @@ transporta. Quem decide é a mesa, dentro do mandato.
     não abre nada novo até intervenção explícita do dono. O evento é registrado.
   - **RN-M3.2.** A verificação do limite é da mesa, **em cada ciclo**, e não depende do setup nem da
     sua proposta.
-- **RN-M4.** O mandato declara uma **banda**, não um tamanho: a **percentagem máxima do saldo** que uma
-  posição pode empenhar e a **alavancagem máxima** que a mesa aceita para aquele instrumento. O nocional
-  máximo é derivado — saldo × percentagem × alavancagem — e é em **exposição** que a mesa confere,
-  porque é isso que se compara entre corretoras.
-  - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho, a percentagem nem a alavancagem.
-  - **RN-M4.2.** Quando o mínimo do instrumento exigir mais do que a banda autoriza, **recusa-se** a
-    ordem — quem a recusa é o conector, com motivo (RN-C9). NUNCA se arredonda em silêncio.
-- **RN-M4.3.** A **percentagem do saldo** e a **alavancagem** vão na boleta em termos que valem em
-  qualquer corretora; quem as converte em quantidade da sua unidade é o conector (RN-C9).
+- **RN-M4.** O mandato declara o que é **soma**: a **margem total máxima** da conta (a soma de todas as
+  posições abertas, em percentagem do saldo) e a perda máxima da conta (RN-M3). As bandas **por
+  posição** não moram aqui — vivem no arquivo de risco de cada ficha (RN-S10), porque **uma ficha não vê
+  as outras**.
+  - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho, a percentagem, a alavancagem nem a margem
+    total.
+  - **RN-M4.2.** A **soma** é conferida pela mesa, que é o único sítio que vê todas as fichas. Ficha que
+    não couber no que resta da margem total é **recusada**: a mesa não reparte, não reduz em silêncio e
+    não escolhe qual instrumento cede.
+- **RN-M4.3.** A **percentagem do saldo** e a **alavancagem** (do arquivo de risco) vão na boleta em
+  termos que valem em qualquer corretora; quem as converte em quantidade da sua unidade é o conector
+  (RN-C9).
 - **RN-M4.4.** A alavancagem pedida NUNCA excede o máximo que o instrumento permite, lido no manifesto
   (RN-C1) e variável com o valor da posição. O que o mandato protege é a **distância mínima até à
   liquidação** (o movimento adverso, em %, que a posição tem de suportar).
-- **RN-M4.5.** Antes de enviar, a mesa DEVE ter a **resolução** do conector (RN-C10) e conferir a
-  exposição e a distância de liquidação contra a banda. Resolução fora da banda NÃO vira ordem:
-  registra-se e alarmiza-se como falha de conformidade.
+- **RN-M4.5.** Antes de enviar, a mesa DEVE ter a **resolução** do conector (RN-C10) e conferir
+  exposição, distância de liquidação e margem total contra as bandas. Resolução fora da banda NÃO vira
+  ordem: registra-se e alarmiza-se como falha de conformidade.
 - **RN-M4.6.** Quantidade resolvida, nocional, margem, alavancagem efectiva e preço de liquidação são
   **resolvidos pelo conector** e gravados no ledger. A mesa NUNCA os estima nem os presume.
-- **RN-M5.** O mandato da conta é o **único limite global**: perda máxima (RN-M3), percentagem do saldo
-  e alavancagem máxima (RN-M4). Nada de estratégia entra aqui. Stop, janela de operação, aumentos de
-  posição, limiares e política de parcial são **do setup**, declarados no template dele (RN-S3).
-- **RN-M6.** O mandato declara a **ficha de cada instrumento**: que setup (e que variante) corre em
-  qual instrumento, e os valores que o template desse setup pediu (stop, tp, janela, limiares). Um
-  instrumento sem ficha não é operado.
-- **RN-M6.1.** Três coisas diferentes, que se confundem com facilidade: o **template** é do setup (que
-  itens existem e o que significam, RN-S3); a **ficha** é do dono (os valores preenchidos para um
-  instrumento); a **banda** é do dono e é executada pela mesa (perda máxima, percentagem do saldo,
-  alavancagem, distância de liquidação, janela).
-- **RN-M6.2.** A ficha NUNCA afrouxa a banda. Valor de ficha fora da banda é **recusado** na validação
-  (RN-M9), nunca corrigido.
+- **RN-M5.** Repartição de responsabilidade, por escrito: **o que é soma** (perda máxima e margem total
+  da conta) é do **mandato**; **o que é da posição** (percentagem do saldo, alavancagem, distância de
+  liquidação, janela) é do **arquivo de risco**, de forma fixa, em cada ficha (RN-S10); **o que é da
+  estratégia** (stop, tp, limiares, aumentos, parcial) é do **arquivo do setup** (RN-S3). Nada disto
+  vive no core por nome.
+- **RN-M6.** A **ficha** de cada instrumento são **dois arquivos** — o de risco e o do setup — mais a
+  indicação de que setup e que variante correm naquele instrumento. Um instrumento sem ficha não é
+  operado.
+- **RN-M6.1.** Três coisas que se confundem com facilidade: o **template** é do setup (que itens de
+  estratégia existem e o que significam, RN-S3); a **ficha** é do dono (os valores, nos dois arquivos,
+  por instrumento); a **banda** é de forma fixa e vive no arquivo de risco (RN-S10).
+- **RN-M6.2.** A ficha NUNCA afrouxa a banda. Valor fora da banda é **recusado** na validação (RN-M9),
+  nunca corrigido.
 - **RN-M7.** A mesa só conhece parâmetros de estratégia **pelo template** do setup (RN-S4). Um item de
   estratégia que precise de aparecer no mandato é sinal de que o desenho se enganou de anel.
 - **RN-M8.** O mandato em vigor é gravado no ledger. Ciclo sem mandato conhecido NUNCA abre posição.
@@ -169,6 +181,15 @@ setup publica.
   **congela** (RN-T10) e registra. NUNCA se substitui a proposta por um valor por omissão.
 - **RN-S9.** O template declara **política**, não execução: quem preenche a boleta é a mesa. O setup
   NUNCA manda na boleta, e uma proposta pode ser recusada pelo mandato sem que o setup saiba porquê.
+- **RN-S10.** Cada setup traz **dois arquivos de configuração por instrumento**: um de **risco**, de
+  forma **fixa** (percentagem do saldo, alavancagem, distância mínima de liquidação, janela, e as bandas
+  onde os itens do setup têm de caber), e um **seu**, cuja forma ele publica. O de risco tem schema do
+  core: um setup pode **recusar-se** a servir um instrumento, mas NUNCA inventa um parâmetro de risco.
+- **RN-S11.** A spec do setup DEVE trazer os dois arquivos: o de risco porque faz parte do contrato, e o
+  seu porque é ele que o define (itens, tipos, unidades, omissões, significado). Item que o risco tenha
+  de limitar tem de aparecer nas bandas do arquivo de risco — senão não é limitável e não entra.
+- **RN-S12.** O setup NUNCA escreve no arquivo de risco nem nos valores do dono: lê-os. Escrever, só no
+  seu próprio estado (RN-S6).
 
 ---
 
@@ -358,7 +379,7 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 
 ---
 
-### 11.4. O vigia (start, stop, pause, reset)
+### 11.4. O vigia (start, stop, pause, reset e encerramento gracioso)
 
 O servidor é **puro** e não há agente administrador: na inicialização sobe um processo pequeno e
 determinístico que só obedece a quatro verbos. Não sabe de estratégia, de mercado nem de ledger.
@@ -369,14 +390,26 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 - **RN-V2.** **Pause não é stop.** Terminar o processo com posição aberta deixaria a posição sem
   governo: em `pause` a mesa mantém-se a reconciliar e apenas NÃO abre — é a mesma inibição do
   RN-M3.1.
-- **RN-V3.** **Reset** repõe o estado nominal e NUNCA apaga o ledger. O estado próprio de um setup só
-  é reposto com autorização declarada do setup (RN-S6). Reset é registrado com autor e hora.
+- **RN-V3.** **Reset é um reinício sem mexer em nada**: a mesa volta a subir com o mesmo estado, as
+  mesmas fichas e o mesmo ledger. Serve para **destravar** uma mesa quando é preciso, não para alterar.
+  NUNCA apaga o ledger, NUNCA repõe fichas, NUNCA limpa a marca de desfecho **desconhecido** — isso
+  destrava-se reconciliando (RN-T7.1), que é o que o arranque faz.
 - **RN-V4.** Toda transição é registrada com autor, hora, verbo e estado anterior e posterior: o vigia
   é auditável por leitura do seu registro.
 - **RN-V5.** O vigia NÃO valida mandato nem substitui o porteiro: se o arranque for recusado, o `start`
   falha e a recusa é o resultado (RN-M9).
 - **RN-V6.** Uma mesa em operação NUNCA depende de o vigia estar vivo: se ele morre, as mesas continuam
   a operar e a reconciliar. O vigia é conveniência de operação, não caminho crítico.
+- **RN-V7.** **Parar com posição aberta não é um kill.** O encerramento é gracioso: a mesa para de
+  abrir, apresenta o **resumo** e **pergunta** se se fecham as posições a preço de mercado. O `stop`
+  com posição aberta cai neste mesmo caminho — matar o processo deixaria a posição sem governo.
+- **RN-V8.** O resumo traz **números da corretora**, não estimativas: posição, nocional, margem,
+  distância de liquidação, resultado não realizado, e o que fica em aberto para cada instrumento. Se a
+  decisão for **não fechar**, o resumo diz o que isso significa: a única proteção que resta é a **ordem
+  de stop que estiver na corretora**; sem stop, a posição fica a descoberto.
+- **RN-V9.** Sem decisão, a mesa **continua a correr e a reconciliar** — nunca fecha por prazo, nunca
+  sai em silêncio. A decisão (fechar a mercado ou manter) é registrada com autor e hora, e o
+  encerramento com posição aberta é o único caminho legítimo para terminar com posição viva.
 
 ---
 
@@ -432,20 +465,30 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 5. **A tradução é do conector.** A boleta é uma mensagem padrão em percentagem do saldo, alavancagem e
    percentagens de movimento; quem calcula quantidade, unidade, pontos, tick e o protocolo de ordem da
    sua corretora é o plugin (RN-B0, RN-B7, RN-C9). O core deixa de ter aritmética de corretora.
+6. **A ficha são dois arquivos**: um de **risco**, de forma fixa e igual em todos os setups, e um do
+   **setup** (ema_fast, ema_slow, stop, limiares), cuja forma o setup publica. O formato do plugin de
+   setup passa a incluir os dois, e a spec do setup tem de os trazer (RN-S10, RN-S11).
+7. **O mandato guarda só o que é soma** — perda máxima da conta e margem total máxima —, porque uma
+   ficha não vê as outras (RN-M4). As bandas por posição vivem no arquivo de risco.
+8. **Reset é um reinício sem mexer em nada**, para destravar (RN-V3). E o encerramento é **gracioso**:
+   pergunta se se fecham as posições a preço de mercado, com o **resumo** à frente; sem decisão, a mesa
+   continua a correr (RN-V7 a RN-V9).
 
 **Proposta minha, à espera da tua palavra**
 
-6. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
+9. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
    mesas (RN-E8), para a topologia não aparecer na superfície.
-7. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
-   liquidação) **antes** de mandar executar, e confere-a contra a banda (RN-M4.5, RN-C10). É o que
-   impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-8. A web pode editar fichas e mandato (validado, versionado, assinado) e **pedir** arranque; quem
-   lança o processo é o vigia, não a web.
+10. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+    liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
+    impede uma ordem maior do que o autorizado quando o cálculo é de fora.
+11. A web pode editar fichas e mandato (validado, versionado, assinado) e **pedir** arranque; quem
+    lança o processo é o vigia, não a web.
 
 **Abertas**
 
-9. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
-10. Bandas por conta ou por instrumento — e qual a **distância mínima de liquidação** (sem ela a mesa
-    não abre posição).
-11. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
+12. Janela da perda máxima (RN-M3): do pico da sessão, do equity do início do dia, ou outra.
+13. **Margem total máxima da conta** (RN-M4) — o número não existe ainda.
+14. **Distância mínima de liquidação** (RN-M4.4) — sem ela a mesa não abre posição.
+15. Quais os itens do setup que o arquivo de risco tem de limitar (por exemplo: o stop. Entre que
+    valores?).
+16. Funding/swap entra no resultado do ciclo ou é apenas registrado (RN-D1).
