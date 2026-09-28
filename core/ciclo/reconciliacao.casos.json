@@ -1,0 +1,82 @@
+{
+  "nota": "A bateria da reconciliacao: as DUAS saidas que decidem, a que nao decide (e por isso nao sai), e as duas coisas que NAO mexem na marca - reconciliar outro instrumento, e o reset. Uma reconciliacao que nao decide e tentadora de tratar como 'provavelmente nao entrou'; e essa a decisao que deixa a posicao orfa.",
+  "fonte": "core/ciclo/reconciliacao.ts + core/estado/marcas.ts",
+  "padrao": {
+    "instrumento": "EURUSD",
+    "config": {
+      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"]
+    },
+    "marca_inicial": {
+      "instrumento": "EURUSD",
+      "motivo": "sem_confirmacao_dentro_do_prazo",
+      "instante_ms": 1790628005001,
+      "referencia_do_cliente": "mesa-3232-000030"
+    }
+  },
+  "casos": [
+    {
+      "nome": "preenchida-devolve-o-instrumento-a-aberta",
+      "veredicto": "preenchida",
+      "evidencia": "a corretora reporta 1000 unidades com a marca de posse 1694498816",
+      "estado_da_posicao_esperado": "aberta",
+      "marca_permanece_esperado": false,
+      "motivo_esperado": "reconciliacao_decidiu_preenchida",
+      "avisa_esperado": true,
+      "marcas_restantes_esperadas": 0
+    },
+    {
+      "nome": "inexistente-devolve-o-instrumento-a-nenhuma",
+      "veredicto": "inexistente",
+      "evidencia": "nenhuma ordem com a referencia do cliente no historico do venue",
+      "estado_da_posicao_esperado": "nenhuma",
+      "marca_permanece_esperado": false,
+      "motivo_esperado": "reconciliacao_decidiu_inexistente",
+      "avisa_esperado": true,
+      "marcas_restantes_esperadas": 0
+    },
+    {
+      "nome": "indecidivel-mantem-a-marca (nao decidir nao e decidir que nao entrou)",
+      "veredicto": "indecidivel",
+      "evidencia": "o venue respondeu de forma incompleta: ha uma ordem com o valor, sem referencia",
+      "estado_da_posicao_esperado": "desconhecida",
+      "marca_permanece_esperado": true,
+      "motivo_esperado": "reconciliacao_indecidivel",
+      "avisa_esperado": true,
+      "marcas_restantes_esperadas": 1
+    },
+    {
+      "nome": "reconciliar-outro-instrumento-nao-toca-nesta-marca",
+      "instrumento": "GBPUSD",
+      "veredicto": "preenchida",
+      "evidencia": "GBPUSD nao estava em duvida nenhuma",
+      "estado_da_posicao_esperado": "desconhecida",
+      "marca_permanece_esperado": false,
+      "motivo_esperado": "reconciliacao_sem_marca",
+      "avisa_esperado": false,
+      "marcas_restantes_esperadas": 1,
+      "nota": "A marca e POR INSTRUMENTO (FR-028). Resolver noutro lado nao alivia este."
+    },
+    {
+      "nome": "reset-nao-limpa-a-marca (FR-029, o caso que a spec pede explicitamente)",
+      "operacao": "reset",
+      "estado_da_posicao_esperado": "desconhecida",
+      "marca_permanece_esperado": true,
+      "motivo_esperado": "reset_nao_toca_em_nada",
+      "avisa_esperado": false,
+      "marcas_restantes_esperadas": 1,
+      "nota": "O reset reinicia sem mexer em nada: um desconhecido limpo por reset seria uma posicao orfa por descuido."
+    },
+    {
+      "nome": "a-lista-do-dono-decide-o-aviso-da-resolucao",
+      "veredicto": "preenchida",
+      "evidencia": "a corretora reporta 1000 unidades",
+      "config": { "eventos_que_avisam": ["recusa"] },
+      "estado_da_posicao_esperado": "aberta",
+      "marca_permanece_esperado": false,
+      "motivo_esperado": "reconciliacao_decidiu_preenchida",
+      "avisa_esperado": false,
+      "marcas_restantes_esperadas": 0,
+      "nota": "A resolução do desconhecido E o evento 'desconhecido' a fechar-se: se o dono nao o quer na lista, nao e avisado."
+    }
+  ]
+}

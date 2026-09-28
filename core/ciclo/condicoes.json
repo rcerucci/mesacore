@@ -1,11 +1,11 @@
 {
-  "nota": "O que cada condicao do instrumento IMPEDE, e em que ordem ela e reportada quando mais de uma esta activa. DADO, nao codigo - pela mesma razao da tabela de transicoes (R1): assim e conferivel por programa. A distincao que obrigou a este ficheiro: com UMA condicao so, 'congelada' e 'divergente' ao mesmo tempo perdiam uma das duas restricoes (o setup mudo impede abrir; a divergencia impede fechar). Uma condicao de cada vez escondia metade do problema.",
+  "nota": "O que cada condicao do instrumento IMPEDE, e o EVENTO que ela levanta. O evento e o NOME (falha_de_leitura, congelamento, divergencia...) e nao um booleano: quem decide se esse evento AVISA e a lista do dono (conta.eventos_que_avisam[], em /config - FR-042). DADO, nao codigo, pela mesma razao da tabela de transicoes (R1): assim e conferivel por programa. A distincao que obrigou a este ficheiro: com UMA condicao so, 'congelada' e 'divergente' ao mesmo tempo perdiam uma das duas restricoes (o setup mudo impede abrir; a divergencia impede fechar). Uma condicao de cada vez escondia metade do problema.",
   "condicoes": {
     "sem_leitura": {
       "impede_abrir": true,
       "impede_fechar": true,
       "impede_cancelar": true,
-      "alarma": true,
+      "evento": "falha_de_leitura",
       "regra": "FR-016, RN-D7",
       "porque": "Fechar sem saber o que existe e adivinhar. Esta e a unica condicao em que nem fechar se pode - e por isso e a mais grave."
     },
@@ -13,7 +13,7 @@
       "impede_abrir": true,
       "impede_fechar": false,
       "impede_cancelar": true,
-      "alarma": true,
+      "evento": "congelamento",
       "regra": "FR-018, RN-S8, RN-T10, RN-E15",
       "porque": "O setup calou-se ou falhou: nao ha estrategia para abrir, e cancelar o que serve seria destruir trabalho sem saber se ele acaba. DEFENDER continua permitido - a defesa nao depende do setup."
     },
@@ -21,7 +21,7 @@
       "impede_abrir": true,
       "impede_fechar": true,
       "impede_cancelar": true,
-      "alarma": true,
+      "evento": "divergencia",
       "regra": "FR-017, RN-T13",
       "porque": "O que a mesa espera nao bate com o que a corretora reporta. Fechar por iniciativa propria sobre um numero que se sabe errado e o caminho mais curto para fechar duas vezes ou nenhuma."
     },
@@ -29,7 +29,7 @@
       "impede_abrir": true,
       "impede_fechar": true,
       "impede_cancelar": false,
-      "alarma": false,
+      "evento": null,
       "regra": "FR-019, RN-D8",
       "porque": "Declarado pelo conector. Nao abre nem fecha (nao ha contraparte), mas NAO alarma: e uma condicao esperada do mercado, nao uma falha. Alarmar o normal ensina o dono a ignorar alarmes."
     },
@@ -37,7 +37,7 @@
       "impede_abrir": true,
       "impede_fechar": false,
       "impede_cancelar": false,
-      "alarma": true,
+      "evento": "dado_velho",
       "regra": "FR-020, RN-D3",
       "chave": "conta.idade_maxima_do_dado_ms",
       "porque": "Leu-se, mas o dado envelheceu. Abrir com preco velho e entrar num preco que ja nao existe; fechar com preco velho e reduzir risco - e reduzir risco nunca espera por dado fresco."
@@ -46,7 +46,7 @@
       "impede_abrir": false,
       "impede_fechar": false,
       "impede_cancelar": false,
-      "alarma": false,
+      "evento": null,
       "regra": "FR-002",
       "porque": "Nada a assinalar."
     }

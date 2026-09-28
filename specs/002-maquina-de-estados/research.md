@@ -192,6 +192,41 @@ alarmes.
 
 ---
 
+## R11. A lista dos avisos é do dono, e isso mudou o dado (achado da implementação)
+
+**O que se mediu**: o `condicoes.json` nasceu com uma coluna `alarma: true|false` — ou seja, a **mesa** a
+decidir o que avisa. A FR-042 diz outra coisa: a lista dos eventos que avisam é do dono
+(`conta.eventos_que_avisam[]`). Eram duas verdades sobre a mesma coisa, e a que perdia era a do dono.
+
+**Decisão**: a coluna passou a ser `evento: "falha_de_leitura" | "congelamento" | "divergencia" | ... |
+null`. O dado diz **de que evento se trata**; quem decide **se ele avisa** é a config. Três
+consequências:
+
+- sem lista declarada, a mesa **grita** em vez de avisar por omissão (uma mesa que avisa por omissão
+  escolheu pelo dono);
+- um nome de evento fora do conjunto fechado (`core/ciclo/eventos.json`) **grita**: `congelado` em vez
+  de `congelamento` desligaria um alarme em silêncio, e ninguém daria por isso;
+- a bateria tem agora **dois casos com o mesmo dado e listas diferentes** — a mesma divergência avisa
+  com a lista da bateria e **não** avisa com uma lista que só tem `recusa`. É isso que torna a FR-042
+  medível em vez de afirmada.
+
+## R12. A marca `desconhecido` não é uma condição do instrumento (achado da implementação)
+
+**O que se mediu**: era tentador tratar o desconhecido como uma sexta condição (ao lado de `sem_leitura`,
+`divergente`, ...). Não é, e misturá-lo estragaria as duas coisas:
+
+- as **condições** descrevem o que se **leu** (o look, o setup, o mercado). Passam; o instrumento volta a
+  `normal` quando a leitura volta;
+- a marca `desconhecido` é uma **dívida da mesa consigo própria**: um desfecho que não se soube. Não
+  passa com uma leitura nova, e a única coisa que a paga é uma reconciliação que decida.
+
+Misturá-las faria `condicao` depender das marcas — e uma mesa reiniciada sem o ficheiro de marcas
+passaria a ver o mundo de outra maneira. Além disso a FR-028 diz o que a marca faz: bloqueia ordem nova
+**naquele instrumento**, e mais nada. Defender continua permitido (a bateria tem o caso: com a marca, a
+proposta `caixa` fecha na mesma).
+
+---
+
 ## Resumo das decisões
 
 | # | Decisão | O que a fecha |
@@ -206,3 +241,5 @@ alarmes.
 | R8 | Tipos de linha do registo da mesa em conjunto próprio | `core/estado/registo.ts` (achado da implementação; reconciliar com o ledger) |
 | R9 | Leitura recusada é fatal; proposta recusada é o caminho da RN-T4 | `core/leitura/fixtures.ts` (achado da implementação) |
 | R10 | As condições somam impedimentos; uma dá o nome | `core/ciclo/condicoes.json` (achado da implementação) |
+| R11 | A lista dos avisos é do dono; o dado guarda o NOME do evento | `core/ciclo/eventos.json`, `core/config/configuracao.ts` (achado da implementação) |
+| R12 | A marca `desconhecido` não é uma condição do instrumento | `core/ciclo/ciclo.ts` (achado da implementação) |

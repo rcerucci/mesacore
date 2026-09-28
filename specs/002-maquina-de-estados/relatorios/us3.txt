@@ -1,0 +1,245 @@
+US3 — o desfecho desconhecido fica desconhecido: saida real
+data: 2026-09-28 18:05 -0300
+
+--- bun run core/ciclo/provar.ts ---
+=== invariantes do livro das condicoes ===
+
+ok    o livro das condicoes cobre o conjunto fechado e a precedencia e uma ordem total (0 problemas)
+ok    prova negativa: livro sem 'sem_leitura', com a precedencia repetida e um evento inventado e REPROVADO (4 problemas apanhados)
+ok    a config sem lista declarada faz GRITAR (nao ha aviso por omissao)
+ok    a config com um evento que nao existe no conjunto fechado faz GRITAR (nao ha aviso por omissao)
+
+=== bateria das condicoes (o que se leu -> o que se pode fazer) ===
+
+ok    condicao/leitura-fresca-e-mercado-aberto-e-normal
+ok    condicao/idade-igual-ao-limite-nao-e-dado-velho
+ok    condicao/um-milissegundo-acima-do-limite-e-dado-velho
+ok    condicao/a-leitura-falhou-nao-se-sabe-o-que-existe
+ok    condicao/o-setup-calou-se
+ok    condicao/o-que-a-mesa-espera-nao-bate-com-a-corretora
+ok    condicao/o-conector-declarou-o-mercado-fechado
+ok    condicao/congelada-e-divergente-somam-os-dois-impedimentos
+ok    condicao/sem-leitura-vence-o-dado-velho
+ok    condicao/mercado-fechado-com-posicao-aberta-nao-fecha
+ok    condicao/posicao-alheia-e-divergencia-e-alarme
+ok    condicao/posicao-com-a-nossa-marca-nao-e-divergencia
+ok    condicao/a-lista-do-dono-decide-se-o-aviso-sai (o mesmo dado, outro dono)
+
+=== bateria do ciclo (a mesma proposta em cada condicao) ===
+
+ok    ciclo/normal-proposta-buy-abre-com-boleta-neutra
+ok    ciclo/normal-proposta-sell-abre-do-outro-lado
+ok    ciclo/normal-proposta-hold-nao-faz-nada
+ok    ciclo/normal-proposta-caixa-sem-posicao-nao-tem-o-que-fechar
+ok    ciclo/normal-proposta-caixa-com-posicao-nossa-fecha-em-reduce-only
+ok    ciclo/dado-velho-nao-abre
+ok    ciclo/dado-velho-com-posicao-nossa-PODE-fechar
+ok    ciclo/sem-leitura-nao-abre
+ok    ciclo/sem-leitura-com-posicao-tambem-NAO-fecha
+ok    ciclo/congelada-nao-abre
+ok    ciclo/congelada-com-posicao-nossa-DEFENDE
+ok    ciclo/divergente-nao-abre
+ok    ciclo/divergente-nao-fecha-por-iniciativa-propria
+ok    ciclo/mercado-fechado-nao-abre-e-nao-alarma
+ok    ciclo/mercado-fechado-com-posicao-nossa-nao-fecha
+ok    ciclo/posicao-alheia-e-relatada-e-nao-gerida
+ok    ciclo/sem-margem-no-ciclo-nao-e-estado
+ok    ciclo/proposta-ausente-e-tratada-como-hold-e-conta-para-os-invalidos
+ok    ciclo/proposta-com-um-quinto-valor-e-invalida
+ok    ciclo/a-marca-de-posse-e-ficha-e-ciclo-conferidos-por-aritmetica
+ok    ciclo/com-desconhecido-nao-abre (a mesma proposta do caso 1, agora bloqueada)
+ok    ciclo/com-desconhecido-defender-continua (a marca nao impede reduzir risco)
+ok    ciclo/o-mesmo-dado-com-outro-dono-nao-avisa (a lista e da config)
+ok    ciclo/a-mesma-divergencia-com-o-dono-da-bateria-avisa
+
+=== bateria do desfecho (o silencio nao vira sucesso nem falha) ===
+
+ok    desfecho/no-instante-do-prazo-ainda-e-tempo-de-resposta
+ok    desfecho/um-milissegundo-alem-do-prazo-ja-e-desconhecido
+ok    desfecho/aceite-traz-a-posicao
+ok    desfecho/parcial-tambem-e-posicao (nao e desconhecido)
+ok    desfecho/recusa-devolve-a-nenhuma-com-o-motivo-do-venue
+ok    desfecho/confirmacao-ilegivel-nao-e-confirmacao (falha para o lado de nao sei)
+ok    desfecho/desfecho-com-um-quinto-valor-e-ilegivel
+ok    desfecho/a-lista-do-dono-manda-no-aviso (o desfecho e o mesmo, o dono e outro)
+
+=== bateria da reconciliacao (a unica saida do desconhecido) ===
+
+ok    reconciliacao/preenchida-devolve-o-instrumento-a-aberta
+ok    reconciliacao/inexistente-devolve-o-instrumento-a-nenhuma
+ok    reconciliacao/indecidivel-mantem-a-marca (nao decidir nao e decidir que nao entrou)
+ok    reconciliacao/reconciliar-outro-instrumento-nao-toca-nesta-marca
+ok    reconciliacao/reset-nao-limpa-a-marca (FR-029, o caso que a spec pede explicitamente)
+ok    reconciliacao/a-lista-do-dono-decide-o-aviso-da-resolucao
+
+=== criterios de sucesso ===
+
+ok    SC-002: 0 decisoes de abrir fora de 'normal' (tem de ser 0)
+ok    SC-003 (lado A): 0 aberturas com dado velho (tem de ser 0)
+ok    SC-003 (lado B): 1 de 1 pedidos legitimos de fechar com dado velho foram permitidos
+ok    SC-004: 0 de 3 silencios e 0 de 2 confirmacoes ilegiveis viraram aceite/recusado
+ok    SC-005: 0 de 1 tentativas de abrir com a marca desconhecido passaram
+ok    os 17 motivos da mesa que a bateria produziu constam todos do livro (core/estados/motivos.json)
+ok    os 3 motivos do CONTRATO citados pela bateria constam do vocabulario (contracts/vocabulario.json)
+
+resumo: 62 verificacoes · 0 divergentes · 13 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+relatorio: specs/002-maquina-de-estados/relatorios/us3.jsonl
+exit=0
+
+--- bash tools/verificar-maquina/reiniciar.sh ---
+=== SC-010: as marcas sobrevivem ao processo morrer ===
+ficheiro de marcas desta prova: /home/cerucci/.hermes/profiles/appbuilder/cache/scratch/mesacore-marcas-426211.json
+
+passo 1 - o processo que escreveu:
+  {
+   "processo": "marcar",
+   "escrito": {
+    "sessao": {
+     "instante_ms": 1790628000000,
+     "equity_de_partida": "1000.00",
+     "autor": "dono",
+     "motivo": "nova_sessao_do_dono",
+     "configuracao_em_vigor": {
+      "ficha": "3232",
+      "versao_do_setup": "1.0.0",
+      "versao_do_mandato": "1.0.0"
+     }
+    },
+    "inibicao_cb": {
+     "motivo": "perda_medida_acima_do_teto",
+     "instante_ms": 1790628001000,
+     "perda_medida": "5.20"
+    },
+    "desconhecido": [
+     {
+      "instrumento": "EURUSD",
+      "motivo": "sem_confirmacao_dentro_do_prazo",
+      "instante_ms": 1790628005001,
+      "referencia_do_cliente": "mesa-3232-000030"
+     },
+     {
+      "instrumento": "GBPUSD",
+      "motivo": "desfecho_ilegivel",
+      "instante_ms": 1790628006000,
+      "referencia_do_cliente": "mesa-3232-000031"
+     }
+    ],
+    "pedidos": []
+   }
+  }
+  ficheiro legivel: sessao, inibicao_cb, desconhecido, pedidos
+
+passo 2 - OUTRO processo, a ler do ficheiro:
+  {
+   "processo": "reler",
+   "lido": {
+    "sessao": {
+     "instante_ms": 1790628000000,
+     "equity_de_partida": "1000.00",
+     "autor": "dono",
+     "motivo": "nova_sessao_do_dono",
+     "configuracao_em_vigor": {
+      "ficha": "3232",
+      "versao_do_setup": "1.0.0",
+      "versao_do_mandato": "1.0.0"
+     }
+    },
+    "inibicao_cb": {
+     "motivo": "perda_medida_acima_do_teto",
+     "instante_ms": 1790628001000,
+     "perda_medida": "5.20"
+    },
+    "desconhecido": [
+     {
+      "instrumento": "EURUSD",
+      "motivo": "sem_confirmacao_dentro_do_prazo",
+      "instante_ms": 1790628005001,
+      "referencia_do_cliente": "mesa-3232-000030"
+     },
+     {
+      "instrumento": "GBPUSD",
+      "motivo": "desfecho_ilegivel",
+      "instante_ms": 1790628006000,
+      "referencia_do_cliente": "mesa-3232-000031"
+     }
+    ],
+    "pedidos": []
+   }
+  }
+  ficheiro legivel: sessao, inibicao_cb, desconhecido, pedidos
+
+passo 3 - um terceiro processo, com reset:
+  {
+   "processo": "reset",
+   "depois": {
+    "sessao": {
+     "instante_ms": 1790628000000,
+     "equity_de_partida": "1000.00",
+     "autor": "dono",
+     "motivo": "nova_sessao_do_dono",
+     "configuracao_em_vigor": {
+      "ficha": "3232",
+      "versao_do_setup": "1.0.0",
+      "versao_do_mandato": "1.0.0"
+     }
+    },
+    "inibicao_cb": {
+     "motivo": "perda_medida_acima_do_teto",
+     "instante_ms": 1790628001000,
+     "perda_medida": "5.20"
+    },
+    "desconhecido": [
+     {
+      "instrumento": "EURUSD",
+      "motivo": "sem_confirmacao_dentro_do_prazo",
+      "instante_ms": 1790628005001,
+      "referencia_do_cliente": "mesa-3232-000030"
+     },
+     {
+      "instrumento": "GBPUSD",
+      "motivo": "desfecho_ilegivel",
+      "instante_ms": 1790628006000,
+      "referencia_do_cliente": "mesa-3232-000031"
+     }
+    ],
+    "pedidos": []
+   }
+  }
+  ficheiro legivel: sessao, inibicao_cb, desconhecido, pedidos
+
+passo 4 - o ficheiro lido por python (sem o nosso codigo):
+{
+ "familias": [
+  "desconhecido",
+  "inibicao_cb",
+  "pedidos",
+  "sessao"
+ ],
+ "tem_sessao": true,
+ "sessao_equity_de_partida": "1000.00",
+ "tem_inibicao_cb": true,
+ "inibicao_perda_medida": "5.20",
+ "desconhecidos": [
+  "EURUSD",
+  "GBPUSD"
+ ],
+ "desconhecido_motivos": [
+  "desfecho_ilegivel",
+  "sem_confirmacao_dentro_do_prazo"
+ ],
+ "referencias": [
+  "mesa-3232-000030",
+  "mesa-3232-000031"
+ ],
+ "campos_de_posicao_no_ficheiro": []
+}
+ok    a marca de sessao sobreviveu
+ok    a inibicao do CB sobreviveu (e o reset nao a levantou)
+ok    os dois desconhecidos sobreviveram: ['EURUSD', 'GBPUSD']
+ok    os motivos sobreviveram: ['desfecho_ilegivel', 'sem_confirmacao_dentro_do_prazo']
+ok    as referencias do cliente sobreviveram
+ok    nenhum campo de posicao no ficheiro de marcas (R2/FR-022)
+
+SC-010: 0 marcas perdidas · o reset nao tocou em nada
+resumo: 3 processos + 1 leitura externa · 0 falhas
+exit=0

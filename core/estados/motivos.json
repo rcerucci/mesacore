@@ -111,6 +111,56 @@
       "quando": "ha posicao no venue cuja marca de posse nao e nossa",
       "regra": "FR-021, RN-T16.1",
       "porque": "Relata-se e NAO se gere. Cancelar o que nao se reconhece como seu sem decisao do dono seria a mesa a mexer no que nao e dela."
+    },
+    "desfecho_aguardado_dentro_do_prazo": {
+      "quando": "a boleta saiu e o prazo de resposta ainda corre",
+      "regra": "FR-027, RN-S8",
+      "porque": "Ainda e tempo de resposta, e nao um silencio. Nao existe classificacao para isto: existe a AUSENCIA de classificacao, e a mesa nao inventa uma."
+    },
+    "sem_confirmacao_dentro_do_prazo": {
+      "quando": "a boleta saiu e o venue ficou em silencio alem do prazo",
+      "regra": "FR-027, RN-T7.1",
+      "porque": "E o furo mais perigoso: a ordem pode ter entrado. Promover a aceite manda uma segunda ordem; rebaixar a recusado deixa a posicao orfa. Fica desconhecido."
+    },
+    "desfecho_ilegivel": {
+      "quando": "a confirmacao chegou e o contrato recusou",
+      "regra": "FR-027, D5",
+      "porque": "Uma confirmacao ilegivel NAO e uma confirmacao. Falha-se para o lado de 'nao sei', que e o unico lado seguro."
+    },
+    "desfecho_recusado_pelo_venue": {
+      "quando": "o venue recusou a ordem",
+      "regra": "FR-024",
+      "porque": "Nao ha posicao. O motivo do venue fica ao lado, para o dono poder ler por que."
+    },
+    "reconciliacao_decidiu_preenchida": {
+      "quando": "a reconciliacao provou que a ordem existe",
+      "regra": "FR-029",
+      "porque": "A posse passa a ser um facto lido da corretora, e o bloqueio sai."
+    },
+    "reconciliacao_decidiu_inexistente": {
+      "quando": "a reconciliacao provou que a ordem nao existe",
+      "regra": "FR-029",
+      "porque": "Nao ha posicao, e o bloqueio sai."
+    },
+    "reconciliacao_indecidivel": {
+      "quando": "a reconciliacao nao conseguiu decidir",
+      "regra": "FR-030",
+      "porque": "Nao decidir nao e decidir que nao entrou. A marca fica e o motivo alarma."
+    },
+    "reconciliacao_sem_marca": {
+      "quando": "reconciliou-se um instrumento que nao estava em duvida",
+      "regra": "FR-029",
+      "porque": "Uma reconciliacao do que nao estava em duvida nao muda nada."
+    },
+    "abrir_bloqueado_por_desconhecido": {
+      "quando": "chegou uma proposta de abertura com a marca desconhecido presente",
+      "regra": "FR-028, RN-T7.1",
+      "porque": "Bloqueia aquele instrumento e mais nenhum. O bloqueio NAO re-alarma: a marca ja avisou quando nasceu, e um aviso repetido a cada ciclo deixa de ser um aviso."
+    },
+    "reset_nao_toca_em_nada": {
+      "quando": "chega um reset",
+      "regra": "FR-005",
+      "porque": "O reset reinicia sem mexer em nada - nem nas marcas. E um efeito, e nao uma ausencia: registra-lo e o que distingue um reset de um esquecimento."
     }
   },
   "ordem_de_leitura": [

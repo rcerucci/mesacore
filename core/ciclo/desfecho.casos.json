@@ -1,0 +1,163 @@
+{
+  "nota": "A bateria do desfecho: o que se sabe depois de a boleta sair. O caso que interessa mais e o 2 - silencio alem do prazo NAO e aceite nem recusado, e sim desconhecido. E o 8 prova que o aviso vem da lista do dono: a mesma classificacao, com outra lista, nao avisa.",
+  "fonte": "core/ciclo/desfecho.ts + contracts/desfecho.schema.json",
+  "padrao": {
+    "envio": {
+      "instrumento": "EURUSD",
+      "referencia_do_cliente": "mesa-3232-000030",
+      "enviado_em_ms": 1790628000000,
+      "prazo_de_resposta_ms": 5000
+    },
+    "config": {
+      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"]
+    }
+  },
+  "resolucao_valida": {
+    "quantidade": "1000",
+    "nocional": "10000.00",
+    "margem_empenhada": "100.00",
+    "alavancagem_efectiva": "100.00",
+    "preco_de_liquidacao": "1.08500"
+  },
+  "casos": [
+    {
+      "nome": "no-instante-do-prazo-ainda-e-tempo-de-resposta",
+      "agora_ms": 1790628005000,
+      "chegada": null,
+      "classificacao_esperada": null,
+      "motivo_esperado": "desfecho_aguardado_dentro_do_prazo",
+      "estado_da_posicao_esperado": "abrindo",
+      "marca_esperada": false,
+      "avisa_esperado": false,
+      "nota": "Fronteira: o instante do prazo ainda e tempo de resposta. Igual nao e 'alem' - a mesma regra do dado velho."
+    },
+    {
+      "nome": "um-milissegundo-alem-do-prazo-ja-e-desconhecido",
+      "agora_ms": 1790628005001,
+      "chegada": null,
+      "classificacao_esperada": "desconhecido",
+      "motivo_esperado": "sem_confirmacao_dentro_do_prazo",
+      "estado_da_posicao_esperado": "abrindo",
+      "marca_esperada": true,
+      "avisa_esperado": true,
+      "nota": "SC-004: nunca aceite, nunca recusado. A ordem pode ter entrado."
+    },
+    {
+      "nome": "aceite-traz-a-posicao",
+      "agora_ms": 1790628001000,
+      "chegada": {
+        "desfecho": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "1000",
+            "nocional": "10000.00",
+            "margem_empenhada": "100.00",
+            "alavancagem_efectiva": "100.00",
+            "preco_de_liquidacao": "1.08500"
+          },
+          "resposta_do_venue": { "estado": "FILLED", "id_da_ordem": "V-9917" }
+        }
+      },
+      "classificacao_esperada": "aceite",
+      "motivo_esperado": null,
+      "estado_da_posicao_esperado": "aberta",
+      "marca_esperada": false,
+      "avisa_esperado": false,
+      "nota": "Aceitar nao avisa: e o desfecho que se pediu. Alarmar o que corre bem ensina o dono a ignorar avisos."
+    },
+    {
+      "nome": "parcial-tambem-e-posicao (nao e desconhecido)",
+      "agora_ms": 1790628001000,
+      "chegada": {
+        "desfecho": {
+          "classificacao": "parcial",
+          "resolucao": {
+            "quantidade": "600",
+            "nocional": "6000.00",
+            "margem_empenhada": "60.00",
+            "alavancagem_efectiva": "100.00",
+            "preco_de_liquidacao": "1.08500"
+          },
+          "resposta_do_venue": { "estado": "PARTIAL", "id_da_ordem": "V-9918" }
+        }
+      },
+      "classificacao_esperada": "parcial",
+      "motivo_esperado": null,
+      "estado_da_posicao_esperado": "aberta",
+      "marca_esperada": false,
+      "avisa_esperado": false,
+      "nota": "Sabe-se exactamente o que ficou - e o resto segue a politica declarada na boleta. Nao ha duvida a marcar."
+    },
+    {
+      "nome": "recusa-devolve-a-nenhuma-com-o-motivo-do-venue",
+      "agora_ms": 1790628001000,
+      "chegada": {
+        "desfecho": {
+          "classificacao": "recusado",
+          "motivo": "prazo_excedido",
+          "resposta_do_venue": { "estado": "REJECTED", "id_da_ordem": "V-9919" }
+        }
+      },
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "desfecho_recusado_pelo_venue",
+      "motivo_do_contrato_esperado": "prazo_excedido",
+      "estado_da_posicao_esperado": "nenhuma",
+      "marca_esperada": false,
+      "avisa_esperado": true,
+      "nota": "FR-024: nao ha posicao, e o motivo do venue fica ao lado do motivo da mesa."
+    },
+    {
+      "nome": "confirmacao-ilegivel-nao-e-confirmacao (falha para o lado de nao sei)",
+      "agora_ms": 1790628001000,
+      "chegada": {
+        "desfecho": {
+          "classificacao": "aceite",
+          "resposta_do_venue": { "estado": "FILLED" }
+        }
+      },
+      "classificacao_esperada": "desconhecido",
+      "motivo_esperado": "desfecho_ilegivel",
+      "motivo_do_contrato_esperado": "campo_obrigatorio_ausente",
+      "estado_da_posicao_esperado": "abrindo",
+      "marca_esperada": true,
+      "avisa_esperado": true,
+      "nota": "D5: o contrato e fechado e exige a resolucao fora da recusa. Uma confirmacao que nao passa o contrato nao e uma confirmacao."
+    },
+    {
+      "nome": "desfecho-com-um-quinto-valor-e-ilegivel",
+      "agora_ms": 1790628001000,
+      "chegada": {
+        "desfecho": {
+          "classificacao": "provavelmente_entrou",
+          "resolucao": {
+            "quantidade": "1000",
+            "nocional": "10000.00",
+            "margem_empenhada": "100.00",
+            "alavancagem_efectiva": "100.00",
+            "preco_de_liquidacao": "1.08500"
+          },
+          "resposta_do_venue": { "estado": "?" }
+        }
+      },
+      "classificacao_esperada": "desconhecido",
+      "motivo_esperado": "desfecho_ilegivel",
+      "motivo_do_contrato_esperado": "valor_fora_do_conjunto",
+      "estado_da_posicao_esperado": "abrindo",
+      "marca_esperada": true,
+      "avisa_esperado": true,
+      "nota": "Quatro classificacoes existem (RN-C2). Um quinto valor nao vira um quinto estado."
+    },
+    {
+      "nome": "a-lista-do-dono-manda-no-aviso (o desfecho e o mesmo, o dono e outro)",
+      "agora_ms": 1790628005001,
+      "chegada": null,
+      "config": { "eventos_que_avisam": ["recusa"] },
+      "classificacao_esperada": "desconhecido",
+      "motivo_esperado": "sem_confirmacao_dentro_do_prazo",
+      "estado_da_posicao_esperado": "abrindo",
+      "marca_esperada": true,
+      "avisa_esperado": false,
+      "nota": "FR-042/SC-012: a classificacao nao muda por causa da lista - a marca fica gravada de qualquer maneira. O que a lista decide e so se o dono e avisado."
+    }
+  ]
+}

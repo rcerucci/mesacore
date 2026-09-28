@@ -202,4 +202,5 @@ nova deste recorte vive aqui.
 - [x] Fase 2 — `tasks.md` (63 tarefas, mapa de cobertura 44 FR / 12 SC fechado)
 - [x] Implementação — fundacional + **US1 (MVP)**: 19 de 63 tarefas, tudo medido em `relatorios/`
 - [x] Implementação — **US2** (as condições e o ciclo): 29 de 63 tarefas · 12 casos de condição + 20 de ciclo · SC-002 e SC-003 medidos
-- [ ] Implementação — **US3** (o desconhecido fica desconhecido): fecha as três P1 e o SC-007 do recorte 001
+- [x] Implementação — **US3** (o desconhecido fica desconhecido): 36 de 63 tarefas · SC-004, SC-005 e SC-010 medidos — **as três P1 estão fechadas**
+- [ ] Implementação — US4 (arranque por seis portas), US5 (sessão e CB), US6/US7 (pausada e pedido ignorado), polish

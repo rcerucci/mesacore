@@ -59,6 +59,12 @@ export interface Decisao {
   invalidos_seguidos: number;
   /** O motivo do CONTRATO, quando a proposta foi recusada por ele (explica a invalidade). */
   motivo_do_contrato: string | null;
+  /**
+   * A marca `desconhecido` que travou esta decisao, com o motivo e o instante DELA. A mesa repete a
+   * marca em vez de repetir o alarme: um instrumento preso 200 ciclos com a mesma causa alarmaria 200
+   * vezes, e um alarme que se repete deixa de ser um alarme.
+   */
+  desconhecido: { motivo: string; instante_ms: number } | null;
 }
 
 let layoutDaMarca: { bits_ciclo: number; ficha_minima: number; ficha_maxima: number; ciclo_maximo: number } | null =

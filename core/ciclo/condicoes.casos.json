@@ -1,6 +1,7 @@
 {
   "nota": "A bateria das condicoes: o que se LEU -> em que condicao o instrumento fica -> o que se pode fazer. Os casos de fronteira interessam tanto como os claros: a idade IGUAL ao limite nao e velha, o dado velho nao impede fechar, e duas condicoes ao mesmo tempo tem de somar os dois impedimentos.",
-  "fonte": "core/ciclo/condicoes.json",
+  "fonte": "core/ciclo/condicoes.json + core/config/configuracao.ts",
+  "config_da_bateria": { "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"] },
   "casos": [
     {
       "nome": "leitura-fresca-e-mercado-aberto-e-normal",
@@ -150,6 +151,19 @@
       "fecha_esperado": true,
       "alarma_esperado": false,
       "historico": "o contraste do caso anterior: a MESMA leitura, com a marca que e nossa, nao alarma nada (RN-T16.1)"
+    },
+    {
+      "nome": "a-lista-do-dono-decide-se-o-aviso-sai (o mesmo dado, outro dono)",
+      "leitura": { "idade_do_dado_ms": 100, "estado_do_mercado": "aberto" },
+      "falhas": { "leitura": true },
+      "limite_de_idade_ms": 5000,
+      "config": { "eventos_que_avisam": ["recusa"] },
+      "condicao_esperada": "sem_leitura",
+      "impedimentos_esperados": ["sem_leitura"],
+      "abre_esperado": false,
+      "fecha_esperado": false,
+      "alarma_esperado": false,
+      "historico": "FR-042/SC-012: o dado e o mesmo da primeira; o que muda e a lista do dono. Se este caso nao pudesse dar alarma=false, o aviso estaria no codigo e nao na config."
     }
   ]
 }

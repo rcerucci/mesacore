@@ -9,6 +9,7 @@
 //
 // A mesa NAO envia nada (R5): devolve a decisao. Quem envia e o processo que liga o core ao conector.
 
+import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
 import { situacaoDoInstrumento, type Falhas, type NomeDeCondicao } from "./condicoes.ts";
 import { montarBoleta, type Decisao, type Mandato, type Template } from "./decisao.ts";
 
@@ -26,6 +27,17 @@ export interface EntradaDoInstrumento {
   template: Template;
   /** As marcas de posse que a mesa sabe compor: e por elas que a posse se reconhece. */
   marcas_nossas_conhecidas: number[];
+  /** A configuracao do dono. Entra por causa de uma chave so: quem avisa (FR-042). */
+  config: ConfiguracaoDaConta;
+  /**
+   * A marca `desconhecido` deste instrumento, quando existe.
+   *
+   * Nao e uma condicao, e e de proposito: as condicoes descrevem o que se LEU (o look, o setup, o
+   * mercado); o desconhecido e uma divida da mesa consigo propria, que so uma reconciliacao paga.
+   * Juntar as duas coisas faria `condicao` depender das marcas - e uma mesa reiniciada sem o ficheiro
+   * de marcas passaria a ver o mundo de outra maneira.
+   */
+  desconhecido?: { motivo: string; instante_ms: number } | null;
   /** O setup propos algo que o contrato recusa (nao e o mesmo que nada propor). */
   proposta_invalida?: boolean;
   /** O motivo do contrato para essa recusa - vai para o registo. */
@@ -49,6 +61,7 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     entrada.limite_de_idade_ms,
     entrada.falhas ?? {},
     (entrada.divergente ?? false) || alheia,
+    entrada.config,
   );
 
   const base = {
@@ -57,6 +70,7 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     impedimentos: situacao.impedimentos,
     invalidos_seguidos: 0,
     motivo_do_contrato: null as string | null,
+    desconhecido: entrada.desconhecido ?? null,
   };
 
   // 1. Posicao alheia: relata-se e NAO se gere (FR-021). Nada mais neste instrumento acontece.
@@ -123,7 +137,17 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     reduce_only = false;
   }
 
-  // 4. As travas, por ordem: primeiro se PODE, depois se CABE.
+  // 4. As travas, por ordem: primeiro o que a mesa DEVE, depois se PODE, depois se CABE.
+  if (acao === "abrir" && entrada.desconhecido != null) {
+    return {
+      ...base,
+      acao: "nada",
+      motivo: "abrir_bloqueado_por_desconhecido",
+      avisa: false,
+      boleta: null,
+    };
+  }
+
   if (acao === "abrir" && !situacao.abre) {
     return {
       ...base,

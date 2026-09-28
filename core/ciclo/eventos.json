@@ -1,0 +1,43 @@
+{
+  "nota": "O CONJUNTO FECHADO dos eventos que podem avisar. DADO, e a razao e a FR-042: a LISTA dos que avisam e do dono (conta.eventos_que_avisam[], em /config), mas os NOMES tem de ser um conjunto fechado - sem isto, um erro de escrita na config ('congelado' em vez de 'congelamento') desligaria um alarme em silencio, e ninguem daria por isso. Um nome fora deste conjunto faz GRITAR, em vez de nao avisar.",
+  "regra": "FR-042, RN-E15",
+  "porque": "O dono escolhe QUAIS eventos avisam; nao escolhe como se chamam. Escolher os dois seria aceitar que um engano de escrita desligue um alarme.",
+  "eventos": {
+    "cb": {
+      "regra": "FR-036, RN-M3.1",
+      "porque": "O circuit breaker da corrida disparou. O dono tem de saber pela mesma via por que soube que a mesa arrancou."
+    },
+    "encerramento": {
+      "regra": "FR-013",
+      "porque": "A mesa esta a encerrar, e o encerramento pode liquidar posicao."
+    },
+    "desconhecido": {
+      "regra": "FR-027, RN-T7.1",
+      "porque": "Uma ordem cujo desfecho nao se sabe e a unica coisa que justifica acordar o dono a qualquer hora: ha dinheiro em risco e a mesa NAO vai adivinhar."
+    },
+    "recusa": {
+      "regra": "FR-024, FR-026",
+      "porque": "A corretora recusou. Uma recusa de fecho e caso grave (FR-026) e o dono tem de a ver."
+    },
+    "divergencia": {
+      "regra": "FR-017, FR-021",
+      "porque": "O que a mesa espera nao bate com o que a corretora reporta - incluindo uma posicao que nao e nossa."
+    },
+    "falha_de_leitura": {
+      "regra": "FR-016",
+      "porque": "Nao se sabe o que existe. A mesa nao fecha as cegas, e o dono tem de saber que ficou sem vista."
+    },
+    "contenda": {
+      "regra": "RN-M4.7",
+      "porque": "As fichas somadas nao cabem no teto da conta: alguem vai ficar de fora, e essa decisao e do dono."
+    },
+    "congelamento": {
+      "regra": "FR-018, RN-S8",
+      "porque": "O setup calou-se. Sem ele nao ha estrategia - e uma mesa sem estrategia a operar e o que se quer evitar."
+    },
+    "dado_velho": {
+      "regra": "FR-020, RN-D3",
+      "porque": "Leu-se, mas o dado envelheceu. Nao consta da lista de exemplo da FR-042 e por isso NAO avisa por omissao - mas o nome existe para o dono o poder pedir sem inventar vocabulario."
+    }
+  }
+}

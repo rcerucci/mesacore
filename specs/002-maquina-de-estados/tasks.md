@@ -13,7 +13,7 @@ Caminhos concretos em todas as tarefas.
 
 ## Estado da execução (medido em 28 set 2026)
 
-Fases 1 e 2 fechadas, **US1 (MVP)** e **US2** com as baterias a correr. Comandos e números reais em
+Fases 1 e 2 fechadas, **US1**, **US2** e **US3** com as baterias a correr. As tres P1 estao fechadas. Comandos e números reais em
 `relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
 
 | O que | Comando | Medido |
@@ -49,6 +49,37 @@ recusou:
 Duas decisões novas nasceram daí (**R9** e **R10** em `research.md`). A R10 é a que mais vale: com uma
 condição única por instrumento, `congelada` + `divergente` perdiam a restrição que impede **fechar**
 sobre um número que se sabe errado.
+
+### US3 — o desfecho desconhecido fica desconhecido (T030–T036)
+
+| O que | Comando | Medido |
+|---|---|---|
+| Desfecho: silêncio, aceite, parcial, recusa, confirmação ilegível | `bun run core/ciclo/provar.ts` | **8 casos · 0 divergentes** |
+| Reconciliação: as duas saídas que decidem, a que não decide e o reset | idem | **6 casos · 0 divergentes** |
+| **SC-004** | idem | **0 de 3** silêncios e **0 de 2** confirmações ilegíveis viraram `aceite`/`recusado` |
+| **SC-005** | idem | **0 de 1** tentativas de abrir com a marca passaram (e há o par de controle: a mesma proposta sem a marca abre) |
+| **SC-010** | `bash tools/verificar-maquina/reiniciar.sh` | **3 processos + 1 leitura externa em python · 0 marcas perdidas** · o `reset` não tocou em nada |
+| A bateria toda | `bun run core/ciclo/provar.ts` | **62 verificações · 0 divergentes** |
+
+Duas coisas mudaram de sítio ao executar, e as duas por a medição derrubar o texto:
+
+1. **a lista dos avisos é do dono (R11)**. O `condicoes.json` tinha uma coluna `alarma` booleana — a mesa
+   a decidir o que avisa, contra a FR-042. Passou a `evento` (o NOME), e quem decide se avisa é
+   `conta.eventos_que_avisam[]`. Sem lista declarada ou com um nome inventado, **grita** em vez de não
+   avisar. A bateria ficou com o mesmo dado em duas listas diferentes para o provar.
+2. **o desconhecido não é uma condição (R12)**. É uma dívida da mesa consigo própria, e não passa com uma
+   leitura nova: só uma reconciliação que decida a paga. A marca bloqueia ordem nova **naquele
+   instrumento** e mais nada — defender continua permitido.
+
+A prova do reinício (SC-010) foi feita com **três processos separados** e uma leitura final em python, que
+não sabe nada do nosso código: se a marca sobrevivesse apenas por a variável continuar viva na memória, a
+prova não provaria nada. E o `reset` é aplicado no meio, de propósito: é o caso que a spec pede
+explicitamente (FR-029) e a porta por onde uma posição órfã entraria sem ninguém dar por ela.
+
+**Uma dívida que fica registada**: um motivo inventado no runner (`reset_nao_toca_em_nada`) foi apanhado
+porque não existia no livro. Passou a existir (FR-005) **e** a bateria ganhou a conferência cruzada dos
+dois vocabulários — todos os motivos da mesa contra `motivos.json`, todos os motivos do contrato contra
+`vocabulario.json`.
 
 Três tarefas mudaram de forma ao serem executadas, e ficam registadas para não parecer que foram
 feitas como escritas:
@@ -145,13 +176,13 @@ feitas como escritas:
 
 **Independent Test**: `bun run core/ciclo/ciclo.ts --casos core/ciclo/ciclo.casos.json --historia US3` → a marca aparece em 100% dos casos de silêncio e nenhum vira `aceite`/`recusado` (SC-004); com a marca, zero decisões de `abrir` (SC-005); `bash tools/verificar-maquina/reiniciar.sh` → 0 marcas perdidas (SC-010).
 
-- [ ] T030 [P] [US3] Estender `core/ciclo/ciclo.casos.json` (parte US3): silêncio além do prazo, proposta com a marca presente, as três reconciliações (preenchida, inexistente, indecidível) e o `reset` no meio
-- [ ] T031 [US3] Implementar a escrita da marca `desconhecido` em `core/estado/marcas.ts` (instrumento, motivo, instante, `referencia_do_cliente`) quando o desfecho é `desconhecido`
-- [ ] T032 [US3] Implementar o bloqueio: com a marca, `abrir` é recusado com motivo do vocabulário (`core/ciclo/ciclo.ts`)
-- [ ] T033 [US3] Implementar as saídas por reconciliação em `core/ciclo/reconciliacao.ts`: decide preenchida → `aberta`; decide inexistente → `nenhuma`; não decide → a marca permanece e o motivo alarma
-- [ ] T034 [US3] Implementar e testar que o `reset` **não** remove a marca (caso explícito da bateria, FR-029)
-- [ ] T035 [P] [US3] Escrever `tools/verificar-maquina/reiniciar.sh`: marcar, reiniciar o processo (as marcas voltam do ficheiro), reencontrar — e falhar se alguma marca se perder
-- [ ] T036 [US3] Correr a bateria de US3 e guardar `specs/002-maquina-de-estados/relatorios/us3.jsonl`
+- [x] T030 [P] [US3] Estender `core/ciclo/ciclo.casos.json` (parte US3): silêncio além do prazo, proposta com a marca presente, as três reconciliações (preenchida, inexistente, indecidível) e o `reset` no meio
+- [x] T031 [US3] Implementar a escrita da marca `desconhecido` em `core/estado/marcas.ts` (instrumento, motivo, instante, `referencia_do_cliente`) quando o desfecho é `desconhecido`
+- [x] T032 [US3] Implementar o bloqueio: com a marca, `abrir` é recusado com motivo do vocabulário (`core/ciclo/ciclo.ts`)
+- [x] T033 [US3] Implementar as saídas por reconciliação em `core/ciclo/reconciliacao.ts`: decide preenchida → `aberta`; decide inexistente → `nenhuma`; não decide → a marca permanece e o motivo alarma
+- [x] T034 [US3] Implementar e testar que o `reset` **não** remove a marca (caso explícito da bateria, FR-029)
+- [x] T035 [P] [US3] Escrever `tools/verificar-maquina/reiniciar.sh`: marcar, reiniciar o processo (as marcas voltam do ficheiro), reencontrar — e falhar se alguma marca se perder
+- [x] T036 [US3] Correr a bateria de US3 e guardar `specs/002-maquina-de-estados/relatorios/us3.jsonl`
 
 **Checkpoint**: nenhum desconhecido vira sucesso nem falha, e a mesa sobrevive a reiniciar sem perder o que sabia.
 

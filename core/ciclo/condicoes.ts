@@ -10,6 +10,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { deveAvisar, eventoConhecido, type ConfiguracaoDaConta } from "../config/configuracao.ts";
 
 export type NomeDeCondicao =
   | "normal"
@@ -23,7 +24,15 @@ export interface EfeitoDaCondicao {
   impede_abrir: boolean;
   impede_fechar: boolean;
   impede_cancelar: boolean;
-  alarma: boolean;
+  /**
+   * O NOME do evento que esta condicao levanta - nao um booleano.
+   *
+   * A diferenca vale a pena: com um booleano aqui, a mesa decidia sozinha o que avisa, e a FR-042 diz
+   * que a lista e do dono (`conta.eventos_que_avisam[]`). Guardando o NOME, quem decide se avisa e a
+   * config, e este ficheiro so diz de que evento se trata. Nome inexistente no conjunto fechado
+   * (`eventos.json`) faz GRITAR - um erro de escrita nao desliga um alarme em silencio.
+   */
+  evento: string | null;
   regra: string;
   porque: string;
   chave?: string;
@@ -61,7 +70,10 @@ export interface Situacao {
   abre: boolean;
   fecha: boolean;
   cancela: boolean;
+  /** Calculado da config do dono (FR-042) - nunca escrito aqui. */
   alarma: boolean;
+  /** Os eventos levantados pelas condicoes activas (nome + se o dono pediu para avisar). */
+  eventos: { nome: string; avisa: boolean }[];
   porque: string;
 }
 
@@ -70,6 +82,7 @@ export function situacaoDoInstrumento(
   limiteDeIdadeMs: number | null,
   falhas: Falhas = {},
   divergente = false,
+  config: ConfiguracaoDaConta,
 ): Situacao {
   const livro = livroDeCondicoes();
   const activas = new Set<NomeDeCondicao>(["normal"]);
@@ -88,7 +101,14 @@ export function situacaoDoInstrumento(
   const impedimentos = ordem.filter((c) => c !== "normal");
 
   const impede = (efeito: keyof EfeitoDaCondicao) =>
-    impedimentos.some((c) => livro.condicoes[c][efeito] === true);
+    impedimentos.some((c) => (livro.condicoes[c] as any)[efeito] === true);
+
+  // O aviso NAO se decide aqui: aqui sabe-se apenas de QUE evento se trata. Quem decide se ele avisa
+  // e a lista do dono (FR-042) - e e por isso que a config entra nesta funcao.
+  const eventos = impedimentos
+    .map((c) => livro.condicoes[c].evento)
+    .filter((e): e is string => e !== null);
+  const alarma = eventos.some((e) => deveAvisar(config, e));
 
   const condicao: NomeDeCondicao = impedimentos[0] ?? "normal";
   const efeitoDaCabeca = livro.condicoes[condicao];
@@ -99,7 +119,8 @@ export function situacaoDoInstrumento(
     abre: !impede("impede_abrir"),
     fecha: !impede("impede_fechar"),
     cancela: !impede("impede_cancelar"),
-    alarma: impede("alarma"),
+    alarma,
+    eventos: eventos.map((nome) => ({ nome, avisa: deveAvisar(config, nome) })),
     porque:
       impedimentos.length === 0
         ? efeitoDaCabeca.porque
@@ -136,7 +157,7 @@ export const CONDICOES_DO_DATA_MODEL = [
 export function conferirLivro(livro: LivroDeCondicoes = livroDeCondicoes()): string[] {
   const falhas: string[] = [];
   const declaradas = Object.keys(livro.condicoes);
-  const efeitos = ["impede_abrir", "impede_fechar", "impede_cancelar", "alarma"] as const;
+  const efeitos = ["impede_abrir", "impede_fechar", "impede_cancelar"] as const;
 
   for (const nome of CONDICOES_DO_DATA_MODEL) {
     if (!declaradas.includes(nome)) {
@@ -157,6 +178,11 @@ export function conferirLivro(livro: LivroDeCondicoes = livroDeCondicoes()): str
       if (typeof efeito[campo] !== "string" || efeito[campo].length === 0) {
         falhas.push(`condicao '${nome}': '${campo}' em falta - uma trava sem razao escrita le-se mal`);
       }
+    }
+    if (efeito.evento !== null && !eventoConhecido(efeito.evento)) {
+      falhas.push(
+        `condicao '${nome}': evento '${efeito.evento}' nao consta do conjunto fechado (eventos.json)`,
+      );
     }
   }
 
