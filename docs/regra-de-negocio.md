@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | Documento | Regra de negócio do terminal de execução (a mesa) e dos seus dois plugins |
-| Versão | v2 (rascunho para revisão do dono) |
-| Data | 27 set 2026 |
+| Versão | v3 (revisão de lacunas — §16) |
+| Data | 28 set 2026 |
 | Papel | **Fonte da verdade das regras.** As especificações do Spec Kit derivam daqui, uma por recorte, e cada uma referencia as regras `RN-*` citadas. |
 
 Convenção de leitura: cada regra é uma afirmação **verificável** (dá para escrever um teste que a
@@ -26,7 +26,7 @@ própria (a posição verdadeira é a que a corretora reporta) e **NÃO** é a c
 
 | Anel | Decide | NUNCA faz |
 |---|---|---|
-| **Mandato** (o dono) | instrumentos, conta e corretora, perda máxima, capital base, teto de nocional | não decide estratégia, stop nem limiares de setup |
+| **Mandato** (o dono) | instrumentos, conta e corretora, circuit breaker da conta, margem total máxima, risco máximo por ordem | não decide estratégia, stop nem limiares de setup |
 | **Mesa** (o terminal) | nada de estratégia: normaliza o mercado, preenche a boleta, envia, reconcilia, registra, executa o mandato | não escolhe lado, tamanho nem risco |
 | **Setup** (plugin) | o lado (buy / sell / hold / caixa) **e todo o parâmetro de estratégia, pelo seu template**: stop sim/não, distância, janela, limiares, parcial, aumentos | não vê tamanho, risco, execução nem a corretora |
 | **Boleta** | — | não é decisão de ninguém: é documento |
@@ -135,8 +135,7 @@ transporta. Quem decide é a mesa, dentro do mandato.
   termos que valem em qualquer corretora; quem as converte em quantidade da sua unidade é o conector
   (RN-C9).
 - **RN-M4.4.** A alavancagem pedida NUNCA excede o máximo que o instrumento permite, lido no manifesto
-  (RN-C1) e variável com o valor da posição. O que o mandato protege é a **distância mínima até à
-  liquidação** (o movimento adverso, em %, que a posição tem de suportar).
+  (RN-C1) e variável com o valor da posição.
 - **RN-M4.5.** Antes de enviar, a mesa DEVE ter a **resolução** do conector (RN-C10) e conferir
   exposição, distância de liquidação e margem total contra as bandas. Resolução fora da banda NÃO vira
   ordem: registra-se e alarmiza-se como falha de conformidade.
@@ -347,8 +346,9 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   ser **detectada**, não sofrida.
 - **RN-C8.** Onde o conector tiver verbo para **ajustar a alavancagem** de um instrumento (a HL tem:
   `updateLeverage`, de 1x até ao máximo do activo, em modo cruzado ou isolado), a mesa usa-o para
-  levar a posição à alavancagem pedida, e registra a mudança. Onde o verbo não existir, a mesa
-  **reduz o tamanho** em vez de aceitar menos distância do que o mandato manda.
+  levar a posição à alavancagem pedida, e registra a mudança. Onde o verbo não existir, a mesa ajusta o
+  **tamanho** — nunca aceita uma exposição que a banda não permite, nem uma liquidação mais perto do que
+  o travão opcional autorizar (RN-M4.13).
 - **RN-C9.** O conector **traduz** a boleta — percentagem do saldo, alavancagem e percentagens de
   movimento — em quantidade da sua unidade, atendendo à especificação de ordem da sua corretora. Se o
   mínimo do instrumento exigir mais do que a banda autorizada, **recusa** com motivo. NUNCA arredonda
@@ -440,7 +440,7 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 
 - **RN-V1.** Os verbos são quatro e determinísticos: **start** (põe uma mesa a correr), **stop**
   (termina a mesa), **pause** (a mesa continua viva, para de abrir, continua a reconciliar) e
-  **reset** (repõe um estado nominal declarado).
+  **reset** (reinício sem mexer em nada, RN-V3).
 - **RN-V2.** **Pause não é stop.** Terminar o processo com posição aberta deixaria a posição sem
   governo: em `pause` a mesa mantém-se a reconciliar e apenas NÃO abre — é a mesma inibição do
   RN-M3.1.
@@ -513,7 +513,8 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
    posição, limiares — vivem no **config do setup**, e cada setup publica um **template com um item por
    parâmetro** (RN-S3/S4). O core não as conhece por nome.
 2. Variantes de um setup são **fichas** do mesmo plugin (RN-S5).
-3. Estrutura de diretórios `/core`, `/setups`, `/brokers`, `/web` (mais `/contracts` e `/docs`).
+3. Estrutura de diretórios `/core`, `/setups`, `/brokers`, `/web` (mais `/contracts`, `/config`,
+   `/tools` e `/docs`).
 4. O servidor é puro e **não há agente administrador**: um processo pequeno e determinístico obedece a
    start, stop, pause e reset (RN-V1 a RN-V6). `pause` não é `stop`; `reset` nunca apaga o ledger.
 5. **A tradução é do conector.** A boleta é uma mensagem padrão em percentagem do saldo, alavancagem e
@@ -567,3 +568,76 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 22. A **sessão** é a corrida da mesa desde o arranque (RN-M3) — confirmar que não é o dia.
 23. As **bandas** de cada item limitável: stop, tp, alavancagem, tempo máximo em posição.
 24. Instrumento a instrumento: a **distância mínima de liquidação**, quando um estudo a justificar.
+
+---
+
+## 16. Lacunas encontradas na revisão (28 set 2026)
+
+Revisão da regra inteira, à procura do que falta. Cada linha é uma lacuna com a correcção que proponho;
+as que dependem de decisão do dono estão marcadas `ABERTA`.
+
+**A regra que rege todas as outras (a tua correcção: os números são exemplos, o que importa é a chave)**
+
+- **RN-A1.** **Nenhum número ajustável vive no código.** Todo valor que se ajusta tem **chave declarada**
+  no arquivo certo, com nome, tipo, unidade, valor por omissão e significado. Um número no código é
+  defeito, não atalho. `5%` de circuit breaker, `2%` de risco por ordem, `8 s` de prazo da passiva: são
+  **valores do dono**, não constantes do programa.
+- **RN-A2.** Existe um **inventário de chaves** — gerado dos três schemas e publicado — e a mesa
+  valida-o no arranque: chave em uso que não está no inventário **recusa o arranque**; chave do
+  inventário sem valor usa a omissão declarada (e a origem vai para o registro, RN-M2).
+- **RN-A3.** O inventário é a lista do que uma spec pode tocar: uma spec que precise de um número sem
+  chave inventa a chave primeiro, no schema do dono certo.
+
+**A execução (o que faltava na boleta)**
+
+- **RN-B8.** A boleta DEVE declarar **quanto tempo** espera na passiva e **o que fazer com o que sobra**
+  (resto agressivo dentro do desvio máximo, ou resto cancelado). Hoje a boleta tem a política de parcial
+  e o desvio, mas o prazo e o destino do resto — que é o que o motor de referência faz bem — não têm
+  campo nem chave (violação directa de RN-A1).
+
+**Reconciliação e estados que faltavam**
+
+- **RN-T13.** **Divergência** é estado de primeira classe: quando o que a mesa espera e o que a
+  corretora reporta não coincidem — posição que devia existir e não existe, margem diferente, ordem
+  viva que a mesa não conhece — a mesa **registra, alarmiza e não abre** enquanto não resolver. NUNCA
+  corrige sozinha nem presume quem tem razão: quem tem razão é a corretora (RN-T8).
+- **RN-T14.** No arranque a mesa **lista as ordens vivas na corretora** e reconcilia-as: o stop que
+  ficou lá depois do encerramento gracioso é **adoptado**; o que a mesa não reconhece é **alarmizado**
+  (e cancelado só com decisão declarada). Sem isto, um reinício deixa ordens órfãs a disparar sozinhas.
+- **RN-D7.** **Leitura falhada ≠ dado velho.** Não conseguindo ler a posição, a mesa NÃO abre e NÃO
+  fecha às cegas (fechar sem saber o que existe é adivinhar): alarmiza e espera a leitura voltar.
+- **RN-D8.** **Mercado fechado é estado declarado pelo conector**, não erro de dado. Fechado: não abre,
+  não alarmiza dado velho, continua a reconciliar. Sem isto, todos os fins de semana de FX viram alarme.
+
+**O humano na operação (a tua imagem inicial, que o desenho tinha perdido)** `ABERTA`
+
+- **RN-T15.** A **proposta manual** — o dono como fonte da decisão, a tua imagem original de "o humano
+  preenche a boleta e envia" — entra pelo **mesmo caminho** que a do setup: mandato, bandas, boleta,
+  resolução, ledger. Não há caminho paralelo nem excepção de risco. `ABERTA`: existe, ou o dono opera
+  pela aplicação da corretora e a mesa só reconcilia?
+- **RN-T16.** A mesa **não governa o que não abriu**: posição que apareça sem ter sido a mesa a abri-la
+  é vista, dita e **não gerida** (nem stop, nem fecho). A ficha declara se aquele instrumento **tolera**
+  posição manual; se não tolerar, a mesa fica em pausa nesse instrumento em vez de a gerir.
+
+**Segurança e operação**
+
+- **RN-E14.** **Credenciais NUNCA em `/config`** (que a web edita e que é versionado), NUNCA no ledger,
+  NUNCA no log. O conector lê-as do ambiente ou de um cofre, e o registro diz **qual** credencial foi
+  usada, nunca o seu valor.
+- **RN-M10.** **A config em vigor é a do arranque.** Alteração a quente NÃO tem efeito — a mesa diz que
+  vale no próximo arranque. Sem isto, um risco muda a meio da sessão sem ninguém saber.
+- **RN-E15.** A lista de **eventos que exigem aviso ao dono** é declarada (circuit breaker, encerramento,
+  desfecho desconhecido, recusa, divergência, falha de leitura, contenda). Um alarme escolhido pelo
+  programador é um alarme que falta quando importa.
+
+**Um instrumento, um setup**
+
+- **RN-M11.** Um instrumento tem **uma** ficha por conta. Dois setups no mesmo instrumento só com modelo
+  de posição *hedging* e colisão declarada; em *netting* é fisicamente impossível — um instrumento, uma
+  posição — e duas fichas seriam dois governos sobre a mesma posição, a anularem-se.
+
+**O ledger no tempo**
+
+- **RN-L6.** O ledger **nunca se reescreve**, mas a **retenção é declarada**: o que fica integral (o que
+  se pode reexecutar), por quanto tempo, e o que passa a agregado. Sem regra escrita, um dia alguém
+  apaga "para limpar" e perde-se o arquivo de túmulos.
