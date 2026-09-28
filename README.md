@@ -1,65 +1,109 @@
 # MesaCore
 
-A mesa de operações: um terminal de execução com duas pontas de plugin.
+**Um terminal de execução de ordens.** O lado da operação vem de um *setup*; o tamanho, o risco e o
+limite vêm de um *mandato* e de *fichas* que o dono escreve; a tradução para a linguagem da corretora
+vem de um *conector*. Entre os três, a mesa preenche uma *boleta* e leva-a ao venue, reconcilia,
+registra e trata o desfecho.
 
-- **O que faz:** recebe do *setup* uma proposta de lado (buy, sell, hold, caixa), transforma-a numa
-  *boleta* e leva-a à corretora, sob um *mandato* declarado pelo dono. Reconcilia a posição, registra
-  tudo e trata os desfechos (aceite, parcial, desconhecido, recusado).
-- **O que não faz:** não decide estratégia, não calcula sinal nem indicador, não guarda posição, não é
-  a corretora. A mesa pensa como um operador: tamanho, risco, papel, registro. O lado vem de fora.
+Este repositório **não é o motor que opera** — é o desenho, a regra e (a seguir) as especificações de
+um terminal limpo, com as fronteiras declaradas desde a primeira linha. O valor que se tira deste
+projeto é o **know-how de execução de ponta a ponta**: como uma decisão vira uma ordem que a corretora
+aceita, como se sabe que ela existe, e o que se faz quando não se sabe.
+
+![os cinco anéis, o fluxo e as arestas de falha](docs/diagrama-de-blocos.png)
+
+## A ideia em uma frase
+
+O sistema tem uma parte **burra e determinística** — normalizar mercado, preencher a boleta, enviar,
+reconciliar, registrar — e uma parte **inteligente e humana** — decidir lado, tamanho, risco, stop. A
+inteligência não vive no código: vive em **arquivos de configuração** que o dono edita, e o terminal
+executa o que ali está **à risca**, podendo **sempre dizer não**.
+
+**Nenhum número ajustável está no código.** Um mandato pode querer 2% de risco e um outro 0,5% — os
+dois são o mesmo programa, com chaves diferentes (`RN-A1`). Um inventário de chaves é validado no
+arranque: chave que ninguém lê é lixo, valor lido sem chave é defeito (`RN-A2`).
 
 ## Os cinco anéis
 
 | Anel | Decide | NUNCA faz |
 |---|---|---|
-| Mandato (o dono) | instrumentos, conta, perda máxima, capital, teto de nocional | não decide estratégia nem stop |
-| Mesa (este projeto) | normaliza, preenche a boleta, envia, reconcilia, registra, executa o mandato | não escolhe lado, tamanho nem risco |
-| Setup (plugin) | o lado, **e a estratégia pelo seu template** (stop, janela, limiares) | não vê tamanho, risco, execução nem a corretora |
-| Boleta | — | é documento, não decisão |
-| Conector (plugin) | nada de estratégia: traduz a boleta (percentagem do saldo, alavancagem, % de movimento) em quantidade, preço e pontos da **sua** corretora | não altera lado nem momento; nunca arredonda em silêncio |
+| **Mandato** (o dono, `/config`) | instrumentos, corretora e conta, perda máxima da sessão, margem total máxima, risco máximo por ordem, ordem de atendimento | não decide estratégia, nem lado, nem stop |
+| **Mesa** (o core, em TypeScript) | normaliza, consulta, preenche a boleta, envia, reconcilia, registra | não escolhe lado nem tamanho; não faz aritmética de corretora; não guarda posição |
+| **Setup** (plugin) | o lado (buy · sell · hold · caixa) **e a estratégia pelo seu template** | não vê tamanho, risco, execução nem a corretora |
+| **Boleta** | — | é documento, não actor: não decide, não é campo de origem |
+| **Conector** (plugin) | traduz a boleta nas unidades da **sua** corretora e devolve a **resolução antes de executar** | não altera lado nem momento; nunca adapta nem arredonda em silêncio |
 
-**O core não conhece nenhum parâmetro de estratégia por nome.** Um setup com stop e um setup sem stop
-são o mesmo tipo de plugin: o que a mesa lê é o **template** que cada um publica. É isto que impede o
-core de engessar os setups — e é por isso que as variantes de um setup são apenas **fichas**.
+Duas consequências que explicam quase todo o resto:
+
+- **O core não conhece nenhum parâmetro de estratégia por nome.** Um setup com stop e um setup sem
+  stop são o mesmo tipo de plugin: o que a mesa lê é o **template** que cada um publica. É isto que
+  impede o core de engessar os setups — e é por isso que as variantes de um setup são apenas **fichas**.
+- **Nada em unidade de corretora atravessa a fronteira.** A boleta fala em percentagem do saldo,
+  alavancagem e percentagens de movimento; quantidade, lote e preço absoluto são do conector, que os
+  **declara antes** de executar para que a mesa possa recusar.
+
+## O que a mesa faz quando não é o caminho feliz
+
+Isto é metade do desenho. Validação é **alarme que recusa, nunca autocorreção**: nada se arredonda,
+nada se presume, nada se preenche em silêncio.
+
+- **dado velho** — invalida o ciclo: pode fechar e reduzir, nunca abrir;
+- **sem leitura** — não se abre e não se fecha às cegas: fechar sem saber o que existe é adivinhar;
+- **divergência** — o esperado ≠ o reportado: registra, alarmiza, não presume quem tem razão;
+- **desconhecido** — sem confirmação no prazo, nenhuma ordem nova até reconciliar;
+- **fora da banda** — a resolução que o dono não autorizou não vira ordem: é inconformidade;
+- **setup silencioso** — congela; não se continua com o último valor;
+- **circuit breaker da sessão** — liquida, encerra o processo e fica inibido: não volta sozinho.
 
 ## Estrutura
 
 ```
-/contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho
-/core           a mesa (ciclo, boleta, ledger, mandato, servidor) e o vigia (start/stop/pause/reset/nova_sessao)
+/contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho (schema neutro)
+/core           a mesa (ciclo, boleta, ledger, mandato, servidor) e o vigia
 /setups/<nome>  o plugin, o template de configuração, o schema do seu estado, os testes
 /brokers/<nome> o conector, o manifesto, a bateria de conformidade, as fixtures
 /config         os arquivos do dono: config macro da conta e fichas (risco + setup)
 /tools          os estudos do dono sobre um instrumento, sem operar
 /web            a superfície
-/docs           a regra de negócio e as especificações
+/docs           a regra de negócio, a máquina de estados, o inventário de chaves, o diagrama
 ```
 
-**Dois trilhos, dois donos.** O trilho das **decisões** é o nosso ledger (snapshot, proposta, boleta,
-resolução, desfecho) — é o que permite re-correr o setup e comparar boletas. O trilho do **dinheiro**
-(execuções, taxas, funding, resultado realizado) é o da **corretora**, que já o faz por ofício: a mesa
-lê e mostra, nunca reconstrói.
+**Dois trilhos, dois donos.** O trilho das **decisões** é o nosso ledger — snapshot, proposta, boleta,
+resolução, desfecho: é o que permite re-correr o setup e comparar boletas. O trilho do **dinheiro** —
+execuções, taxas, funding, resultado realizado — é o da **corretora**, que já o faz por ofício: a mesa
+lê e mostra, **nunca reconstrói resultado**.
+
+**Onde está a posição?** Na corretora, não numa base de dados nossa: cada ordem leva uma **marca de
+posse**, e é por ela que a mesa reconhece, ao reiniciar, o que é seu. Posição que a mesa não abriu é
+vista, não gerida.
 
 Regra de dependência: setups e brokers importam `contracts`; `core` importa `contracts`; **ninguém
 importa `core`** (verificado por teste).
 
 ## Estado
 
-- `docs/regra-de-negocio.md` — **v2**, a regra detalhada (fonte da verdade). Regras `RN-M*` (mandato),
-  `RN-S*` (setup), `RN-T*` (mesa), `RN-D*` (dados), `RN-B*` (boleta), `RN-C*` (conector), `RN-L*`
-  (ledger) e `RN-E*` (estrutura e topologia).
-- Especificações: ainda não escritas. Serão feitas com o Spec Kit (`.specify/`), uma por recorte, cada
-  uma referenciando as regras `RN-*`.
+| Documento | O que é |
+|---|---|
+| `docs/regra-de-negocio.md` | **a fonte da verdade** — 136 regras em 10 famílias (`RN-A` chaves, `RN-B` boleta, `RN-C` conector, `RN-D` dados, `RN-E` estrutura, `RN-L` ledger, `RN-M` mandato, `RN-S` setup, `RN-T` mesa, `RN-V` vigia) |
+| `docs/maquina-de-estados.md` | os eixos da mesa, das condições do instrumento e da posição, as marcas persistidas e as portas do arranque |
+| `docs/inventario-de-chaves.md` | cada grandeza ajustável: dono, tipo, omissão e **quem a lê** |
+| `docs/diagrama-de-blocos.html` · `.png` | o desenho dos anéis, do fluxo e das arestas de falha |
+
+Especificações: **ainda não escritas**. Serão feitas com o Spec Kit (`.specify/`), uma por recorte,
+cada uma referenciando as regras `RN-*`.
 
 ## Ordem de trabalho
 
-1. Regra de negócio detalhada (este repositório, `docs/`).
-2. Constituição do projeto (Spec Kit) — deriva da regra.
-3. Especificações por recorte: mandato, contrato de dados, setup, mesa, boleta, conector, ledger.
-4. Implementação.
+1. Regra de negócio detalhada — feita (v3, com a revisão de lacunas).
+2. Máquina de estados, inventário de chaves e diagrama — feitos; são as vistas que revelaram as lacunas
+   que a prosa não revelava.
+3. Constituição do projeto (Spec Kit) — deriva da regra.
+4. Especificações por recorte: contrato, mandato, boleta, mesa, ledger, setup de referência, conector.
+5. Implementação, contra os vectores de aceite do motor antigo.
 
 ## Referência
 
-O motor que roda hoje (`~/Projects/jev-trade-fusao`, repo `hl-jev`) é fonte de **consulta** — não é
-base de código. Serve para os casos que só se sabem por ter corrido contra a corretora de verdade, e
-continua a operar a conta até este terminal passar nos vectores de aceite.
+O motor que roda hoje (`~/Projects/jev-trade-fusao`, repo `hl-jev`) é **fonte de consulta**, citado por
+`arquivo:linha` — não é base de código a copiar. Serve para os casos que só se sabem por ter corrido
+contra a corretora de verdade, e continua a operar a conta até este terminal passar nos vectores de
+aceite. O comportamento dele é o **oráculo de aceite**: medido, não opinado.
