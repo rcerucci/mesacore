@@ -200,4 +200,5 @@ nova deste recorte vive aqui.
 - [x] Fase 0 — decisões (D1…D4) escritas em `research.md`
 - [x] Fase 1 — `data-model.md`, `contracts/interface.md`, `quickstart.md`
 - [x] Fase 2 — `tasks.md` (63 tarefas, mapa de cobertura 44 FR / 12 SC fechado)
-- [ ] Implementação — tabela antes do intérprete, casos antes da tabela
+- [x] Implementação — fundacional + **US1 (MVP)**: 19 de 63 tarefas, tudo medido em `relatorios/`
+- [ ] Implementação — **US2** (as condições e o ciclo) e **US3** (o desconhecido): as três P1 fecham o MVP

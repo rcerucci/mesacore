@@ -6,5 +6,12 @@ __pycache__/
 .geracao-entrada/
 .estado-do-venue.json
 
+# Estado do runtime da mesa: marcas e registo. NAO e codigo, e nao se versiona.
+# As marcas (sessao, inibicao, desconhecido) sobrevivem ao processo mas nao ao repositorio:
+# o que se versiona e a FORMA delas (core/estado/marcas.ts), nunca o conteudo.
+core/estado/.marcas.json
+core/estado/.marcas.json.tmp
+core/estado/.registo.jsonl
+
 # Os lockfiles SÃO versionados: fixam o que correu, e sem eles o "regenera e não dá diff"
 # não prova nada.

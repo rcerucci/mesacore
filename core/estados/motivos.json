@@ -1,0 +1,84 @@
+{
+  "nota": "Conjunto FECHADO dos motivos de recusa da MESA (R7 do specs/002). Nao se confunde com contracts/vocabulario.json: aquele e a lingua que cruza a fronteira entre processos e linguagens (validade de mensagem); este e a resposta a um COMANDO, que e interface interna. Nenhum destes motivos e escrito em codigo: o interprete le-os daqui. No dia em que o vigia for processo separado (RN-E8), estes motivos passam a cruzar a fronteira e terao de entrar no contrato - e uma mensagem nova volta ao recorte 001.",
+  "familia": "recusa_da_mesa",
+  "motivos": {
+    "mesa_ja_em_operacao": {
+      "quando": "start com a mesa ja em em_operacao",
+      "regra": "FR-004, RN-V1",
+      "porque": "Um start repetido nao reinicia contadores nem esquece marcas: seria uma segunda sessao dentro da mesma sessao."
+    },
+    "mesa_parada_nada_a_pausar": {
+      "quando": "pause com a mesa parada",
+      "regra": "US1 cenario 3, RN-V1",
+      "porque": "Um evento que nao muda nada e ruido. Recusar com motivo e mais honesto do que aceitar e nao fazer nada."
+    },
+    "mesa_ja_pausada": {
+      "quando": "pause com a mesa ja pausada",
+      "regra": "FR-010",
+      "porque": "Segunda pausa nao muda nada - e o mesmo motivo do anterior."
+    },
+    "mesa_ja_parada": {
+      "quando": "stop com a mesa ja parada",
+      "regra": "FR-012",
+      "porque": "Nao ha o que encerrar."
+    },
+    "mesa_em_encerramento": {
+      "quando": "pause ou nova_sessao durante o encerramento",
+      "regra": "FR-011, FR-014",
+      "porque": "Durante o encerramento a mesa espera UMA resposta: fechar a mercado ou manter. Um segundo verbo a meio da mesma pergunta nao tem resposta definida."
+    },
+    "pedido_repetido": {
+      "quando": "stop recebido outra vez durante o encerramento",
+      "regra": "FR-014 (edge case)",
+      "porque": "Nao reabre a pergunta nem muda o estado: fica registrado como repeticao, para nao haver duas perguntas sobre a mesma coisa."
+    },
+    "sessao_inibida": {
+      "quando": "start com a marca de inibicao presente",
+      "regra": "FR-037, RN-M3.3",
+      "porque": "Depois do circuit breaker, voltar a operar exige uma decisao humana (nova_sessao). Se o start passasse, a inibicao nao serviria para nada."
+    },
+    "porta_do_arranque_falhou": {
+      "quando": "start com uma das seis portas a falhar",
+      "regra": "FR-031, FR-032",
+      "porque": "Manifesto, mandato, contenda, inventario, versao e sessao: a mesa nao arranca pela metade, e nao corrige nada para conseguir entrar. O motivo especifico da porta vai na resposta."
+    },
+    "liquidacao_em_curso": {
+      "quando": "start durante o encerramento com a liquidacao ja a correr",
+      "regra": "FR-013",
+      "porque": "Uma vez a liquidacao comecada, parar a meio deixa a posicao pior do que estava - nao se interrompe a meio."
+    },
+    "sessao_nova_com_posicao_viva": {
+      "quando": "nova_sessao com posicao que a mesa reconhece como sua",
+      "regra": "FR-034 (edge case)",
+      "porque": "A sessao nova nao serve para limpar posicao. Fechar primeiro, e com decisao do dono."
+    },
+    "mesa_precisa_parar_para_sessao_nova": {
+      "quando": "nova_sessao com a mesa em operacao ou pausada",
+      "regra": "FR-038, FR-039",
+      "porque": "Uma sessao tem UMA configuracao em vigor (RN-M3.4). Trocar de configuracao com a mesa a operar misturaria duas configuracoes no mesmo numero - e o numero deixaria de comparar."
+    },
+    "verbo_desconhecido": {
+      "quando": "comando cujo verbo nao consta do conjunto fechado",
+      "regra": "FR-004, RN-V1",
+      "porque": "Os verbos sao cinco. Um sexto nao entra por omissao nem por extensao."
+    },
+    "comando_com_campo_a_mais": {
+      "quando": "comando que traz um campo que nao e verbo, autor, pedido_id ou motivo (ficha, instrumento, saldo, lado, preco...)",
+      "regra": "contracts/interface.md 1",
+      "porque": "Aceitar um campo a mais seria a porta dos verbos a alargar-se sozinha: no dia seguinte alguem mandaria 'lado' por aqui e a mesa passaria a ser comandada a partir da web em nome de uma estrategia."
+    },
+    "comando_incompleto": {
+      "quando": "comando sem verbo, autor ou pedido_id - ou nova_sessao sem motivo",
+      "regra": "contracts/interface.md 1",
+      "porque": "Um verbo sem autor nao se pode auditar, e um verbo sem pedido_id nao se pode correlacionar com a resposta."
+    },
+    "comando_com_tipo_invalido": {
+      "quando": "campo do comando com o tipo errado",
+      "regra": "FR-004",
+      "porque": "A mesa recusa, nunca converte: um motivo que nao e texto nao vira texto."
+    }
+  },
+  "ordem_de_leitura": [
+    "o motivo mais especifico primeiro: sessao_inibida antes de porta_do_arranque_falhou, liquidacao_em_curso antes de retomar"
+  ]
+}

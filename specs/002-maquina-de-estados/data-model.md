@@ -91,7 +91,9 @@ ficheiro aponta para `unidades`, `quantidade` ou `posicao`. Se aparecer, o porte
 1. todo o estado tem **pelo menos uma saída** (`para` não vazio numa das suas linhas);
 2. todo o verbo aparece **pelo menos uma vez** — um verbo sem casa é ruído;
 3. nenhum estado é **inalcançável** a partir de `parada`;
-4. toda a `recusa` traz motivo, e o motivo consta do `vocabulario.json` do contrato;
+4. toda a `recusa` traz motivo, e o motivo consta do **conjunto próprio da mesa**
+   (`core/estados/motivos.json` — R7: o vocabulário do contrato é da língua que cruza a fronteira, não
+   dos comandos internos);
 5. `reset` **nunca** leva a estado novo nem a `para` diferente do `de`.
 
 ## 6. `Decisao` — [decisão], a saída do ciclo

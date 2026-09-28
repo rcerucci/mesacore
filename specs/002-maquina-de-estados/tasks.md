@@ -11,17 +11,43 @@ primeiro, e a falhar, que apanhou os defeitos que a leitura não apanha).
 **Formato**: `[ID] [P?] [História] Descrição` — `[P]` = ficheiros diferentes, sem dependência.
 Caminhos concretos em todas as tarefas.
 
+## Estado da execução (medido em 28 set 2026)
+
+Fases 1 e 2 fechadas, e **US1 (MVP)** com a bateria a correr. Comandos e números reais em
+`relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
+
+| O que | Comando | Medido |
+|---|---|---|
+| Invariantes da tabela + prova negativa | `bun run tools/verificar-maquina/tabela.ts --prova-negativa` | **0 falhas nos 7 invariantes** · **7 provas negativas, 7 reprovadas** |
+| Bateria dos pares (estado, verbo) | `bun run core/estados/provar.ts` | **29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo** |
+| Prova da mesa (comando → resposta → marcas → registo) | `bun run core/mesa.prova.ts` | **24 verificações · 0 falhas** |
+| Porteiro do estado + prova negativa | `bash tools/verificar-maquina/porteiro-do-estado.sh` | **2 verificações · 0 falhas** · 2 provas negativas reprovadas |
+| A bateria do recorte 001 não regrediu | `bash tools/verificar-contrato/ponta-a-ponta.sh` | **0 falhas** |
+
+Três tarefas mudaram de forma ao serem executadas, e ficam registadas para não parecer que foram
+feitas como escritas:
+
+- **T016** (a resposta do comando) **não ganhou ficheiro próprio**: o tipo `Resposta` e a sua
+  construção vivem em `core/estados/maquina.ts`, que é onde a decisão acontece. Um `resposta.ts`
+  separado só serviria para separar duas coisas que mudam juntas.
+- **T003** cresceu para `core/livro-de-motivos.ts` — porque a implementação mostrou que o
+  vocabulário do contrato **não tem** motivos de recusa da mesa (os 16 são de validade de mensagem).
+  Isso virou a decisão **R7** em `research.md`, e a implementação apanhou ainda um segundo defeito da
+  mesma família: três motivos meus com **nomes iguais** aos do contrato. Nasceu daí o invariante 7.
+- **T011** (`core/leitura/fixtures.ts`) **fica aberta**: a porta de leitura só é usada a partir de
+  US2, e escrever agora uma porta que ninguém chama seria código não exercitado. Ela nasce com US2.
+
 ---
 
 ## Phase 1: Setup (T001–T005)
 
 **Purpose**: o `/core` deixa de ser uma pasta com um README.
 
-- [ ] T001 Criar a árvore do core e das ferramentas: `core/{estados,ciclo,leitura,estado}/` e `tools/verificar-maquina/`
-- [ ] T002 Escrever `core/package.json` (dependência `ajv ^8.20.0`, a mesma do contrato) e `core/tsconfig.json` (com os caminhos para `contracts/gerado/ts`), e correr `bun install` em `core/`
-- [ ] T003 [P] Escrever `core/livro-de-motivos.ts`: carrega `contracts/vocabulario.json` e expõe os conjuntos fechados e os motivos — **nenhum motivo é escrito em código** neste recorte (RN-A1)
-- [ ] T004 [P] Acrescentar `core/estado/.marcas.json` ao `.gitignore` e conferir que o ficheiro de marcas não é versionado (é estado, não código — R2)
-- [ ] T005 [P] Escrever `tools/verificar-maquina/porteiro-do-estado.sh`: falha se `/core` importar `mocks/`, `tools/` ou `specs/`, e falha se o ficheiro de marcas tiver campo de posição (`unidades`, `quantidade`, `posicao`)
+- [x] T001 Criar a árvore do core e das ferramentas: `core/{estados,ciclo,leitura,estado}/` e `tools/verificar-maquina/`
+- [x] T002 Escrever `core/package.json` (dependência `ajv ^8.20.0`, a mesma do contrato) e `core/tsconfig.json` (com os caminhos para `contracts/gerado/ts`), e correr `bun install` em `core/`
+- [x] T003 [P] Escrever `core/livro-de-motivos.ts`: carrega `contracts/vocabulario.json` e expõe os conjuntos fechados e os motivos — **nenhum motivo é escrito em código** neste recorte (RN-A1)
+- [x] T004 [P] Acrescentar `core/estado/.marcas.json` ao `.gitignore` e conferir que o ficheiro de marcas não é versionado (é estado, não código — R2)
+- [x] T005 [P] Escrever `tools/verificar-maquina/porteiro-do-estado.sh`: falha se `/core` importar `mocks/`, `tools/` ou `specs/`, e falha se o ficheiro de marcas tiver campo de posição (`unidades`, `quantidade`, `posicao`)
 
 ---
 
@@ -33,17 +59,17 @@ Caminhos concretos em todas as tarefas.
 
 ### A tabela (dado) e os invariantes
 
-- [ ] T006 [P] Escrever `core/estados/transicoes.json`: as linhas de (estado, verbo) com `para` **ou** `recusa`, `guarda` e `nota` com a regra `RN-*` — os 4 estados × os 5 verbos, incluindo as recusas (`pause` em `parada`, `start` em `em_operacao`, `reset` em cada estado)
-- [ ] T007 [P] Escrever `core/estados/transicoes.casos.json`: a bateria de pares (estado, verbo, contexto) com `resultado_esperado` e `motivo_esperado` — legais e **ilegais de propósito**
-- [ ] T008 Escrever `tools/verificar-maquina/tabela.ts`: os cinco invariantes (todo o estado tem saída; todo o verbo tem casa; nenhum estado inalcançável a partir de `parada`; toda a recusa traz motivo do vocabulário; `reset` nunca leva a estado novo) + **prova negativa** guardada (tira uma saída à tabela, exige o vermelho, repõe)
+- [x] T006 [P] Escrever `core/estados/transicoes.json`: as linhas de (estado, verbo) com `para` **ou** `recusa`, `guarda` e `nota` com a regra `RN-*` — os 4 estados × os 5 verbos, incluindo as recusas (`pause` em `parada`, `start` em `em_operacao`, `reset` em cada estado)
+- [x] T007 [P] Escrever `core/estados/transicoes.casos.json`: a bateria de pares (estado, verbo, contexto) com `resultado_esperado` e `motivo_esperado` — legais e **ilegais de propósito**
+- [x] T008 Escrever `tools/verificar-maquina/tabela.ts`: os cinco invariantes (todo o estado tem saída; todo o verbo tem casa; nenhum estado inalcançável a partir de `parada`; toda a recusa traz motivo do vocabulário; `reset` nunca leva a estado novo) + **prova negativa** guardada (tira uma saída à tabela, exige o vermelho, repõe)
 
 ### O intérprete e as marcas
 
-- [ ] T009 Escrever `core/estados/maquina.ts`: carrega a tabela, procura (estado, verbo) com as guardas, aplica ou recusa com motivo — e **nunca** muda de estado sem linha que o autorize
-- [ ] T010 [P] Escrever `core/estado/marcas.ts`: ler/gravar com escrita atómica (temporário + `rename`), com a forma do `data-model.md` §4 (`sessao`, `inibicao_cb`, `desconhecido[]`) e sem nenhum campo de posição
+- [x] T009 Escrever `core/estados/maquina.ts`: carrega a tabela, procura (estado, verbo) com as guardas, aplica ou recusa com motivo — e **nunca** muda de estado sem linha que o autorize
+- [x] T010 [P] Escrever `core/estado/marcas.ts`: ler/gravar com escrita atómica (temporário + `rename`), com a forma do `data-model.md` §4 (`sessao`, `inibicao_cb`, `desconhecido[]`) e sem nenhum campo de posição
 - [ ] T011 [P] Escrever `core/leitura/fixtures.ts`: a porta de leitura (R4) — lê as mensagens do contrato de ficheiros, **valida-as** contra o contrato antes de as devolver, e devolve `sem_leitura` quando a leitura falha
-- [ ] T012 Escrever `core/estados/provar.ts`: o runner da bateria — uma linha `ok`/`FALHA` por caso, resumo no fim, saída 1 se houver divergência (a mesma gramática do recorte 001)
-- [ ] T013 Correr `bun run core/estados/maquina.ts --casos core/estados/transicoes.casos.json` e `bash tools/verificar-maquina/porteiro-do-estado.sh`; guardar a saída em `specs/002-maquina-de-estados/relatorios/fundacional.txt`
+- [x] T012 Escrever `core/estados/provar.ts`: o runner da bateria — uma linha `ok`/`FALHA` por caso, resumo no fim, saída 1 se houver divergência (a mesma gramática do recorte 001)
+- [x] T013 Correr `bun run core/estados/maquina.ts --casos core/estados/transicoes.casos.json` e `bash tools/verificar-maquina/porteiro-do-estado.sh`; guardar a saída em `specs/002-maquina-de-estados/relatorios/fundacional.txt`
 
 **Checkpoint**: a tabela é conferível, o intérprete obedece-lhe e as marcas persistem. As histórias podem começar.
 
@@ -55,13 +81,13 @@ Caminhos concretos em todas as tarefas.
 
 **Independent Test**: `bun run core/estados/maquina.ts --casos core/estados/transicoes.casos.json` → 100% dos pares legais mudam de estado, 100% dos ilegais recusam **com motivo** e o estado não muda (SC-001).
 
-- [ ] T014 [P] [US1] Estender `core/estados/transicoes.casos.json` com os casos da história: `stop` repetido durante o encerramento, `start` com a mesa em operação, `pause` em `parada`, `reset` nos quatro estados
-- [ ] T015 [US1] Implementar o `nao_tocado[]` do `reset` em `core/estados/maquina.ts`: a resposta lista explicitamente as marcas que **não** foram mexidas (FR-005)
-- [ ] T016 [US1] Implementar a resposta do comando em `core/estados/resposta.ts` conforme `contracts/interface.md` §2: `resultado`, `estado_anterior`, `estado_novo`, `motivo`
-- [ ] T017 [US1] Implementar a guarda `sem_posicao_viva` em `core/estados/maquina.ts`: `stop` leva a `parada` sem posição e a `encerrando` com posição (FR-012)
-- [ ] T018 [US1] Implementar o registo da transição (`{instante, de, verbo, para, autor, motivo}`) em `core/estado/registo.ts`, com instante do relógio do venue (FR-041)
-- [ ] T019 [US1] Implementar a recusa de comando com campo a mais (ficha, instrumento, saldo, lado) em `core/estados/comando.ts` — a porta dos verbos não aceita ordens (`interface.md` §1)
-- [ ] T020 [US1] Correr a bateria de US1 e guardar `specs/002-maquina-de-estados/relatorios/us1.jsonl`
+- [x] T014 [P] [US1] Estender `core/estados/transicoes.casos.json` com os casos da história: `stop` repetido durante o encerramento, `start` com a mesa em operação, `pause` em `parada`, `reset` nos quatro estados
+- [x] T015 [US1] Implementar o `nao_tocado[]` do `reset` em `core/estados/maquina.ts`: a resposta lista explicitamente as marcas que **não** foram mexidas (FR-005)
+- [x] T016 [US1] Implementar a resposta do comando em `core/estados/resposta.ts` conforme `contracts/interface.md` §2: `resultado`, `estado_anterior`, `estado_novo`, `motivo`
+- [x] T017 [US1] Implementar a guarda `sem_posicao_viva` em `core/estados/maquina.ts`: `stop` leva a `parada` sem posição e a `encerrando` com posição (FR-012)
+- [x] T018 [US1] Implementar o registo da transição (`{instante, de, verbo, para, autor, motivo}`) em `core/estado/registo.ts`, com instante do relógio do venue (FR-041)
+- [x] T019 [US1] Implementar a recusa de comando com campo a mais (ficha, instrumento, saldo, lado) em `core/estados/comando.ts` — a porta dos verbos não aceita ordens (`interface.md` §1)
+- [x] T020 [US1] Correr a bateria de US1 e guardar `specs/002-maquina-de-estados/relatorios/us1.jsonl`
 
 **Checkpoint**: a mesa é operável e recusa de forma compreensível — sozinha, sem mais nada deste recorte.
 

@@ -120,6 +120,48 @@ procurava um nome inexistente). Um instrumento sem prova negativa é uma promess
 
 ---
 
+## R7. Os motivos de recusa da **mesa** são um conjunto próprio do core (achado da implementação)
+
+**O que se mediu**: `contracts/vocabulario.json` tem **16 motivos**, e todos falam de validade de
+mensagem (`enquadramento_invalido`, `campo_obrigatorio_ausente`, `valor_fora_da_banda`,
+`versao_do_contrato_divergente`…). **Nenhum** serve para a máquina de estados: "verbo ilegal no estado
+em que a mesa está", "sessão inibida", "posição viva impede sessão nova" não são defeitos de uma
+mensagem do contrato — são recusas de um **comando**.
+
+**Decisão**: os motivos de recusa da mesa vivem em `core/estados/motivos.json` — conjunto fechado,
+lido pelo intérprete, nunca escrito em código (FR-044, RN-A1). O conferidor de invariantes valida as
+recusas contra **esse** ficheiro, não contra o vocabulário do contrato.
+
+**Porquê não no contrato**: o contrato é a língua que **cruza a fronteira** entre processos e
+linguagens. Um comando `start` e a sua recusa são uma interface **interna** (a mesma peça que decide é
+a que responde). Pôr estes motivos no contrato alargaria o vocabulário normativo durante um recorte que
+prometeu não o tocar — e o contrato é do recorte 001, com provas a correr em duas linguagens.
+
+**Quando isto muda**: no dia em que o **vigia** for processo separado (RN-E8), a recusa passa a cruzar a
+fronteira e estes motivos têm de entrar no contrato. Fica escrito aqui para não ser surpresa: nesse dia
+é uma mensagem nova, e uma mensagem nova **volta ao recorte 001** — como a própria spec manda.
+
+---
+
+## R8. Os tipos de linha do registo da mesa são um conjunto próprio (achado da implementação)
+
+**O que se mediu**: o contrato (recorte 001) declara
+`tipos_de_linha_do_registo = [snapshot, proposta, boleta, desfecho]` — quatro tipos que são **quatro
+mensagens do contrato**. Uma transição de estado, uma recusa de comando ou uma marca não são mensagens
+do contrato: não cruzam fronteira nenhuma e nenhuma ponta as troca.
+
+**Decisão**: o registo da mesa usa um conjunto fechado próprio
+(`transicao`, `recusa`, `ciclo`, `marca`), declarado em `core/estado/registo.ts` e conferido na
+escrita: um tipo fora do conjunto **grita** em vez de ser gravado. O registo **exige** motivo em toda a
+linha de recusa — é o que o SC-011 conta.
+
+**A questão que fica aberta, e fica escrita**: quando o **ledger** tiver o seu recorte, as duas listas
+têm de ser reconciliadas — **uma delas ganha**. Duas listas de tipos de linha para o mesmo registo
+seriam duas verdades sobre a mesma linha, e a segunda só serviria para divergir. Não se resolve agora
+porque o ledger ainda não tem spec, e decidir por antecipação seria inventar.
+
+---
+
 ## Resumo das decisões
 
 | # | Decisão | O que a fecha |
@@ -130,3 +172,5 @@ procurava um nome inexistente). Um instrumento sem prova negativa é uma promess
 | R4 | Leituras por fixtures neste recorte | `core/leitura/fixtures.ts` |
 | R5 | A máquina decide, não envia | `Decisao` como dado observável |
 | R6 | Prova negativa guardada por instrumento | `tools/verificar-maquina/` |
+| R7 | Motivos da mesa em conjunto próprio do core | `core/estados/motivos.json` (achado da implementação) |
+| R8 | Tipos de linha do registo da mesa em conjunto próprio | `core/estado/registo.ts` (achado da implementação; reconciliar com o ledger) |

@@ -1,0 +1,321 @@
+{
+  "nota": "A bateria dos pares (estado, verbo) da mesa. Cada caso traz o CONTEXTO que a guarda le, o resultado esperado, o estado esperado e o motivo esperado. Os casos ilegais sao tao obrigatorios como os legais: e deles que vem o SC-001 (zero recusas sem motivo, zero mudancas de estado silenciosas).",
+  "fonte_da_tabela": "core/estados/transicoes.json",
+  "fonte_dos_motivos": "core/estados/motivos.json",
+  "casos": [
+    {
+      "nome": "start-em-parada-arranca",
+      "de": "parada",
+      "verbo": "start",
+      "contexto": {},
+      "resultado_esperado": "aceite",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": null,
+      "historico": "US1 cenario 1"
+    },
+    {
+      "nome": "start-em-parada-com-inibicao-recusa",
+      "de": "parada",
+      "verbo": "start",
+      "contexto": { "inibicao_cb": true },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "sessao_inibida",
+      "historico": "US5 cenario 3, FR-037"
+    },
+    {
+      "nome": "start-em-parada-com-porta-falhada-recusa-e-diz-qual",
+      "de": "parada",
+      "verbo": "start",
+      "contexto": {
+        "portas_do_arranque": {
+          "passam": false,
+          "porta": "manifesto",
+          "motivo": "instrumento configurado fora do manifesto"
+        }
+      },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "porta_da_recusa_esperada": {
+        "porta": "manifesto",
+        "motivo": "instrumento configurado fora do manifesto"
+      },
+      "historico": "US4 cenario 7, FR-031"
+    },
+    {
+      "nome": "inibicao-le-se-antes-das-portas",
+      "de": "parada",
+      "verbo": "start",
+      "contexto": {
+        "inibicao_cb": true,
+        "portas_do_arranque": { "passam": false, "porta": "versao", "motivo": "versao divergente" }
+      },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "sessao_inibida",
+      "historico": "a ordem importa: o motivo mais especifico primeiro (motivos.json, ordem_de_leitura)"
+    },
+    {
+      "nome": "pause-em-parada-recusa",
+      "de": "parada",
+      "verbo": "pause",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "mesa_parada_nada_a_pausar",
+      "historico": "US1 cenario 3"
+    },
+    {
+      "nome": "stop-em-parada-recusa",
+      "de": "parada",
+      "verbo": "stop",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "mesa_ja_parada",
+      "historico": "FR-012"
+    },
+    {
+      "nome": "reset-em-parada-nao-muda-nada-e-declara-o-que-nao-tocou",
+      "de": "parada",
+      "verbo": "reset",
+      "contexto": {},
+      "marcas_presentes": ["sessao", "inibicao_cb", "desconhecido"],
+      "resultado_esperado": "aceite",
+      "estado_esperado": "parada",
+      "motivo_esperado": null,
+      "nao_tocado_esperado": ["sessao", "inibicao_cb", "desconhecido"],
+      "historico": "US1 cenario 6, FR-005"
+    },
+    {
+      "nome": "nova-sessao-em-parada-grava",
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "contexto": {},
+      "resultado_esperado": "aceite",
+      "estado_esperado": "parada",
+      "motivo_esperado": null,
+      "historico": "US5 cenario 4, FR-038"
+    },
+    {
+      "nome": "nova-sessao-com-posicao-viva-recusa",
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "contexto": { "posicao_viva": true },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "sessao_nova_com_posicao_viva",
+      "historico": "edge case de FR-034 - sessao nova nao serve para limpar posicao"
+    },
+    {
+      "nome": "verbo-que-nao-existe-recusa",
+      "de": "parada",
+      "verbo": "reiniciar",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "verbo_desconhecido",
+      "historico": "FR-004 - os verbos sao cinco; um sexto nao entra por extensao"
+    },
+
+    {
+      "nome": "start-em-operacao-recusa-sem-reiniciar-contadores",
+      "de": "em_operacao",
+      "verbo": "start",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "mesa_ja_em_operacao",
+      "historico": "US1 cenario 7"
+    },
+    {
+      "nome": "pause-em-operacao-pausa-sem-fechar",
+      "de": "em_operacao",
+      "verbo": "pause",
+      "contexto": {},
+      "resultado_esperado": "aceite",
+      "estado_esperado": "pausada",
+      "motivo_esperado": null,
+      "historico": "US1 cenario 2, FR-010"
+    },
+    {
+      "nome": "stop-sem-posicao-vai-direto-a-parada",
+      "de": "em_operacao",
+      "verbo": "stop",
+      "contexto": { "posicao_viva": false },
+      "resultado_esperado": "aceite",
+      "estado_esperado": "parada",
+      "motivo_esperado": null,
+      "historico": "US1 cenario 4, FR-012"
+    },
+    {
+      "nome": "stop-com-posicao-vai-a-encerrando",
+      "de": "em_operacao",
+      "verbo": "stop",
+      "contexto": { "posicao_viva": true },
+      "resultado_esperado": "aceite",
+      "estado_esperado": "encerrando",
+      "motivo_esperado": null,
+      "historico": "US1 cenario 5, FR-011"
+    },
+    {
+      "nome": "reset-em-operacao-nao-muda-nada",
+      "de": "em_operacao",
+      "verbo": "reset",
+      "contexto": {},
+      "marcas_presentes": ["sessao"],
+      "resultado_esperado": "aceite",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": null,
+      "nao_tocado_esperado": ["sessao"],
+      "historico": "FR-005 - recomecar sem mexer em nada"
+    },
+    {
+      "nome": "nova-sessao-em-operacao-recusa",
+      "de": "em_operacao",
+      "verbo": "nova_sessao",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
+      "historico": "US5 cenario 5, FR-039"
+    },
+
+    {
+      "nome": "retomar-da-pausa-volta-a-operar",
+      "de": "pausada",
+      "verbo": "start",
+      "contexto": {},
+      "resultado_esperado": "aceite",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": null,
+      "historico": "US6 cenario 4"
+    },
+    {
+      "nome": "retomar-da-pausa-com-inibicao-recusa",
+      "de": "pausada",
+      "verbo": "start",
+      "contexto": { "inibicao_cb": true },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "pausada",
+      "motivo_esperado": "sessao_inibida",
+      "historico": "FR-040 - o CB corre com a mesa pausada, e a saida e nova_sessao"
+    },
+    {
+      "nome": "pause-em-pausada-recusa",
+      "de": "pausada",
+      "verbo": "pause",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "pausada",
+      "motivo_esperado": "mesa_ja_pausada",
+      "historico": "FR-010"
+    },
+    {
+      "nome": "stop-da-pausa-sem-posicao-vai-a-parada",
+      "de": "pausada",
+      "verbo": "stop",
+      "contexto": { "posicao_viva": false },
+      "resultado_esperado": "aceite",
+      "estado_esperado": "parada",
+      "motivo_esperado": null,
+      "historico": "FR-012"
+    },
+    {
+      "nome": "stop-da-pausa-com-posicao-vai-a-encerrando",
+      "de": "pausada",
+      "verbo": "stop",
+      "contexto": { "posicao_viva": true },
+      "resultado_esperado": "aceite",
+      "estado_esperado": "encerrando",
+      "motivo_esperado": null,
+      "historico": "FR-012"
+    },
+    {
+      "nome": "reset-em-pausada-nao-muda-nada",
+      "de": "pausada",
+      "verbo": "reset",
+      "contexto": {},
+      "marcas_presentes": ["sessao", "desconhecido"],
+      "resultado_esperado": "aceite",
+      "estado_esperado": "pausada",
+      "motivo_esperado": null,
+      "nao_tocado_esperado": ["sessao", "desconhecido"],
+      "historico": "FR-005"
+    },
+    {
+      "nome": "nova-sessao-na-pausa-recusa",
+      "de": "pausada",
+      "verbo": "nova_sessao",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "pausada",
+      "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
+      "historico": "FR-039"
+    },
+
+    {
+      "nome": "start-durante-encerramento-cancela-a-pergunta",
+      "de": "encerrando",
+      "verbo": "start",
+      "contexto": { "liquidacao_em_curso": false },
+      "resultado_esperado": "aceite",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": null,
+      "historico": "o dono responde 'nao feche' com start, em vez de esperar o prazo"
+    },
+    {
+      "nome": "start-durante-liquidacao-recusa",
+      "de": "encerrando",
+      "verbo": "start",
+      "contexto": { "liquidacao_em_curso": true },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "encerrando",
+      "motivo_esperado": "liquidacao_em_curso",
+      "historico": "FR-013 - uma vez comecada, a liquidacao nao se interrompe a meio"
+    },
+    {
+      "nome": "pause-durante-encerramento-recusa",
+      "de": "encerrando",
+      "verbo": "pause",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "encerrando",
+      "motivo_esperado": "mesa_em_encerramento",
+      "historico": "FR-011"
+    },
+    {
+      "nome": "stop-repetido-durante-encerramento-nao-reabre-a-pergunta",
+      "de": "encerrando",
+      "verbo": "stop",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "encerrando",
+      "motivo_esperado": "pedido_repetido",
+      "historico": "edge case de FR-014"
+    },
+    {
+      "nome": "reset-durante-encerramento-nao-interrompe",
+      "de": "encerrando",
+      "verbo": "reset",
+      "contexto": {},
+      "marcas_presentes": ["sessao", "inibicao_cb"],
+      "resultado_esperado": "aceite",
+      "estado_esperado": "encerrando",
+      "motivo_esperado": null,
+      "nao_tocado_esperado": ["sessao", "inibicao_cb"],
+      "historico": "edge case de FR-005 - nao apaga a inibicao nem interrompe a liquidacao"
+    },
+    {
+      "nome": "nova-sessao-durante-encerramento-recusa",
+      "de": "encerrando",
+      "verbo": "nova_sessao",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "encerrando",
+      "motivo_esperado": "mesa_em_encerramento",
+      "historico": "FR-011"
+    }
+  ]
+}

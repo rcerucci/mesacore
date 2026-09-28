@@ -1,0 +1,109 @@
+fase fundacional do recorte 002 — saidas reais
+data: 2026-09-28 17:45 -0300
+bun: 1.4.2 | python: 3.14.7
+
+=== 1. invariantes da tabela + prova negativa ===
+tabela /home/cerucci/Projects/MesaCore/core/estados/transicoes.json: 27 linhas, 4 estados, 5 verbos, 20 pares.
+conferencia: 0 falhas nos 7 invariantes.
+prova negativa (ficheiros temporarios, o repositorio nao e tocado):
+  ok    prova negativa 1-estado-sem-saida: reprovada pelo invariante 1.
+  ok    prova negativa 2-verbo-sem-casa: reprovada pelo invariante 2.
+  ok    prova negativa 3-estado-inalcancavel: reprovada pelo invariante 3.
+  ok    prova negativa 4-recusa-com-motivo-inventado: reprovada pelo invariante 4.
+  ok    prova negativa 5-reset-muda-de-estado: reprovada pelo invariante 5.
+  ok    prova negativa 6-par-sem-linha-sempre: reprovada pelo invariante 6.
+  ok    prova negativa 7-motivo-com-nome-do-contrato: reprovada pelo invariante 7 (nome 'versao_do_contrato_divergente').
+exit=0
+
+=== 2. bateria dos pares (estado, verbo) ===
+bateria: /home/cerucci/Projects/MesaCore/core/estados/transicoes.casos.json
+casos: 29
+
+ok    start-em-parada-arranca
+ok    start-em-parada-com-inibicao-recusa
+ok    start-em-parada-com-porta-falhada-recusa-e-diz-qual
+ok    inibicao-le-se-antes-das-portas
+ok    pause-em-parada-recusa
+ok    stop-em-parada-recusa
+ok    reset-em-parada-nao-muda-nada-e-declara-o-que-nao-tocou
+ok    nova-sessao-em-parada-grava
+ok    nova-sessao-com-posicao-viva-recusa
+ok    verbo-que-nao-existe-recusa
+ok    start-em-operacao-recusa-sem-reiniciar-contadores
+ok    pause-em-operacao-pausa-sem-fechar
+ok    stop-sem-posicao-vai-direto-a-parada
+ok    stop-com-posicao-vai-a-encerrando
+ok    reset-em-operacao-nao-muda-nada
+ok    nova-sessao-em-operacao-recusa
+ok    retomar-da-pausa-volta-a-operar
+ok    retomar-da-pausa-com-inibicao-recusa
+ok    pause-em-pausada-recusa
+ok    stop-da-pausa-sem-posicao-vai-a-parada
+ok    stop-da-pausa-com-posicao-vai-a-encerrando
+ok    reset-em-pausada-nao-muda-nada
+ok    nova-sessao-na-pausa-recusa
+ok    start-durante-encerramento-cancela-a-pergunta
+ok    start-durante-liquidacao-recusa
+ok    pause-durante-encerramento-recusa
+ok    stop-repetido-durante-encerramento-nao-reabre-a-pergunta
+ok    reset-durante-encerramento-nao-interrompe
+ok    nova-sessao-durante-encerramento-recusa
+
+resumo: 29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo
+relatorio: specs/002-maquina-de-estados/relatorios/us1.jsonl
+exit=0
+
+=== 3. prova da mesa (comando -> resposta -> marcas -> registo) ===
+--- comandos: validacao ---
+ok    comando com 'lado' e recusado (a porta dos verbos nao aceita ordens)
+ok    a recusa do comando nao muda o estado
+ok    verbo fora do conjunto fechado e recusado
+
+--- o caminho normal ---
+ok    start em parada leva a em_operacao
+ok    start repetido e recusado com motivo
+ok    pause leva a pausada
+ok    nova_sessao com a mesa pausada e recusada (a mesa tem de parar primeiro)
+ok    stop sem posicao vai a parada
+
+--- nova_sessao grava a configuracao em vigor ---
+ok    nova_sessao em parada e aceita
+ok    o ficheiro de marcas foi apagado de proposito (a prova nao confia na memoria)
+ok    sem ficheiro, nao ha marca nenhuma (o teste lia mesmo o disco)
+ok    as marcas voltam do disco com autor, motivo, equity e configuracao em vigor
+ok    o instante da sessao e o do venue que quem chamou trouxe (nao um relogio interno)
+
+--- inibicao: start recusa, reset nao apaga ---
+ok    start com a inibicao marcada recusa (e so nova_sessao sai daqui)
+ok    com inibicao E porta falhada, o motivo e a inibicao (o mais especifico primeiro)
+ok    reset e aceite
+ok    reset declara o que NAO tocou (sessao, inibicao_cb, desconhecido)
+ok    depois do reset, as tres marcas continuam no disco
+
+--- o registo ---
+ok    o registo tem 11 linhas
+ok    ha 6 recusas registradas
+ok    100% das recusas no registo trazem motivo (SC-011)
+ok    100% das linhas trazem instante
+ok    o estado final e reconstruivel a partir do registo sem ler codigo (deu 'parada')
+ok    a transicao de nova_sessao ficou com o autor
+
+resumo: 24 verificacoes · 0 falhas
+exit=0
+
+=== 4. porteiro do estado + prova negativa ===
+porteiro do estado · core: core
+ok    o /core importa `contracts` e nada mais do projecto (RN-E2)
+ok    a forma das marcas nao tem nenhum campo de posicao (R2, FR-022)
+
+prova negativa (copias temporarias; o repositorio nao e tocado):
+  ok    prova negativa (a) importacao de mock: reprovada.
+  ok    prova negativa (b) marcas com posicoes: reprovada.
+
+resumo: 2 verificacoes · 0 falhas
+exit=0
+
+=== 5. a bateria do contrato (recorte 001) continua verde? ===
+ok      historico/taxa-e-funding-em-campos-proprios    sem resultado recalculado por execucao
+
+ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam

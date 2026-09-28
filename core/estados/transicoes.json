@@ -1,0 +1,212 @@
+{
+  "nota": "As transicoes da mesa. DADO, nao codigo (R1 do specs/002). A regra de leitura do documento de estados - 'um estado sem saida declarada e lacuna; um evento que nao muda nada e ruido; um evento sem estado onde caiba e lacuna' - so e conferivel por PROGRAMA se as transicoes forem dado. A ORDEM importa: vale a primeira linha que casa (de, verbo, guarda).",
+  "estados": ["parada", "em_operacao", "pausada", "encerrando"],
+  "verbos": ["start", "pause", "stop", "reset", "nova_sessao"],
+  "guardas": {
+    "sempre": "Verdadeira. Tem de existir como ULTIMA linha de cada par (de, verbo) - e o que garante que nenhum par cai num vazio nao declarado.",
+    "com_inibicao": "A marca inibicao_cb esta presente.",
+    "sem_inibicao": "A marca inibicao_cb NAO esta presente.",
+    "portas_do_arranque_falham": "Pelo menos uma das seis portas do arranque recusa (manifesto, mandato, contenda, inventario, versao, sessao).",
+    "com_liquidacao_em_curso": "A liquidacao a mercado do encerramento ja comecou.",
+    "sem_posicao_viva": "Nenhum instrumento esta em abrindo, aberta ou fechando, e nenhuma marca desconhecido bloqueia.",
+    "com_posicao_viva": "Algum instrumento esta em abrindo, aberta ou fechando."
+  },
+  "linhas": [
+    {
+      "de": "parada",
+      "verbo": "start",
+      "guarda": "com_inibicao",
+      "recusa": "sessao_inibida",
+      "nota": "FR-037, RN-M3.3 - o mais especifico primeiro: com a inibicao marcada, o start recusa em qualquer hipotese, mesmo que as portas passassem."
+    },
+    {
+      "de": "parada",
+      "verbo": "start",
+      "guarda": "portas_do_arranque_falham",
+      "recusa": "porta_do_arranque_falhou",
+      "nota": "FR-031, FR-032 - o motivo especifico da porta vai no campo proprio da resposta."
+    },
+    {
+      "de": "parada",
+      "verbo": "start",
+      "guarda": "sempre",
+      "para": "em_operacao",
+      "nota": "US1 cenario 1, RN-V1 - registra o instante de arranque."
+    },
+
+    {
+      "de": "em_operacao",
+      "verbo": "start",
+      "guarda": "sempre",
+      "recusa": "mesa_ja_em_operacao",
+      "nota": "US1 cenario 7 - nao reinicia contadores nem esquece marcas."
+    },
+
+    {
+      "de": "pausada",
+      "verbo": "start",
+      "guarda": "com_inibicao",
+      "recusa": "sessao_inibida",
+      "nota": "FR-040 - o CB corre com a mesa pausada; se disparou durante a pausa, a saida e nova_sessao."
+    },
+    {
+      "de": "pausada",
+      "verbo": "start",
+      "guarda": "sempre",
+      "para": "em_operacao",
+      "nota": "US6 cenario 4 - retomar nao e comecar de novo."
+    },
+
+    {
+      "de": "encerrando",
+      "verbo": "start",
+      "guarda": "com_liquidacao_em_curso",
+      "recusa": "liquidacao_em_curso",
+      "nota": "FR-013 - uma vez comecada a liquidacao, nao se interrompe a meio."
+    },
+    {
+      "de": "encerrando",
+      "verbo": "start",
+      "guarda": "sempre",
+      "para": "em_operacao",
+      "nota": "Achado da implementacao: o dono responde 'nao feche' com start. Recusar obrigaria a esperar o prazo declarado para a mesa voltar ao normal, que e o oposto do que US7 quer."
+    },
+
+    {
+      "de": "parada",
+      "verbo": "pause",
+      "guarda": "sempre",
+      "recusa": "mesa_parada_nada_a_pausar",
+      "nota": "US1 cenario 3 - um evento que nao muda nada e ruido."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "pause",
+      "guarda": "sempre",
+      "para": "pausada",
+      "nota": "US1 cenario 2, FR-010 - para de abrir, nao fecha nada."
+    },
+    {
+      "de": "pausada",
+      "verbo": "pause",
+      "guarda": "sempre",
+      "recusa": "mesa_ja_pausada",
+      "nota": "FR-010."
+    },
+    {
+      "de": "encerrando",
+      "verbo": "pause",
+      "guarda": "sempre",
+      "recusa": "mesa_em_encerramento",
+      "nota": "FR-011 - durante o encerramento ha uma pergunta a espera de resposta."
+    },
+
+    {
+      "de": "parada",
+      "verbo": "stop",
+      "guarda": "sempre",
+      "recusa": "mesa_ja_parada",
+      "nota": "FR-012."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "stop",
+      "guarda": "sem_posicao_viva",
+      "para": "parada",
+      "nota": "US1 cenario 4, FR-012 - sem posicao, o encerramento e imediato."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "stop",
+      "guarda": "sempre",
+      "para": "encerrando",
+      "nota": "US1 cenario 5, FR-011 - com posicao, apresenta o resumo e PERGUNTA."
+    },
+    {
+      "de": "pausada",
+      "verbo": "stop",
+      "guarda": "sem_posicao_viva",
+      "para": "parada",
+      "nota": "FR-012."
+    },
+    {
+      "de": "pausada",
+      "verbo": "stop",
+      "guarda": "sempre",
+      "para": "encerrando",
+      "nota": "FR-012 - parar a partir da pausa segue o mesmo caminho."
+    },
+    {
+      "de": "encerrando",
+      "verbo": "stop",
+      "guarda": "sempre",
+      "recusa": "pedido_repetido",
+      "nota": "Edge case de FR-014 - nao reabre a pergunta nem muda o estado; fica como repeticao."
+    },
+
+    {
+      "de": "parada",
+      "verbo": "reset",
+      "guarda": "sempre",
+      "para": "parada",
+      "nota": "FR-005 - nao apaga marca nenhuma; a resposta declara o que NAO foi tocado. Um reset que muda de estado seria outra coisa."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "reset",
+      "guarda": "sempre",
+      "para": "em_operacao",
+      "nota": "FR-005 - 'recomecar sem mexer em nada' (RN-V3)."
+    },
+    {
+      "de": "pausada",
+      "verbo": "reset",
+      "guarda": "sempre",
+      "para": "pausada",
+      "nota": "FR-005."
+    },
+    {
+      "de": "encerrando",
+      "verbo": "reset",
+      "guarda": "sempre",
+      "para": "encerrando",
+      "nota": "FR-005 - nao apaga a inibicao nem interrompe a liquidacao."
+    },
+
+    {
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "guarda": "com_posicao_viva",
+      "recusa": "sessao_nova_com_posicao_viva",
+      "nota": "Edge case de FR-034 - a sessao nova nao serve para limpar posicao."
+    },
+    {
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "guarda": "sempre",
+      "para": "parada",
+      "nota": "FR-038, RN-V10 - UNICO caminho fora da inibicao. Grava instante, equity de partida, autor, motivo e a configuracao em vigor."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "nova_sessao",
+      "guarda": "sempre",
+      "recusa": "mesa_precisa_parar_para_sessao_nova",
+      "nota": "FR-039 - uma sessao tem UMA configuracao em vigor."
+    },
+    {
+      "de": "pausada",
+      "verbo": "nova_sessao",
+      "guarda": "sempre",
+      "recusa": "mesa_precisa_parar_para_sessao_nova",
+      "nota": "FR-039."
+    },
+    {
+      "de": "encerrando",
+      "verbo": "nova_sessao",
+      "guarda": "sempre",
+      "recusa": "mesa_em_encerramento",
+      "nota": "FR-011."
+    }
+  ]
+}
