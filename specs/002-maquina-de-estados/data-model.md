@@ -31,14 +31,14 @@ O que se sabe sobre um instrumento agora. **Não persiste**: recalcula-se das le
 |---|---|---|---|
 | `instrumento` | símbolo | configuração do dono (`conta.instrumentos[]`) | RN-M1 |
 | `condicao` | `normal` · `sem_leitura` · `divergente` · `congelada` · `mercado_fechado` | das leituras: leitura falhada (RN-D7), reconciliação divergente (RN-T13), setup mudo/falho (RN-S8, RN-T10), estado declarado pelo conector (RN-D8) | FR-002, FR-015 |
-| `dado_velho` | booleano | `idade_do_dado_ms` do objecto de mercado ≥ `conta.idade_maxima_do_dado_ms` | FR-020, RN-D3 |
-| `abre` | booleano derivado | `condicao == normal` **e** não `dado_velho` | FR-015, FR-020 |
-| `fecha` | booleano derivado | `normal` **ou** `dado_velho` (nunca em `sem_leitura`, `divergente`, `congelada`, `mercado_fechado`) | FR-016 a FR-020 |
-| `alarma` | booleano derivado | `dado_velho` ou condição ≠ `normal` | FR-042, RN-E15 |
+| `sem_ligacao` | booleano | `idade_do_dado_ms` do objecto de mercado ≥ `conta.idade_maxima_do_dado_ms` | FR-020, RN-D3 |
+| `abre` | booleano derivado | `condicao == normal` **e** não `sem_ligacao` | FR-015, FR-020 |
+| `fecha` | booleano derivado | `normal` **ou** `sem_ligacao` (nunca em `sem_leitura`, `divergente`, `congelada`, `mercado_fechado`) | FR-016 a FR-020 |
+| `alarma` | booleano derivado | `sem_ligacao` ou condição ≠ `normal` | FR-042, RN-E15 |
 
 **A distinção que este objecto existe para forçar** (as "três confusões" do documento de estados):
 
-| | `dado_velho` | `sem_leitura` | `divergente` |
+| | `sem_ligacao` | `sem_leitura` | `divergente` |
 |---|---|---|---|
 | abre | não | não | não |
 | fecha/reduz | **sim** | **não** | **não** por iniciativa própria |

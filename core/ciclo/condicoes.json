@@ -1,5 +1,5 @@
 {
-  "nota": "O que cada condicao do instrumento IMPEDE, e o EVENTO que ela levanta. O evento e o NOME (falha_de_leitura, congelamento, divergencia...) e nao um booleano: quem decide se esse evento AVISA e a lista do dono (conta.eventos_que_avisam[], em /config - FR-042). DADO, nao codigo, pela mesma razao da tabela de transicoes (R1): assim e conferivel por programa. A distincao que obrigou a este ficheiro: com UMA condicao so, 'congelada' e 'divergente' ao mesmo tempo perdiam uma das duas restricoes (o setup mudo impede abrir; a divergencia impede fechar). Uma condicao de cada vez escondia metade do problema.",
+  "nota": "O que cada condicao do instrumento IMPEDE, e o EVENTO que ela levanta. O evento e o NOME (falha_de_leitura, congelamento, divergencia...) e nao um booleano: quem decide se esse evento AVISA e a lista do dono (conta.eventos_que_avisam[], em /config - FR-042). DADO, nao codigo, pela mesma razao da tabela de transicoes (R1): assim e conferivel por programa. A distincao que obrigou a este ficheiro: com UMA condicao so, 'congelada' e 'divergente' ao mesmo tempo perdiam uma das duas restricoes (o setup mudo impede abrir; a divergencia impede fechar). Uma condicao de cada vez escondia metade do problema. EMENDA (28 set 2026): a condicao era `dado_velho` (idade acima de um limite declarado) e passou a ser `sem_ligacao`, alimentada pelo estado da ligacao reportado pelo conector. O limiar de idade saiu do caminho da decisao.",
   "condicoes": {
     "sem_leitura": {
       "impede_abrir": true,
@@ -33,15 +33,6 @@
       "regra": "FR-019, RN-D8",
       "porque": "Declarado pelo conector. Nao abre nem fecha (nao ha contraparte), mas NAO alarma: e uma condicao esperada do mercado, nao uma falha. Alarmar o normal ensina o dono a ignorar alarmes."
     },
-    "dado_velho": {
-      "impede_abrir": true,
-      "impede_fechar": false,
-      "impede_cancelar": false,
-      "evento": "dado_velho",
-      "regra": "FR-020, RN-D3",
-      "chave": "conta.idade_maxima_do_dado_ms",
-      "porque": "Leu-se, mas o dado envelheceu. Abrir com preco velho e entrar num preco que ja nao existe; fechar com preco velho e reduzir risco - e reduzir risco nunca espera por dado fresco."
-    },
     "normal": {
       "impede_abrir": false,
       "impede_fechar": false,
@@ -49,13 +40,31 @@
       "evento": null,
       "regra": "FR-002",
       "porque": "Nada a assinalar."
+    },
+    "sem_ligacao": {
+      "impede_abrir": true,
+      "impede_fechar": false,
+      "impede_cancelar": false,
+      "evento": "sem_ligacao",
+      "regra": "FR-020, RN-D3 (emenda 28 set 2026)",
+      "porque": "A ligacao com a corretora nao esta de pe. Nao abre risco novo - e defender CONTINUA, porque reduzir risco com a vista tapada e melhor do que nao reduzir nada. O nome diz o que se sabe: nao e 'o dado envelheceu', e 'nao ha ligacao'."
     }
   },
-  "precedencia": ["sem_leitura", "congelada", "divergente", "mercado_fechado", "dado_velho", "normal"],
-  "porque_desta_ordem": "Da ignorancia para o facto: primeiro o que se nao sabe sobre o que se tem (sem_leitura), depois a falha da mesa (congelada), depois o numero que nao bate (divergente), depois o mercado (mercado_fechado), depois a idade do dado, e por fim o normal. A ordem decide o MOTIVO reportado quando ha mais de uma - os impedimentos somam-se todos, mas o dono precisa de um nome para o que viu primeiro.",
-  "limite_de_idade": {
-    "chave": "conta.idade_maxima_do_dado_ms",
-    "comparacao": "acima_do_limite",
-    "porque": "RN-D3 diz 'acima do limite declarado'. Idade IGUAL ao limite nao e velha: e o limite. Inverter isto por um sinal faz o dado fresco ser tratado como velho no instante exacto em que chegou."
+  "precedencia": [
+    "sem_leitura",
+    "congelada",
+    "divergente",
+    "mercado_fechado",
+    "sem_ligacao",
+    "normal"
+  ],
+  "porque_desta_ordem": "Da ignorancia para o facto: primeiro o que se nao sabe sobre o que se tem (sem_leitura), depois a falha da mesa (congelada), depois o numero que nao bate (divergente), depois o mercado (mercado_fechado), depois a ligacao, e por fim o normal. A ordem decide o MOTIVO reportado quando ha mais de uma - os impedimentos somam-se todos, mas o dono precisa de um nome para o que viu primeiro.",
+  "fonte_da_condicao": {
+    "campo": "ligacao",
+    "valores": [
+      "ligada",
+      "sem_ligacao"
+    ],
+    "porque": "O estado vem do PROTOCOLO da ligacao, reportado pelo conector - um facto, nao um limiar. Em varejo o silencio do tick nao distingue mercado calmo de ligacao morta, e o dono nao deve adivinhar um numero que nao governa nada (emenda do dono, 28 set 2026)."
   }
 }

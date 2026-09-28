@@ -13,7 +13,7 @@ Caminhos concretos em todas as tarefas.
 
 ## Estado da execução (medido em 28 set 2026)
 
-Fases 1 e 2 fechadas. **O recorte 002 esta implementado e medido: 63 de 63 tarefas** — e a **fase 10 (emenda do dono, T064-T067) esta aberta** desde 28 set 2026: o recorte volta a estar fechado quando ela estiver medida. Os 12 SC estao no `relatorios/RESULTADO.md`. Comandos e números reais em
+Fases 1 e 2 fechadas. **O recorte 002 esta implementado e medido: 67 de 67 tarefas** — incluindo a **fase 10 (emenda do dono, T064-T067)**, fechada em 28 set 2026. Os defeitos que a emenda deixou declarados estao em `relatorios/DEFEITOS.md` (D-001 a D-003), cada um com o número que prova que falta. Os 12 SC estao no `relatorios/RESULTADO.md`. Comandos e números reais em
 `relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
 
 | O que | Comando | Medido |
@@ -310,16 +310,16 @@ mediu esta la declarado como nao medido.
 
 ---
 
-## Phase 10: Emenda do dono (T064–T067) — aberta em 28 set 2026
+## Phase 10: Emenda do dono (T064–T067) — **fechada** (28 set 2026)
 
 **Goal**: cumprir as quatro decisões do dono registadas em `docs/inventario-de-chaves.md` §8 e nas Emendas
 de `docs/regra-de-negocio.md`. Cada uma com o mesmo padrão do resto: **caso que falha antes**, medido
 depois.
 
-- [ ] T064 [US2] A condição `dado_velho` passa a ser alimentada pelo **estado da ligação** (facto declarado); o limiar de idade sai do caminho da decisão. Par de casos com o mesmo dado: ligado / desligado
-- [ ] T065 [US2] Substituir o gatilho do contador de inválidos pela **tabela por motivo** (*repetir com atraso* · *recusar e registar* · *parar e reconciliar*), com o caso de controlo: sem confirmação, **reconciliar primeiro** — repetir às cegas abre uma segunda posição
-- [ ] T066 [US4] A porta da contenda passa a **FIFO** (instante do pedido no relógio do venue) com desempate alfabético; registrar o critério (`fifo` | `fifo_desempatado_por_simbolo`). A ordem decide quem fica de fora, nunca a ordem de execução
-- [ ] T067 [US4] Declarar no manifesto do conector as três obrigações novas — reportar a ligação pelo protocolo, reler o preço no envio, devolver a resolução — e **nomear como defeito** a conferência da resolução contra a banda que hoje não existe (é trabalho do recorte do conector)
+- [x] T064 [US2] A condição `dado_velho` passa a ser alimentada pelo **estado da ligação** (facto declarado); o limiar de idade sai do caminho da decisão. Par de casos com o mesmo dado: ligado / desligado — **feito**: a condição passou a chamar-se `sem_ligacao` (o nome diz o que se sabe) e a fonte é `ligacao` no runtime; `limite_de_idade_ms` saiu do `EntradaDoInstrumento`, dos casos e das quatro bancadas. O par de controle é `ligado-e-o-mesmo-dado-e-normal` / `sem-ligacao-nao-abre-e-pode-fechar` — **mesmo dado**, só a ligação muda. Os dois casos do limiar morreram (testavam um número que deixou de decidir). SC-003 medido de novo: **0 de 1** aberturas e **1 de 1** fechos legítimos
+- [x] T065 [US2] Substituir o gatilho do contador de inválidos pela **tabela por motivo** (*repetir com atraso* · *recusar e registar* · *parar e reconciliar*), com o caso de controlo: sem confirmação, **reconciliar primeiro** — repetir às cegas abre uma segunda posição
+- [x] T066 [US4] A porta da contenda passa a **FIFO** (instante do pedido no relógio do venue) com desempate alfabético; registrar o critério (`fifo` | `fifo_desempatado_por_simbolo`). A ordem decide quem fica de fora, nunca a ordem de execução
+- [x] T067 [US4] Declarar no manifesto do conector as três obrigações novas — reportar a ligação pelo protocolo, reler o preço no envio, devolver a resolução — e **nomear como defeito** a conferência da resolução contra a banda que hoje não existe (é trabalho do recorte do conector)
 
 ---
 

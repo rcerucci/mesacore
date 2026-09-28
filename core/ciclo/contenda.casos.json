@@ -1,0 +1,185 @@
+{
+  "nota": "A contenda decidida por FIFO pelo relogio do venue (T066). Cada caso e um par de controle quando faz sentido: o mesmo conjunto com uma coisa trocada, para a conclusao nao poder vir de outra coisa.",
+  "tecto_padrao": "100",
+  "casos": [
+    {
+      "nome": "cabe todo - ninguem fica de fora",
+      "tecto": "100",
+      "pedidos": [
+        {
+          "instrumento": "EURUSD",
+          "saldo_pct": "40",
+          "instante_no_venue_ms": 100
+        },
+        {
+          "instrumento": "XAUUSD",
+          "saldo_pct": "50",
+          "instante_no_venue_ms": 200
+        }
+      ],
+      "criterio_esperado": "fifo",
+      "admitidos_esperados": [
+        "EURUSD",
+        "XAUUSD"
+      ],
+      "de_fora_esperados": []
+    },
+    {
+      "nome": "estourou e o INSTANTE decide quem fica de fora",
+      "tecto": "100",
+      "pedidos": [
+        {
+          "instrumento": "EURUSD",
+          "saldo_pct": "60",
+          "instante_no_venue_ms": 100
+        },
+        {
+          "instrumento": "XAUUSD",
+          "saldo_pct": "60",
+          "instante_no_venue_ms": 200
+        },
+        {
+          "instrumento": "GBPUSD",
+          "saldo_pct": "10",
+          "instante_no_venue_ms": 300
+        }
+      ],
+      "criterio_esperado": "fifo",
+      "admitidos_esperados": [
+        "EURUSD"
+      ],
+      "de_fora_esperados": [
+        "XAUUSD",
+        "GBPUSD"
+      ]
+    },
+    {
+      "nome": "os MESMOS numeros com os instantes trocados - fica de fora o outro",
+      "tecto": "100",
+      "pedidos": [
+        {
+          "instrumento": "EURUSD",
+          "saldo_pct": "60",
+          "instante_no_venue_ms": 300
+        },
+        {
+          "instrumento": "XAUUSD",
+          "saldo_pct": "60",
+          "instante_no_venue_ms": 200
+        },
+        {
+          "instrumento": "GBPUSD",
+          "saldo_pct": "10",
+          "instante_no_venue_ms": 100
+        }
+      ],
+      "criterio_esperado": "fifo",
+      "admitidos_esperados": [
+        "GBPUSD",
+        "XAUUSD"
+      ],
+      "de_fora_esperados": [
+        "EURUSD"
+      ],
+      "nota": "Par de controle do caso 2: mesmos valores, mesma soma; mudou so a ordem de chegada, e mudou quem fica de fora. Sem esta metade, 'ficou de fora o XAUUSD' podia ser o alfabeto a decidir. (A expectativa aqui foi corrigida depois de a bancada reprovar: com o teto em 100, entram o GBPUSD 10% e o XAUUSD 60% - 70% - e so o EURUSD 60% fica de fora. O que o par prova e o que interessa: o EURUSD entra num caso e fica de fora no outro, e a unica coisa que mudou foi a ordem de chegada.)"
+    },
+    {
+      "nome": "instante empatado - o simbolo desempata, e o criterio diz que foi ele",
+      "tecto": "100",
+      "pedidos": [
+        {
+          "instrumento": "XAUUSD",
+          "saldo_pct": "60",
+          "instante_no_venue_ms": 100
+        },
+        {
+          "instrumento": "EURUSD",
+          "saldo_pct": "60",
+          "instante_no_venue_ms": 100
+        }
+      ],
+      "criterio_esperado": "fifo_desempatado_por_simbolo",
+      "admitidos_esperados": [
+        "EURUSD"
+      ],
+      "de_fora_esperados": [
+        "XAUUSD"
+      ]
+    },
+    {
+      "nome": "sem instante nenhum (o arranque: as fichas chegam todas ao mesmo tempo)",
+      "tecto": "100",
+      "pedidos": [
+        {
+          "instrumento": "XAUUSD",
+          "saldo_pct": "60"
+        },
+        {
+          "instrumento": "EURUSD",
+          "saldo_pct": "60"
+        }
+      ],
+      "criterio_esperado": "fifo_desempatado_por_simbolo",
+      "admitidos_esperados": [
+        "EURUSD"
+      ],
+      "de_fora_esperados": [
+        "XAUUSD"
+      ],
+      "nota": "E o que acontece hoje no arranque: as fichas vem da config e nao trazem relogio do venue. O criterio fica registado como desempate - nao se disfarca de FIFO."
+    },
+    {
+      "nome": "o primeiro que nao cabe para a fila inteira (nao ha ultrapassagem)",
+      "tecto": "100",
+      "pedidos": [
+        {
+          "instrumento": "EURUSD",
+          "saldo_pct": "90",
+          "instante_no_venue_ms": 100
+        },
+        {
+          "instrumento": "XAUUSD",
+          "saldo_pct": "90",
+          "instante_no_venue_ms": 200
+        },
+        {
+          "instrumento": "GBPUSD",
+          "saldo_pct": "5",
+          "instante_no_venue_ms": 300
+        }
+      ],
+      "criterio_esperado": "fifo",
+      "admitidos_esperados": [
+        "EURUSD"
+      ],
+      "de_fora_esperados": [
+        "XAUUSD",
+        "GBPUSD"
+      ],
+      "nota": "O GBPUSD (5%) caberia no tecto depois do EURUSD (90%). Fica de fora de proposito: deixar um pequeno passar por cima de dois grandes que esperam nao e ordem de atendimento, e mais ninguem no sistema saberia explicar a ordem final."
+    },
+    {
+      "nome": "0.1 + 0.2 cabe em 0.3 (a soma exacta; em ponto flutuante nao cabia)",
+      "tecto": "0.3",
+      "pedidos": [
+        {
+          "instrumento": "EURUSD",
+          "saldo_pct": "0.1",
+          "instante_no_venue_ms": 100
+        },
+        {
+          "instrumento": "XAUUSD",
+          "saldo_pct": "0.2",
+          "instante_no_venue_ms": 200
+        }
+      ],
+      "criterio_esperado": "fifo",
+      "admitidos_esperados": [
+        "EURUSD",
+        "XAUUSD"
+      ],
+      "de_fora_esperados": [],
+      "nota": "0.1 + 0.2 em ponto flutuante e 0.30000000000000004, maior do que 0.3 - a quarta casa invisivel decidiria uma recusa. A soma e em inteiros escalados."
+    }
+  ]
+}

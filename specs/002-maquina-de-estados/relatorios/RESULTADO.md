@@ -52,3 +52,45 @@ quem as leia**.
 `specs/002-maquina-de-estados/relatorios/`: `fundacional.txt`, `us1.jsonl`, `us2.{txt,jsonl}`,
 `us3.{txt,jsonl}`, `us4.{txt,jsonl}`, `us5.{txt,jsonl}`, `us6-us7.{txt,jsonl}`, `registo.jsonl`.
 Cada ficheiro `.txt` traz a corrida real colada (comando + saída), e não um resumo escrito à mão.
+
+
+---
+
+## Fase 10 — a emenda do dono (T064–T067), medida
+
+A emenda de 28 set 2026 tirou três botões, tirou um limiar, tirou um contador e moveu duas obrigações
+para o conector. O que se segue é o que disso ficou em código, com o comando que o mediu.
+
+| Tarefa | O que mudou | Comando | Medido |
+|---|---|---|---|
+| **T064** | `dado_velho` → **`sem_ligacao`**, alimentada pelo estado que o conector reporta; `limite_de_idade_ms` saiu do caminho da decisão | `bun run core/ciclo/provar.ts` | **0 de 1** aberturas e **1 de 1** fechos legítimos (SC-003); o par de controle é o **mesmo dado** com a ligação trocada |
+| **T065** | o contador de inválidos seguidos saiu; entrou a **tabela de acção por motivo** (`core/ciclo/acoes.json`) | `bun run core/ciclo/provar.ts` | **21 motivos com acção**, os **16 do contrato** cobertos, **0** nomes inventados, **1 prova negativa** (repetição sem se saber que nada saiu é recusada) |
+| **T066** | a porta da contenda passou a **FIFO** (relógio do venue, desempate por símbolo) e a soma passou a **exacta** | `bun run tools/verificar-maquina/contenda.ts` | **35 verificações · 0 divergentes · 7 casos**, com o par de controle dos instantes trocados e o caso `0.1 + 0.2 ≤ 0.3` |
+| **T067** | as três obrigações do conector e o defeito da conferência da resolução ficaram **declarados** | `grep -rn 'resolucao' core --include=*.ts` | **1 ocorrência, e é texto de mensagem**: nenhuma linha lê a resolução (D-001) |
+
+**Porta única:** `bash tools/verificar-maquina/provar.sh` → **16 de 16** (a corrida inteira, com a
+bateria do recorte 001 incluída: `ponta-a-ponta` 0 falhas · `frescura` 0 divergências em 19 ficheiros ·
+`inventario` 0 falhas). Saída colada em `relatorios/fase10.txt`; o detalhe por caso em `fase10.jsonl`.
+
+### O que a bancada apanhou durante a implementação
+
+1. **O conferidor da tabela recusou um nome meu:** eu tinha posto `sem_ligacao` na tabela de acções —
+   mas `sem_ligacao` é uma **condição** (`condicoes.json`), não um **motivo** (`motivos.json`). Duas
+   listas diferentes. A conferência nas duas direcções apanhou a linha antes de ela ficar.
+2. **A primeira definição do critério da contenda estava errada:** eu fazia o critério depender sempre
+   do corte. Sem corte (cabe todo) não há corte nenhum, e o critério dizia «desempatado por símbolo»
+   quando ninguém tinha sido desempatado. O critério passou a nomear o que **decidiu** — e só quando
+   decidiu alguma coisa.
+3. **Duas expectativas minhas estavam erradas, e o código estava certo:** no caso dos instantes
+   trocados (com o teto em 100 entram o GBPUSD 10% e o XAUUSD 60%) e na definição do critério sem corte.
+   As duas correcções ficaram com a nota no sítio, em vez de corrigir o caso em silêncio.
+4. **A soma da contenda era em ponto flutuante:** `0.1 + 0.2 > 0.3`. Uma casa decimal que ninguém
+   escreveu decidia quem ficava de fora. Passou a inteiros escalados (`BigInt`), como o CB do US5.
+
+### E o que ficou declarado como não feito
+
+`relatorios/DEFEITOS.md`: **D-001** (a mesa pode executar sem conferir a resposta da corretora contra a
+banda do mandato — a consequência directa de ter passado o cálculo para o plugin), **D-002** (as três
+obrigações do conector não têm casa no manifesto do contrato 1.0.0, e dar-lhes casa é subir a versão) e
+**D-003** (a fila da contenda está medida mas o arranque ainda não tem relógio do venue para a
+alimentar: usa o desempate por símbolo, e **diz que o usou**).

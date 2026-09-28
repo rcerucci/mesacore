@@ -167,7 +167,7 @@ Este documento continua a ser o que se lê para **entender** — a vista de cima
 divergirem, **a tabela ganha**, e a divergência é um defeito deste documento. Nenhum dos dois é código: a
 tabela é dado, e é por isso que a máquina pode mudar de comportamento sem mudar de programa.
 
-### Emenda (28 set 2026): a condição `dado_velho` muda de fonte, não de existência
+### Emenda (28 set 2026): a condição `sem_ligacao` muda de fonte, não de existência
 
 O **estado** fica: a mesa tem de saber dizer «não consigo ver o mundo agora», e com a vista tapada não abre
 risco novo (e continua a defender). O que sai é o **limiar**: quem diz que a mesa está cega é o **estado da

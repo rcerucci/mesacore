@@ -22,7 +22,12 @@ export interface EntradaDoInstrumento {
   proposta: any | null;
   ficha: string;
   ciclo: number;
-  limite_de_idade_ms: number | null;
+  /**
+   * O estado da ligacao reportado pelo conector (emenda 28 set 2026). Era `limite_de_idade_ms`, um
+   * numero que o codigo recebia de fora e o dono nao podia governar: em varejo o silencio do tick nao
+   * distingue mercado calmo de ligacao morta.
+   */
+  ligacao: "ligada" | "sem_ligacao";
   mandato: Mandato;
   template: Template;
   /** As marcas de posse que a mesa sabe compor: e por elas que a posse se reconhece. */
@@ -46,7 +51,13 @@ export interface EntradaDoInstrumento {
    * codigo com a mesa pausada ou em operacao. Pausar nao pode ser sinónimo de nao ver.
    */
   mesa_pausada?: boolean;
-  /** O setup propos algo que o contrato recusa (nao e o mesmo que nada propor). */
+  /**
+   * O setup propos algo que o contrato recusa (nao e o mesmo que nada propor).
+   *
+   * A invalidade fica REGISTADA (com a razao do contrato ao lado) e nao alimenta contador nenhum: a
+   * emenda de 28 set 2026 tirou o «N invalidos seguidos inibem a mesa» - o numero era vago porque
+   * depende do erro, e travar a mesa por causa desconhecida e puni-la por um erro que pode ser do mundo.
+   */
   proposta_invalida?: boolean;
   /** O motivo do contrato para essa recusa - vai para o registo. */
   motivo_do_contrato?: string | null;
@@ -54,7 +65,6 @@ export interface EntradaDoInstrumento {
   /** Divergencia declarada por quem le (ex.: a reconciliacao explicou um numero que nao bate). */
   divergente?: boolean;
   restricoes?: { sem_margem?: boolean };
-  invalidos_seguidos_antes?: number;
 }
 
 export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
@@ -66,7 +76,7 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   // Uma posicao que nao e nossa E uma divergencia: a mesa esperava outra coisa (ou nada).
   const situacao = situacaoDoInstrumento(
     { idade_do_dado_ms: mercado.idade_do_dado_ms, estado_do_mercado: mercado.estado },
-    entrada.limite_de_idade_ms,
+    entrada.ligacao,
     entrada.falhas ?? {},
     (entrada.divergente ?? false) || alheia,
     entrada.config,
@@ -76,7 +86,6 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     instrumento: mercado.instrumento,
     condicao: situacao.condicao,
     impedimentos: situacao.impedimentos,
-    invalidos_seguidos: 0,
     motivo_do_contrato: null as string | null,
     desconhecido: entrada.desconhecido ?? null,
   };
@@ -103,7 +112,6 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
       motivo: "proposta_ausente_tratada_como_hold",
       avisa: true,
       boleta: null,
-      invalidos_seguidos: (entrada.invalidos_seguidos_antes ?? 0) + 1,
       // Quando a invalidade vem de uma proposta que o contrato recusou, o motivo DELE fica registrado:
       // "a proposta era invalida" e menos util do que "a proposta tinha um valor fora do conjunto".
       motivo_do_contrato: entrada.proposta_invalida === true ? (entrada.motivo_do_contrato ?? null) : null,

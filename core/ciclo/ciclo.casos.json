@@ -3,12 +3,29 @@
   "fonte": "core/ciclo/condicoes.json + contracts/boleta.schema.json",
   "nota_dos_lados": "RN-T4: buy e sell abrem, hold nao faz nada, caixa vai para caixa (fechar, em reduce-only). Proposta ausente ou com um quinto valor e tratada como hold, com a invalidade registrada e contada.",
   "padrao": {
-    "limite_de_idade_ms": 5000,
-    "proposta_setup": { "nome": "ema_cruz", "versao": "1.0.0" },
-    "config": { "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"] },
+    "proposta_setup": {
+      "nome": "ema_cruz",
+      "versao": "1.0.0"
+    },
+    "config": {
+      "eventos_que_avisam": [
+        "desconhecido",
+        "recusa",
+        "divergencia",
+        "falha_de_leitura",
+        "congelamento",
+        "cb",
+        "encerramento",
+        "contenda",
+        "sem_ligacao"
+      ]
+    },
     "ficha": "3232",
     "ciclo": 0,
-    "mandato": { "saldo_pct": "1", "alavancagem": "2" },
+    "mandato": {
+      "saldo_pct": "1",
+      "alavancagem": "2"
+    },
     "template": {
       "politica_de_execucao": "mercado",
       "parcial": "o_que_der",
@@ -19,13 +36,28 @@
       "tp_pct": "0.6"
     },
     "marcas_nossas_conhecidas": [],
-    "invalidos_seguidos_antes": 0
+    "invalidos_seguidos_antes": 0,
+    "ligacao": "ligada"
   },
   "casos": [
     {
       "nome": "normal-proposta-buy-abre-com-boleta-neutra",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 300, "estado_do_mercado": "aberto", "equity": "1000.00" },
-      "proposta": { "lado": "buy", "setup": { "nome": "ema_cruz", "versao": "1.0.0" }, "relogio": { "proxima_consulta_ms": 60000 } },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy",
+        "setup": {
+          "nome": "ema_cruz",
+          "versao": "1.0.0"
+        },
+        "relogio": {
+          "proxima_consulta_ms": 60000
+        }
+      },
       "ficha": "3232",
       "ciclo": 0,
       "decisao_esperada": {
@@ -50,194 +82,506 @@
           "tp_pct": "0.6"
         }
       },
-      "historico": "US2 cenario 1 - a boleta sai em unidades NEUTRAS: nada de quantidade, lote, preco absoluto"
+      "historico": "US2 cenario 1 - a boleta sai em unidades NEUTRAS: nada de quantidade, lote, preco absoluto",
+      "ligacao": "ligada"
     },
     {
       "nome": "normal-proposta-sell-abre-do-outro-lado",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 300, "estado_do_mercado": "aberto", "equity": "1000.00" },
-      "proposta": { "lado": "sell" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "sell"
+      },
       "ficha": "3232",
       "ciclo": 1,
-      "decisao_esperada": { "acao": "abrir", "motivo": null, "condicao": "normal", "avisa": false, "boleta": { "lado": "sell", "marca_de_posse": 1694498817, "referencia_do_cliente": "mesa-3232-000001" } },
-      "historico": "o lado e do SETUP: a mesa obedece ao mandato e ao template, nao escolhe lado"
+      "decisao_esperada": {
+        "acao": "abrir",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "sell",
+          "marca_de_posse": 1694498817,
+          "referencia_do_cliente": "mesa-3232-000001"
+        }
+      },
+      "historico": "o lado e do SETUP: a mesa obedece ao mandato e ao template, nao escolhe lado",
+      "ligacao": "ligada"
     },
     {
       "nome": "normal-proposta-hold-nao-faz-nada",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 300, "estado_do_mercado": "aberto" },
-      "proposta": { "lado": "hold" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto"
+      },
+      "proposta": {
+        "lado": "hold"
+      },
       "ficha": "3232",
       "ciclo": 2,
-      "decisao_esperada": { "acao": "nada", "motivo": "proposta_sem_lado_a_executar", "condicao": "normal", "avisa": false },
-      "historico": "RN-T4 - hold e uma proposta legitima que nao faz nada, e nao uma invalidade"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "proposta_sem_lado_a_executar",
+        "condicao": "normal",
+        "avisa": false
+      },
+      "historico": "RN-T4 - hold e uma proposta legitima que nao faz nada, e nao uma invalidade",
+      "ligacao": "ligada"
     },
     {
       "nome": "normal-proposta-caixa-sem-posicao-nao-tem-o-que-fechar",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 300, "estado_do_mercado": "aberto" },
-      "proposta": { "lado": "caixa" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto"
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
       "ficha": "3232",
       "ciclo": 3,
-      "decisao_esperada": { "acao": "nada", "motivo": "sem_posicao_para_fechar", "condicao": "normal", "avisa": false },
-      "historico": "caixa sem nada aberto e um pedido sem objecto"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "sem_posicao_para_fechar",
+        "condicao": "normal",
+        "avisa": false
+      },
+      "historico": "caixa sem nada aberto e um pedido sem objecto",
+      "ligacao": "ligada"
     },
     {
       "nome": "normal-proposta-caixa-com-posicao-nossa-fecha-em-reduce-only",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 300, "estado_do_mercado": "aberto", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
-      "proposta": { "lado": "caixa" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
       "ficha": "3232",
       "ciclo": 4,
-      "marcas_nossas_conhecidas": [1694498816],
-      "decisao_esperada": { "acao": "fechar", "motivo": null, "condicao": "normal", "avisa": false, "boleta": { "lado": "sell", "reduce_only": true } },
-      "historico": "RN-B5 - reduce_only e da mesa, na saida: fechar nunca inverte"
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "fechar",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "sell",
+          "reduce_only": true
+        }
+      },
+      "historico": "RN-B5 - reduce_only e da mesa, na saida: fechar nunca inverte",
+      "ligacao": "ligada"
     },
     {
-      "nome": "dado-velho-nao-abre",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 9000, "estado_do_mercado": "aberto" },
-      "proposta": { "lado": "buy" },
+      "nome": "sem-ligacao-nao-abre",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 100,
+        "estado_do_mercado": "aberto"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "3232",
       "ciclo": 5,
-      "decisao_esperada": { "acao": "nada", "motivo": "abrir_impedido_pela_condicao", "condicao": "dado_velho", "avisa": true },
-      "historico": "US2 cenario 6, FR-020 - abrir com preco velho e entrar num preco que ja nao existe"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "abrir_impedido_pela_condicao",
+        "condicao": "sem_ligacao",
+        "avisa": true
+      },
+      "historico": "US2 cenario 6, FR-020 - abrir com preco velho e entrar num preco que ja nao existe",
+      "ligacao": "sem_ligacao"
     },
     {
-      "nome": "dado-velho-com-posicao-nossa-PODE-fechar",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 9000, "estado_do_mercado": "aberto", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
-      "proposta": { "lado": "caixa" },
+      "nome": "sem-ligacao-com-posicao-nossa-PODE-fechar",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 100,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
       "ficha": "3232",
       "ciclo": 6,
-      "marcas_nossas_conhecidas": [1694498816],
-      "decisao_esperada": { "acao": "fechar", "motivo": null, "condicao": "dado_velho", "avisa": true, "boleta": { "reduce_only": true } },
-      "historico": "SC-003 - reduzir risco nunca espera por dado fresco"
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "fechar",
+        "motivo": null,
+        "condicao": "sem_ligacao",
+        "avisa": true,
+        "boleta": {
+          "reduce_only": true
+        }
+      },
+      "historico": "SC-003 - reduzir risco nunca espera por dado fresco",
+      "ligacao": "sem_ligacao"
     },
     {
       "nome": "sem-leitura-nao-abre",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 0, "estado_do_mercado": "aberto" },
-      "falhas": { "leitura": true },
-      "proposta": { "lado": "buy" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 0,
+        "estado_do_mercado": "aberto"
+      },
+      "falhas": {
+        "leitura": true
+      },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "3232",
       "ciclo": 7,
-      "decisao_esperada": { "acao": "nada", "motivo": "abrir_impedido_pela_condicao", "condicao": "sem_leitura", "avisa": true },
-      "historico": "US2 cenario 2"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "abrir_impedido_pela_condicao",
+        "condicao": "sem_leitura",
+        "avisa": true
+      },
+      "historico": "US2 cenario 2",
+      "ligacao": "ligada"
     },
     {
       "nome": "sem-leitura-com-posicao-tambem-NAO-fecha",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 0, "estado_do_mercado": "aberto", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
-      "falhas": { "leitura": true },
-      "proposta": { "lado": "caixa" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 0,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "falhas": {
+        "leitura": true
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
       "ficha": "3232",
       "ciclo": 8,
-      "marcas_nossas_conhecidas": [1694498816],
-      "decisao_esperada": { "acao": "nada", "motivo": "fechar_impedido_pela_condicao", "condicao": "sem_leitura", "avisa": true },
-      "historico": "o outro lado do SC-003 - fechar sem saber o que existe e adivinhar"
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "fechar_impedido_pela_condicao",
+        "condicao": "sem_leitura",
+        "avisa": true
+      },
+      "historico": "o outro lado do SC-003 - fechar sem saber o que existe e adivinhar",
+      "ligacao": "ligada"
     },
     {
       "nome": "congelada-nao-abre",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto" },
-      "falhas": { "setup_respondeu": false },
-      "proposta": { "lado": "buy" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto"
+      },
+      "falhas": {
+        "setup_respondeu": false
+      },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "3232",
       "ciclo": 9,
-      "decisao_esperada": { "acao": "nada", "motivo": "abrir_impedido_pela_condicao", "condicao": "congelada", "avisa": true },
-      "historico": "US2 cenario 4"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "abrir_impedido_pela_condicao",
+        "condicao": "congelada",
+        "avisa": true
+      },
+      "historico": "US2 cenario 4",
+      "ligacao": "ligada"
     },
     {
       "nome": "congelada-com-posicao-nossa-DEFENDE",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
-      "falhas": { "setup_respondeu": false },
-      "proposta": { "lado": "caixa" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "falhas": {
+        "setup_respondeu": false
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
       "ficha": "3232",
       "ciclo": 10,
-      "marcas_nossas_conhecidas": [1694498816],
-      "decisao_esperada": { "acao": "fechar", "motivo": null, "condicao": "congelada", "avisa": true, "boleta": { "reduce_only": true } },
-      "historico": "FR-018 - o setup mudo impede abrir e cancelar, mas a defesa NAO depende do setup"
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "fechar",
+        "motivo": null,
+        "condicao": "congelada",
+        "avisa": true,
+        "boleta": {
+          "reduce_only": true
+        }
+      },
+      "historico": "FR-018 - o setup mudo impede abrir e cancelar, mas a defesa NAO depende do setup",
+      "ligacao": "ligada"
     },
     {
       "nome": "divergente-nao-abre",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto"
+      },
       "divergente": true,
-      "proposta": { "lado": "buy" },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "3232",
       "ciclo": 11,
-      "decisao_esperada": { "acao": "nada", "motivo": "abrir_impedido_pela_condicao", "condicao": "divergente", "avisa": true },
-      "historico": "US2 cenario 3"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "abrir_impedido_pela_condicao",
+        "condicao": "divergente",
+        "avisa": true
+      },
+      "historico": "US2 cenario 3",
+      "ligacao": "ligada"
     },
     {
       "nome": "divergente-nao-fecha-por-iniciativa-propria",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
       "divergente": true,
-      "proposta": { "lado": "caixa" },
+      "proposta": {
+        "lado": "caixa"
+      },
       "ficha": "3232",
       "ciclo": 12,
-      "marcas_nossas_conhecidas": [1694498816],
-      "decisao_esperada": { "acao": "nada", "motivo": "fechar_impedido_pela_condicao", "condicao": "divergente", "avisa": true },
-      "historico": "FR-017 - a saida e a reconciliacao que explica, nao uma decisao da mesa"
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "fechar_impedido_pela_condicao",
+        "condicao": "divergente",
+        "avisa": true
+      },
+      "historico": "FR-017 - a saida e a reconciliacao que explica, nao uma decisao da mesa",
+      "ligacao": "ligada"
     },
     {
       "nome": "mercado-fechado-nao-abre-e-nao-alarma",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "fechado" },
-      "proposta": { "lado": "buy" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "fechado"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "3232",
       "ciclo": 13,
-      "decisao_esperada": { "acao": "nada", "motivo": "abrir_impedido_pela_condicao", "condicao": "mercado_fechado", "avisa": false },
-      "historico": "US2 cenario 5 - alarmar o normal ensina o dono a ignorar alarmes"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "abrir_impedido_pela_condicao",
+        "condicao": "mercado_fechado",
+        "avisa": false
+      },
+      "historico": "US2 cenario 5 - alarmar o normal ensina o dono a ignorar alarmes",
+      "ligacao": "ligada"
     },
     {
       "nome": "mercado-fechado-com-posicao-nossa-nao-fecha",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "fechado", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
-      "proposta": { "lado": "caixa" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "fechado",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
       "ficha": "3232",
       "ciclo": 14,
-      "marcas_nossas_conhecidas": [1694498816],
-      "decisao_esperada": { "acao": "nada", "motivo": "fechar_impedido_pela_condicao", "condicao": "mercado_fechado", "avisa": false },
-      "historico": "a posicao fica como esta e a condicao sai quando o conector declarar aberto"
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "fechar_impedido_pela_condicao",
+        "condicao": "mercado_fechado",
+        "avisa": false
+      },
+      "historico": "a posicao fica como esta e a condicao sai quando o conector declarar aberto",
+      "ligacao": "ligada"
     },
     {
       "nome": "posicao-alheia-e-relatada-e-nao-gerida",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto", "posicao": { "lado": "sell", "unidades": "500", "preco_medio": "1.0900", "marca_de_posse": 7 } },
-      "proposta": { "lado": "buy" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "sell",
+          "unidades": "500",
+          "preco_medio": "1.0900",
+          "marca_de_posse": 7
+        }
+      },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "3232",
       "ciclo": 15,
-      "marcas_nossas_conhecidas": [1694498816],
-      "decisao_esperada": { "acao": "nada", "motivo": "posicao_alheia_relatada_nao_gerida", "condicao": "divergente", "avisa": true },
-      "historico": "FR-021 - e NAO se cancela sem decisao do dono"
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "posicao_alheia_relatada_nao_gerida",
+        "condicao": "divergente",
+        "avisa": true
+      },
+      "historico": "FR-021 - e NAO se cancela sem decisao do dono",
+      "ligacao": "ligada"
     },
     {
       "nome": "sem-margem-no-ciclo-nao-e-estado",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto" },
-      "proposta": { "lado": "buy" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "3232",
       "ciclo": 16,
-      "restricoes": { "sem_margem": true },
-      "decisao_esperada": { "acao": "nada", "motivo": "sem_margem_no_ciclo", "condicao": "normal", "avisa": false },
-      "historico": "FR-006 - sem_margem NAO e estado: e motivo registrado, e o ciclo seguinte corre o seu caminho"
+      "restricoes": {
+        "sem_margem": true
+      },
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "sem_margem_no_ciclo",
+        "condicao": "normal",
+        "avisa": false
+      },
+      "historico": "FR-006 - sem_margem NAO e estado: e motivo registrado, e o ciclo seguinte corre o seu caminho",
+      "ligacao": "ligada"
     },
     {
-      "nome": "proposta-ausente-e-tratada-como-hold-e-conta-para-os-invalidos",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto" },
+      "nome": "proposta-ausente-e-tratada-como-hold (a invalidade fica registada, e nao alimenta contador nenhum)",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto"
+      },
       "proposta": null,
       "ficha": "3232",
       "ciclo": 17,
-      "invalidos_seguidos_antes": 2,
-      "decisao_esperada": { "acao": "nada", "motivo": "proposta_ausente_tratada_como_hold", "condicao": "normal", "avisa": true, "invalidos_seguidos": 3 },
-      "historico": "RN-T4 - ausencia e invalidade, e invalidos SEGUIDOS acima do limite inibem"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "proposta_ausente_tratada_como_hold",
+        "condicao": "normal",
+        "avisa": true
+      },
+      "historico": "RN-T4 (emenda 28 set 2026): a proposta ausente/invalida e hold com a razao do contrato registada; NAO existe contador de invalidos que inibe a mesa",
+      "ligacao": "ligada"
     },
     {
       "nome": "proposta-com-um-quinto-valor-e-invalida",
-      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 200, "estado_do_mercado": "aberto" },
-      "proposta": { "lado": "comprar" },
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 200,
+        "estado_do_mercado": "aberto"
+      },
+      "proposta": {
+        "lado": "comprar"
+      },
       "ficha": "3232",
       "ciclo": 18,
-      "invalidos_seguidos_antes": 0,
-      "decisao_esperada": { "acao": "nada", "motivo": "proposta_ausente_tratada_como_hold", "condicao": "normal", "avisa": true, "invalidos_seguidos": 1, "motivo_do_contrato": "valor_fora_do_conjunto" },
-      "historico": "RN-T4 - cinco valores nao entram: a mesa trata como hold e registra"
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "proposta_ausente_tratada_como_hold",
+        "condicao": "normal",
+        "avisa": true,
+        "motivo_do_contrato": "valor_fora_do_conjunto"
+      },
+      "historico": "RN-T4 - cinco valores nao entram: a mesa trata como hold e registra",
+      "ligacao": "ligada"
     },
     {
       "nome": "a-marca-de-posse-e-ficha-e-ciclo-conferidos-por-aritmetica",
-      "leitura": { "instrumento": "XAUUSD", "idade_do_dado_ms": 100, "estado_do_mercado": "aberto" },
-      "proposta": { "lado": "buy" },
+      "leitura": {
+        "instrumento": "XAUUSD",
+        "idade_do_dado_ms": 100,
+        "estado_do_mercado": "aberto"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
       "ficha": "1",
       "ciclo": 524287,
-      "decisao_esperada": { "acao": "abrir", "motivo": null, "condicao": "normal", "avisa": false, "boleta": { "instrumento": "XAUUSD", "marca_de_posse": 1048575 } },
-      "historico": "ficha 1 e o ciclo maximo (524287) -> 1 << 19 | 524287 = 1048575"
+      "decisao_esperada": {
+        "acao": "abrir",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "instrumento": "XAUUSD",
+          "marca_de_posse": 1048575
+        }
+      },
+      "historico": "ficha 1 e o ciclo maximo (524287) -> 1 << 19 | 524287 = 1048575",
+      "ligacao": "ligada"
     },
     {
       "nome": "com-desconhecido-nao-abre (a mesma proposta do caso 1, agora bloqueada)",
@@ -261,7 +605,8 @@
         "motivo": "abrir_bloqueado_por_desconhecido",
         "condicao": "normal",
         "avisa": false
-      }
+      },
+      "ligacao": "ligada"
     },
     {
       "nome": "com-desconhecido-defender-continua (a marca nao impede reduzir risco)",
@@ -298,7 +643,8 @@
           "lado": "sell",
           "reduce_only": true
         }
-      }
+      },
+      "ligacao": "ligada"
     },
     {
       "nome": "o-mesmo-dado-com-outro-dono-nao-avisa (a lista e da config)",
@@ -323,7 +669,8 @@
         "motivo": "abrir_impedido_pela_condicao",
         "condicao": "divergente",
         "avisa": false
-      }
+      },
+      "ligacao": "ligada"
     },
     {
       "nome": "a-mesma-divergencia-com-o-dono-da-bateria-avisa",
@@ -343,7 +690,8 @@
         "motivo": "abrir_impedido_pela_condicao",
         "condicao": "divergente",
         "avisa": true
-      }
+      },
+      "ligacao": "ligada"
     }
   ]
 }

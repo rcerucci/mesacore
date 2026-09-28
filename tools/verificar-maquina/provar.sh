@@ -42,6 +42,7 @@ declarar "arranque (seis portas)"        bun run tools/verificar-maquina/arranqu
 declarar "sessao e CB"                   bun run tools/verificar-maquina/sessao.ts
 declarar "pausa e encerramento"          bun run tools/verificar-maquina/pausa.ts
 declarar "registo (SC-011)"              bun run tools/verificar-maquina/registo.ts
+declarar "contenda (T066)"      bun run tools/verificar-maquina/contenda.ts  "resumo"
 declarar "chaves do core (SC-012)"       bun run tools/verificar-maquina/chaves.ts
 declarar "porteiro do estado (script)"   bash tools/verificar-maquina/porteiro-do-estado.sh
 declarar "marcas sobrevivem ao reinicio" bash tools/verificar-maquina/reiniciar.sh

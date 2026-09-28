@@ -17,6 +17,11 @@
 
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
+import {
+  resolverContenda,
+  type Contenda,
+  type PedidoDeContenda,
+} from "./contenda.ts";
 import { type Marcas } from "../estado/marcas.ts";
 
 export const PORTAS = [
@@ -71,6 +76,8 @@ export interface ResultadoDoArranque {
   porque: string;
   /** As portas conferidas ate parar - o que se chegou a olhar, e nao o que se diz que se olhou. */
   portas_conferidas: NomeDaPorta[];
+  /** A fila da contenda, quando houve: quem entra, quem espera e o criterio que decidiu o corte. */
+  contenda: Contenda | null;
   /** O que foi LIDO, tal e qual. Existe para a FR-032 ter prova: o que sai e o que entrou. */
   lido: { fichas: Record<string, unknown>; manifesto: { versao: unknown; instrumentos: unknown } };
 }
@@ -160,22 +167,47 @@ function portaDoMandato(config: ConfiguracaoDaConta): Recusa | null {
   return null;
 }
 
-function portaDaContenda(config: ConfiguracaoDaConta): Recusa | null {
+function portaDaContenda(
+  config: ConfiguracaoDaConta,
+  anotar?: (c: Contenda) => void,
+): Recusa | null {
   const fichas = (config.fichas ?? {}) as Record<string, Ficha>;
-  const soma = Object.entries(fichas).reduce((acc, [, f]) => acc + numero(f.saldo_pct, "ficha.saldo_pct"), 0);
-  const teto = numero(config.margem_total_maxima_pct, "conta.margem_total_maxima_pct");
+  // A soma e feita em inteiros escalados, dentro do resolver: quem entra e quem espera nao pode depender
+  // de uma casa decimal que ninguem escreveu (`0.1 + 0.2 > 0.3` em ponto flutuante).
+  const pedidos: PedidoDeContenda[] = Object.entries(fichas).map(([instrumento, f]) => ({
+    instrumento,
+    saldo_pct: String((f as Ficha).saldo_pct ?? "0"),
+    instante_no_venue_ms: (f as any).instante_no_venue_ms ?? null,
+  }));
+  const contenda = resolverContenda(pedidos, String(config.margem_total_maxima_pct ?? "0"));
 
-  if (soma <= teto) return null;
+  // Cabe todo: nao ha contenda, e nem se chega a ler a politica.
+  if (contenda.de_fora.length === 0) {
+    anotar?.(contenda);
+    return null;
+  }
 
-  // Acima do teto, o que resolve e uma DECLARACAO do dono - nao uma omissao simpatica.
+  // Acima do tecto, o que resolve e uma DECLARACAO do dono - nao uma omissao simpatica.
   const politica = config.contencao;
-  if (typeof politica === "string" && politica.length > 0) return null;
+  if (typeof politica !== "string" || politica.length === 0) {
+    return {
+      porta: "contenda",
+      motivo: "porta_do_arranque_falhou",
+      motivo_do_contrato: null,
+      porque: `Sem 'conta.contencao' declarada, o arranque recusa: contenda nao se resolve por omissao (RN-M4.7). ${contenda.porque}`,
+    };
+  }
+
+  anotar?.(contenda);
+
+  // `espera`: quem cabe entra, quem nao cabe ESPERA - e a espera fica registada com o criterio dela.
+  if (politica === "espera") return null;
 
   return {
     porta: "contenda",
     motivo: "porta_do_arranque_falhou",
     motivo_do_contrato: null,
-    porque: `As fichas somam ${soma}% e o tecto da conta e ${teto}%. Sem 'conta.contencao' declarada, o arranque recusa: contenda nao se resolve por omissao (RN-M4.7).`,
+    porque: `A politica declarada e '${politica}': ${contenda.porque}`,
   };
 }
 
@@ -235,12 +267,17 @@ function portaDaSessao(marcas: Marcas, registoRetomavel: boolean, config: Config
 }
 
 /** As seis portas, por ordem. Devolve a recusa da PRIMEIRA que falhar, ou `null`. */
-export function passarPelasPortas(entrada: EntradaDoArranque): { recusa: Recusa | null; conferidas: NomeDaPorta[] } {
+export function passarPelasPortas(entrada: EntradaDoArranque): {
+  recusa: Recusa | null;
+  conferidas: NomeDaPorta[];
+  contenda: Contenda | null;
+} {
   const conferidas: NomeDaPorta[] = [];
+  let contenda: Contenda | null = null;
   const passos: [NomeDaPorta, () => Recusa | null][] = [
     ["manifesto", () => portaDoManifesto(entrada.manifesto, entrada.config)],
     ["mandato", () => portaDoMandato(entrada.config)],
-    ["contenda", () => portaDaContenda(entrada.config)],
+    ["contenda", () => portaDaContenda(entrada.config, (c) => { contenda = c; })],
     ["inventario", () => portaDoInventario(entrada.portaDoInventario)],
     ["versao_do_contrato", () => portaDaVersao(entrada.manifesto)],
     ["sessao", () => portaDaSessao(entrada.marcas, entrada.registo_retomavel, entrada.config)],
@@ -249,9 +286,9 @@ export function passarPelasPortas(entrada: EntradaDoArranque): { recusa: Recusa 
   for (const [nome, porta] of passos) {
     conferidas.push(nome);
     const recusa = porta();
-    if (recusa !== null) return { recusa, conferidas };
+    if (recusa !== null) return { recusa, conferidas, contenda };
   }
-  return { recusa: null, conferidas };
+  return { recusa: null, conferidas, contenda };
 }
 
 export function arrancar(entrada: EntradaDoArranque): ResultadoDoArranque {
@@ -261,7 +298,7 @@ export function arrancar(entrada: EntradaDoArranque): ResultadoDoArranque {
     manifesto: { versao: manifesto?.versao, instrumentos: manifesto?.instrumentos },
   };
 
-  const { recusa, conferidas } = passarPelasPortas(entrada);
+  const { recusa, conferidas, contenda } = passarPelasPortas(entrada);
 
   if (recusa !== null) {
     return {
@@ -273,6 +310,7 @@ export function arrancar(entrada: EntradaDoArranque): ResultadoDoArranque {
       motivo_do_contrato: recusa.motivo_do_contrato,
       porque: recusa.porque,
       portas_conferidas: conferidas,
+      contenda,
       lido,
     };
   }
@@ -285,6 +323,7 @@ export function arrancar(entrada: EntradaDoArranque): ResultadoDoArranque {
     motivo_do_contrato: null,
     porque: "As seis portas passaram: o manifesto declara o que a configuracao usa, o mandato cabe nas bandas, a conta cabe no tecto, as chaves tem dono, a versao bate certo e a sessao pode correr.",
     portas_conferidas: conferidas,
+    contenda,
     lido,
   };
 }

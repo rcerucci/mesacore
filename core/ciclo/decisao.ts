@@ -55,8 +55,6 @@ export interface Decisao {
   /** Se este caso entra na lista de eventos que avisam (a lista e do dono - FR-042). */
   avisa: boolean;
   boleta: any | null;
-  /** Para o registo: quantos invalidos SEGUIDOS (RN-T4). Invalido seguido acima do limite inibe. */
-  invalidos_seguidos: number;
   /** O motivo do CONTRATO, quando a proposta foi recusada por ele (explica a invalidade). */
   motivo_do_contrato: string | null;
   /**

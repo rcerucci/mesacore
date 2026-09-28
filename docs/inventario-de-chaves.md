@@ -99,8 +99,12 @@ liga ordem a posição nos seus próprios registros · **estado do mercado** (ab
 
 Aritméticas, não interpretativas — é por isso que esta vista apanha o que a leitura não apanha:
 
-1. **`conta.idade_maxima_do_dado_ms`** — RN-D3 manda invalidar o ciclo por "dado acima do limite
-   declarado" e **ninguém declarou o limite**. Regra sem chave é regra que não corre.
+1. ~~**`conta.idade_maxima_do_dado_ms`**~~ — **fechada pela emenda do dono (28 set 2026)**: o limite
+   deixou de existir por inteiro; quem diz que a mesa está cega é o **estado da ligação** (condição
+   `sem_ligacao`, §8), e a idade da barra é regra do **setup** (que recebe o carimbo da corretora no
+   dataframe, e sabe se a barra está fechada). A lição fica: uma regra que manda «invalidar acima do
+   limite declarado» sem o limite declarado em lado nenhum é uma regra que **não corre** — e que só se
+   descobre se alguém a for procurar.
 2. **`setup.prazo_de_resposta_ms`** — RN-S8 congela por "silêncio além do prazo" e o prazo não tem chave.
    Num **setup manual** isto deixa de ser detalhe: sem prazo humano, a mesa congela porque o dono foi
    almoçar (RN-T15.1).
@@ -190,3 +194,20 @@ uma vez, ao carregar:
 A mesa **não pode mandar executar sem conferir a resolução contra a banda do mandato**. Sem esse passo,
 passar o cálculo para o plugin passa também o **limite**: o plugin decide tamanho e ninguém verifica.
 Fica registado como obrigação do recorte do conector — e como **defeito declarado** enquanto não existir.
+
+### 8.3 Estado desta emenda (28 set 2026, mesmo dia)
+
+As quatro decisões estão **implementadas e medidas** — é a **fase 10** do recorte 002, tarefas T064 a
+T067, e o recorte voltou a fechar (**67 de 67**):
+
+| Decisão | Onde ficou | Como se mede |
+|---|---|---|
+| a idade sai, a ligação fica | `core/ciclo/condicoes.json` (condição `sem_ligacao`) e `EntradaDoInstrumento.ligacao` | `bun run core/ciclo/provar.ts` — par de controle com o **mesmo dado** e a ligação trocada |
+| o contador de erros sai, a tabela fica | `core/ciclo/acoes.json` + `acoes.ts` | idem — 21 motivos com acção, os 16 do contrato cobertos, prova negativa da repetição |
+| a fila é FIFO | `core/ciclo/contenda.ts` (relógio do venue; soma em `BigInt`) | `bun run tools/verificar-maquina/contenda.ts` — 7 casos, com os instantes trocados |
+| o prazo de resposta do encerramento | `setup.prazo_de_resposta_ms` (entra na §3) | par de casos em `pausa.casos.json` (US6/US7) |
+
+**Porta única:** `bash tools/verificar-maquina/provar.sh` → **16 de 16**. Os três defeitos que esta
+emenda deixa declarados (a conferência da resolução contra a banda, a casa das obrigações no manifesto,
+e o relógio do venue na fila) estão em
+`specs/002-maquina-de-estados/relatorios/DEFEITOS.md`, cada um com o número que prova que falta.

@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { deveAvisar, type ConfiguracaoDaConta } from "../config/configuracao.ts";
 import { lerParaOCiclo } from "../leitura/fixtures.ts";
 import { decidirInstrumento } from "./ciclo.ts";
+import { accaoPara, conferirAccoes, tabelaDeAccoes } from "./acoes.ts";
 import { conferirLivro, livroDeCondicoes, situacaoDoInstrumento } from "./condicoes.ts";
 import { classificarDesfecho, type Envio } from "./desfecho.ts";
 import { reconciliar, type Veredicto } from "./reconciliacao.ts";
@@ -95,7 +96,7 @@ const configDasCondicoes = config(bateriaCondicoes.config_da_bateria);
 for (const caso of bateriaCondicoes.casos) {
   const s = situacaoDoInstrumento(
     { idade_do_dado_ms: caso.leitura.idade_do_dado_ms, estado_do_mercado: caso.leitura.estado_do_mercado },
-    caso.limite_de_idade_ms,
+    caso.ligacao ?? "ligada",
     caso.falhas ?? {},
     caso.divergente === true ||
       (caso.leitura.posicao !== undefined &&
@@ -158,7 +159,7 @@ for (const caso of bateriaCiclo.casos) {
     motivo_do_contrato: entradas.motivo_do_contrato,
     ficha: caso.ficha ?? padrao.ficha,
     ciclo,
-    limite_de_idade_ms: caso.limite_de_idade_ms ?? padrao.limite_de_idade_ms,
+    ligacao: caso.ligacao ?? padrao.ligacao ?? "ligada",
     mandato: caso.mandato ?? padrao.mandato,
     template: caso.template ?? padrao.template,
     marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? padrao.marcas_nossas_conhecidas,
@@ -167,7 +168,6 @@ for (const caso of bateriaCiclo.casos) {
     falhas: caso.falhas ?? {},
     divergente: caso.divergente === true,
     restricoes: caso.restricoes,
-    invalidos_seguidos_antes: caso.invalidos_seguidos_antes ?? padrao.invalidos_seguidos_antes,
   });
 
   const d = caso.decisao_esperada;
@@ -179,10 +179,6 @@ for (const caso of bateriaCiclo.casos) {
     desencontro(
       d.motivo_do_contrato === undefined || decisao.motivo_do_contrato === d.motivo_do_contrato,
       `motivo_do_contrato: esperado '${d.motivo_do_contrato}', obtido '${decisao.motivo_do_contrato}'`,
-    ),
-    desencontro(
-      d.invalidos_seguidos === undefined || decisao.invalidos_seguidos === d.invalidos_seguidos,
-      `invalidos_seguidos: esperado ${d.invalidos_seguidos}, obtido ${decisao.invalidos_seguidos}`,
     ),
   ].filter((x): x is string => x !== null);
 
@@ -209,12 +205,14 @@ for (const caso of bateriaCiclo.casos) {
   const temPosicaoNossa =
     caso.leitura.posicao !== undefined &&
     (caso.marcas_nossas_conhecidas ?? []).includes(caso.leitura.posicao.marca_de_posse);
-  const dadoVelho = caso.leitura.idade_do_dado_ms > (caso.limite_de_idade_ms ?? padrao.limite_de_idade_ms);
-  if (dadoVelho && pediuFechar && temPosicaoNossa) {
+  // SC-003 (emenda de 28 set 2026): o que trava a abertura deixou de ser a idade e passou a ser o ESTADO
+  // DA LIGACAO. O criterio e o mesmo; a fonte do facto e que mudou.
+  const semLigacao = (caso.ligacao ?? padrao.ligacao ?? "ligada") === "sem_ligacao";
+  if (semLigacao && pediuFechar && temPosicaoNossa) {
     comDadoVelhoPediuFechar += 1;
     if (decisao.acao === "fechar") comDadoVelhoFechou += 1;
   }
-  if (dadoVelho && decisao.acao === "abrir") comDadoVelhoAbriu += 1;
+  if (semLigacao && decisao.acao === "abrir") comDadoVelhoAbriu += 1;
 
   // SC-005: so contam as tentativas em que se PEDIU abrir com a marca presente.
   const querAbrir = ["buy", "sell"].includes(caso.proposta?.lado ?? "");
@@ -232,7 +230,7 @@ for (const caso of bateriaCiclo.casos) {
       condicao: decisao.condicao,
       impedimentos: decisao.impedimentos,
       avisa: decisao.avisa,
-      invalidos_seguidos: decisao.invalidos_seguidos,
+      ligacao: caso.ligacao ?? padrao.ligacao ?? "ligada",
       motivo_do_contrato: decisao.motivo_do_contrato,
       desconhecido: decisao.desconhecido,
       boleta: decisao.boleta,
@@ -387,6 +385,52 @@ exigir(
   foraDoContrato.length === 0,
   `os ${motivosDoContrato.length} motivos do CONTRATO citados pela bateria constam do vocabulario (contracts/vocabulario.json)`,
   foraDoContrato.map((m) => `motivo inventado: '${m}'`),
+);
+
+// ------------------------------------------------------- accoes por motivo (T065, fase 10)
+//
+// A tabela substituiu o contador de invalidos seguidos: o que decide a mesa quando algo corre mal e o
+// MOTIVO, nao quantas vezes. Aqui conferem-se as duas direcoes, o par de controle e a regra estrutural
+// com prova negativa.
+
+const livroDaMesa = JSON.parse(
+  readFileSync(join(RAIZ_DO_REPO, "core", "estados", "motivos.json"), "utf8"),
+).motivos as Record<string, unknown>;
+const defeitosDaTabela = conferirAccoes(
+  tabelaDeAccoes,
+  Object.keys(vocabularioDoContrato),
+  Object.keys(livroDaMesa),
+);
+exigir(
+  defeitosDaTabela.length === 0,
+  `a tabela cobre os ${Object.keys(vocabularioDoContrato).length} motivos do contrato e os ` +
+    `${tabelaDeAccoes.motivos_de_falha.length} motivos de falha declarados, sem nome inventado`,
+  defeitosDaTabela,
+);
+
+// O par de controle: dois erros que o CONTADOR nao distinguia, e a tabela distingue.
+const semResposta = accaoPara("sem_confirmacao_dentro_do_prazo");
+const confirmadoInexistente = accaoPara("reconciliacao_decidiu_inexistente");
+exigir(
+  semResposta.accao === "parar_e_reconciliar" && confirmadoInexistente.accao === "repetir_com_atraso",
+  "o par que o contador nao distinguia: prazo em silencio NAO se repete (pode ter entrado); " +
+    "inexistente confirmado pela reconciliacao PODE (sabe-se que nada saiu)",
+);
+
+// A prova negativa: autorizar repeticao onde nao se sabe que nada saiu tem de ser apanhado. Sem esta
+// prova, a conferencia podia estar a dizer "confere" sem olhar para a regra que evita a segunda posicao.
+const tabelaTorta = {
+  ...tabelaDeAccoes,
+  por_motivo: {
+    ...tabelaDeAccoes.por_motivo,
+    sem_confirmacao_dentro_do_prazo: { ...semResposta, accao: "repetir_com_atraso" as const },
+  },
+};
+exigir(
+  conferirAccoes(tabelaTorta, Object.keys(vocabularioDoContrato), Object.keys(livroDaMesa)).some((d) =>
+    d.includes("repeticao autorizada"),
+  ),
+  "a prova negativa: repetir sem se saber que nada saiu e recusado pela conferencia da tabela",
 );
 
 console.log("");

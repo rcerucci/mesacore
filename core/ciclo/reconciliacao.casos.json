@@ -4,7 +4,7 @@
   "padrao": {
     "instrumento": "EURUSD",
     "config": {
-      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"]
+      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "sem_ligacao"]
     },
     "marca_inicial": {
       "instrumento": "EURUSD",

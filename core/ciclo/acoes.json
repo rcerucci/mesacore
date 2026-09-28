@@ -1,0 +1,132 @@
+{
+  "nota": "O que se FAZ quando algo corre mal, por motivo. Substitui o contador de invalidos seguidos que inibia a mesa (emenda do dono, 28 set 2026): o numero era vago porque depende do erro, e travar a mesa por uma causa que nao se conhece e puni-la por um erro que pode ser do mundo. A perda de ligacao NAO entra nesta tabela: ela e uma CONDICAO (`sem_ligacao`, em condicoes.json) e nao um motivo. A conferencia recusa um nome de condicao no lugar de um motivo - foi assim que este ficheiro perdeu uma linha que eu tinha posto aqui por engano.",
+  "accoes": {
+    "repetir_com_atraso": {
+      "exige": "provadamente_nao_feito === true",
+      "porque": "Repetir so vale quando se sabe que nada saiu. O conector repete no ritmo dele (quantas vezes e com que atraso sao do conector, que conhece a corretora - nao do dono, e nao da mesa)."
+    },
+    "recusar_e_registar": {
+      "exige": "provadamente_nao_feito !== false",
+      "porque": "A mensagem ou a definicao esta errada, e vai estar errada outra vez. Registra-se o motivo e nao se repete: repetir o mesmo bilhete mau so gera ruido na corretora."
+    },
+    "parar_e_reconciliar": {
+      "exige": "provadamente_nao_feito !== true",
+      "porque": "Nao se sabe se saiu. Repetir as cegas abre uma SEGUNDA posicao - e essa e a unica asneira que custa dinheiro a serio. Primeiro pergunta-se a corretora."
+    }
+  },
+  "regra_da_repeticao": "A ordem so se repete quando provadamente NAO saiu. O que decide isso e a fase: antes de enviar, nada saiu; depois de enviar, o desfecho e desconhecido ate a reconciliacao responder. Quem sabe a fase e o conector - e ele que a declara.",
+  "motivos_de_falha": [
+    "sem_confirmacao_dentro_do_prazo",
+    "desfecho_ilegivel",
+    "desfecho_recusado_pelo_venue",
+    "reconciliacao_indecidivel",
+    "reconciliacao_decidiu_inexistente"
+  ],
+  "por_motivo": {
+    "versao_do_contrato_divergente": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "enquadramento_invalido": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "campo_obrigatorio_ausente": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "valor_nulo_nao_permitido": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "campo_desconhecido": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "campo_em_unidade_de_corretora": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "parcial_nao_declarada": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "formato_invalido": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "tipo_invalido": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "valor_fora_do_conjunto": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "valor_fora_da_banda": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "capacidade_nao_declarada": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "instrumento_desconhecido_no_manifesto": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "minimo_do_instrumento_acima_da_banda": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
+    },
+    "prazo_excedido": {
+      "accao": "parar_e_reconciliar",
+      "provadamente_nao_feito": null,
+      "porque": "Desfecho desconhecido: o bilhete pode ter chegado. Primeiro reconcilia-se."
+    },
+    "desfecho_nao_reconhecido": {
+      "accao": "parar_e_reconciliar",
+      "provadamente_nao_feito": null,
+      "porque": "Desfecho desconhecido: o bilhete pode ter chegado. Primeiro reconcilia-se."
+    },
+    "sem_confirmacao_dentro_do_prazo": {
+      "accao": "parar_e_reconciliar",
+      "provadamente_nao_feito": false,
+      "porque": "O prazo passou sem confirmacao: a ordem PODE ter entrado. Repetir agora abriria uma segunda posicao - e o silencio do venue nao e uma resposta."
+    },
+    "desfecho_ilegivel": {
+      "accao": "parar_e_reconciliar",
+      "provadamente_nao_feito": null,
+      "porque": "Leu-se algo que nao se entende. Entender primeiro."
+    },
+    "desfecho_recusado_pelo_venue": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "A corretora recusou com motivo: nada saiu. Registra-se; repetir o mesmo bilhete seria repetir a recusa (e so o conector sabe se a razao dela era passageira)."
+    },
+    "reconciliacao_indecidivel": {
+      "accao": "parar_e_reconciliar",
+      "provadamente_nao_feito": null,
+      "porque": "A reconciliacao nao decidiu: continua desconhecido, e continua a nao se repetir."
+    },
+    "reconciliacao_decidiu_inexistente": {
+      "accao": "repetir_com_atraso",
+      "provadamente_nao_feito": true,
+      "porque": "A reconciliacao decidiu que NAO existe: agora sabe-se que nada saiu, e repetir deixou de ser as cegas. Este e o unico caminho por que a repeticao fica legal - e passa por perguntar primeiro."
+    }
+  }
+}

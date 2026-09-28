@@ -1,0 +1,20 @@
+=== a maquina do recorte 002, do principio ao fim ===
+
+tabela de transicoes                       OK   conferencia: 0 falhas nos 7 invariantes.
+porteiro do estado (negativo)              OK     ok    prova negativa 7-motivo-com-nome-do-contrato: reprovada pelo invariante 7 (nome 'versao_do_contrato_divergente').
+a mesa (maquina + marcas)                  OK   resumo: 24 verificacoes · 0 falhas
+maquina de estados                         OK   resumo: 29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo
+condicoes, ciclo, desfecho                 OK   resumo: 64 verificacoes · 0 divergentes · 12 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+arranque (seis portas)                     OK   resumo: 33 verificacoes · 0 divergentes · 16 casos · 12 portas falhadas de proposito
+sessao e CB                                OK   resumo: 27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB
+pausa e encerramento                       OK   resumo: 21 verificacoes · 0 divergentes · 5 casos US6 · 7 casos US7
+registo (SC-011)                           OK   resumo: 8 verificacoes · 0 divergentes · 11 linhas de registo reconstruidas
+contenda (T066)                            OK   resumo: 35 verificacoes · 0 divergentes · 7 casos
+chaves do core (SC-012)                    OK   resumo: 3 verificacoes · 0 divergentes · 7 chaves
+porteiro do estado (script)                OK   resumo: 2 verificacoes · 0 falhas
+marcas sobrevivem ao reinicio              OK   resumo: 3 processos + 1 leitura externa · 0 falhas
+contrato neutro (recorte 001)              OK   ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam
+frescura do contrato                       OK   frescura: 0 divergencias — o gerado corresponde aos schemas (19 ficheiros)
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 16 de 16 passaram — a maquina decide o que devia, e explica o que nao fez

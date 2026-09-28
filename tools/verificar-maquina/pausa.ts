@@ -112,7 +112,7 @@ for (const caso of bateria.casos_us6) {
     motivo_do_contrato: entradas.motivo_do_contrato,
     ficha: caso.ficha ?? padrao.ficha,
     ciclo: caso.ciclo ?? padrao.ciclo,
-    limite_de_idade_ms: caso.limite_de_idade_ms ?? padrao.limite_de_idade_ms,
+    ligacao: caso.ligacao ?? padrao.ligacao ?? "ligada",
     mandato: padrao.mandato,
     template: padrao.template,
     marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? padrao.marcas_nossas_conhecidas,
@@ -121,7 +121,7 @@ for (const caso of bateria.casos_us6) {
     mesa_pausada: caso.mesa_pausada === true,
     falhas: caso.falhas ?? {},
     divergente: caso.divergente === true,
-    invalidos_seguidos_antes: padrao.invalidos_seguidos_antes,
+
   });
   const d = caso.decisao_esperada;
 
@@ -149,9 +149,6 @@ for (const caso of bateria.casos_us6) {
     (decisao.motivo ?? null) === d.motivo ? null : `motivo: esperado '${d.motivo}', obtido '${decisao.motivo}'`,
     decisao.condicao === d.condicao ? null : `condicao: esperada '${d.condicao}', obtida '${decisao.condicao}'`,
     decisao.avisa === d.avisa ? null : `avisa: esperado ${d.avisa}, obtido ${decisao.avisa}`,
-    d.invalidos_seguidos === undefined || decisao.invalidos_seguidos === d.invalidos_seguidos
-      ? null
-      : `invalidos_seguidos: esperado ${d.invalidos_seguidos}, obtido ${decisao.invalidos_seguidos}`,
     d.boleta === undefined
       ? decisao.boleta === null ? null : "boleta: nao esperada, e houve uma"
       : decisao.boleta === null
@@ -240,13 +237,13 @@ for (const caso of bateria.casos_us7) {
       mercado: entradas.mercado, proposta: entradas.proposta,
       proposta_invalida: false, motivo_do_contrato: null,
       ficha: padrao.ficha, ciclo: 50,
-      limite_de_idade_ms: padrao.limite_de_idade_ms,
+      ligacao: "ligada",
       mandato: padrao.mandato, template: padrao.template,
       marcas_nossas_conhecidas: padrao.marcas_nossas_conhecidas,
       config, desconhecido: null,
       mesa_pausada: false,
       falhas: {}, divergente: false,
-      invalidos_seguidos_antes: 0,
+
     });
     exigir(
       decisao.acao === caso.e_continua_a_abrir.acao_esperada,

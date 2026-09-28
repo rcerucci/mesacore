@@ -13,7 +13,7 @@
         "cb",
         "encerramento",
         "contenda",
-        "dado_velho"
+        "sem_ligacao"
       ],
       "margem_total_maxima_pct": "100",
       "contencao": null,
@@ -369,6 +369,47 @@
         "manifesto"
       ],
       "nota": "Falha manifesto, mandato, contenda, inventario e sessao. O que o dono le e a PRIMEIRA porta - e 'portas_conferidas' tem de parar nela, em vez de dizer que se olhou tudo."
+    },
+    {
+      "nome": "contenda com politica 'recusar' recusa o arranque inteiro (a declaracao tem consequencia)",
+      "config_mudanca": {
+        "contencao": "recusar",
+        "fichas": {
+          "EURUSD": {
+            "saldo_pct": "60",
+            "alavancagem": "2",
+            "bandas": {
+              "saldo_pct": {
+                "minimo": "0.1",
+                "maximo": "100"
+              },
+              "alavancagem": {
+                "minimo": "1",
+                "maximo": "10"
+              }
+            }
+          },
+          "XAUUSD": {
+            "saldo_pct": "60",
+            "alavancagem": "5",
+            "bandas": {
+              "saldo_pct": {
+                "minimo": "0.1",
+                "maximo": "100"
+              },
+              "alavancagem": {
+                "minimo": "1",
+                "maximo": "20"
+              }
+            }
+          }
+        }
+      },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "contenda",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "nota": "Par de controle do caso 'com politica declarada arranca' (politica 'espera', mesmos numeros): a mesma contenda, duas declaracoes, dois desfechos. Antes desta emenda, qualquer string declarada passava - a politica era um campo decorativo."
     }
   ]
 }

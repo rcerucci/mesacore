@@ -9,7 +9,7 @@
       "prazo_de_resposta_ms": 5000
     },
     "config": {
-      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"]
+      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "sem_ligacao"]
     }
   },
   "resolucao_valida": {

@@ -63,7 +63,7 @@ function decidir(leitura: any, proposta: any, ciclo: number, extra: any = {}) {
     motivo_do_contrato: entradas.motivo_do_contrato,
     ficha: padrao.ficha,
     ciclo,
-    limite_de_idade_ms: padrao.limite_de_idade_ms,
+    ligacao: "ligada",
     mandato: padrao.mandato,
     template: padrao.template,
     marcas_nossas_conhecidas: padrao.marcas_nossas_conhecidas,
@@ -72,7 +72,7 @@ function decidir(leitura: any, proposta: any, ciclo: number, extra: any = {}) {
     mesa_pausada: extra.mesa_pausada === true,
     falhas: extra.falhas ?? {},
     divergente: extra.divergente === true,
-    invalidos_seguidos_antes: extra.invalidos_seguidos_antes ?? 0,
+
   });
 }
 

@@ -18,7 +18,7 @@ export type NomeDeCondicao =
   | "divergente"
   | "congelada"
   | "mercado_fechado"
-  | "dado_velho";
+  | "sem_ligacao";
 
 export interface EfeitoDaCondicao {
   impede_abrir: boolean;
@@ -43,7 +43,8 @@ interface LivroDeCondicoes {
   condicoes: Record<NomeDeCondicao, EfeitoDaCondicao>;
   precedencia: NomeDeCondicao[];
   porque_desta_ordem: string;
-  limite_de_idade: { chave: string; comparacao: string; porque: string };
+  /** De onde vem a condicao `sem_ligacao`: um campo com valores declarados, nao um limiar. */
+  fonte_da_condicao: { campo: string; valores: string[]; porque: string };
 }
 
 let cache: LivroDeCondicoes | null = null;
@@ -79,7 +80,15 @@ export interface Situacao {
 
 export function situacaoDoInstrumento(
   leitura: { idade_do_dado_ms: number; estado_do_mercado: "aberto" | "fechado" },
-  limiteDeIdadeMs: number | null,
+  /**
+   * O estado da ligacao, reportado pelo conector pelo protocolo dele - `ligada` ou `sem_ligacao`.
+   *
+   * Nao e um limiar de idade: em varejo o silencio do tick nao distingue mercado calmo de ligacao
+   * morta, e um numero que o dono tivesse de adivinhar nao governaria nada. A idade continua na
+   * mensagem (o contrato nao muda) e pode ser registada - mas quem diz que a mesa esta cega e a
+   * ligacao (emenda do dono, 28 set 2026).
+   */
+  ligacao: "ligada" | "sem_ligacao",
   falhas: Falhas = {},
   divergente = false,
   config: ConfiguracaoDaConta,
@@ -92,10 +101,8 @@ export function situacaoDoInstrumento(
   if (divergente) activas.add("divergente");
   if (leitura.estado_do_mercado === "fechado") activas.add("mercado_fechado");
 
-  // A idade do dado: "acima do limite declarado" (RN-D3) - o limite em si nao e velho.
-  if (limiteDeIdadeMs !== null && leitura.idade_do_dado_ms > limiteDeIdadeMs) {
-    activas.add("dado_velho");
-  }
+  // Sem ligacao: a mesa esta cega. O que se sabe e que nao ha ligacao - nao que o dado envelheceu.
+  if (ligacao === "sem_ligacao") activas.add("sem_ligacao");
 
   const ordem = livro.precedencia.filter((c) => activas.has(c));
   const impedimentos = ordem.filter((c) => c !== "normal");
@@ -142,7 +149,7 @@ export const CONDICOES_DO_DATA_MODEL = [
   "divergente",
   "congelada",
   "mercado_fechado",
-  "dado_velho",
+  "sem_ligacao",
 ] as const;
 
 /**
