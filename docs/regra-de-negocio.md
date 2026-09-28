@@ -260,6 +260,9 @@ setup publica.
   - **RN-T7.1.** **Desconhecido NUNCA é sucesso nem falha.** A mesa DEVE reconciliar antes de qualquer
     ordem nova; enquanto não reconciliar, não envia.
   - **RN-T7.2.** No máximo **uma ordem por ciclo**.
+  - **RN-T7.3.** **Recusa ao FECHAR é alarme grave**: a mesa registra, alarmiza e volta a tentar. NUNCA
+    trata uma recusa de saída como tentativa falhada sem consequência — é a corretora a dizer que a
+    posição continua lá.
 - **RN-T8.** Em cada ciclo a mesa **reconcilia** com a corretora: a posição verdadeira é a da
   corretora. A mesa não mantém posição própria como fonte de verdade.
 - **RN-T9.** A mesa executa o mandato **à risca, mesmo contra o setup**: o setup propõe, o mandato
@@ -467,6 +470,9 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 - **RN-V2.** **Pause não é stop.** Terminar o processo com posição aberta deixaria a posição sem
   governo: em `pause` a mesa mantém-se a reconciliar e apenas NÃO abre — é a mesma inibição do
   RN-M3.1.
+- **RN-V2.1.** Em `pause` a **reconciliação** e a **verificação do circuit breaker** CONTINUAM: `pause`
+  suspende **abertura**, nunca **defesa**. Se a posição aberta caminhar para o limite com a mesa
+  pausada, quem fecha é o CB.
 - **RN-V3.** **Reset é um reinício sem mexer em nada**: a mesa volta a subir com o mesmo estado, as
   mesmas fichas e o mesmo ledger. Serve para **destravar** uma mesa quando é preciso, não para alterar.
   NUNCA apaga o ledger, NUNCA repõe fichas, NUNCA limpa a marca de desfecho **desconhecido** — isso
@@ -664,6 +670,10 @@ as que dependem de decisão do dono estão marcadas `ABERTA`.
   A ficha declara se aquele instrumento **tolera** posição manual; se não tolerar, a mesa fica em pausa
   nesse instrumento em vez de a gerir. Note-se que a operação manual do dono **não** cai aqui quando é
   feita por um setup manual (RN-T15): essa é da mesa, e é governada como qualquer outra.
+- **RN-T16.1.** A **posse de uma posição lê-se do ledger**, não se adivinha: havendo ciclo que a registre
+  como aberta por esta mesa e nenhum que a feche, a posição é dela; não havendo, é manual. É isto que
+  permite retomar corretamente depois de um encerramento com "manter posição" (RN-V8) — sem esta regra, a
+  posição ficaria sem governo para sempre, porque a mesa não guarda posição própria (RN-T8).
 
 **Segurança e operação**
 
@@ -673,8 +683,8 @@ as que dependem de decisão do dono estão marcadas `ABERTA`.
 - **RN-M10.** **A config em vigor é a do arranque.** Alteração a quente NÃO tem efeito — a mesa diz que
   vale no próximo arranque. Sem isto, um risco muda a meio da sessão sem ninguém saber.
 - **RN-E15.** A lista de **eventos que exigem aviso ao dono** é declarada (circuit breaker, encerramento,
-  desfecho desconhecido, recusa, divergência, falha de leitura, contenda). Um alarme escolhido pelo
-  programador é um alarme que falta quando importa.
+  desfecho desconhecido, recusa, **recusa ao fechar**, **congelamento por falha do setup**, divergência,
+  falha de leitura, contenda). Um alarme escolhido pelo programador é um alarme que falta quando importa.
 
 **Um instrumento, um setup**
 
@@ -687,3 +697,18 @@ as que dependem de decisão do dono estão marcadas `ABERTA`.
 - **RN-L6.** O ledger **nunca se reescreve**, mas a **retenção é declarada**: o que fica integral (o que
   se pode reexecutar), por quanto tempo, e o que passa a agregado. Sem regra escrita, um dia alguém
   apaga "para limpar" e perde-se o arquivo de túmulos.
+
+### Reveladas pela máquina de estados (`docs/maquina-de-estados.md`)
+
+- **RN-V2.1.** Em `pause` a reconciliação e a verificação do circuit breaker CONTINUAM: `pause` suspende
+  **abertura**, nunca **defesa**.
+- **RN-T7.3.** Recusa ao **fechar** é alarme grave: registra, alarmiza e volta a tentar.
+- **RN-T16.1.** A **posse de uma posição lê-se do ledger** — sem isto, um encerramento com "manter
+  posição" (RN-V8) deixaria a posição sem governo para sempre, porque a mesa não guarda posição própria.
+- `RN-E15` passou a incluir o **congelamento** e a **recusa ao fechar** na lista de eventos que avisam.
+- `ABERTA` — **o verbo da sessão nova.** Depois do circuit breaker o `start` recusa (RN-M3.3) e o `reset`
+  não mexe em nada (RN-V3): **não há forma legal de abrir sessão nova**. Proposta: um **quinto verbo**
+  `nova_sessao`, com autor, instante e motivo, único caminho fora da inibição.
+- `ABERTA` — **`encerrando` sem resposta.** O RN-V9 diz que a mesa continua a correr, mas não diz se volta
+  a **abrir**. Proposta: volta ao normal, com o pedido de stop registrado como pendente — um pedido
+  ignorado não deve paralisar a mesa.
