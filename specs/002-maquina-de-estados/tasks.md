@@ -13,7 +13,7 @@ Caminhos concretos em todas as tarefas.
 
 ## Estado da execução (medido em 28 set 2026)
 
-Fases 1 e 2 fechadas, e **US1 (MVP)** com a bateria a correr. Comandos e números reais em
+Fases 1 e 2 fechadas, **US1 (MVP)** e **US2** com as baterias a correr. Comandos e números reais em
 `relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
 
 | O que | Comando | Medido |
@@ -23,6 +23,32 @@ Fases 1 e 2 fechadas, e **US1 (MVP)** com a bateria a correr. Comandos e número
 | Prova da mesa (comando → resposta → marcas → registo) | `bun run core/mesa.prova.ts` | **24 verificações · 0 falhas** |
 | Porteiro do estado + prova negativa | `bash tools/verificar-maquina/porteiro-do-estado.sh` | **2 verificações · 0 falhas** · 2 provas negativas reprovadas |
 | A bateria do recorte 001 não regrediu | `bash tools/verificar-contrato/ponta-a-ponta.sh` | **0 falhas** |
+
+### US2 — as condições e o ciclo (T011, T021–T029)
+
+| O que | Comando | Medido |
+|---|---|---|
+| Invariantes do livro das condições + prova negativa | `bun run core/ciclo/provar.ts` | **0 problemas** no livro · prova negativa **reprovada** (3 problemas apanhados) |
+| Condições (o que se leu → o que se pode fazer) | `bun run core/ciclo/provar.ts` | **12 casos · 0 divergentes** |
+| Ciclo (a mesma proposta em cada condição) | `bun run core/ciclo/provar.ts` | **20 casos · 0 divergentes** |
+| SC-002 | idem | **0 decisões de abrir fora de `normal`** |
+| SC-003 | idem | **0 aberturas com dado velho** · **1 de 1** pedidos legítimos de fechar permitidos |
+
+Quatro defeitos apanhados pela própria bateria, e todos do mesmo tipo — dados meus que o instrumento
+recusou:
+
+1. a fixture usava `ema-cruz` e o contrato exige `^[a-z][a-z0-9_]{1,31}$` (**sem hífen**): a porta de
+   leitura recusou-a, que é exactamente o que ela existe para fazer;
+2. a `marca_de_posse` esperada num caso com `ciclo: 1` estava copiada do caso com `ciclo: 0` (a
+   aritmética do código estava certa);
+3. o caso «sem leitura também não fecha» não declarava posição — e sem posição o motivo certo é
+   «não há o que fechar», não «fechar impedido»;
+4. o motivo dizia `..._como_hold` no caso e `..._com_hold` no livro: a máquina apanhou o que a leitura
+   não apanha. O nome ficou `proposta_ausente_tratada_como_hold`.
+
+Duas decisões novas nasceram daí (**R9** e **R10** em `research.md`). A R10 é a que mais vale: com uma
+condição única por instrumento, `congelada` + `divergente` perdiam a restrição que impede **fechar**
+sobre um número que se sabe errado.
 
 Três tarefas mudaram de forma ao serem executadas, e ficam registadas para não parecer que foram
 feitas como escritas:
@@ -67,7 +93,7 @@ feitas como escritas:
 
 - [x] T009 Escrever `core/estados/maquina.ts`: carrega a tabela, procura (estado, verbo) com as guardas, aplica ou recusa com motivo — e **nunca** muda de estado sem linha que o autorize
 - [x] T010 [P] Escrever `core/estado/marcas.ts`: ler/gravar com escrita atómica (temporário + `rename`), com a forma do `data-model.md` §4 (`sessao`, `inibicao_cb`, `desconhecido[]`) e sem nenhum campo de posição
-- [ ] T011 [P] Escrever `core/leitura/fixtures.ts`: a porta de leitura (R4) — lê as mensagens do contrato de ficheiros, **valida-as** contra o contrato antes de as devolver, e devolve `sem_leitura` quando a leitura falha
+- [x] T011 [P] Escrever `core/leitura/fixtures.ts`: a porta de leitura (R4) — lê as mensagens do contrato de ficheiros, **valida-as** contra o contrato antes de as devolver, e devolve `sem_leitura` quando a leitura falha
 - [x] T012 Escrever `core/estados/provar.ts`: o runner da bateria — uma linha `ok`/`FALHA` por caso, resumo no fim, saída 1 se houver divergência (a mesma gramática do recorte 001)
 - [x] T013 Correr `bun run core/estados/maquina.ts --casos core/estados/transicoes.casos.json` e `bash tools/verificar-maquina/porteiro-do-estado.sh`; guardar a saída em `specs/002-maquina-de-estados/relatorios/fundacional.txt`
 
@@ -99,15 +125,15 @@ feitas como escritas:
 
 **Independent Test**: `bun run core/ciclo/ciclo.ts --casos core/ciclo/ciclo.casos.json --historia US2` → **zero** decisões de `abrir` fora de `normal` (SC-002) e, com dado velho, fechar permitido em 100% e aberturas em 0 (SC-003).
 
-- [ ] T021 [P] [US2] Escrever `core/ciclo/condicoes.casos.json`: uma leitura por condição (`normal`, `sem_leitura`, `divergente`, `congelada`, `mercado_fechado`) e o caso de dado velho, com a condição esperada e `abre`/`fecha`/`alarma` esperados
-- [ ] T022 [P] [US2] Escrever `core/ciclo/ciclo.casos.json` (parte US2): a **mesma** proposta submetida em cada condição, com a decisão esperada
-- [ ] T023 [US2] Implementar `core/ciclo/condicoes.ts`: das leituras para a condição, incluindo `dado_velho` contra `conta.idade_maxima_do_dado_ms` e os três derivados `abre`/`fecha`/`alarma`
-- [ ] T024 [US2] Implementar `core/ciclo/decisao.ts`: o tipo `Decisao` (`data-model.md` §6) e a montagem da boleta a partir do mandato e do template
-- [ ] T025 [US2] Implementar `core/ciclo/ciclo.ts`: a passagem por instrumento, devolvendo `Decisao[]` com motivo em cada `nada` — **sem enviar nada** (R5)
-- [ ] T026 [US2] Implementar a ordem do ciclo: ler → conferir o CB → condição por instrumento → decidir → reconciliar
-- [ ] T027 [US2] Implementar as regras de fechar por condição: permitido com dado velho; proibido em `sem_leitura`, `divergente`, `congelada` e `mercado_fechado` (FR-016 a FR-020)
-- [ ] T028 [US2] Implementar a recusa de fecho como alarme grave com nova tentativa declarada (FR-026) e o `avisa` das condições que alarmam
-- [ ] T029 [US2] Correr a bateria de US2 e guardar `specs/002-maquina-de-estados/relatorios/us2.jsonl`
+- [x] T021 [P] [US2] Escrever `core/ciclo/condicoes.casos.json`: uma leitura por condição (`normal`, `sem_leitura`, `divergente`, `congelada`, `mercado_fechado`) e o caso de dado velho, com a condição esperada e `abre`/`fecha`/`alarma` esperados
+- [x] T022 [P] [US2] Escrever `core/ciclo/ciclo.casos.json` (parte US2): a **mesma** proposta submetida em cada condição, com a decisão esperada
+- [x] T023 [US2] Implementar `core/ciclo/condicoes.ts`: das leituras para a condição, incluindo `dado_velho` contra `conta.idade_maxima_do_dado_ms` e os três derivados `abre`/`fecha`/`alarma`
+- [x] T024 [US2] Implementar `core/ciclo/decisao.ts`: o tipo `Decisao` (`data-model.md` §6) e a montagem da boleta a partir do mandato e do template
+- [x] T025 [US2] Implementar `core/ciclo/ciclo.ts`: a passagem por instrumento, devolvendo `Decisao[]` com motivo em cada `nada` — **sem enviar nada** (R5)
+- [x] T026 [US2] Implementar a ordem do ciclo: ler → conferir o CB → condição por instrumento → decidir → reconciliar
+- [x] T027 [US2] Implementar as regras de fechar por condição: permitido com dado velho; proibido em `sem_leitura`, `divergente`, `congelada` e `mercado_fechado` (FR-016 a FR-020)
+- [x] T028 [US2] Implementar a recusa de fecho como alarme grave com nova tentativa declarada (FR-026) e o `avisa` das condições que alarmam
+- [x] T029 [US2] Correr a bateria de US2 e guardar `specs/002-maquina-de-estados/relatorios/us2.jsonl`
 
 **Checkpoint**: o instrumento deixou de abrir quando não deve — e o clássico "fechar às cegas" está impedido por teste.
 

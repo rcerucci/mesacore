@@ -201,4 +201,5 @@ nova deste recorte vive aqui.
 - [x] Fase 1 — `data-model.md`, `contracts/interface.md`, `quickstart.md`
 - [x] Fase 2 — `tasks.md` (63 tarefas, mapa de cobertura 44 FR / 12 SC fechado)
 - [x] Implementação — fundacional + **US1 (MVP)**: 19 de 63 tarefas, tudo medido em `relatorios/`
-- [ ] Implementação — **US2** (as condições e o ciclo) e **US3** (o desconhecido): as três P1 fecham o MVP
+- [x] Implementação — **US2** (as condições e o ciclo): 29 de 63 tarefas · 12 casos de condição + 20 de ciclo · SC-002 e SC-003 medidos
+- [ ] Implementação — **US3** (o desconhecido fica desconhecido): fecha as três P1 e o SC-007 do recorte 001

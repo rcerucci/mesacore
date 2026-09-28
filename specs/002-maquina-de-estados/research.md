@@ -162,6 +162,36 @@ porque o ledger ainda não tem spec, e decidir por antecipação seria inventar.
 
 ---
 
+## R9. As duas recusas do contrato **não** são a mesma coisa (achado da implementação)
+
+**O que se mediu**: a bateria do ciclo obrigou a decidir o que fazer quando o contrato recusa uma
+mensagem que a porta de leitura trouxe. A resposta não é a mesma para as duas mensagens:
+
+- uma **leitura de mercado** recusada é **FATAL**: sem leitura não há decisão possível, e decidir sobre
+  dado que o contrato recusa seria a mesa a inventar o mercado. Grita, e o ciclo não corre.
+- uma **proposta** recusada **não é fatal**: a RN-T4 diz que a mesa a trata como `hold` e registra a
+  invalidade. O setup dizer algo que não serve é um acontecimento **previsto** — e inválidos seguidos
+  acima do limite declarado inibem a mesa.
+
+Confundir as duas faria a mesa parar por causa de uma proposta má, ou pior: decidir sem mercado. A
+invalidade fica registrada com o **motivo do contrato** ao lado do motivo da mesa.
+
+## R10. As condições **somam** impedimentos, e uma delas dá o nome (achado da implementação)
+
+**O que se mediu**: com uma condição única por instrumento, `congelada` (o setup calou-se) e
+`divergente` (o número não bate) ao mesmo tempo perdiam uma das duas restrições — e a que se perdia era
+a que impede **fechar** sobre um número que se sabe errado.
+
+**Decisão**: `condicoes.json` declara, por condição, o que ela **impede** (abrir, fechar, cancelar) e se
+**alarma**. A condição activa é o **conjunto** dos impedimentos, e o nome reportado é o primeiro pela
+precedência declarada. `abre`/`fecha` são derivados da soma, nunca de uma escolha.
+
+**Consequências que valem sublinhar**: `congelada` impede abrir e cancelar mas **não** impede fechar — a
+defesa não depende do setup. E `mercado_fechado` não alarma: alarmar o normal ensina o dono a ignorar
+alarmes.
+
+---
+
 ## Resumo das decisões
 
 | # | Decisão | O que a fecha |
@@ -174,3 +204,5 @@ porque o ledger ainda não tem spec, e decidir por antecipação seria inventar.
 | R6 | Prova negativa guardada por instrumento | `tools/verificar-maquina/` |
 | R7 | Motivos da mesa em conjunto próprio do core | `core/estados/motivos.json` (achado da implementação) |
 | R8 | Tipos de linha do registo da mesa em conjunto próprio | `core/estado/registo.ts` (achado da implementação; reconciliar com o ledger) |
+| R9 | Leitura recusada é fatal; proposta recusada é o caminho da RN-T4 | `core/leitura/fixtures.ts` (achado da implementação) |
+| R10 | As condições somam impedimentos; uma dá o nome | `core/ciclo/condicoes.json` (achado da implementação) |

@@ -76,6 +76,41 @@
       "quando": "campo do comando com o tipo errado",
       "regra": "FR-004",
       "porque": "A mesa recusa, nunca converte: um motivo que nao e texto nao vira texto."
+    },
+    "abrir_impedido_pela_condicao": {
+      "quando": "o setup propos abrir e a condicao do instrumento impede",
+      "regra": "FR-015, FR-020",
+      "porque": "Nenhuma condicao diferente de `normal` (nem o dado velho) abre. O motivo diz o que foi feito; a CONDICAO vai no campo proprio, para que o registo diga qual delas travou."
+    },
+    "fechar_impedido_pela_condicao": {
+      "quando": "pediu-se fechar e a condicao impede fechar",
+      "regra": "FR-016, FR-017, FR-019",
+      "porque": "Fechar sem saber o que existe (sem_leitura), sobre um numero que nao bate (divergente) ou com o mercado fechado e fechar as cegas. O dado velho, esse, NAO impede fechar."
+    },
+    "proposta_sem_lado_a_executar": {
+      "quando": "a proposta do setup e `hold`",
+      "regra": "RN-T4",
+      "porque": "Hold e uma proposta legitima que nao faz nada - e nao uma invalidade. Fica registrada, e nao conta para os invalidos seguidos."
+    },
+    "proposta_ausente_tratada_como_hold": {
+      "quando": "proposta ausente ou com um valor fora dos quatro",
+      "regra": "RN-T4",
+      "porque": "Nunca se corrige nem se adivinha o lado: trata-se como hold e registra-se a invalidade. Invalido seguido acima do limite declarado inibe a mesa."
+    },
+    "sem_posicao_para_fechar": {
+      "quando": "a proposta e `caixa` e nao ha posicao nossa",
+      "regra": "RN-T4, RN-B5",
+      "porque": "Ir para caixa sem nada aberto e um pedido sem objecto."
+    },
+    "sem_margem_no_ciclo": {
+      "quando": "o instrumento nao coube no teto da conta neste ciclo",
+      "regra": "FR-006, RN-M4.8",
+      "porque": "sem_margem NAO e estado: e motivo registrado no ciclo. Se fosse estado, a mesa ficaria presa nele; sendo motivo, o ciclo seguinte corre o seu caminho."
+    },
+    "posicao_alheia_relatada_nao_gerida": {
+      "quando": "ha posicao no venue cuja marca de posse nao e nossa",
+      "regra": "FR-021, RN-T16.1",
+      "porque": "Relata-se e NAO se gere. Cancelar o que nao se reconhece como seu sem decisao do dono seria a mesa a mexer no que nao e dela."
     }
   },
   "ordem_de_leitura": [
