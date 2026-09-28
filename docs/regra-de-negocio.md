@@ -251,8 +251,10 @@ setup publica.
   adjectivos para o setup. O setup calcula o que quiser sobre os factos.
 - **RN-T3.** Todo ciclo tem identificador, que acompanha a proposta, a boleta, o desfecho e o registro.
 - **RN-T4.** A mesa aceita da proposta exactamente quatro valores: `buy`, `sell`, `hold`, `caixa`.
-  Qualquer outro valor (ou ausência) é **inválido**: a mesa trata como `hold` e registra a invalidade
-  (`ABERTA`: quantos inválidos seguidos inibem a mesa até intervenção).
+  Qualquer outro valor (ou ausência) é **inválido**: a mesa trata como `hold` e registra a invalidade.
+  Inválidos **seguidos** acima do limite declarado inibem a mesa até intervenção — o número é **valor do
+  dono** (`conta.invalidos_seguidos_para_inibir`, RN-A1), e é **inibição**, como a do circuit breaker,
+  nunca uma fila.
 - **RN-T5.** **Quem decide quando o setup é consultado é o setup**: ele declara o seu relógio. Nos
   ciclos em que o setup não quer ser consultado, a mesa mantém a posição e NÃO re-cotiza.
 - **RN-T6.** A mesa transforma a proposta em boleta **respeitando o mandato** (tamanho, teto, perda
@@ -742,12 +744,16 @@ as que dependem de decisão do dono estão marcadas `ABERTA`.
 - **RN-V2.1.** Em `pause` a reconciliação e a verificação do circuit breaker CONTINUAM: `pause` suspende
   **abertura**, nunca **defesa**.
 - **RN-T7.3.** Recusa ao **fechar** é alarme grave: registra, alarmiza e volta a tentar.
-- **RN-T16.1.** A **posse de uma posição lê-se do ledger** — sem isto, um encerramento com "manter
-  posição" (RN-V8) deixaria a posição sem governo para sempre, porque a mesa não guarda posição própria.
+- **RN-T16.1.** A **posse de uma posição lê-se da corretora**, pela **marca de posse** que a ordem levou
+  — não do nosso registro, que guarda apenas o mapa marca → ciclo/ficha. (Correcção do dono: o
+  comentário da ordem já marca o proprietário, e é isso que dispensa base de dados própria de posições.)
+  Ver o RN-T16.1 em vigor na §11; esta linha registra como a lacuna apareceu.
 - `RN-E15` passou a incluir o **congelamento** e a **recusa ao fechar** na lista de eventos que avisam.
-- `ABERTA` — **o verbo da sessão nova.** Depois do circuit breaker o `start` recusa (RN-M3.3) e o `reset`
-  não mexe em nada (RN-V3): **não há forma legal de abrir sessão nova**. Proposta: um **quinto verbo**
-  `nova_sessao`, com autor, instante e motivo, único caminho fora da inibição.
-- `ABERTA` — **`encerrando` sem resposta.** O RN-V9 diz que a mesa continua a correr, mas não diz se volta
-  a **abrir**. Proposta: volta ao normal, com o pedido de stop registrado como pendente — um pedido
-  ignorado não deve paralisar a mesa.
+- **Fechada por RN-V10 — o verbo da sessão nova.** Depois do circuit breaker o `start` recusa (RN-M3.3) e
+  o `reset` não mexe em nada (RN-V3): não havia forma legal de abrir sessão nova. Decidido pelo dono: o
+  **quinto verbo `nova_sessao`**, com autor, instante e motivo, único caminho fora da inibição.
+- **Fechada por RN-V9.1 — `encerrando` sem resposta.** A mesa volta ao normal, com o pedido de stop
+  registrado como pendente: um pedido ignorado não paralisa a mesa.
+- **Achada depois, ao reconferir este documento** (o `ABERTA` da RN-T4 fez de cortina): o limite de
+  inválidos seguidos e a **marca de posse** na lista de campos da boleta — ver
+  `docs/inventario-de-chaves.md`, §6, itens 9 e 10.

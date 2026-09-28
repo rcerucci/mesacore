@@ -4,7 +4,7 @@
 |---|---|
 | Papel | A lista de **toda grandeza ajustável** do sistema: nome, tipo, dono, omissão e **quem lê**. |
 | Regra-mãe | **RN-A1** (nenhum número no código), **RN-A2** (a mesa valida o inventário no arranque), **RN-A3** (spec que precise de número inventa a chave primeiro). |
-| Estado | **v0, extraído à mão das regras.** A versão final é **gerada dos schemas** e este ficheiro passa a ser a conferência de que a geração concorda com as regras. |
+| Estado | **v0, extraído à mão das regras** (reconferido contra a regra v3 em 27 set 2026 — achou os itens 9 e 10). A versão final é **gerada dos schemas** e este ficheiro passa a ser a conferência de que a geração concorda com as regras. |
 | Como se lê | `[falta]` = a regra implica a chave e ninguém a declarou — **é uma lacuna, não um esquecimento de escrita**. `[novo]` = chave criada nesta passagem, sem regra anterior que a nomeasse. |
 
 Critério de sanidade, e é ele que faz este documento útil: **chave que ninguém lê é lixo; valor lido sem
@@ -27,6 +27,7 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 | `conta.ordem_de_atendimento[]` | lista de símbolos | vazio = alfabética | mesa no ciclo de contenda (RN-M4.9) |
 | `conta.eventos_que_avisam[]` | lista de eventos | CB, encerramento, desconhecido, recusa, divergência, falha de leitura, contenda | avisos (RN-E15) |
 | `conta.arranque_apos_cb` | enum `exige_decisao` | `exige_decisao` | arranque (RN-M3.3) |
+| `conta.invalidos_seguidos_para_inibir` | contagem | **`[novo]`** — RN-T4 dizia `ABERTA` e a chave não existia | mesa, ao contar inválidos seguidos (RN-T4) |
 | `conta.credencial` | **referência**, nunca o valor | — | conector (RN-E14) |
 | `conta.idade_maxima_do_dado_ms` | ms | **`[falta]`** — RN-D3 diz "limite declarado" e ninguém o declarou | mesa, cada ciclo (RN-D3) |
 | `conta.retencao_ledger` | `{dias_integral, depois}` | **`[falta]`** — RN-L6 manda declarar | ledger (RN-L6) |
@@ -75,6 +76,7 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 | destino_do_resto | **`setup.destino_do_resto`** | **`[novo]`** — idem |
 | reduce_only | mesa (saída) | RN-B5 |
 | referência do cliente | mesa | RN-C4 |
+| **marca de posse** | mesa (RN-B10) | **`[novo]`** — RN-B10 existe desde a decisão do dono e o campo não estava nesta lista; a **forma** é declarada no manifesto (RN-C1) |
 | versão do contrato | a ponta | RN-E18 |
 
 ## 5. Manifesto do conector — **sondado, não configurado**
@@ -109,3 +111,13 @@ Aritméticas, não interpretativas — é por isso que esta vista apanha o que a
    da banda é recusado") não tem contra o que comparar.
 7. **`conta.retencao_ledger`** — RN-L6 manda declarar e não há chave.
 8. **`estudo`** — RN-E13 manda registrar o estudo que sustenta o número e não há campo.
+
+### Achadas na reconferência (27 set 2026, contra a regra v3)
+
+9. **`conta.invalidos_seguidos_para_inibir`** — a própria RN-T4 confessava a lacuna ("`ABERTA`: quantos
+   inválidos seguidos…") e **a chave não apareceu nesta lista na primeira passagem**: a palavra `ABERTA`
+   fez de cortina. Regra que se diz aberta continua a precisar de **chave** — o que é do dono é o
+   **valor**, nunca a existência da chave.
+10. **`marca de posse` na boleta** — RN-B10 entrou depois de este inventário ser escrito, e o campo foi
+   acrescentado ao manifesto (§5) sem ser acrescentado à lista de campos da boleta (§4): metade da
+   decisão ficou registrada. Campo que atravessa a fronteira aparece **nas duas listas**.
