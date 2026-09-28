@@ -38,6 +38,14 @@ export interface EntradaDoInstrumento {
    * de marcas passaria a ver o mundo de outra maneira.
    */
   desconhecido?: { motivo: string; instante_ms: number } | null;
+  /**
+   * A mesa esta pausada?
+   *
+   * A pausa suspende ABRIR e mais nada: defender continua. Por isso este campo entra na trava logo antes
+   * das outras, e nao como um caminho paralelo - o CB, a reconciliacao e o fecho correm exactamente o mesmo
+   * codigo com a mesa pausada ou em operacao. Pausar nao pode ser sinónimo de nao ver.
+   */
+  mesa_pausada?: boolean;
   /** O setup propos algo que o contrato recusa (nao e o mesmo que nada propor). */
   proposta_invalida?: boolean;
   /** O motivo do contrato para essa recusa - vai para o registo. */
@@ -138,6 +146,18 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   }
 
   // 4. As travas, por ordem: primeiro o que a mesa DEVE, depois se PODE, depois se CABE.
+  if (acao === "abrir" && entrada.mesa_pausada === true) {
+    return {
+      ...base,
+      acao: "nada",
+      motivo: "mesa_pausada_nao_abre",
+      // O motivo aponta para a PAUSA, e nao para a estrategia: o dono que pausou tem de poder ler que foi
+      // ele - senao o registo sugere que o setup e que nao quis abrir.
+      avisa: false,
+      boleta: null,
+    };
+  }
+
   if (acao === "abrir" && entrada.desconhecido != null) {
     return {
       ...base,

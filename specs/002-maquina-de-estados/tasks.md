@@ -13,7 +13,7 @@ Caminhos concretos em todas as tarefas.
 
 ## Estado da execução (medido em 28 set 2026)
 
-Fases 1 e 2 fechadas. **As tres P1 (US1, US2, US3), a US4 e a US5 estao fechadas** — 48 de 63 tarefas. Comandos e números reais em
+Fases 1 e 2 fechadas. **As tres P1 (US1, US2, US3) e as US4 a US7 estao fechadas** — 54 de 63 tarefas. Comandos e números reais em
 `relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
 
 | O que | Comando | Medido |
@@ -283,12 +283,12 @@ feitas como escritas:
 
 **Independent Test**: `--historia US6` → zero aberturas em pausa e o CB a disparar em 100% dos casos de limite atingido (SC-008); `--historia US7` → 100% voltam a `em_operacao` com o `stop` pendente (SC-009).
 
-- [ ] T049 [P] [US6] Escrever `core/ciclo/pausa.casos.json` (parte US6): proposta em pausa, limite atingido em pausa, ordem viva desconhecida em pausa, retomar
-- [ ] T050 [US6] Implementar em `core/ciclo/ciclo.ts` que a pausa suspende `abrir` **apenas** — o CB e a reconciliação continuam a correr
-- [ ] T051 [US6] Implementar a adopção de ordem viva desconhecida com a mesa pausada → `divergente` e alarme, sem cancelar (FR-021)
-- [ ] T052 [US7] Escrever `core/ciclo/pausa.casos.json` (parte US7) e implementar o encerramento sem resposta: volta a `em_operacao` e registra o `stop` como pendente (FR-014)
-- [ ] T053 [US7] Implementar o `resumo_do_encerramento` com a escolha necessária — incluindo o aviso de que "manter" deixa a posição **sem defesa** (`interface.md` §2)
-- [ ] T054 [US6,US7] Correr as baterias e guardar `specs/002-maquina-de-estados/relatorios/us6-us7.jsonl`
+- [x] T049 [P] [US6] Escrever `core/ciclo/pausa.casos.json` (parte US6): proposta em pausa, limite atingido em pausa, ordem viva desconhecida em pausa, retomar
+- [x] T050 [US6] Implementar em `core/ciclo/ciclo.ts` que a pausa suspende `abrir` **apenas** — o CB e a reconciliação continuam a correr
+- [x] T051 [US6] Implementar a adopção de ordem viva desconhecida com a mesa pausada → `divergente` e alarme, sem cancelar (FR-021)
+- [x] T052 [US7] Escrever `core/ciclo/pausa.casos.json` (parte US7) e implementar o encerramento sem resposta: volta a `em_operacao` e registra o `stop` como pendente (FR-014)
+- [x] T053 [US7] Implementar o `resumo_do_encerramento` com a escolha necessária — incluindo o aviso de que "manter" deixa a posição **sem defesa** (`interface.md` §2)
+- [x] T054 [US6,US7] Correr as baterias e guardar `specs/002-maquina-de-estados/relatorios/us6-us7.jsonl`
 
 ---
 

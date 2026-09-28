@@ -1,0 +1,54 @@
+US6/US7 — a pausa defende, e o pedido ignorado nao paralisa: saida real
+data: 2026-09-28 18:32 -0300
+
+=== US6: a mesa pausada continua a defender ===
+
+ok    US6/em-pausa-nao-abre (a MESMA proposta do caso 1 do ciclo, agora suspensa)
+ok    US6/em-pausa-defender-continua (a pausa nao impede reduzir risco)
+ok    US6/em-pausa-a-ordem-viva-desconhecida-fica-divergente (e NAO se cancela)
+ok    US6/em-pausa-o-CB-dispara-na-mesma (a pausa nao silencia nada): o CB dispara com a mesa pausada (true/60.00)
+ok    US6/em-pausa-o-CB-dispara-na-mesma (a pausa nao silencia nada)
+ok    US6/retomar: operar, pausar e depois retomar volta a em_operacao
+ok    US6/retomar: as marcas ficaram IGUAIS (retomar nao reinicia contadores nem esquece marcas)
+ok    US6/retomar: a marca de desconhecido, o pedido pendente e a sessao continuam la
+ok    US6/estrutural: o conjunto de accoes nao tem 'cancelar' - a mesa nao cancela o que nao reconhece
+
+=== US7: um pedido ignorado nao paralisa a mesa ===
+
+ok    US7/dentro-do-prazo-o-resumo-espera (a mesa nao se atrapalha sozinha)
+ok    US7/fora-do-prazo-a-mesa-volta-a-operar (com o stop PENDENTE)
+ok    US7/e-continua-a-abrir (o pedido ignorado nao deixa a mesa congelada)
+ok    US7/e-continua-a-abrir (o pedido ignorado nao deixa a mesa congelada): depois de voltar, a mesma proposta ABRE (a mesa nao ficou congelada)
+ok    US7/fora-do-prazo-com-o-dono-a-pedir-o-aviso (a lista e dele): a lista com um nome invalido ('cd') GRITA em vez de avisar menos
+ok    US7/manter-com-posicao-viva-fica-parada-e-avisada (o aviso e lido ANTES de escolher)
+ok    US7/fechar-a-mercado-liquida (e so depois para)
+ok    US7/sem-posicao-viva-o-resumo-nao-avisa-nada (par de controle)
+ok    os 7 motivos usados pela bateria constam todos do livro (core/estados/motivos.json)
+
+=== criterios de sucesso ===
+
+ok    SC-008 (lado A): 0 de 1 tentativas de abrir com a mesa pausada passaram (tem de ser 0)
+ok    SC-008 (lado B): 1 de 1 casos com a mesa pausada dispararam o CB
+ok    SC-009: 2 de 2 casos em 'encerrando' sem resposta voltaram a operacao com o stop pendente
+
+resumo: 21 verificacoes · 0 divergentes · 5 casos US6 · 7 casos US7
+relatorio: specs/002-maquina-de-estados/relatorios/us6-us7.jsonl
+exit=0
+
+--- regressao ---
+### bun run tools/verificar-maquina/sessao.ts
+resumo: 27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB
+### bun run core/ciclo/provar.ts
+resumo: 62 verificacoes · 0 divergentes · 13 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+### bun run tools/verificar-maquina/arranque.ts
+resumo: 31 verificacoes · 0 divergentes · 15 casos · 11 portas falhadas de proposito
+### bun run core/estados/provar.ts
+resumo: 29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo
+### bun run core/mesa.prova.ts
+resumo: 24 verificacoes · 0 falhas
+### bash tools/verificar-maquina/porteiro-do-estado.sh
+resumo: 2 verificacoes · 0 falhas
+### bash tools/verificar-maquina/reiniciar.sh
+resumo: 3 processos + 1 leitura externa · 0 falhas
+### bash tools/verificar-contrato/ponta-a-ponta.sh
+ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam

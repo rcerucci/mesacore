@@ -1,0 +1,166 @@
+{
+  "nota": "US6 e US7. US6: a pausa suspende abrir e NAO defende menos - o CB corre, o fecho corre, a ordem viva desconhecida fica divergente e nao se cancela. US7: o resumo apresenta-se, e se a resposta nao chegar a mesa VOLTA a operar com o stop pendente.",
+  "fonte": "core/ciclo/ciclo.ts (trava da pausa), core/ciclo/cb.ts, core/ciclo/encerramento.ts",
+  "padrao": {
+    "config": {
+      "eventos_que_avisam": ["cb", "desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "encerramento", "contenda"],
+      "perda_maxima_pct": "5",
+      "perda_maxima_janela": "corrida_da_mesa",
+      "margem_total_maxima_pct": "100",
+      "politica_de_contencao": null,
+      "fichas": {
+        "EURUSD": {
+          "saldo_pct": "1",
+          "alavancagem": "2",
+          "bandas": {
+            "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+            "alavancagem": { "minimo": "1", "maximo": "10" }
+          }
+        }
+      }
+    },
+    "sessao": {
+      "instante_ms": 1790628000000,
+      "equity_de_partida": "1000.00",
+      "autor": "dono",
+      "motivo": "nova_sessao_do_dono",
+      "configuracao_em_vigor": { "ficha": "3232", "versao_do_setup": "1.0.0", "versao_do_mandato": "1.0.0" }
+    },
+    "ficha": "3232",
+    "ciclo": 40,
+    "limite_de_idade_ms": 5000,
+    "mandato": { "saldo_pct": "1", "alavancagem": "2" },
+    "template": {
+      "politica_de_execucao": "mercado",
+      "parcial": "o_que_der",
+      "desvio_maximo": "0.5",
+      "prazo_da_passiva_ms": 3000,
+      "destino_do_resto": "cancelar",
+      "stop_pct": "0.3",
+      "tp_pct": "0.6"
+    },
+    "proposta_setup": { "nome": "ema_cruz", "versao": "1.0.0" },
+    "marcas_nossas_conhecidas": [1694498816],
+    "invalidos_seguidos_antes": 0
+  },
+  "casos_us6": [
+    {
+      "nome": "em-pausa-nao-abre (a MESMA proposta do caso 1 do ciclo, agora suspensa)",
+      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 100, "estado_do_mercado": "aberto" },
+      "proposta": { "lado": "buy" },
+      "mesa_pausada": true,
+      "decisao_esperada": { "acao": "nada", "motivo": "mesa_pausada_nao_abre", "condicao": "normal", "avisa": false },
+      "historico": "US6 cenario 1 / FR-040"
+    },
+    {
+      "nome": "em-pausa-defender-continua (a pausa nao impede reduzir risco)",
+      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 100, "estado_do_mercado": "aberto", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
+      "proposta": { "lado": "caixa" },
+      "mesa_pausada": true,
+      "ciclo": 41,
+      "decisao_esperada": { "acao": "fechar", "motivo": null, "condicao": "normal", "avisa": false, "boleta": { "lado": "sell", "reduce_only": true } },
+      "historico": "US6 cenario 2: pausar nao e nao fazer nada"
+    },
+    {
+      "nome": "em-pausa-a-ordem-viva-desconhecida-fica-divergente (e NAO se cancela)",
+      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 100, "estado_do_mercado": "aberto", "posicao": { "lado": "buy", "unidades": "1000", "preco_medio": "1.0850", "marca_de_posse": 1694498816 } },
+      "proposta": { "lado": "caixa" },
+      "mesa_pausada": true,
+      "divergente": true,
+      "ciclo": 42,
+      "decisao_esperada": { "acao": "nada", "motivo": "fechar_impedido_pela_condicao", "condicao": "divergente", "avisa": true },
+      "historico": "US6 cenario 3 / FR-021: adopta-se e reconcilia-se; cancelar o que nao se reconhece e que nao se faz"
+    },
+    {
+      "nome": "em-pausa-o-CB-dispara-na-mesma (a pausa nao silencia nada)",
+      "cb": { "equity": "940.00", "disparou_esperado": true, "deficit_esperado": "60.00" },
+      "mesa_pausada": true,
+      "leitura": { "instrumento": "EURUSD", "idade_do_dado_ms": 100, "estado_do_mercado": "aberto" },
+      "proposta": null,
+      "decisao_esperada": { "acao": "nada", "motivo": "proposta_ausente_tratada_como_hold", "condicao": "normal", "avisa": true, "invalidos_seguidos": 1 },
+      "historico": "US6 cenario 2 / FR-040 (SC-008)"
+    },
+    {
+      "nome": "retomar-de-pausada-volta-a-operar-sem-tocar-nas-marcas",
+      "retomar": true,
+      "historico": "US6 cenario 4: retomar nao e comecar de novo - as marcas ficam como estavam"
+    }
+  ],
+  "casos_us7": [
+    {
+      "nome": "dentro-do-prazo-o-resumo-espera (a mesa nao se atrapalha sozinha)",
+      "pedido": { "inicio_ms": 1790628000000, "agora_ms": 1790628005000, "prazo_de_resposta_ms": 5000, "resposta": null },
+      "posicao_viva": true,
+      "estado_esperado": "encerrando",
+      "motivo_esperado": "resumo_do_encerramento_apresentado",
+      "avisa_esperado": true,
+      "pedido_pendente_esperado": false,
+      "posicao_sem_defesa_esperado": true,
+      "aviso_de_manter_esperado": true
+    },
+    {
+      "nome": "fora-do-prazo-a-mesa-volta-a-operar (com o stop PENDENTE)",
+      "pedido": { "inicio_ms": 1790628000000, "agora_ms": 1790628005001, "prazo_de_resposta_ms": 5000, "resposta": null },
+      "posicao_viva": true,
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "stop_pendente_por_prazo",
+      "avisa_esperado": false,
+      "pedido_pendente_esperado": true,
+      "historico": "US7 cenarios 1 e 2 / FR-014"
+    },
+    {
+      "nome": "e-continua-a-abrir (o pedido ignorado nao deixa a mesa congelada)",
+      "pedido": { "inicio_ms": 1790628000000, "agora_ms": 1790628060000, "prazo_de_resposta_ms": 5000, "resposta": null },
+      "posicao_viva": true,
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "stop_pendente_por_prazo",
+      "avisa_esperado": false,
+      "pedido_pendente_esperado": true,
+      "e_continua_a_abrir": { "lado": "buy", "acao_esperada": "abrir" },
+      "nota": "A prova que interessa: depois de voltar, a MESMA proposta abre. Sem isto, 'a mesa volta ao normal' seria so um nome de estado."
+    },
+    {
+      "nome": "fora-do-prazo-com-o-dono-a-pedir-o-aviso (a lista e dele)",
+      "config_mudanca": { "eventos_que_avisam": ["cd", "pedido_ignorado"] },
+      "pedido": { "inicio_ms": 1790628000000, "agora_ms": 1790628005001, "prazo_de_resposta_ms": 5000, "resposta": null },
+      "posicao_viva": true,
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "stop_pendente_por_prazo",
+      "avisa_esperado": true,
+      "pedido_pendente_esperado": true,
+      "nota": "Par de controle do caso anterior: o mesmo pedido ignorado, e a lista do dono decide se ele e avisado. 'cd' e um nome invalido de proposito - o conjunto fechado tem de fazer GRITAR."
+    },
+    {
+      "nome": "manter-com-posicao-viva-fica-parada-e-avisada (o aviso e lido ANTES de escolher)",
+      "pedido": { "inicio_ms": 1790628000000, "agora_ms": 1790628001000, "prazo_de_resposta_ms": 5000, "resposta": "manter" },
+      "posicao_viva": true,
+      "estado_esperado": "parada",
+      "motivo_esperado": "parada_com_posicao_viva",
+      "avisa_esperado": false,
+      "pedido_pendente_esperado": false,
+      "posicao_sem_defesa_esperado": true,
+      "aviso_de_manter_esperado": true
+    },
+    {
+      "nome": "fechar-a-mercado-liquida (e so depois para)",
+      "pedido": { "inicio_ms": 1790628000000, "agora_ms": 1790628001000, "prazo_de_resposta_ms": 5000, "resposta": "fechar_a_mercado" },
+      "posicao_viva": true,
+      "estado_esperado": "encerrando",
+      "motivo_esperado": "liquidacao_em_curso",
+      "avisa_esperado": true,
+      "pedido_pendente_esperado": false
+    },
+    {
+      "nome": "sem-posicao-viva-o-resumo-nao-avisa-nada (par de controle)",
+      "pedido": { "inicio_ms": 1790628000000, "agora_ms": 1790628001000, "prazo_de_resposta_ms": 5000, "resposta": "manter" },
+      "posicao_viva": false,
+      "estado_esperado": "parada",
+      "motivo_esperado": "parada_com_posicao_viva",
+      "avisa_esperado": false,
+      "pedido_pendente_esperado": false,
+      "posicao_sem_defesa_esperado": false,
+      "aviso_de_manter_esperado": false,
+      "nota": "Sem posicao viva nao ha nada a avisar. Um aviso que aparece sempre deixa de ser lido - a mesma razao por que `mercado_fechado` nao alarma."
+    }
+  ]
+}

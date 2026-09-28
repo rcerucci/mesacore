@@ -1,0 +1,11 @@
+{"caso":"em-pausa-nao-abre (a MESMA proposta do caso 1 do ciclo, agora suspensa)","acao":"nada","motivo":"mesa_pausada_nao_abre","condicao":"normal","avisa":false,"cb":"","ok":true}
+{"caso":"em-pausa-defender-continua (a pausa nao impede reduzir risco)","acao":"fechar","motivo":null,"condicao":"normal","avisa":false,"cb":"","ok":true}
+{"caso":"em-pausa-a-ordem-viva-desconhecida-fica-divergente (e NAO se cancela)","acao":"nada","motivo":"fechar_impedido_pela_condicao","condicao":"divergente","avisa":true,"cb":"","ok":true}
+{"caso":"em-pausa-o-CB-dispara-na-mesma (a pausa nao silencia nada)","acao":"nada","motivo":"proposta_ausente_tratada_como_hold","condicao":"normal","avisa":true,"cb":"true/60.00","ok":true}
+{"caso":"retomar-de-pausada-volta-a-operar-sem-tocar-nas-marcas","estado_apos_retomar":"em_operacao","marcas_iguais":true,"ok":true}
+{"caso":"dentro-do-prazo-o-resumo-espera (a mesa nao se atrapalha sozinha)","estado":"encerrando","motivo":"resumo_do_encerramento_apresentado","avisa":true,"pedido_pendente":false,"posicao_sem_defesa":true,"ok":true}
+{"caso":"fora-do-prazo-a-mesa-volta-a-operar (com o stop PENDENTE)","estado":"em_operacao","motivo":"stop_pendente_por_prazo","avisa":false,"pedido_pendente":true,"posicao_sem_defesa":true,"ok":true}
+{"caso":"e-continua-a-abrir (o pedido ignorado nao deixa a mesa congelada)","estado":"em_operacao","motivo":"stop_pendente_por_prazo","avisa":false,"pedido_pendente":true,"posicao_sem_defesa":true,"ok":true}
+{"caso":"manter-com-posicao-viva-fica-parada-e-avisada (o aviso e lido ANTES de escolher)","estado":"parada","motivo":"parada_com_posicao_viva","avisa":false,"pedido_pendente":false,"posicao_sem_defesa":true,"ok":true}
+{"caso":"fechar-a-mercado-liquida (e so depois para)","estado":"encerrando","motivo":"liquidacao_em_curso","avisa":true,"pedido_pendente":false,"posicao_sem_defesa":true,"ok":true}
+{"caso":"sem-posicao-viva-o-resumo-nao-avisa-nada (par de controle)","estado":"parada","motivo":"parada_com_posicao_viva","avisa":false,"pedido_pendente":false,"posicao_sem_defesa":false,"ok":true}

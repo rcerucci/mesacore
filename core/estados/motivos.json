@@ -191,6 +191,26 @@
       "quando": "pediu-se trocar ficha/setup com uma sessao em curso",
       "regra": "FR-039, RN-M3.5",
       "porque": "Duas configuracoes no mesmo numero nao se comparam. A troca exige uma sessao nova - e recusar e o que impede a troca silenciosa que faria o numero perder o sentido."
+    },
+    "mesa_pausada_nao_abre": {
+      "quando": "chegou proposta de abertura com a mesa pausada",
+      "regra": "FR-040/US6, RN-V2.1",
+      "porque": "A pausa suspende abrir, nunca defender. O motivo aponta para a pausa e nao para a estrategia: o dono que pausou tem de poder ler que foi ele."
+    },
+    "resumo_do_encerramento_apresentado": {
+      "quando": "a mesa apresentou o resumo do encerramento e espera resposta",
+      "regra": "FR-013, FR-014",
+      "porque": "O resumo diz o que cada escolha custa antes de ela ser feita - incluindo que MANTER deixa a posicao sem defesa."
+    },
+    "stop_pendente_por_prazo": {
+      "quando": "o prazo passou sem resposta ao resumo do encerramento",
+      "regra": "FR-014",
+      "porque": "A mesa volta ao normal - a abrir incluido - e o stop fica PENDENTE. Pedido ignorado nao e pedido cumprido, e tambem nao e motivo para deixar de operar."
+    },
+    "parada_com_posicao_viva": {
+      "quando": "o dono escolheu manter com posicao viva",
+      "regra": "FR-012, US6",
+      "porque": "Fica parada por decisao dele, com o aviso lido. A posicao fica sem defesa - e isso e uma escolha, nao um acidente."
     }
   },
   "ordem_de_leitura": [

@@ -38,6 +38,10 @@
     "dado_velho": {
       "regra": "FR-020, RN-D3",
       "porque": "Leu-se, mas o dado envelheceu. Nao consta da lista de exemplo da FR-042 e por isso NAO avisa por omissao - mas o nome existe para o dono o poder pedir sem inventar vocabulario."
+    },
+    "pedido_ignorado": {
+      "regra": "FR-014",
+      "porque": "O dono nao respondeu ao resumo do encerramento e a mesa voltou a operar com o stop pendente. Nao consta da lista de exemplo da FR-042 e por isso NAO avisa por omissao - mas o nome existe para o dono o poder pedir sem inventar vocabulario."
     }
   }
 }
