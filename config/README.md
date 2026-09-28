@@ -5,8 +5,8 @@ validação e assinatura (RN-M2). Três famílias, e só três:
 
 | Arquivo | É de | Traz |
 |---|---|---|
-| `conta.*` — **macro** | a conta | instrumentos, corretora e conta, perda máxima e a janela da sua medição, margem total máxima, política de contenção de margem, ordem de atendimento |
-| `fichas/<instrumento>.risco.*` | a posição (forma **fixa**, do core) | percentagem do saldo, alavancagem, distância mínima de liquidação, janela, e as bandas onde os itens do setup têm de caber |
+| `conta.*` — **macro** | a conta | instrumentos, corretora e conta, circuit breaker da sessão (5%), margem total máxima (100% é legítimo), **risco máximo por ordem**, política de contenção de margem, ordem de atendimento |
+| `fichas/<instrumento>.risco.*` | a posição (forma **fixa**, do core) | percentagem do saldo, alavancagem, distância mínima de liquidação (**opcional** — sem ela, a ordem é livre), janela, e as bandas onde os itens do setup têm de caber |
 | `fichas/<instrumento>.setup.*` | a estratégia (forma publicada pelo **setup**) | os itens que o template daquele setup declarou (ema_fast, ema_slow, stop, limiares) |
 
 ## A conta e a contenda — por que o macro existe

@@ -61,6 +61,11 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
 - **Mesa** — este sistema: o terminal. Uma mesa corre uma conta.
 - **Ciclo** — uma passagem da mesa: ler mercado, (eventualmente) consultar o setup, agir, registrar.
   Tem identificador próprio.
+- **Sessão** — a corrida de uma mesa, desde o seu arranque. É a janela do circuit breaker da conta
+  (RN-M3).
+- **Estudo** — uma ferramenta do dono (em `/tools`) que mede um instrumento — volatilidade por sessão,
+  amplitude típica, funding médio — **sem operar**. Serve para escolher números com medição, não com
+  palpite.
 - **Proposta** — o que o setup devolve: `buy`, `sell`, `hold` ou `caixa`.
 - **Boleta** — o documento de ordem: o que a mesa quer que a corretora faça.
 - **Desfecho** — o que a corretora responde: **aceite**, **parcial**, **desconhecido** ou **recusado**.
@@ -107,17 +112,20 @@ transporta. Quem decide é a mesa, dentro do mandato.
 - **RN-M2.** O mandato vive em arquivo de configuração do dono, versionado. O valor em vigor e a sua
   **origem** (arquivo ou ambiente) DEVEM ser registrados no arranque, para que a divergência entre o
   que se quis e o que corre nunca seja silenciosa.
-- **RN-M3.** O mandato declara a **perda máxima** (drawdown) **e a janela da sua medição** (do pico de
-  equity da sessão, do equity inicial do dia, ou outra `ABERTA`). Sem a janela declarada, a regra não
-  entra em vigor.
-  - **RN-M3.1.** Ao atingir o limite, a mesa DEVE liquidar a posição e entrar em estado de inibição:
-    não abre nada novo até intervenção explícita do dono. O evento é registrado.
-  - **RN-M3.2.** A verificação do limite é da mesa, **em cada ciclo**, e não depende do setup nem da
-    sua proposta.
-- **RN-M4.** O mandato declara o que é **soma**: a **margem total máxima** da conta (a soma de todas as
-  posições abertas, em percentagem do saldo) e a perda máxima da conta (RN-M3). As bandas **por
-  posição** não moram aqui — vivem no arquivo de risco de cada ficha (RN-S10), porque **uma ficha não vê
-  as outras**.
+- **RN-M3.** O **circuit breaker da conta** mede-se **por sessão** — a corrida da mesa, desde o arranque —
+  e o limite é **5%** de perda, sobre o equity da corretora com resultado não realizado. É o alerta
+  grave: um operador que se prese nunca chega perto dele numa única sessão.
+  - **RN-M3.1.** Ao atingir o limite, a mesa **liquida** a posição e **encerra o processo da conta** —
+    não fica em inibição à espera. O encerramento segue o caminho gracioso (RN-V7) e o **motivo** é
+    registrado para revisão.
+  - **RN-M3.2.** A verificação é da mesa, **em cada ciclo**, e não depende do setup nem da sua proposta.
+  - **RN-M3.3.** Depois de um circuit breaker a mesa NÃO volta sozinha: o arranque seguinte exige decisão
+    explícita do dono, que revê o motivo antes de levantar a inibição.
+- **RN-M4.** O mandato declara o que é **soma**: a **margem total máxima** da conta, em percentagem do
+  saldo — e **100% é um valor legítimo** (a 1x, com um ou dois pares, empenhar o saldo inteiro é uma
+  escolha do dono, típica em instrumentos de variação baixa) — e o circuit breaker da conta (RN-M3). As
+  bandas **por posição** não moram aqui: vivem no arquivo de risco de cada ficha (RN-S10), porque **uma
+  ficha não vê as outras**.
   - **RN-M4.1.** O setup NUNCA vê nem influencia o tamanho, a percentagem, a alavancagem nem a margem
     total.
   - **RN-M4.2.** A **soma** é conferida pela mesa, que é o único sítio que vê todas as fichas. Ficha que
@@ -151,6 +159,16 @@ transporta. Quem decide é a mesa, dentro do mandato.
   todos, entram todos e a lista não é consultada.
 - **RN-M4.11.** O desempate alfabético é pelo **símbolo do instrumento**, em comparação simples de
   caracteres (não por regras de idioma), para que a mesma situação dê sempre o mesmo resultado.
+- **RN-M4.12.** O mandato declara também o **risco máximo por ordem**, em percentagem do saldo (ex.: 2%).
+  Antes de enviar, a mesa calcula a perda implícita — distância do stop × exposição — e **recusa** a
+  ordem que a exceda, mesmo que o setup a peça e mesmo que a ficha a permita. É o travão que nenhuma
+  ordem de corretora nenhuma atravessa. Dentro dele, o **stop e o circuit breaker de cada operação** são
+  definidos na ficha conforme a necessidade — uma operação de várias sessões pode querer outro valor,
+  desde que caiba no teto.
+- **RN-M4.13.** A **distância mínima de liquidação** é um travão **opcional, da config de risco da
+  ordem**. Quem a declara sabe que distância de movimento adverso aceita — normalmente depois de estudar
+  o par em `/tools` (volatilidade por sessão, amplitude típica); **sem ela declarada, a ordem é livre**.
+  Declarada, é porteiro na abertura e a leitura é registrada em cada ciclo (RN-M4.5).
 - **RN-M5.** Repartição de responsabilidade, por escrito: **o que é soma** (perda máxima e margem total
   da conta) é do **mandato**; **o que é da posição** (percentagem do saldo, alavancagem, distância de
   liquidação, janela) é do **arquivo de risco**, de forma fixa, em cada ficha (RN-S10); **o que é da
@@ -259,6 +277,11 @@ setup publica.
 - **RN-D4.** Nada é inventado: feature que a corretora não dá vem como **ausente**, nunca como valor
   neutro calculado pela mesa. É o setup que decide o que fazer com a ausência.
 - **RN-D5.** O setup e o humano vêem o mesmo objecto, no mesmo instante lógico (ver 3.1).
+- **RN-D6.** O **histórico e os detalhes das ordens vêm da corretora** — execuções, taxas, funding,
+  resultado realizado e o detalhe de cada ordem já existem lá, e a mesa lê-os e mostra-os. A mesa NÃO
+  reconstrói resultado a partir de execuções: o **trilho das decisões** é o nosso ledger (snapshot,
+  proposta, boleta, resolução, desfecho); o **trilho do dinheiro** é o da corretora, que é quem o faz
+  por ofício.
 
 ---
 
@@ -334,6 +357,9 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   alavancagem efectiva, preço de liquidação). É ela que a mesa confere contra a banda (RN-M4.5) e grava
   no ledger (RN-B2). A resolução faz parte do desfecho, e é ela que torna o replay possível quando o
   cálculo é da corretora.
+- **RN-C11.** O conector expõe o **histórico** da corretora — execuções, taxas, funding, resultado
+  realizado, detalhe de cada ordem — numa **vista normalizada** (os campos das corretoras são próximos
+  uns dos outros), para que a mesa e a web o mostrem **sem o recalcular** (RN-D6).
 
 ---
 
@@ -362,6 +388,7 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 /setups/<nome>  o plugin, o seu template de configuração, o schema do seu estado, os seus testes
 /brokers/<nome> o conector, o seu manifesto, a bateria de conformidade, as suas fixtures
 /config         os arquivos do dono: `conta.*` (macro) e `fichas/<instrumento>.{risco,setup}.*`
+/tools          os estudos do dono sobre um instrumento (volatilidade, amplitude, funding), sem operar
 /web            a superfície: sem cálculo próprio e sem conhecer a topologia
 /docs           a regra de negócio e as especificações
 ```
@@ -376,6 +403,9 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 - **RN-E12.** `/config` é do **dono**: a mesa lê-o, valida-o e **nunca o escreve**. A web edita-o com
   validação e assinatura (RN-M2). Três famílias de arquivo, e só três: o **macro** da conta, o de
   **risco** por ficha e o do **setup** por ficha.
+- **RN-E13.** `/tools` é do **dono** e roda **sem operar**: lê dados da corretora pelo contrato de dados
+  e produz relatórios para escolher números de risco com medição. Um número escolhido a partir de um
+  estudo registra **qual estudo o sustentou** e quando — estudo sem data não sustenta número nenhum.
 
 ### 11.2. Topologia de processos
 
@@ -506,35 +536,34 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 11. **Prioridade de atendimento**: uma **lista declarada** no arquivo macro; sem lista, ordem
     **alfabética pelo símbolo** — quando o dono não tem critério, os pesos são iguais e não há nada a
     julgar. O registro diz qual critério decidiu (RN-M4.9 a RN-M4.11).
+12. **O circuit breaker da conta é o 5% por sessão**, sobre o equity da corretora com não realizado. Ao
+    bater, a mesa **liquida e encerra o processo da conta** para revisão do motivo, e **não volta
+    sozinha** (RN-M3).
+13. **Margem total máxima pode ser 100%**: a 1x, com um ou dois pares, empenhar o saldo inteiro é escolha
+    legítima — típica em instrumentos de variação baixa (RN-M4).
+14. **Risco máximo por ordem no macro** (ex.: 2%): nenhuma ordem, de corretora nenhuma, arrisca mais do
+    que isso. Dentro do teto, o stop e o CB de cada operação são definidos na ficha (RN-M4.12).
+15. **Distância mínima de liquidação é opcional** e vive na config de risco da ordem: **sem ela, a ordem
+    é livre** (RN-M4.13).
+16. **`/tools`**: o dono estuda o par (volatilidade por sessão, amplitude típica) e escolhe os números de
+    risco com medição; o número registra **qual estudo o sustentou** (RN-E13).
+17. **Funding e swap explícitos e separados** no histórico, para análise de viabilidade do setup. E o
+    **histórico e o detalhe das ordens vêm da corretora**, que já fez esse trabalho — a mesa lê e mostra,
+    não reconstrói resultado a partir de execuções (RN-D6, RN-C11).
 
 **Proposta minha, à espera da tua palavra**
 
-12. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
-    de mesas (RN-E8), para a topologia não aparecer na superfície.
-13. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+18. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
+    mesas (RN-E8), para a topologia não aparecer na superfície.
+19. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
     liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
     impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-14. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
+20. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
     lança o processo é o vigia, não a web.
 
-**Formas que eu proponho — à espera de confirmação**
+**Abertas — os números que faltam**
 
-15. **Janela da perda máxima**: uma de `pico_da_sessao`, `equity_do_inicio_do_dia`, ou outra declarada. O
-    equity é o da **corretora**, com resultado não realizado, lido em cada ciclo. O **número** (o limite)
-    fica na config macro.
-16. **Itens que o arquivo de risco limita**: só os que mexem em dinheiro ou em exposição — `stop_pct`,
-    `tp_pct`, `alavancagem`, `tempo_maximo_em_posicao`. Períodos de média (ema_fast, ema_slow) NÃO se
-    limitam: limitar isso é falso rigor, não protege nada.
-17. **Distância mínima de liquidação**: é **porteiro na abertura** (não abre a posição) e **leitura
-    registada** em cada ciclo. Violá-la com posição aberta é **alarme para o dono**, não fecho
-    automático da mesa.
-18. **Funding/swap**: a corretora já o desconta da conta, logo já está no equity, no resultado e no dd —
-    não há que decidir se entra. A única decisão é **mostrá-lo separado**, como linha própria no ledger
-    e na leitura. Recomendo que sim.
-
-**Abertas — só faltam os números**
-
-19. Limite da perda máxima (ex.: 5%) e a janela escolhida.
-20. Margem total máxima da conta, em % do saldo.
-21. Distância mínima de liquidação, em % de movimento.
-22. As bandas de cada item limitável (ex.: stop entre X% e Y%).
+21. Confirmar o **2% de risco máximo por ordem** no macro (ou outro valor).
+22. A **sessão** é a corrida da mesa desde o arranque (RN-M3) — confirmar que não é o dia.
+23. As **bandas** de cada item limitável: stop, tp, alavancagem, tempo máximo em posição.
+24. Instrumento a instrumento: a **distância mínima de liquidação**, quando um estudo a justificar.

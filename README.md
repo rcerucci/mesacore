@@ -29,9 +29,16 @@ core de engessar os setups — e é por isso que as variantes de um setup são a
 /core           a mesa (ciclo, boleta, ledger, mandato, servidor) e o vigia (start/stop/pause/reset)
 /setups/<nome>  o plugin, o template de configuração, o schema do seu estado, os testes
 /brokers/<nome> o conector, o manifesto, a bateria de conformidade, as fixtures
+/config         os arquivos do dono: config macro da conta e fichas (risco + setup)
+/tools          os estudos do dono sobre um instrumento, sem operar
 /web            a superfície
 /docs           a regra de negócio e as especificações
 ```
+
+**Dois trilhos, dois donos.** O trilho das **decisões** é o nosso ledger (snapshot, proposta, boleta,
+resolução, desfecho) — é o que permite re-correr o setup e comparar boletas. O trilho do **dinheiro**
+(execuções, taxas, funding, resultado realizado) é o da **corretora**, que já o faz por ofício: a mesa
+lê e mostra, nunca reconstrói.
 
 Regra de dependência: setups e brokers importam `contracts`; `core` importa `contracts`; **ninguém
 importa `core`** (verificado por teste).
