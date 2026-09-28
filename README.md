@@ -117,3 +117,23 @@ O motor que roda hoje (`~/Projects/jev-trade-fusao`, repo `hl-jev`) é **fonte d
 `arquivo:linha` — não é base de código a copiar. Serve para os casos que só se sabem por ter corrido
 contra a corretora de verdade, e continua a operar a conta até este terminal passar nos vectores de
 aceite. O comportamento dele é o **oráculo de aceite**: medido, não opinado.
+
+---
+
+## O que existe hoje (recorte 002 — a máquina de estados)
+
+| Pasta | O que é |
+|---|---|
+| `contracts/` | **normativo** (recorte 001, fechado): 9 schemas, vocabulário, mocks das duas pontas, bateria de 81 casos nas duas linguagens |
+| `core/` | a mesa: a tabela, o intérprete, o ciclo, as marcas, o registo. **Decide e não envia** |
+| `tools/verificar-maquina/` | as bancadas da mesa (tabela, arranque, sessão, pausa, registo, chaves) |
+| `tools/verificar-contrato/` | as do contrato (001): ponta-a-ponta, frescura, inventário, porta da dependência |
+| `specs/001-contrato-neutro/` | a spec do contrato — **59/59 tarefas**, fechada |
+| `specs/002-maquina-de-estados/` | a spec da máquina — 7 histórias, 44 FR, 12 SC. Relatórios em `relatorios/` |
+| `docs/` | a regra de negócio (136), a máquina de estados, o inventário de chaves |
+
+**Uma porta para provar tudo:** `bash tools/verificar-maquina/provar.sh` (15 de 15).
+
+**O que o recorte 002 se recusa a fazer:** arredondar percentagens para comparar com um limite; corrigir o
+que entrou errado (recusa e diz porquê); avisar por omissão quando a lista do dono não existe; tratar
+silêncio do venue como aceite; e esperar por uma resposta que não vem.

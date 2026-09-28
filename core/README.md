@@ -1,26 +1,51 @@
-# core
+# `core/` — a mesa
 
-A mesa: o que não muda com o setup nem com a corretora.
+A pasta deixou de ser uma pasta com um README. O que vive aqui, e por que ordem:
 
-- o **ciclo** (ler mercado, eventualmente consultar o setup, agir, registrar);
-- a **normalização** do mercado e da conta num objecto único (RN-T1, RN-T3);
-- o **mandato da conta** e a sua execução: perda máxima, percentagem do saldo, alavancagem máxima,
-  distância mínima de liquidação, inibição (RN-M*);
-- a **boleta**: preenchimento em unidades neutras (percentagem do saldo, alavancagem, % de movimento),
-  verificação contra o manifesto, envio e desfecho (RN-B*, RN-T6, RN-T7);
-- a **conferência da resolução** do conector contra a banda, antes de executar (RN-M4.5);
-- a **reconciliação** com a corretora (RN-T8);
-- o **ledger** (RN-L*);
-- o **servidor de leitura** para a web e a publicação da identidade da mesa (RN-E8);
-- o **vigia** (segundo ponto de entrada): start, stop, pause, reset e nova_sessao (RN-V1 a RN-V10).
+## 1. A tabela (`estados/`)
 
-Este diretório NUNCA converte nada para unidades de corretora — quantidade, contrato, lote, ponto,
-tick ou preço absoluto são do conector (RN-B0). Se aparecer aritmética de corretora aqui, o desenho
-está errado.
+`estados/transicoes.json` é a **fonte** do comportamento: cada linha diz o par (estado, verbo), a guarda, o
+resultado e o motivo. `estados/maquina.ts` é o **intérprete** — não sabe nada de trading, sabe ler a tabela.
+Sete invariantes conferidos (`tools/verificar-maquina/tabela.ts`), entre eles: todo o par tem uma linha
+`sempre` como última, e nenhum motivo da mesa se chama como um do contrato.
 
-Regras que este diretório DEVE cumprir:
+- `estados/motivos.json` — o livro dos motivos da **mesa** (38). É a resposta a «porque não fez?».
+- `estados/comando.ts` — o validador da linha de comando.
+- `estados/provar.ts` — as 29 mensagens de (estado, verbo).
 
-- importa `contracts` e **nada mais** do projeto: NUNCA um setup nem um broker (RN-E2);
-- não conhece nenhum parâmetro de estratégia por nome — só o template que o setup publica (RN-S4);
-- não faz nenhuma conta que a web faria outra vez (RN-E9);
-- é indiferente à topologia: não sabe quantos processos existem (RN-E6).
+## 2. O ciclo (`ciclo/`)
+
+A ordem é sempre a mesma: **posição → condição → lado → decisão**.
+
+| Ficheiro | O que faz |
+|---|---|
+| `leitura/fixtures.ts` | a porta de leitura: valida contra o contrato **antes** de a mesa decidir. Leitura recusada é **fatal** |
+| `ciclo/condicoes.json` + `condicoes.ts` | as condições **somam** impedimentos (não vencem). Dado, não código |
+| `ciclo/ciclo.ts` | a ordem do ciclo e as travas. **Não envia** (R5) |
+| `ciclo/decisao.ts` | monta a boleta do mandato + template, e valida-a contra o contrato antes de sair |
+| `ciclo/desfecho.ts` | classifica o que voltou: aceite, parcial, recusado ou **desconhecido** |
+| `ciclo/reconciliacao.ts` | três veredictos; só os que **decidem** limpam a marca de desconhecido |
+| `ciclo/cb.ts` | o circuit breaker: comparação **exacta**, sem percentagem arredondada |
+| `ciclo/encerramento.ts` | o resumo e a pergunta; sem resposta, a mesa **volta a operar** com o `stop` pendente |
+| `ciclo/arranque.ts` | as seis portas, por ordem; a primeira falha recusa com o motivo **dela**, e nada é corrigido |
+
+## 3. O que persiste (`estado/`)
+
+O estado da mesa **não** persiste (R3): as **marcas** persistem, em `estado/.marcas.json` (fora do
+versionamento), escritas em atómico (tmp + rename). São três: `sessao`, `inibicao_cb`, `desconhecido[]`
+(+ `pedidos[]`). Escrita sempre por objecto **novo** — uma marca nunca é mutada no lugar.
+
+`estado/registo.ts` é o registo do dia: uma linha por acontecimento, com o motivo sempre presente. Um
+`nada` sem motivo **não se registra**: corrige-se (é a linha que torna o dia inexplicável).
+
+## 4. Config (`config/`)
+
+`configuracao.ts` lê `conta.eventos_que_avisam[]`. Se a lista não existir, ou tiver um nome fora do
+conjunto fechado dos eventos (`ciclo/eventos.json`), a mesa **grita** — não avisa por omissão.
+
+## Como se prova
+
+```bash
+bash tools/verificar-maquina/provar.sh          # tudo, uma porta, uma saída
+bash tools/verificar-maquina/provar.sh --rapido # sem a bateria do contrato (001)
+```

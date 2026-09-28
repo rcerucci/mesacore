@@ -23,6 +23,14 @@ export type TipoDaLinha = (typeof TIPOS_DA_MESA)[number];
 export interface LinhaDoRegisto {
   instante_ms: number;
   tipo: TipoDaLinha;
+  /**
+   * Em `ciclo`: o que a mesa decidiu fazer (`abrir|fechar|adoptar|nada`).
+   *
+   * Entra no registo por causa do SC-011: sem ele, um dia de operacao e reconstruivel quanto ao ESTADO e
+   * nao quanto as DECISOES - e `nada` sem motivo passaria despercebido, que e exactamente a linha que
+   * torna o dia inexplicavel (a mesa nao fez, e ninguem sabe porque).
+   */
+  acao?: string | null;
   de?: string;
   para?: string;
   instrumento?: string;
@@ -77,6 +85,25 @@ export function registarRecusa(
   caminho?: string,
 ): void {
   registar({ instante_ms, tipo: "recusa", de, verbo, autor, motivo, nota }, caminho);
+}
+
+/** Uma decisao do ciclo: o tipo de linha próprio da mesa para o que ela decidiu fazer ou NAO fazer. */
+export function registarCiclo(
+  instante_ms: number,
+  instrumento: string,
+  acao: string,
+  motivo: string | null,
+  nota: string,
+  caminho?: string,
+): void {
+  if (acao === "nada" && !motivo) {
+    // A linha mais perigosa do registo: a mesa nao fez, e nao diz porque. SC-011 conta estas.
+    throw new Error(
+      `decisao de nao-fazer sem motivo (${instrumento}): "nada" sem motivo torna o dia inexplicavel - ` +
+        "quem le o registo nao distingue 'nao havia nada a fazer' de 'havia e a mesa nao fez'.",
+    );
+  }
+  registar({ instante_ms, tipo: "ciclo", instrumento, acao, motivo, nota }, caminho);
 }
 
 /** A reconstrucao: le um registo e devolve o estado final - sem ler codigo (SC-011). */

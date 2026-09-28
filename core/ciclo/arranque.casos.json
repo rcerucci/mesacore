@@ -6,7 +6,7 @@
     "config": {
       "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"],
       "margem_total_maxima_pct": "100",
-      "politica_de_contencao": null,
+      "contencao": null,
       "fichas": {
         "EURUSD": {
           "saldo_pct": "1",
@@ -112,7 +112,7 @@
     {
       "nome": "contenda-com-politica-declarada-arranca (os MESMOS numeros, outra declaracao)",
       "config_mudanca": {
-        "politica_de_contencao": "espera",
+        "contencao": "espera",
         "fichas": {"EURUSD": {"saldo_pct": "60", "alavancagem": "2", "bandas": {"saldo_pct": {"minimo": "0.1", "maximo": "100"}, "alavancagem": {"minimo": "1", "maximo": "10"}}}, "XAUUSD": {"saldo_pct": "60", "alavancagem": "5", "bandas": {"saldo_pct": {"minimo": "0.1", "maximo": "100"}, "alavancagem": {"minimo": "1", "maximo": "20"}}}}
       },
       "arrancou_esperado": true,

@@ -125,3 +125,31 @@ Aritméticas, não interpretativas — é por isso que esta vista apanha o que a
 10. **`marca de posse` na boleta** — RN-B10 entrou depois de este inventário ser escrito, e o campo foi
    acrescentado ao manifesto (§5) sem ser acrescentado à lista de campos da boleta (§4): metade da
    decisão ficou registrada. Campo que atravessa a fronteira aparece **nas duas listas**.
+
+## 7. As chaves que o recorte 002 passou a usar
+
+A maquina de estados nao inventou chaves novas para alem das que o inventario ja declarava — mas passou a
+**ler** algumas, e a lê-las em sitios que nao existiam (o CB, o arranque, o encerramento). Fica escrito
+quem as le, porque uma chave que o codigo le e que ninguem declarou e um valor ajustavel que ninguem sabe
+onde ajustar (RN-A1).
+
+| Chave | Quem a le agora | Para que |
+|---|---|---|
+| `conta.eventos_que_avisam[]` | `core/config/configuracao.ts` | decide **se** um evento avisa (FR-042). Sem a lista, ou com um nome fora do conjunto fechado, a mesa **grita** — nao avisa por omissao |
+| `conta.perda_maxima_pct` | `core/ciclo/cb.ts` | o limite da corrida. Comparado por multiplicacao cruzada, sem arredondar (FR-035) |
+| `conta.perda_maxima_janela` | `core/ciclo/cb.ts` | desde quando se mede: `corrida_da_mesa` (equity de partida da sessao) ou `dia_de_calendario` (equity de abertura do dia) |
+| `conta.contencao` | `core/ciclo/arranque.ts` (porta da contenda) | resolve a contenda entre fichas: `recusar` ou `espera`. **Ausente = recusa** (RN-M4.7) |
+| `conta.margem_total_maxima_pct` | `core/ciclo/arranque.ts` (porta da contenda) | o tecto que as fichas somadas nao podem passar |
+| `conta.arranque_apos_cb` | `core/ciclo/arranque.ts` (porta da sessao) | `exige_decisao`: depois do CB, o `start` recusa ate haver sessao nova (FR-037) |
+| `fichas/<i>.risco.*`, `fichas/<i>.setup.*` | `core/ciclo/arranque.ts`, `core/ciclo/decisao.ts` | o que a mesa le para montar a boleta (bandas, parcial, desvio, stop, tp, relogio) |
+
+**O que este recorte NAO declarou, e devia:** o **prazo de resposta do encerramento** (em `encerrando`, a
+mesa pergunta e espera — `setup.prazo_de_resposta_ms` nao existe no inventario). Hoje ele entra como
+parametro do pedido, que e o mesmo que dizer que quem chama e que sabe. Numa mesa manual este prazo e do
+dono, e por isso fica aqui registrado como **lacuna**, e nao como decisao.
+
+**O que a conferencia apanhou:** o codigo lia `conta.politica_de_contencao` e o documento declara
+`conta.contencao`. Duas coisas diferentes com o mesmo sentido — e o tipo de divergencia que so aparece
+quando alguem as poe lado a lado. O codigo passou a ler o nome declarado; o conferidor
+(`tools/verificar-maquina/chaves.ts`) confere exactamente isto: que o nome que o **codigo** usa e o nome
+que o **documento** declara.

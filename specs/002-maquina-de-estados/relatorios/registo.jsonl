@@ -1,0 +1,12 @@
+{"nota":"start com proposta de abertura","acao":"abrir","motivo":null,"condicao":"normal","avisa":false}
+{"nota":"em pausa, a mesma proposta","acao":"nada","motivo":"mesa_pausada_nao_abre","condicao":"normal","avisa":false}
+{"nota":"em pausa, caixa com posicao","acao":"fechar","motivo":null,"condicao":"normal","avisa":false}
+{"nota":"em pausa, com divergencia","acao":"nada","motivo":"fechar_impedido_pela_condicao","condicao":"divergente","avisa":true}
+{"nota":"proposta ausente (hold contado)","acao":"nada","motivo":"proposta_ausente_tratada_como_hold","condicao":"normal","avisa":true}
+{"nota":"condicao sem leitura","acao":"nada","motivo":"mesa_pausada_nao_abre","condicao":"sem_leitura","avisa":false}
+{"nota":"start com proposta de abertura","acao":"abrir","motivo":null,"condicao":"normal","avisa":false}
+{"nota":"em pausa, a mesma proposta","acao":"nada","motivo":"mesa_pausada_nao_abre","condicao":"normal","avisa":false}
+{"nota":"em pausa, caixa com posicao","acao":"fechar","motivo":null,"condicao":"normal","avisa":false}
+{"nota":"em pausa, com divergencia","acao":"nada","motivo":"fechar_impedido_pela_condicao","condicao":"divergente","avisa":true}
+{"nota":"proposta ausente (hold contado)","acao":"nada","motivo":"proposta_ausente_tratada_como_hold","condicao":"normal","avisa":true}
+{"nota":"condicao sem leitura","acao":"nada","motivo":"mesa_pausada_nao_abre","condicao":"sem_leitura","avisa":false}

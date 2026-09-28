@@ -155,3 +155,14 @@ distinguir-se:
    recusa ao fechar.
 6. **Fechar foi recusado — FECHADA** (RN-T7.3): é alarme grave, com nova tentativa declarada, não uma
    tentativa falhada sem consequência.
+
+---
+
+## Nota de estado (28 set 2026): este documento é a **vista**, não a fonte
+
+A partir do recorte 002, a fonte do comportamento é `core/estados/transicoes.json`, lida pelo intérprete
+(`core/estados/maquina.ts`) e conferida pelos sete invariantes de `tools/verificar-maquina/tabela.ts`.
+
+Este documento continua a ser o que se lê para **entender** — a vista de cima —, mas quando os dois
+divergirem, **a tabela ganha**, e a divergência é um defeito deste documento. Nenhum dos dois é código: a
+tabela é dado, e é por isso que a máquina pode mudar de comportamento sem mudar de programa.

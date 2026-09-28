@@ -13,7 +13,7 @@ Caminhos concretos em todas as tarefas.
 
 ## Estado da execução (medido em 28 set 2026)
 
-Fases 1 e 2 fechadas. **As tres P1 (US1, US2, US3) e as US4 a US7 estao fechadas** — 54 de 63 tarefas. Comandos e números reais em
+Fases 1 e 2 fechadas. **O recorte 002 esta implementado e medido: 63 de 63 tarefas.** Os 12 SC estao no `relatorios/RESULTADO.md`. Comandos e números reais em
 `relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
 
 | O que | Comando | Medido |
@@ -292,17 +292,21 @@ feitas como escritas:
 
 ---
 
-## Phase 9: Polish & Cross-Cutting (T055–T062)
+## Phase 9: Polish & Cross-Cutting (T055–T063) — **fechada**
 
-- [ ] T055 [P] Escrever `tools/verificar-maquina/provar.sh`: corre a tabela, as baterias, o porteiro do estado e a prova negativa — uma porta só, saída 1 se alguma falhar
-- [ ] T056 [P] Declarar em `docs/inventario-de-chaves.md` as chaves que este recorte passa a usar (prazo do encerramento, lista de eventos que avisam, limites) e correr `tools/verificar-contrato/inventario.sh` (SC-012)
-- [ ] T057 [P] Actualizar `core/README.md`: deixa de ser uma pasta com um README e passa a descrever a tabela, o intérprete, o ciclo e as marcas
-- [ ] T058 [P] Actualizar `README.md` da raiz e `docs/maquina-de-estados.md` (a tabela passou a ser a **fonte**; o documento é a vista)
-- [ ] T059 Correr o `quickstart.md` secção a secção e substituir cada promessa pela **saída real**
-- [ ] T060 Escrever `specs/002-maquina-de-estados/relatorios/RESULTADO.md`: os 12 SC, cada um com o comando que o mediu — e o que não foi medido declarado como não medido
-- [ ] T061 Escrever `specs/002-maquina-de-estados/relatorios/constituicao.md`: os oito princípios aplicados a este recorte, um a um
-- [ ] T062 Revisão final: `grep` de segredos em `/core` (RN-E14), `bash tools/verificar-contrato/frescura.sh` (o contrato não regrediu) e `bash tools/verificar-contrato/ponta-a-ponta.sh` (a bateria do recorte 001 continua verde)
-- [ ] T063 Escrever `tools/verificar-maquina/registo.ts`: reconstrói o estado da mesa a partir do registo de um dia de operação e **falha** se alguma linha de decisão de não-fazer vier sem motivo, ou se a reconstrução não fechar no estado final (SC-011)
+**Uma porta, uma saída:** `bash tools/verificar-maquina/provar.sh` → **15 de 15**. Relatório dos 12 SC em
+`relatorios/RESULTADO.md`; a constituição aplicada em `relatorios/constituicao.md`. O que o recorte **nao**
+mediu esta la declarado como nao medido.
+
+- [x] T055 [P] Escrever `tools/verificar-maquina/provar.sh`: corre a tabela, as baterias, o porteiro do estado e a prova negativa — uma porta só, saída 1 se alguma falhar
+- [x] T056 [P] Declarar em `docs/inventario-de-chaves.md` as chaves que este recorte passa a usar (prazo do encerramento, lista de eventos que avisam, limites) e correr `tools/verificar-contrato/inventario.sh` (SC-012)
+- [x] T057 [P] Actualizar `core/README.md`: deixa de ser uma pasta com um README e passa a descrever a tabela, o intérprete, o ciclo e as marcas
+- [x] T058 [P] Actualizar `README.md` da raiz e `docs/maquina-de-estados.md` (a tabela passou a ser a **fonte**; o documento é a vista)
+- [x] T059 Correr o `quickstart.md` secção a secção e substituir cada promessa pela **saída real**
+- [x] T060 Escrever `specs/002-maquina-de-estados/relatorios/RESULTADO.md`: os 12 SC, cada um com o comando que o mediu — e o que não foi medido declarado como não medido
+- [x] T061 Escrever `specs/002-maquina-de-estados/relatorios/constituicao.md`: os oito princípios aplicados a este recorte, um a um
+- [x] T062 Revisão final: `grep` de segredos em `/core` (RN-E14), `bash tools/verificar-contrato/frescura.sh` (o contrato não regrediu) e `bash tools/verificar-contrato/ponta-a-ponta.sh` (a bateria do recorte 001 continua verde)
+- [x] T063 Escrever `tools/verificar-maquina/registo.ts`: reconstrói o estado da mesa a partir do registo de um dia de operação e **falha** se alguma linha de decisão de não-fazer vier sem motivo, ou se a reconstrução não fechar no estado final (SC-011)
 
 ---
 

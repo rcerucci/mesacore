@@ -123,3 +123,28 @@ lista de acontecimentos.
 - **Nada de estratégia**: o lado e a janela vêm do template do setup; a mesa decide **se pode** agir, não
   se **deve** — isso é do setup e do dono.
 - **Nada da web**: o que a web desenha não é medido por este recorte.
+
+---
+
+## A corrida real, secção a secção (28 set 2026)
+
+As secções acima dizem **o que** cada passo prova. Esta diz **o que saiu** quando foi corrido — e o que
+saiu foi colado, não resumido. Tudo de uma vez: `bash tools/verificar-maquina/provar.sh` → **15 de 15**.
+
+| Secção | Comando | Saída real |
+|---|---|---|
+| 1. A tabela é coerente | `bun run tools/verificar-maquina/tabela.ts` | `conferencia: 0 falhas nos 7 invariantes.` |
+| 2. Os pares (estado, verbo) | `bun run core/estados/provar.ts` | `29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo` |
+| 3. O instrumento que não está em condições | `bun run core/ciclo/provar.ts` | `62 verificacoes · 0 divergentes · 13 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao` |
+| 4. O desconhecido fica desconhecido | idem (baterias de desfecho e reconciliação) | `SC-004: 0 de 3 silencios e 0 de 2 confirmacoes ilegiveis promovidos` |
+| 5. As seis portas do arranque | `bun run tools/verificar-maquina/arranque.ts` | `31 verificacoes · 0 divergentes · 15 casos · 11 portas falhadas de proposito` |
+| 6. Sessão, CB e inibição | `bun run tools/verificar-maquina/sessao.ts` | `27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB` |
+| 7. Pausada defende | `bun run tools/verificar-maquina/pausa.ts` | `21 verificacoes · 0 divergentes · 5 casos US6 · 7 casos US7` |
+| 8. As fronteiras do recorte | `bash tools/verificar-contrato/frescura.sh` + `inventario.sh` | `19 ficheiros` gerados conferem · `inventario: 0 falhas` · `chaves.ts`: 7 lidas, 0 ausentes |
+| 9. O registo reconstrói o dia | `bun run tools/verificar-maquina/registo.ts` | `8 verificacoes · 0 divergentes · 11 linhas de registo reconstruidas` |
+
+**A mesa, a máquina e as marcas:** `bun run core/mesa.prova.ts` → `24 verificacoes · 0 falhas`;
+`bash tools/verificar-maquina/reiniciar.sh` → `3 processos + 1 leitura externa · 0 falhas`.
+
+**A regressão do recorte 001** (o contrato não regrediu): `ponta-a-ponta: 0 falhas — as duas pontas falam o
+contrato, e decidem o que deviam`.

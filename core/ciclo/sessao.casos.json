@@ -8,7 +8,7 @@
       "perda_maxima_janela": "corrida_da_mesa",
       "arranque_apos_cb": "exige_decisao",
       "margem_total_maxima_pct": "100",
-      "politica_de_contencao": null,
+      "contencao": null,
       "fichas": {
         "EURUSD": {
           "saldo_pct": "1",

@@ -168,14 +168,14 @@ function portaDaContenda(config: ConfiguracaoDaConta): Recusa | null {
   if (soma <= teto) return null;
 
   // Acima do teto, o que resolve e uma DECLARACAO do dono - nao uma omissao simpatica.
-  const politica = config.politica_de_contencao;
+  const politica = config.contencao;
   if (typeof politica === "string" && politica.length > 0) return null;
 
   return {
     porta: "contenda",
     motivo: "porta_do_arranque_falhou",
     motivo_do_contrato: null,
-    porque: `As fichas somam ${soma}% e o tecto da conta e ${teto}%. Sem 'conta.politica_de_contencao' declarada, o arranque recusa: contenda nao se resolve por omissao (RN-M4.7).`,
+    porque: `As fichas somam ${soma}% e o tecto da conta e ${teto}%. Sem 'conta.contencao' declarada, o arranque recusa: contenda nao se resolve por omissao (RN-M4.7).`,
   };
 }
 
