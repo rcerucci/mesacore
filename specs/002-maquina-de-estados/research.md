@@ -243,3 +243,26 @@ proposta `caixa` fecha na mesma).
 | R10 | As condições somam impedimentos; uma dá o nome | `core/ciclo/condicoes.json` (achado da implementação) |
 | R11 | A lista dos avisos é do dono; o dado guarda o NOME do evento | `core/ciclo/eventos.json`, `core/config/configuracao.ts` (achado da implementação) |
 | R12 | A marca `desconhecido` não é uma condição do instrumento | `core/ciclo/ciclo.ts` (achado da implementação) |
+
+## R13 — Emenda do dono (28 set 2026): o que muda no código
+
+A revisão dos quatro botões que este recorte declarava e **não ligava** produziu quatro decisões de dono,
+todas registadas em `docs/inventario-de-chaves.md` §8 e `docs/regra-de-negocio.md` (Emendas). O recorte 002
+fica **fechado como está** (63/63, medido); a emenda abre a **fase 10** e o recorte só volta a estar fechado
+quando as tarefas dela estiverem medidas.
+
+| Decisão | Consequência no código |
+|---|---|
+| **A ligação reporta-se pelo protocolo**; o limiar de idade sai | A condição `dado_velho` mantém o **estado** e perde o **limiar**: passa a ser alimentada pelo estado da ligação (facto declarado). A bateria das condições ganha o par ligado/desligado com o mesmo dado |
+| **Nenhum contador de erros inibe** | O gatilho do contador de inválidos sai. Entra a **tabela por motivo**: *repetir com atraso* · *recusar e registar* · *parar e reconciliar*, com a regra «só se repete o que provadamente não foi feito» — e o caso de controlo: **sem confirmação, reconcilia primeiro** (repetir às cegas abre uma segunda posição) |
+| **Contenda é FIFO** | A porta da contenda deixa de ler a lista declarada; ordena por instante do pedido (relógio do venue) e desempata pelo símbolo (alfabética). O registo nomeia o critério: `fifo` ou `fifo_desempatado_por_simbolo` |
+| **O risco por ordem não é da mesa** | A chave sai da mesa. Fica no mandato o que é comparável: **exposição (nocional)** e **distância mínima até à liquidação**. A conferência da **resolução** da corretora contra a banda **antes de executar** é obrigação do conector — e é o **defeito declarado** que esta revisão encontrou (hoje a mesa não a confere) |
+
+**O que esta emenda não toca:** o contrato do recorte 001 (nenhum schema muda — as decisões são de
+comportamento e de chaves, não de forma da mensagem), a tabela de transições, o CB, a sessão, as marcas e o
+registo.
+
+**A lição que fica escrita:** as duas chaves que o conferidor do SC-012 apanhou estavam **no código e não
+no inventário** (`conta.politica_de_contencao`, e a política de arranque depois do CB escrita num `if`).
+As quatro desta emenda estavam no inventário e **não no código**. São a mesma doença vista dos dois lados,
+e é por isso que o conferidor de chaves passou a olhar para as **duas direcções**.

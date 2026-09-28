@@ -757,3 +757,32 @@ as que dependem de decisão do dono estão marcadas `ABERTA`.
 - **Achada depois, ao reconferir este documento** (o `ABERTA` da RN-T4 fez de cortina): o limite de
   inválidos seguidos e a **marca de posse** na lista de campos da boleta — ver
   `docs/inventario-de-chaves.md`, §6, itens 9 e 10.
+
+---
+
+## Emendas do dono — 28 set 2026
+
+Substituem, a partir desta data, o que diziam as regras citadas. A regra antiga fica como **história**; o
+que vale é o parágrafo abaixo de cada uma.
+
+- **RN-D3 (relógio e idade do dado)** — a idade do dado deixa de ser limiar de operação. «Estou ligado?»
+  vem do **protocolo da ligação**; a frescura do preço no envio resolve-se por **releitura + desvio da
+  corretora**; a idade da **barra** é regra do **setup**, que recebe o OHLCV com o carimbo da corretora.
+  Fica a regra: **sem ligação, não se abre risco novo — e a defesa continua**.
+- **RN-T4 (proposta inválida)** — mantém-se: proposta ausente ou inválida é tratada como *hold*, com a
+  razão do contrato registada ao lado da razão da casa. **Cai** o «N inválidos seguidos inibem a mesa».
+  Entra: o **motivo decide a acção** (*repetir com atraso* · *recusar e registar* · *parar e
+  reconciliar*), e **só se repete o que provadamente não foi feito**. Sem confirmação dentro do prazo,
+  reconcilia-se **antes** de repetir — repetir às cegas abre uma segunda posição.
+- **RN-M4.9 (contenda e ordem de atendimento)** — a ordem é **FIFO** pelo instante do pedido no relógio do
+  venue; empate resolve-se por ordem **alfabética** do símbolo (comparação simples de caracteres). A ordem
+  decide **quem fica de fora**, nunca a ordem de execução; havendo lugar para todos, entram todos.
+- **RN-M4.12 (risco por ordem)** — o limite por ordem **não** é número da mesa. O mandato limita
+  **exposição (nocional)** e **distância mínima até à liquidação**; a alavancagem é **facto do
+  instrumento**, declarada pelo conector; o limite da conta é da corretora.
+- **RN-B11 (nova) — o preço que serve de régua** — o preço enviado à corretora como referência do desvio é
+  **relido no momento do envio**, pelo conector. Régua velha desloca a janela do desvio: o desvio medido a
+  partir de uma régua velha pode **autorizar** um preenchimento longe do mercado — não protege nada.
+- **RN-E20 (nova) — o que a mesa confere antes de executar** — a resolução devolvida pela corretora é
+  conferida contra a banda do mandato **antes** de mandar executar. Sem este passo, o plugin decide
+  tamanho e ninguém verifica: passa o cálculo **e o limite** para fora da mesa.

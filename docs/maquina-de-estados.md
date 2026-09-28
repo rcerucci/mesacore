@@ -166,3 +166,12 @@ A partir do recorte 002, a fonte do comportamento é `core/estados/transicoes.js
 Este documento continua a ser o que se lê para **entender** — a vista de cima —, mas quando os dois
 divergirem, **a tabela ganha**, e a divergência é um defeito deste documento. Nenhum dos dois é código: a
 tabela é dado, e é por isso que a máquina pode mudar de comportamento sem mudar de programa.
+
+### Emenda (28 set 2026): a condição `dado_velho` muda de fonte, não de existência
+
+O **estado** fica: a mesa tem de saber dizer «não consigo ver o mundo agora», e com a vista tapada não abre
+risco novo (e continua a defender). O que sai é o **limiar**: quem diz que a mesa está cega é o **estado da
+ligação reportado pelo protocolo do conector**, não uma contagem de idade dos preços.
+
+Razão: em varejo o instrumento fica quieto legitimamente, e silêncio de tick é indistinguível de ligação
+morta. Um limiar que o dono tivesse de adivinhar seria um botão a fingir que governa a ligação.

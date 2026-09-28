@@ -206,4 +206,5 @@ nova deste recorte vive aqui.
 - [x] Implementação — **US4** (o arranque por seis portas): 42 de 63 tarefas · SC-006 medido · a porta do inventário ligada ao conferidor existente
 - [x] Implementação — **US5** (a sessão é a unidade de comparação): 48 de 63 tarefas · SC-007 e SC-008 (lado do CB) medidos
 - [x] Implementação — **US6/US7** (a pausada defende; o pedido ignorado não paralisa): 54 de 63 tarefas · SC-008 e SC-009 medidos
+- [ ] Implementação — **fase 10: emenda do dono (T064–T067)** — a ligação pelo protocolo, a tabela por motivo, a contenda FIFO e a resolução conferida
 - [x] Implementação — **polish (T055–T063)**: 63 de 63 tarefas · `provar.sh` 15/15 · `RESULTADO.md` com os 12 SC

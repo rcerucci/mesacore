@@ -158,3 +158,35 @@ ignora o CB que ela propria disparou.
 quando alguem as poe lado a lado. O codigo passou a ler o nome declarado; o conferidor
 (`tools/verificar-maquina/chaves.ts`) confere exactamente isto: que o nome que o **codigo** usa e o nome
 que o **documento** declara.
+
+## 8. Emendas do dono — 28 set 2026
+
+Decididas na revisão dos quatro botões que este recorte declarava e **não ligava**. Nenhuma delas é
+«afrouxar um número»: três chaves **saem** (não fica limiar nenhum para o dono adivinhar) e uma **entra**
+(um prazo humano). O desenho fica **menor** do que estava.
+
+| Chave | O que era | O que passa a ser | Porque (palavras do dono) |
+|---|---|---|---|
+| `conta.idade_maxima_do_dado_ms` | limiar de idade do dado que travava a abertura | **sai.** «Estou ligado?» passa a vir do **protocolo da ligação**; a frescura do preço que vai para a corretora resolve-se **ao enviar** (releitura + desvio do venue); a idade da barra é regra do **setup**, que tem o OHLCV com o carimbo da corretora | em varejo o silêncio do tick **não** distingue mercado calmo de ligação morta — «por tick jamais é viável, tem de ser por protocolo próprio» |
+| `conta.invalidos_seguidos_para_inibir` | N inválidos seguidos inibem a mesa | **sai.** O **motivo de cada erro** decide a acção, numa tabela por motivo: *repetir com atraso* · *recusar e registar* · *parar e reconciliar*. **Só se repete o que provadamente não foi feito**; sem confirmação, reconcilia-se primeiro | «é muito vago, depende do erro» — contar três erros diferentes como três do mesmo é o que torna o número sem sentido |
+| `conta.risco_maximo_por_ordem_pct` | risco máximo por ordem, conferido pela mesa | **sai da mesa.** No mandato fica o que é comparável entre corretoras — **exposição (nocional)** e **distância mínima até à liquidação**; o limite da conta é da corretora, que calcula e aceita ou rejeita | «o plugin manda valores universais e o broker é que calcula e executa ou rejeita» |
+| `conta.ordem_de_atendimento[]` | lista declarada de quem é atendido primeiro | **sai.** A contenda é **FIFO**, com desempate **alfabético pelo símbolo** quando dois pedidos trazem o mesmo instante. Decide **quem fica de fora** quando não há lugar para todos, nunca a ordem de execução de quem cabe | «ordem de atendimento FIFO» |
+| `setup.prazo_de_resposta_ms` | **não existia** — o prazo entrava como parâmetro de quem chama | **entra.** Em `encerrando`, o tempo que a mesa espera pela resposta é valor do dono, declarado no template do setup | numa mesa manual esse prazo é do dono, não de quem chama |
+
+### 8.1 O que passa a ser obrigação declarada do conector (manifesto)
+
+Deixou de ser trabalho da mesa e passou a ser **capacidade que o conector declara** — e o manifesto é lido
+uma vez, ao carregar:
+
+1. **Reportar o estado da ligação pelo protocolo** da corretora. Se não puder, **dizê-lo** (recurso
+   declarado, nunca descoberto em produção);
+2. **Reler o preço no momento de enviar** e usá-lo como referência do desvio;
+3. **Devolver a resolução** (quantidade na unidade da corretora, margem exigida, alavancagem efectiva,
+   preço de liquidação) **antes de executar**, para a mesa a conferir contra a banda do mandato;
+4. Declarar em que forma transporta a **marca de posse**.
+
+### 8.2 O passo que faltava (achado desta revisão)
+
+A mesa **não pode mandar executar sem conferir a resolução contra a banda do mandato**. Sem esse passo,
+passar o cálculo para o plugin passa também o **limite**: o plugin decide tamanho e ninguém verifica.
+Fica registado como obrigação do recorte do conector — e como **defeito declarado** enquanto não existir.
