@@ -104,6 +104,16 @@ bash tools/verificar-contrato/inventario.sh
 contrato continua sem depender do core; e **100%** das chaves deste recorte têm dono no inventário
 (SC-012).
 
+## 9. O registo reconstrói o dia (SC-011)
+
+```bash
+bun run tools/verificar-maquina/registo.ts --registo core/estado/.registo.jsonl
+```
+
+**Esperado**: o estado final da mesa é reconstruído a partir do registo **sem ler código**, e **zero**
+linhas de decisão de não-fazer vêm sem motivo. Uma linha sem motivo é a diferença entre um registo e uma
+lista de acontecimentos.
+
 ## O que **não** se prova aqui
 
 - **Nada contra uma corretora a sério**: isso é a bateria de conformidade (RN-C6), recorte próprio. Aqui
