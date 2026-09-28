@@ -1,0 +1,97 @@
+{
+  "mensagem": "mercado",
+  "nota": "O objecto de factos (RN-D1, RN-D5). Só factos; ausencia e DECLARADA pela ausencia da chave (RN-D4).",
+  "casos": [
+    {
+      "nome": "mercado/completo",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-1", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 95, "estado": "aberto", "bid": "1.08541", "ask": "1.08543", "ultimo": "1.08542", "livro": {"lados": [{"preco": "1.08541", "tamanho": "1200000"}, {"preco": "1.08540", "tamanho": "800000"}], "profundidade": 10}, "posicao": {"lado": "buy", "unidades": "0.05", "preco_medio": "1.08400", "marca_de_posse": 1694498816}, "equity": "1000.00", "funding": {"taxa": "0.0000123", "instante_ms": 1758999600000}}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "mercado/ausencia-de-livro-e-declarada",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-2", "carga": {"instrumento": "XAUUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "bid": "2650.10", "ask": "2650.40", "ultimo": "2650.25", "equity": "1000.00"}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "mercado/ausencia-de-funding-e-declarada",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-3", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 110, "estado": "aberto", "equity": "1000.00"}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "mercado/ausencia-de-posicao-e-declarada",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-4", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 100, "estado": "aberto", "bid": "1.08541", "ask": "1.08543", "equity": "1000.00"}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "mercado/fechado-e-estado-nao-erro",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-5", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 300, "estado": "fechado", "equity": "1000.00"}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "mercado/campo-desconhecido",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-6", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "equity": "1000.00", "volume_24h": "5000000"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido"
+    },
+    {
+      "nome": "mercado/null-em-bid",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-7", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "bid": null, "ask": "1.08543", "equity": "1000.00"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_nulo_nao_permitido"
+    },
+    {
+      "nome": "mercado/preco-como-numero-de-virgula-flutuante",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-8", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "bid": 1.08541, "ask": "1.08543", "equity": "1000.00"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido"
+    },
+    {
+      "nome": "mercado/idade-do-dado-como-texto",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-9", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": "120", "estado": "aberto", "equity": "1000.00"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido"
+    },
+    {
+      "nome": "mercado/decimal-com-expoente",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-10", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "bid": "1.08541e0", "ask": "1.08543", "equity": "1000.00"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "nome": "mercado/simbolo-em-minusculas",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-11", "carga": {"instrumento": "eurusd", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "equity": "1000.00"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "nome": "mercado/sem-equity",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-12", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "nome": "mercado/estado-fora-do-conjunto",
+      "mensagem": "mercado",
+      "entrada": {"contrato": "1.0.0", "tipo": "mercado", "id": "m-13", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "em_leilao", "equity": "1000.00"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
+    }
+  ]
+}

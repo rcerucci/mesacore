@@ -1,0 +1,9 @@
+{
+  "nota": "A conta SIMULADA. O conector e quem tem a ligacao ao venue: e por isso que so ELE sabe o saldo e o preco. A boleta so traz percentagens (RN-B0).",
+  "saldo": "1000.00",
+  "moeda": "USD",
+  "precos": {
+    "EURUSD": "1.08542",
+    "XAUUSD": "2650.25"
+  }
+}

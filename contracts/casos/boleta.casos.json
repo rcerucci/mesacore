@@ -1,0 +1,97 @@
+{
+  "mensagem": "boleta",
+  "nota": "A boleta em unidades NEUTRAS (RN-B0). Quantidade, lote e preco absoluto sao do conector: aqui sao RECUSA (SC-001). A politica de parcial e obrigatoria (RN-B6).",
+  "casos": [
+    {
+      "nome": "boleta/minima-sem-stop-nem-lucro",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-1", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-1", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "boleta/com-stop-e-lucro",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-2", "carga": {"instrumento": "XAUUSD", "lado": "sell", "tipo": "limite", "saldo_pct": "0.5", "alavancagem": "5", "stop_pct": "0.8", "tp_pct": "2.4", "parcial": "tudo_ou_nada", "desvio_maximo": "0.05", "prazo_da_passiva_ms": 60000, "destino_do_resto": "cancelar", "reduce_only": true, "referencia_do_cliente": "r-2", "marca_de_posse": 1694498817}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "boleta/meia-percentagem-e-aceite",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-3", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "0.5", "alavancagem": "2", "parcial": "o_que_der", "desvio_maximo": "0.2", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-3", "marca_de_posse": 1}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "boleta/com-quantidade",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-4", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "quantidade": "10000", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-4", "marca_de_posse": 4}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora"
+    },
+    {
+      "nome": "boleta/com-lote",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-5", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "lote": "0.10", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-5", "marca_de_posse": 5}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora"
+    },
+    {
+      "nome": "boleta/com-preco-absoluto",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-6", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "limite", "preco_absoluto": "1.07500", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-6", "marca_de_posse": 6}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora"
+    },
+    {
+      "nome": "boleta/com-pontos-do-venue",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-7", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "pontos": "150", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-7", "marca_de_posse": 7}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora"
+    },
+    {
+      "nome": "boleta/sem-politica-de-parcial",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-8", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-8", "marca_de_posse": 8}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "parcial_nao_declarada"
+    },
+    {
+      "nome": "boleta/destino-do-resto-invalido",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-9", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "repor", "reduce_only": false, "referencia_do_cliente": "r-9", "marca_de_posse": 9}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
+    },
+    {
+      "nome": "boleta/tipo-de-ordem-desconhecido",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-10", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "iceberg", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-10", "marca_de_posse": 10}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
+    },
+    {
+      "nome": "boleta/risco-como-numero-de-virgula-flutuante",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-11", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": 2.5, "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-11", "marca_de_posse": 11}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido"
+    },
+    {
+      "nome": "boleta/alavancagem-zero",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-12", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "0", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "r-12", "marca_de_posse": 12}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "nome": "boleta/sem-referencia-do-cliente",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "b-13", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "marca_de_posse": 13}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    }
+  ]
+}

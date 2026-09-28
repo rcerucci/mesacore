@@ -1,0 +1,12 @@
+[project]
+name = "mesacore-contracts"
+version = "1.0.0"
+description = "O lado Python do contrato neutro: validação dos mesmos casos, com os mesmos motivos."
+requires-python = ">=3.11"
+dependencies = ["jsonschema>=4.26"]
+
+[dependency-groups]
+dev = ["datamodel-code-generator>=0.83"]
+
+[tool.uv]
+package = false

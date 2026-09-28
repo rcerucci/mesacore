@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/boleta.schema.json",
+  "title": "Boleta universal",
+  "description": "A mensagem central do contrato, em unidades NEUTRAS (RN-B0). Nenhum campo em unidade de corretora: quantidade, lote, preco absoluto, pontos, tick e contrato NAO existem aqui — a resolucao e do conector. A politica de parcial e obrigatoria (RN-B6) e a marca de posse viaja sempre (RN-B10).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrumento",
+    "lado",
+    "tipo",
+    "saldo_pct",
+    "alavancagem",
+    "parcial",
+    "desvio_maximo",
+    "prazo_da_passiva_ms",
+    "destino_do_resto",
+    "reduce_only",
+    "referencia_do_cliente",
+    "marca_de_posse"
+  ],
+  "properties": {
+    "instrumento": {"$ref": "_defs/forma.schema.json#/$defs/instrumento"},
+    "lado": {"$ref": "_defs/forma.schema.json#/$defs/lado"},
+    "tipo": {
+      "enum": ["mercado", "limite", "stop", "stop_limite", "mercado_por_faixa"],
+      "description": "Tipo NEUTRO de ordem. Se o manifesto nao declarar esta capacidade, a boleta e recusada — nao adaptada."
+    },
+    "saldo_pct": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo", "description": "Percentagem do SALDO. E um valor do dono (RN-A1), nao uma constante do programa."},
+    "alavancagem": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo", "description": "Multiplo de alavancagem pedido."},
+    "stop_pct": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo", "description": "Distancia de stop em percentagem de MOVIMENTO (nao em pontos). Ausente = este setup nao usa stop (RN-S3)."},
+    "tp_pct": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo", "description": "Distancia de lucro em percentagem de MOVIMENTO. Ausente = sem alvo declarado."},
+    "parcial": {
+      "enum": ["tudo_ou_nada", "o_que_der"],
+      "description": "Obrigatoria (RN-B6): o que fazer se so parte da quantidade couber. Escolha do setup, nunca do conector."
+    },
+    "desvio_maximo": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo", "description": "Desvio maximo de preco aceite, em percentagem de movimento."},
+    "prazo_da_passiva_ms": {"$ref": "_defs/forma.schema.json#/$defs/duracao_ms", "description": "Quanto tempo a parte passiva da ordem espera antes de o destino do resto decidir."},
+    "destino_do_resto": {
+      "enum": ["agressivo", "cancelar"],
+      "description": "O que fazer com o que ficou por executar quando o prazo da passiva acaba."
+    },
+    "reduce_only": {"type": "boolean", "description": "So reduz posicao. Se o venue nao tiver reduce-only nativo, e o conector que o garante — e tem de o declarar."},
+    "referencia_do_cliente": {"$ref": "_defs/forma.schema.json#/$defs/correlacao", "description": "Idempotencia: reenviar com a MESMA referencia nao pode criar segunda ordem (RN-C4)."},
+    "marca_de_posse": {"$ref": "_defs/forma.schema.json#/$defs/marca_de_posse"}
+  }
+}

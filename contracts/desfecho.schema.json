@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/desfecho.schema.json",
+  "title": "Desfecho da ordem",
+  "description": "O que aconteceu, nos QUATRO valores normalizados (RN-C2). 'desconhecido' e estado de primeira classe: nunca vira sucesso nem falha (RN-T7.1). A recusa traz SEMPRE motivo — recusa sem motivo e recusada pelo proprio contrato.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["classificacao", "resposta_do_venue"],
+  "properties": {
+    "classificacao": {
+      "enum": ["aceite", "parcial", "desconhecido", "recusado"],
+      "description": "Aceite, parcial, desconhecido ou recusado. Um valor fora destes quatro nao existe no contrato."
+    },
+    "motivo": {"$ref": "_defs/forma.schema.json#/$defs/motivo", "description": "Obrigatorio quando a classificacao e recusado. Identificador do vocabulario, nunca texto livre."},
+    "resolucao": {"$ref": "resolucao.schema.json", "description": "A resolucao faz parte do desfecho (RN-C10) SEMPRE que existiu uma: nao se resolve o que nunca se chegou a resolver. Recusa antes de resolver (capacidade nao declarada, por exemplo) traz motivo e nao traz resolucao."},
+    "resposta_do_venue": {
+      "type": "object",
+      "description": "A resposta BRUTA do venue. O contrato nao a interpreta — o registo guarda-a como chegou, para que nada dependa de interpretacao (FR-021)."
+    }
+  },
+  "allOf": [
+    {
+      "if": {"required": ["classificacao"], "properties": {"classificacao": {"const": "recusado"}}},
+      "then": {
+        "required": ["motivo"],
+        "properties": {"motivo": {"$ref": "_defs/forma.schema.json#/$defs/motivo"}}
+      }
+    },
+    {
+      "description": "Fora da recusa, a resolucao e OBRIGATORIA: aceite, parcial e desconhecido so existem depois de haver algo resolvido para enviar.",
+      "if": {
+        "not": {
+          "required": ["classificacao"],
+          "properties": {"classificacao": {"const": "recusado"}}
+        }
+      },
+      "then": {
+        "required": ["resolucao"],
+        "properties": {"resolucao": {"$ref": "resolucao.schema.json"}}
+      }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "mensagem": "resolucao",
+  "nota": "O que o conector VAI enviar, devolvido ANTES de executar (RN-C10). E a unica mensagem, com o desfecho, onde aparecem unidades de corretora. Recusa em vez de arredondar (RN-C9).",
+  "casos": [
+    {
+      "nome": "resolucao/dentro-da-banda",
+      "mensagem": "resolucao",
+      "entrada": {"contrato": "1.0.0", "tipo": "resolucao", "id": "res-1", "carga": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "resolucao/no-minimo-do-instrumento",
+      "mensagem": "resolucao",
+      "entrada": {"contrato": "1.0.0", "tipo": "resolucao", "id": "res-2", "carga": {"quantidade": "0.01", "nocional": "108.54", "margem_empenhada": "3.62", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "resolucao/quantidade-negativa",
+      "mensagem": "resolucao",
+      "entrada": {"contrato": "1.0.0", "tipo": "resolucao", "id": "res-3", "carga": {"quantidade": "-0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "nome": "resolucao/sem-preco-de-liquidacao",
+      "mensagem": "resolucao",
+      "entrada": {"contrato": "1.0.0", "tipo": "resolucao", "id": "res-4", "carga": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "nome": "resolucao/nocional-como-numero-de-virgula-flutuante",
+      "mensagem": "resolucao",
+      "entrada": {"contrato": "1.0.0", "tipo": "resolucao", "id": "res-5", "carga": {"quantidade": "0.18", "nocional": 1953.74, "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido"
+    },
+    {
+      "nome": "resolucao/campo-desconhecido-do-venue",
+      "mensagem": "resolucao",
+      "entrada": {"contrato": "1.0.0", "tipo": "resolucao", "id": "res-6", "carga": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141", "valor_do_ponto": "1.00"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido"
+    }
+  ]
+}

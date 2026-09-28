@@ -1,0 +1,18 @@
+{
+  "name": "@mesacore/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A fonte normativa do contrato neutro: schemas, casos, gerado e mocks das duas pontas.",
+  "scripts": {
+    "validar": "bun run esqueleto/casos.ts --todos",
+    "casos": "bun run esqueleto/casos.ts"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "json-schema-to-typescript": "^16.0.0"
+  }
+}

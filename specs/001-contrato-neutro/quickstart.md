@@ -1,8 +1,8 @@
 # Quickstart — como se prova o contrato
 
-**Estado: guia, ainda não executado.** Este documento descreve os comandos que a implementação tem de
-tornar verdadeiros. Nada aqui foi corrido ainda — o recorte 001 é especificação e plano; a primeira
-execução é a tarefa `T-001` de `tasks.md`, e é ela que substitui esta promessa por uma saída medida.
+**Estado: parcialmente executado.** As secções 1 a 4 foram corridas em 28 set 2026 e trazem a saída
+real; a secção 5 (reinício) ainda é promessa. Os números de tudo isto estão em
+[`relatorios/RESULTADO.md`](relatorios/RESULTADO.md).
 
 ## Pré-requisitos
 
@@ -19,10 +19,16 @@ Sem corretora, sem chave, sem ligação de rede em tempo de execução: a bateri
 
 ```bash
 # TypeScript: valida todos os casos de /contracts/casos e escreve o relatório
-bun run tools/verificar-contrato/ts/verificar.ts --relatorio /tmp/relatorio-ts.jsonl
+cd contracts && bun run esqueleto/casos.ts --relatorio ../specs/001-contrato-neutro/relatorios/us1-us3-ts.jsonl
 
 # Python: a mesma bateria, a outra implementação
-uv run python tools/verificar-contrato/py/verificar.py --relatorio /tmp/relatorio-py.jsonl
+uv run python esqueleto/casos.py --relatorio ../specs/001-contrato-neutro/relatorios/us1-us3-py.jsonl
+```
+
+**Saída real (28 set 2026)**:
+```
+ts · contrato 1.0.0 · 81 casos · 27 aceites · 54 recusados · 0 divergentes · 0 erros
+py · contrato 1.0.0 · 81 casos · 27 aceites · 54 recusados · 0 divergentes · 0 erros
 ```
 
 **Esperado**: cada caso produzir uma linha JSON com `veredicto` e `motivo`, e os casos inválidos
@@ -31,40 +37,53 @@ produzirem **recusa com motivo** — não excepção, não silêncio.
 ## 2. Comparar as duas linguagens (SC-002)
 
 ```bash
-tools/verificar-contrato/comparar.sh /tmp/relatorio-ts.jsonl /tmp/relatorio-py.jsonl
+uv run python tools/verificar-contrato/comparar.py \
+  specs/001-contrato-neutro/relatorios/us1-us3-ts.jsonl \
+  specs/001-contrato-neutro/relatorios/us1-us3-py.jsonl
 ```
 
-**Esperado**: `0 divergências` e saída 0. Qualquer divergência é **defeito do contrato** (uma das pontas
-interpretou o que a outra não escreveu), não "diferença de implementação".
+**Saída real**: `0 divergencias · 81 casos comparados · as duas implementacoes decidem igual`.
+Qualquer divergência é **defeito do contrato** (uma das pontas interpretou o que a outra não escreveu),
+não "diferença de implementação".
 
 ## 3. Os três invariantes da forma (SC-001, SC-004, SC-005)
 
 ```bash
-# nenhum campo em unidade de corretora na boleta (SC-001)
-bun run tools/verificar-contrato/ts/inspecionar.ts --proibidos quantidade,lote,preco_absoluto,pontos
+# nenhum campo em unidade de corretora na boleta nem na proposta (SC-001)
+bun run tools/verificar-contrato/ts/inspecionar.ts
 
 # ida e volta sem perda de um decimal (SC-004)
-uv run python tools/verificar-contrato/py/ida_e_volta.py --valor 123456789.0123456789
+cd contracts && uv run python ../tools/verificar-contrato/py/ida_e_volta.py
 
-# versão divergente recusa antes de qualquer envio (SC-005)
-bun run tools/verificar-contrato/ts/versao_divergente.ts
+# versão divergente recusa ANTES de qualquer envio (SC-005): com os schemas de corpo fora do
+# caminho, a mensagem continua a ser recusada — e todo o resto passa a erro_de_execucao
+mkdir -p /tmp/guardados
+(cd contracts && mv mercado.schema.json proposta.schema.json boleta.schema.json resolucao.schema.json desfecho.schema.json manifesto.schema.json historico.schema.json /tmp/guardados/ && bun run esqueleto/casos.ts --casos _arnes; mv /tmp/guardados/*.schema.json .)
 ```
 
-**Esperado**: `0 campos proibidos`; o valor devolvido **idêntico** ao enviado; e `recusado` com o motivo
-`versao_do_contrato_divergente`, com contagem de mensagens enviadas igual a **zero**.
+**Saída real (28 set 2026)**:
+```
+inspeccao: 20 campos declarados, 0 em unidade de corretora
+ida e volta: 9/9 valores sem perda
+decidido sem schema: envelope/versao-divergente -> recusado versao_do_contrato_divergente
+```
 
 ## 4. A prova que interessa ao dono: falar com o mock à mão
 
 ```bash
-echo '{"contrato":"1.0.0","tipo":"boleta","id":"c-1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"r-1","marca_de_posse":1694498816}}' \
-  | uv run python contracts/mocks/conector/main.py
+cd contracts
+echo '{"contrato":"1.0.0","tipo":"boleta","id":"b-1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"r-1","marca_de_posse":1694498816}}' \
+  | uv run python mocks/conector/main.py
 ```
 
-**Esperado**: a **resolução** (quantidade, nocional, margem, alavancagem efectiva, preço de liquidação) e,
-depois da execução simulada, um **desfecho** — nunca uma ordem real. Este é o teste que se pode correr no
-telefone ou num terminal sem nada instalado além do Python.
+Ou, com as duas fronteiras de uma vez: `bash tools/verificar-contrato/ponta-a-ponta.sh` (hoje: **0
+falhas** em 10 verificações). A resolução vem sempre **primeiro** e o desfecho depois; com
+`--silencioso` só vem a resolução, porque quem diz "não sei" é a mesa, não o conector.
 
-## 5. O reinício (SC-006)
+## 5. O reinício (SC-006) — **ainda promessa**
+
+Este passo **não** foi executado: o mock do conector ainda não sabe marcar, reiniciar e reencontrar
+(tarefas T044–T046 de `tasks.md`). Fica aqui escrito para não se confundir com o que já se mediu.
 
 ```bash
 bun run contracts/mocks/setup/reiniciar.ts --marcar --reiniciar

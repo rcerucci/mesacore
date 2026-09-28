@@ -1,0 +1,9 @@
+# Artefactos locais — nunca versionados
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.geracao-entrada/
+
+# Os lockfiles SÃO versionados: fixam o que correu, e sem eles o "regenera e não dá diff"
+# não prova nada.

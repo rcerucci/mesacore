@@ -1,0 +1,93 @@
+{
+  "contrato": "1.0.0",
+  "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
+  "lados": ["buy", "sell", "hold", "caixa"],
+  "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite", "mercado_por_faixa"],
+  "politicas_de_parcial": ["tudo_ou_nada", "o_que_der"],
+  "destinos_do_resto": ["agressivo", "cancelar"],
+  "classificacoes_de_desfecho": ["aceite", "parcial", "desconhecido", "recusado"],
+  "estados_de_mercado": ["aberto", "fechado"],
+  "tipos_de_linha_do_registo": ["snapshot", "proposta", "boleta", "desfecho"],
+  "formas_de_marca": ["cloid", "clientOrderId", "magic", "comment", "nenhuma"],
+  "campos_em_unidade_de_corretora": ["quantidade", "lote", "preco_absoluto", "pontos", "tick", "tamanho_do_contrato"],
+  "unidades_neutras_em": ["boleta.schema.json", "proposta.schema.json"],
+  "nota_unidades_neutras": "As mensagens que a mesa ENVIA (boleta, proposta) nao podem trazer unidade de corretora: quantidade, lote, preco absoluto, pontos, tick e tamanho de contrato sao do conector. NAO se aplica a resolucao (e o trabalho dela), ao manifesto (declara as unidades), ao mercado (le o que o venue da) nem ao historico (reporta o que o venue fez). 'tamanho_do_contrato' e nao 'contrato' para nao colidir com o campo 'contrato' do envelope, que e a VERSAO.",
+  "motivos": {
+    "versao_do_contrato_divergente": {
+      "descricao": "A mensagem declara uma versao do contrato diferente da vigente.",
+      "quando": "Conferido ANTES de qualquer envio, por igualdade exacta (D7). Nada sai."
+    },
+    "enquadramento_invalido": {
+      "descricao": "A mensagem nao e uma unica linha de JSON com um objecto.",
+      "quando": "Linha partida a meio, JSON malformado, ou um valor que nao e objecto."
+    },
+    "campo_obrigatorio_ausente": {
+      "descricao": "Falta um campo que o contrato exige.",
+      "quando": "Ausencia NUNCA e preenchida com valor neutro (D4)."
+    },
+    "valor_nulo_nao_permitido": {
+      "descricao": "O campo veio a null.",
+      "quando": "null nao existe no contrato: ausencia e a chave que nao esta la (D4)."
+    },
+    "campo_desconhecido": {
+      "descricao": "A mensagem traz um campo que o contrato nao declara.",
+      "quando": "O contrato e FECHADO (D5). Um campo novo entra no schema, nunca passa por tolerancia."
+    },
+    "campo_em_unidade_de_corretora": {
+      "descricao": "A boleta traz quantidade, lote, preco absoluto, pontos, tick ou contrato.",
+      "quando": "RN-B0: a boleta e em unidades neutras; quem conhece a unidade e o conector."
+    },
+    "parcial_nao_declarada": {
+      "descricao": "A boleta nao diz o que fazer se so parte da quantidade couber.",
+      "quando": "RN-B6: a politica de parcial e obrigatoria, e escolha do setup."
+    },
+    "formato_invalido": {
+      "descricao": "O valor tem o tipo certo mas a forma errada.",
+      "quando": "Decimal textual com expoente, '+', '1.', versao fora de x.y.z, simbolo fora do padrao."
+    },
+    "tipo_invalido": {
+      "descricao": "O valor tem um tipo que o contrato nao admite naquele campo.",
+      "quando": "Numero de virgula flutuante onde se espera decimal textual; objecto onde se espera lista."
+    },
+    "valor_fora_do_conjunto": {
+      "descricao": "O valor nao pertence ao conjunto fechado do campo.",
+      "quando": "Um lado que nao e buy/sell/hold/caixa; uma politica de parcial que nao existe."
+    },
+    "valor_fora_da_banda": {
+      "descricao": "O valor excede o limite que o dono declarou para aquele item.",
+      "quando": "Conferencia contra o config da ficha. A mesa recusa; nao limita nem corta."
+    },
+    "capacidade_nao_declarada": {
+      "descricao": "A boleta pede uma capacidade que o manifesto do conector nao declara.",
+      "quando": "RN-C7: divergencia entre o manifesto e o que a boleta pede recusa a operacao."
+    },
+    "instrumento_desconhecido_no_manifesto": {
+      "descricao": "O instrumento nao consta das unidades declaradas pelo conector.",
+      "quando": "Sem unidade declarada nao ha resolucao possivel."
+    },
+    "minimo_do_instrumento_acima_da_banda": {
+      "descricao": "O minimo do instrumento obriga a mais risco do que a banda autoriza.",
+      "quando": "RN-C9: recusa em vez de arredondar. Nao ha resolucao; ha desfecho recusado COM MOTIVO."
+    },
+    "prazo_excedido": {
+      "descricao": "A ponta nao respondeu dentro do prazo declarado.",
+      "quando": "Nao e excepcao, e ESTADO: setup silencioso congela o instrumento (RN-S8); conector silencioso da desfecho desconhecido (RN-T7.1)."
+    },
+    "desfecho_nao_reconhecido": {
+      "descricao": "A resposta do venue nao encaixa em nenhuma das quatro classificacoes.",
+      "quando": "Vira desconhecido e pede reconciliacao — nunca vira sucesso nem falha."
+    }
+  },
+  "prioridade_dos_motivos": [
+    "versao_do_contrato_divergente",
+    "enquadramento_invalido",
+    "campo_em_unidade_de_corretora",
+    "parcial_nao_declarada",
+    "valor_nulo_nao_permitido",
+    "campo_desconhecido",
+    "campo_obrigatorio_ausente",
+    "formato_invalido",
+    "tipo_invalido",
+    "valor_fora_do_conjunto"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/envelope.schema.json",
+  "title": "Envelope da mensagem",
+  "description": "O que atravessa a fronteira: versao, tipo, correlacao e carga. O corpo NAO repete a versao. Todos os objectos sao FECHADOS (D5) e null nao existe (D4).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contrato", "tipo", "id", "carga"],
+  "properties": {
+    "contrato": {"$ref": "_defs/forma.schema.json#/$defs/versao"},
+    "tipo": {
+      "enum": ["mercado", "proposta", "boleta", "resolucao", "desfecho", "manifesto", "historico"],
+      "description": "O tipo decide qual e o corpo. Nao ha tipo sem schema."
+    },
+    "id": {"$ref": "_defs/forma.schema.json#/$defs/correlacao"},
+    "carga": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "mercado"}}},
+      "then": {"properties": {"carga": {"$ref": "mercado.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "proposta"}}},
+      "then": {"properties": {"carga": {"$ref": "proposta.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "boleta"}}},
+      "then": {"properties": {"carga": {"$ref": "boleta.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "resolucao"}}},
+      "then": {"properties": {"carga": {"$ref": "resolucao.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "desfecho"}}},
+      "then": {"properties": {"carga": {"$ref": "desfecho.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "manifesto"}}},
+      "then": {"properties": {"carga": {"$ref": "manifesto.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "historico"}}},
+      "then": {"properties": {"carga": {"$ref": "historico.schema.json"}}}
+    }
+  ]
+}

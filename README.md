@@ -97,6 +97,10 @@ pesquisa (`research.md`, 12 decisões com alternativas rejeitadas), o desenho (`
 `contracts/interface.md`), o guia de validação (`quickstart.md`) e as 59 tarefas (`tasks.md`). As
 seguintes vêm por recorte, cada uma referenciando as regras `RN-*`.
 
+**Onde está o que já se mediu:** `specs/001-contrato-neutro/relatorios/RESULTADO.md` — cada critério de
+sucesso com o comando que o mediu e a saída. É o primeiro documento a ler para saber em que pé está o
+projecto.
+
 ## Ordem de trabalho
 
 1. Regra de negócio detalhada — feita (v3, com a revisão de lacunas).

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/proposta.schema.json",
+  "title": "Proposta do setup",
+  "description": "A resposta do setup: o lado e, se quiser, o seu relogio. EXACTAMENTE quatro valores (RN-T4). A invalidade NAO e um valor do contrato: 'limpar', vazio ou numero sao recusados aqui, e a mesa trata como hold registando a invalidade.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["setup", "lado"],
+  "properties": {
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nome", "versao"],
+      "description": "A assinatura que entra no registo (RN-S7).",
+      "properties": {
+        "nome": {"$ref": "_defs/forma.schema.json#/$defs/nome_de_plugin"},
+        "versao": {"$ref": "_defs/forma.schema.json#/$defs/versao"}
+      }
+    },
+    "lado": {"$ref": "_defs/forma.schema.json#/$defs/lado"},
+    "relogio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proxima_consulta_ms"],
+      "description": "O setup pode adiantar o prazo do seu template. Ausente, vale o prazo do template (RN-S2, RN-S3).",
+      "properties": {
+        "proxima_consulta_ms": {"$ref": "_defs/forma.schema.json#/$defs/duracao_ms"}
+      }
+    }
+  }
+}

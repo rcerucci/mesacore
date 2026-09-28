@@ -1,0 +1,48 @@
+{
+  "mensagem": "boleta",
+  "nota": "A marca de posse viaja NA BOLETA (RN-B10). Inteiro de 31 bits, desenhado para a forma MAIS RESTRITA (o magic do MT5). Aqui a boleta e so o suporte: o que se mede e a marca.",
+  "casos": [
+    {
+      "nome": "marca/zero-e-valida",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "mk-1", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "rm-1", "marca_de_posse": 0}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "marca/no-limite-de-31-bits",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "mk-2", "carga": {"instrumento": "EURUSD", "lado": "sell", "tipo": "mercado", "saldo_pct": "1", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "cancelar", "reduce_only": true, "referencia_do_cliente": "rm-2", "marca_de_posse": 2147483647}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "marca/negativa",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "mk-3", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "rm-3", "marca_de_posse": -1}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda"
+    },
+    {
+      "nome": "marca/acima-de-31-bits",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "mk-4", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "rm-4", "marca_de_posse": 2147483648}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda"
+    },
+    {
+      "nome": "marca/em-hexadecimal-do-cloid",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "mk-5", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "rm-5", "marca_de_posse": "0x0000000000000000000000000000abcd"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido"
+    },
+    {
+      "nome": "marca/ausente",
+      "mensagem": "boleta",
+      "entrada": {"contrato": "1.0.0", "tipo": "boleta", "id": "mk-6", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "rm-6"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    }
+  ]
+}

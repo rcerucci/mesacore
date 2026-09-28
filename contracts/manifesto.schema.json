@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/manifesto.schema.json",
+  "title": "Manifesto do conector",
+  "description": "O que o conector DECLARA saber (RN-C1). Sondado no arranque, nunca constante escrita no codigo. Sem declaracao nao ha capacidade: a mesa recusa em vez de tentar (RN-C7).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "conector",
+    "versao",
+    "instrumentos",
+    "sabe_ajustar_alavancagem",
+    "modos_de_margem",
+    "teto_de_valor_por_ordem",
+    "modelo_de_posicao",
+    "tipos_de_ordem",
+    "parcial_suportada",
+    "desvio_maximo",
+    "reduce_only_nativo",
+    "stop_anexo",
+    "profundidade_de_livro",
+    "funding",
+    "relogio_de_fecho_de_barra",
+    "idempotencia",
+    "marca_de_posse",
+    "marca_liga_ordem_a_posicao",
+    "estado_do_mercado"
+  ],
+  "properties": {
+    "conector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nome", "versao"],
+      "properties": {
+        "nome": {"$ref": "_defs/forma.schema.json#/$defs/nome_de_plugin"},
+        "versao": {"$ref": "_defs/forma.schema.json#/$defs/versao"}
+      }
+    },
+    "versao": {"$ref": "_defs/forma.schema.json#/$defs/versao", "description": "A versao do CONTRATO que este conector implementa (RN-E18): conferida por igualdade exacta."},
+    "instrumentos": {
+      "type": "array",
+      "minItems": 1,
+      "description": "As unidades declaradas por instrumento. Sem unidade declarada nao ha resolucao possivel.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["simbolo", "minimo", "passo", "tick", "alavancagem_maxima"],
+        "properties": {
+          "simbolo": {"$ref": "_defs/forma.schema.json#/$defs/instrumento"},
+          "minimo": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
+          "passo": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
+          "tick": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
+          "alavancagem_maxima": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
+          "alavancagem_por_escalao": {
+            "type": "array",
+            "description": "Escaloes de valor com maxima proprio. Ausente = vale a maxima unica.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["ate", "maxima"],
+              "properties": {
+                "ate": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
+                "maxima": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "sabe_ajustar_alavancagem": {"type": "boolean"},
+    "modos_de_margem": {"type": "array", "minItems": 1, "items": {"enum": ["cruzado", "isolado"]}},
+    "teto_de_valor_por_ordem": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo", "description": "Teto de valor por ordem imposto pelo venue. Nao e o limite do dono: e o do venue, e a mesa confere contra ele antes de enviar."},
+    "modelo_de_posicao": {"enum": ["netting", "hedging", "exchange"]},
+    "tipos_de_ordem": {"type": "array", "minItems": 1, "items": {"enum": ["mercado", "limite", "stop", "stop_limite", "mercado_por_faixa"]}},
+    "parcial_suportada": {"type": "array", "minItems": 1, "items": {"enum": ["tudo_ou_nada", "o_que_der"]}},
+    "desvio_maximo": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo", "description": "Desvio maximo que o venue aceita, em percentagem de movimento."},
+    "reduce_only_nativo": {"type": "boolean"},
+    "stop_anexo": {"type": "boolean", "description": "Se o venue sabe prender stop a uma posicao (o que muda o desfecho de uma parcial)."},
+    "profundidade_de_livro": {"type": "integer", "minimum": 0},
+    "funding": {"type": "boolean"},
+    "relogio_de_fecho_de_barra": {"enum": ["horario", "meia_noite_utc", "continuo", "desconhecido"]},
+    "idempotencia": {"type": "boolean", "description": "Se o venue garante nao duplicar por referencia repetida. Sem isto, a mesa reconcilia ANTES de reenviar (RN-C4)."},
+    "marca_de_posse": {"enum": ["cloid", "clientOrderId", "magic", "comment", "nenhuma"], "description": "A forma que este venue aceita. 'nenhuma' e declaracao valida — e a mesa di-lo, em vez de fingir uma marca que nao existe (FR-027)."},
+    "marca_liga_ordem_a_posicao": {"type": "boolean"},
+    "estado_do_mercado": {"type": "boolean", "description": "Se o venue sabe dizer se o mercado esta aberto (RN-D8). Sem isto, mercado fechado so se detecta pela ausencia de leitura."}
+  }
+}

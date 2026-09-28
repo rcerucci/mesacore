@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/_defs/forma.schema.json",
+  "title": "Forma partilhada do contrato neutro",
+  "description": "As definições que TODO o contrato usa. Decisões D4 (decimal textual), D5 (contrato fechado), D6 (marca de 31 bits), D7 (versão por igualdade exacta).",
+  "$defs": {
+    "decimal": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "description": "Decimal TEXTUAL. Sem expoente, sem '+', sem '1.'. Um número de vírgula flutuante nunca é um decimal válido — é recusado por tipo, não por arredondamento."
+    },
+    "decimal_nao_negativo": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "description": "Decimal textual sem sinal — para grandezas que não podem ser negativas (idade, profundidade, quantidade, nocional)."
+    },
+    "decimal_positivo": {
+      "type": "string",
+      "pattern": "^(0*\\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\\.[0-9]+)?)$",
+      "description": "Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'."
+    },
+    "percentagem": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "description": "Percentagem como decimal textual, sem sinal. O valor é um número do dono (RN-A1), não uma constante do programa."
+    },
+    "instante_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Instante em milissegundos UTC, do relógio do VENUE — não do processo (RN-D2)."
+    },
+    "duracao_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Duração em milissegundos."
+    },
+    "versao": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Versão de contrato, conferida por IGUALDADE EXACTA antes de qualquer envio (D7)."
+    },
+    "correlacao": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$",
+      "description": "Identificador de correlacao do ciclo (RN-T3). E OPACO: compara-se por igualdade, nunca se interpreta. Admite '/' porque a forma natural de correlacionar uma linha com o seu ciclo e 'ciclo/linha' — proibir um caracter inofensivo so cria atrito."
+    },
+    "instrumento": {
+      "type": "string",
+      "pattern": "^[A-Z0-9][A-Z0-9._/-]{1,31}$",
+      "description": "Símbolo do instrumento, como o venue o escreve."
+    },
+    "nome_de_plugin": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,31}$",
+      "description": "Nome de setup ou conector: minúsculas, com underscore."
+    },
+    "motivo": {
+      "type": "string",
+      "enum": [
+        "versao_do_contrato_divergente",
+        "enquadramento_invalido",
+        "campo_obrigatorio_ausente",
+        "valor_nulo_nao_permitido",
+        "campo_desconhecido",
+        "campo_em_unidade_de_corretora",
+        "parcial_nao_declarada",
+        "formato_invalido",
+        "tipo_invalido",
+        "valor_fora_do_conjunto",
+        "valor_fora_da_banda",
+        "capacidade_nao_declarada",
+        "instrumento_desconhecido_no_manifesto",
+        "minimo_do_instrumento_acima_da_banda",
+        "prazo_excedido",
+        "desfecho_nao_reconhecido"
+      ],
+      "description": "Motivo NORMALIZADO de recusa. Espelho de vocabulario.json — a fonte é lá."
+    },
+    "marca_de_posse": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647,
+      "description": "Marca de posse: inteiro sem sinal de 31 bits, desenhado para a forma MAIS RESTRITA (o POSITION_MAGIC do MT5). Cabe em cloid, clientOrderId, magic e comment."
+    },
+    "lado": {
+      "type": "string",
+      "enum": ["buy", "sell", "hold", "caixa"],
+      "description": "Os EXACTAMENTE quatro valores que a mesa aceita (RN-T4). Qualquer outro é inválido, e um pedido inválido é registado como inválido — nunca corrigido."
+    }
+  }
+}
