@@ -91,11 +91,11 @@ importa `core`** (verificado por teste).
 | `docs/diagrama-de-blocos.html` · `.png` | o desenho dos anéis, do fluxo e das arestas de falha |
 | `.specify/memory/constitution.md` | a **constituição** (v1.0.0): os oito princípios não negociáveis, cada um com o **teste que o recusa** |
 
-Especificações: a **primeira tem spec e plano** — `specs/001-contrato-neutro/` (o contrato neutro: as
-mensagens, os mocks dos dois lados e as provas de fronteira), com a checklist de qualidade, a pesquisa
-(`research.md`, 12 decisões com alternativas rejeitadas), o desenho (`data-model.md`,
-`contracts/interface.md`) e o guia de validação (`quickstart.md`). As seguintes vêm por recorte, cada uma
-referenciando as regras `RN-*`.
+Especificações: a **primeira tem spec, plano e tarefas** — `specs/001-contrato-neutro/` (o contrato
+neutro: as mensagens, os mocks dos dois lados e as provas de fronteira), com a checklist de qualidade, a
+pesquisa (`research.md`, 12 decisões com alternativas rejeitadas), o desenho (`data-model.md`,
+`contracts/interface.md`), o guia de validação (`quickstart.md`) e as 59 tarefas (`tasks.md`). As
+seguintes vêm por recorte, cada uma referenciando as regras `RN-*`.
 
 ## Ordem de trabalho
 
