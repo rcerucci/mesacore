@@ -65,6 +65,7 @@ nada se presume, nada se preenche em silêncio.
 /config         os arquivos do dono: config macro da conta e fichas (risco + setup)
 /tools          os estudos do dono sobre um instrumento, sem operar
 /web            a superfície
+/specs/<NNN>-…  as especificações por recorte (Spec Kit) e a checklist de cada uma
 /docs           a regra de negócio, a máquina de estados, o inventário de chaves, o diagrama
 ```
 
@@ -90,8 +91,9 @@ importa `core`** (verificado por teste).
 | `docs/diagrama-de-blocos.html` · `.png` | o desenho dos anéis, do fluxo e das arestas de falha |
 | `.specify/memory/constitution.md` | a **constituição** (v1.0.0): os oito princípios não negociáveis, cada um com o **teste que o recusa** |
 
-Especificações: **ainda não escritas**. Serão feitas com o Spec Kit (`.specify/`), uma por recorte,
-cada uma referenciando as regras `RN-*`.
+Especificações: a **primeira está escrita** — `specs/001-contrato-neutro/` (o contrato neutro: as
+mensagens, os mocks dos dois lados e as provas de fronteira), com a checklist de qualidade em
+`checklists/requirements.md`. As seguintes vêm por recorte, cada uma referenciando as regras `RN-*`.
 
 ## Ordem de trabalho
 
@@ -99,7 +101,8 @@ cada uma referenciando as regras `RN-*`.
 2. Máquina de estados, inventário de chaves e diagrama — feitos; são as vistas que revelaram as lacunas
    que a prosa não revelava.
 3. Constituição do projeto (Spec Kit) — feita, derivada da regra.
-4. Especificações por recorte: contrato, mandato, boleta, mesa, ledger, setup de referência, conector.
+4. Especificações por recorte: **o contrato está especificado** (`specs/001-contrato-neutro`); seguem-se
+   mandato, boleta, mesa, ledger, setup de referência e conector.
 5. Implementação, contra os vectores de aceite do motor antigo.
 
 ## Referência
