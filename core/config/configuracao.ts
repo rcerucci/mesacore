@@ -17,6 +17,11 @@ import { join } from "node:path";
 export interface ConfiguracaoDaConta {
   /** A chave `conta.eventos_que_avisam[]` do inventario. Sem ela, GRITA. */
   eventos_que_avisam: string[];
+  /**
+   * A chave `conta.arranque_apos_cb` do inventario (FR-037, RN-M3.3). A unica politica declarada e
+   * `exige_decisao`; qualquer outro valor (ou a ausencia) faz a porta da sessao GRITAR.
+   */
+  arranque_apos_cb?: unknown;
   /** As restantes chaves do macro entram nos recortes que as usam (contenda, CB, margem). */
   [chave: string]: unknown;
 }

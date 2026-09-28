@@ -202,9 +202,19 @@ function portaDaVersao(manifesto: any): Recusa | null {
   };
 }
 
-function portaDaSessao(marcas: Marcas, registoRetomavel: boolean): Recusa | null {
+function portaDaSessao(marcas: Marcas, registoRetomavel: boolean, config: ConfiguracaoDaConta): Recusa | null {
   // A ordem dentro desta porta segue o `ordem_de_leitura` do livro: o mais especifico primeiro.
   if (marcas.inibicao_cb !== null) {
+    // O QUE ACONTECE DEPOIS DO CB E DECISAO DECLARADA, nao um `if` escondido (FR-037, RN-M3.3): a unica
+    // forma declarada e `exige_decisao`. Se a chave estiver ausente ou trouxer outro nome, a mesa GRITA -
+    // nao escolhe por omissao o caminho que a deixa arrancar.
+    const politica = config.arranque_apos_cb;
+    if (politica !== "exige_decisao") {
+      throw new Error(
+        `conta.arranque_apos_cb: '${String(politica)}' nao e uma politica declarada (a declarada e ` +
+          "'exige_decisao'). Uma mesa inibida que arranca por omissao e uma mesa que ignora o CB que ela propria disparou.",
+      );
+    }
     return {
       porta: "sessao",
       motivo: "sessao_inibida",
@@ -233,7 +243,7 @@ export function passarPelasPortas(entrada: EntradaDoArranque): { recusa: Recusa 
     ["contenda", () => portaDaContenda(entrada.config)],
     ["inventario", () => portaDoInventario(entrada.portaDoInventario)],
     ["versao_do_contrato", () => portaDaVersao(entrada.manifesto)],
-    ["sessao", () => portaDaSessao(entrada.marcas, entrada.registo_retomavel)],
+    ["sessao", () => portaDaSessao(entrada.marcas, entrada.registo_retomavel, entrada.config)],
   ];
 
   for (const [nome, porta] of passos) {

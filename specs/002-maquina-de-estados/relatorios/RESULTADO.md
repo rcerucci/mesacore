@@ -20,6 +20,20 @@ Regressão do recorte 001 incluída (`ponta-a-ponta.sh`, `frescura.sh`, `inventa
 | **SC-011** | Dia de operação reconstruível do registo, e cada decisão de **não** fazer com motivo | `bun run tools/verificar-maquina/registo.ts` | **11 linhas reconstruídas · 0 de 5 decisões de não-fazer sem motivo · cadeia de 3 transições sem buracos · fecha no estado final real** |
 | **SC-012** | 100% das decisões apontam a chave que as governa, nas duas direções | `bun run tools/verificar-maquina/chaves.ts` + `inventario.sh` | **7 chaves lidas pelo core, 0 ausentes · 0 declaradas sem quem as leia · + as 19 grandezas do contrato (001)** |
 
+## O que a conferência do SC-012 apanhou
+
+Duas coisas que estavam no código e não estavam declaradas:
+
+1. **`conta.politica_de_contencao` (código) vs `conta.contencao` (documento)** — duas coisas diferentes
+   com o mesmo sentido. O código passou a ler o nome declarado.
+2. **A política de arranque depois do CB estava num `if`.** A porta da sessão recusava por inibição sem
+   ler `conta.arranque_apos_cb` — o valor estava escrito no código (RN-A1). Passou a ler a chave, e se
+   ela faltar ou trouxer um nome não declarado, a mesa **grita** em vez de escolher por omissão o caminho
+   que a deixa arrancar.
+
+Nas duas direcções: **7 chaves lidas pelo core, 0 ausentes · 6 declaradas na secção deste recorte, 0 sem
+quem as leia**.
+
 ## O que NÃO foi medido — declarado como não medido
 
 - **SC-002** conta as decisões de abrir **da mesa** (a decisão de enviar). O que sai para o conector é o

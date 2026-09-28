@@ -148,6 +148,11 @@ mesa pergunta e espera — `setup.prazo_de_resposta_ms` nao existe no inventario
 parametro do pedido, que e o mesmo que dizer que quem chama e que sabe. Numa mesa manual este prazo e do
 dono, e por isso fica aqui registrado como **lacuna**, e nao como decisao.
 
+**O que a conferencia apanhou (2):** a porta da sessao recusava por inibicao **sem ler**
+`conta.arranque_apos_cb`: a politica estava num `if` (RN-A1). Passou a ler a chave, e a mesa **grita** se
+ela faltar ou trouxer um nome nao declarado - uma mesa inibida que arranca por omissao e uma mesa que
+ignora o CB que ela propria disparou.
+
 **O que a conferencia apanhou:** o codigo lia `conta.politica_de_contencao` e o documento declara
 `conta.contencao`. Duas coisas diferentes com o mesmo sentido — e o tipo de divergencia que so aparece
 quando alguem as poe lado a lado. O codigo passou a ler o nome declarado; o conferidor

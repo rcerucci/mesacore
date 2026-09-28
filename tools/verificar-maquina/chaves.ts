@@ -73,7 +73,13 @@ exigir(
 
 // A outra direccao do SC-012: uma chave DECLARADA na seccao deste recorte que ninguem le. Uma chave assim
 // e uma promessa de ajuste que nao ajusta nada - o dono muda o valor e nada acontece.
-const declaradasNoRecorte = [...documento.matchAll(/\| `conta\.([a-z_]+)(?:\[\])?` \|/g)].map((m) => m[1]);
+// O AMBITO: so a seccao deste recorte (§7). A seccao 1 declara chaves do projeto INTEIRO (conector,
+// ledger, arranque de outra natureza), e uma delas nao ser lida AQUI nao e uma promessa vazia - e uma
+// chave de outro recorte. Conferir a lista toda faria o conferidor acusar o inventario de estar certo.
+const inicioDaSecao = documento.indexOf("## 7. As chaves que o recorte 002");
+const fimDaSecao = documento.indexOf("\n## ", inicioDaSecao + 10);
+const secaoDoRecorte = documento.slice(inicioDaSecao, fimDaSecao > 0 ? fimDaSecao : undefined);
+const declaradasNoRecorte = [...secaoDoRecorte.matchAll(/\| `conta\.([a-z_]+)(?:\[\])?` \|/g)].map((m) => m[1]);
 const semQuemALeia = [...new Set(declaradasNoRecorte)].filter((c) => !lidos.has(c));
 exigir(
   semQuemALeia.length === 0,

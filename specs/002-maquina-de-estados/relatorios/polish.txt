@@ -1,7 +1,7 @@
-Fase 9 (polish) — saida real
-data: 2026-09-28 18:42 -0300
+Fase 9 (polish) — saida real, corrida final
+data: 2026-09-28 18:44 -0300
 
---- a porta unica ---
+--- a porta unica (15 verificacoes) ---
 === a maquina do recorte 002, do principio ao fim ===
 
 tabela de transicoes                       OK   conferencia: 0 falhas nos 7 invariantes.
@@ -13,21 +13,15 @@ arranque (seis portas)                     OK   resumo: 31 verificacoes · 0 div
 sessao e CB                                OK   resumo: 27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB
 pausa e encerramento                       OK   resumo: 21 verificacoes · 0 divergentes · 5 casos US6 · 7 casos US7
 registo (SC-011)                           OK   resumo: 8 verificacoes · 0 divergentes · 11 linhas de registo reconstruidas
-chaves do core (SC-012)                    FALHOU
-        conta.fichas                       <- core/ciclo/arranque.ts
-        conta.margem_total_maxima_pct      <- core/ciclo/arranque.ts
-        conta.perda_maxima_janela          <- core/ciclo/cb.ts
-        conta.perda_maxima_pct             <- core/ciclo/cb.ts
-      
-      resumo: 3 verificacoes · 1 divergentes · 6 chaves
+chaves do core (SC-012)                    OK   resumo: 3 verificacoes · 0 divergentes · 7 chaves
 porteiro do estado (script)                OK   resumo: 2 verificacoes · 0 falhas
 marcas sobrevivem ao reinicio              OK   resumo: 3 processos + 1 leitura externa · 0 falhas
 contrato neutro (recorte 001)              OK   ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam
 frescura do contrato                       OK   frescura: 0 divergencias — o gerado corresponde aos schemas (19 ficheiros)
 inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
 
-provar: 1 de 15 FALHARAM
-exit=1
+provar: 15 de 15 passaram — a maquina decide o que devia, e explica o que nao fez
+exit=0
 
 --- SC-011 (registo) ---
 === SC-011: o dia reconstruido a partir do registo ===
@@ -46,26 +40,16 @@ ok    prova negativa (1): um 'nada' sem motivo injetado e APANHADO pelo conferid
 ok    prova negativa (2): uma transicao que salta de estado e APANHADA
 
 resumo: 8 verificacoes · 0 divergentes · 11 linhas de registo reconstruidas
-relatorio: specs/002-maquina-de-estados/relatorios/registo.jsonl
 
---- SC-012 (chaves) ---
+--- SC-012 (chaves, nas duas direccoes) ---
 === SC-012: as chaves que o core le, contra o inventario ===
 
-ok    SC-012: as 6 chaves lidas pelo core estao declaradas no inventario (0 ausentes)
-FALHA SC-012 (inverso): as 15 chaves declaradas no inventario tem quem as leia
-        declarada e sem quem a leia: 'corretora'
-        declarada e sem quem a leia: 'identificador'
-        declarada e sem quem a leia: 'instrumentos'
-        declarada e sem quem a leia: 'risco_maximo_por_ordem_pct'
-        declarada e sem quem a leia: 'ordem_de_atendimento'
-        declarada e sem quem a leia: 'arranque_apos_cb'
-        declarada e sem quem a leia: 'invalidos_seguidos_para_inibir'
-        declarada e sem quem a leia: 'credencial'
-        declarada e sem quem a leia: 'idade_maxima_do_dado_ms'
-        declarada e sem quem a leia: 'retencao_ledger'
+ok    SC-012: as 7 chaves lidas pelo core estao declaradas no inventario (0 ausentes)
+ok    SC-012 (inverso): as 6 chaves declaradas no inventario tem quem as leia
 ok    prova negativa: uma chave fora do inventario e reprovada
 
-chaves conferidas: 6 · nao declaradas: 0
+chaves conferidas: 7 · nao declaradas: 0
+  conta.arranque_apos_cb             <- core/ciclo/arranque.ts
   conta.contencao                    <- core/ciclo/arranque.ts
   conta.eventos_que_avisam           <- core/config/configuracao.ts
   conta.fichas                       <- core/ciclo/arranque.ts
@@ -73,7 +57,7 @@ chaves conferidas: 6 · nao declaradas: 0
   conta.perda_maxima_janela          <- core/ciclo/cb.ts
   conta.perda_maxima_pct             <- core/ciclo/cb.ts
 
-resumo: 3 verificacoes · 1 divergentes · 6 chaves
+resumo: 3 verificacoes · 0 divergentes · 7 chaves
 
 --- RN-E14: segredos em /core ---
 ficheiros com credencial: 0
