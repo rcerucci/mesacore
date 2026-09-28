@@ -88,6 +88,7 @@ importa `core`** (verificado por teste).
 | `docs/maquina-de-estados.md` | os eixos da mesa, das condições do instrumento e da posição, as marcas persistidas e as portas do arranque |
 | `docs/inventario-de-chaves.md` | cada grandeza ajustável: dono, tipo, omissão e **quem a lê** |
 | `docs/diagrama-de-blocos.html` · `.png` | o desenho dos anéis, do fluxo e das arestas de falha |
+| `.specify/memory/constitution.md` | a **constituição** (v1.0.0): os oito princípios não negociáveis, cada um com o **teste que o recusa** |
 
 Especificações: **ainda não escritas**. Serão feitas com o Spec Kit (`.specify/`), uma por recorte,
 cada uma referenciando as regras `RN-*`.
@@ -97,7 +98,7 @@ cada uma referenciando as regras `RN-*`.
 1. Regra de negócio detalhada — feita (v3, com a revisão de lacunas).
 2. Máquina de estados, inventário de chaves e diagrama — feitos; são as vistas que revelaram as lacunas
    que a prosa não revelava.
-3. Constituição do projeto (Spec Kit) — deriva da regra.
+3. Constituição do projeto (Spec Kit) — feita, derivada da regra.
 4. Especificações por recorte: contrato, mandato, boleta, mesa, ledger, setup de referência, conector.
 5. Implementação, contra os vectores de aceite do motor antigo.
 

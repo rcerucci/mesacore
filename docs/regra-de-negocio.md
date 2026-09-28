@@ -4,7 +4,7 @@
 |---|---|
 | Documento | Regra de negócio do terminal de execução (a mesa) e dos seus dois plugins |
 | Versão | v3 (revisão de lacunas — §16) |
-| Data | 28 set 2026 |
+| Data | 27 set 2026 |
 | Papel | **Fonte da verdade das regras.** As especificações do Spec Kit derivam daqui, uma por recorte, e cada uma referencia as regras `RN-*` citadas. |
 
 Convenção de leitura: cada regra é uma afirmação **verificável** (dá para escrever um teste que a
@@ -653,7 +653,7 @@ determinístico que só obedece a cinco verbos. Não sabe de estratégia, de mer
 
 ---
 
-## 16. Lacunas encontradas na revisão (28 set 2026)
+## 16. Lacunas encontradas na revisão (27 set 2026)
 
 Revisão da regra inteira, à procura do que falta. Cada linha é uma lacuna com a correcção que proponho;
 as que dependem de decisão do dono estão marcadas `ABERTA`.
