@@ -44,6 +44,11 @@ Um ficheiro `*.casos.json` por família de mensagem:
   `null` onde o contrato não o admite, número onde se espera decimal textual, e uma mensagem partida em
   duas linhas.
 
+Os ficheiros `*.casos.json` são casos de **mensagem**: correm nas **duas** linguagens e têm de dar o
+mesmo veredicto (é o que SC-002 mede). As decisões da **mesa** (por exemplo a de reenviar uma ordem)
+vivem em `*.decisoes.json` e correm só na implementação da mesa — o nome do ficheiro é que separa as
+duas famílias. Um `*.casos.json` a mais entra na bateria do contrato, e é isso que se pretende.
+
 ## Os quatro inválidos que nunca podem faltar
 
 1. **campo desconhecido** — o contrato é **fechado**

@@ -9,6 +9,15 @@
   "estados_de_mercado": ["aberto", "fechado"],
   "tipos_de_linha_do_registo": ["snapshot", "proposta", "boleta", "desfecho"],
   "formas_de_marca": ["cloid", "clientOrderId", "magic", "comment", "nenhuma"],
+  "marca_de_posse_layout": {
+    "bits_totais": 31,
+    "bits_ficha": 12,
+    "bits_ciclo": 19,
+    "ficha_minima": 1,
+    "ficha_maxima": 4095,
+    "ciclo_maximo": 524287,
+    "nota": "A marca e ficha << bits_ciclo | ciclo. Cabe inteira no POSITION_MAGIC do MT5 (o campo mais restrito dos tres venues), que e o que obriga aos 31 bits. Ficha 0 fica de fora: zero nao identifica ficha nenhuma, e um 0 no venue e indistinguivel de 'sem marca'. Os limites sao conferidos por aritmetica em esqueleto/marca.ts — se os numeros aqui nao derem 2^n-1, o gerador recusa trabalhar."
+  },
   "campos_em_unidade_de_corretora": ["quantidade", "lote", "preco_absoluto", "pontos", "tick", "tamanho_do_contrato"],
   "unidades_neutras_em": ["boleta.schema.json", "proposta.schema.json"],
   "nota_unidades_neutras": "As mensagens que a mesa ENVIA (boleta, proposta) nao podem trazer unidade de corretora: quantidade, lote, preco absoluto, pontos, tick e tamanho de contrato sao do conector. NAO se aplica a resolucao (e o trabalho dela), ao manifesto (declara as unidades), ao mercado (le o que o venue da) nem ao historico (reporta o que o venue fez). 'tamanho_do_contrato' e nao 'contrato' para nao colidir com o campo 'contrato' do envelope, que e a VERSAO.",

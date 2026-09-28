@@ -125,7 +125,10 @@ export interface ManifestoDoConector {
    * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
    */
   desvio_maximo: string;
-  reduce_only_nativo: boolean;
+  /**
+   * Se o pedido reduce_only pode ser HONRADO — nativo ou emulado pelo conector. Nao diz o mecanismo: diz a capacidade. Sem esta declaracao, a mesa recusa a boleta em vez de mandar um reduce-only que o venue pode ignorar.
+   */
+  reduce_only_suportado: boolean;
   /**
    * Se o venue sabe prender stop a uma posicao (o que muda o desfecho de uma parcial).
    */

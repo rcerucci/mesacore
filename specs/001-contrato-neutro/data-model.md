@@ -151,7 +151,7 @@ Sondado no arranque, **nunca** constante escrita no código (RN-C1). Campos, tod
 `instrumentos[]` com unidades (mínimo, passo, tick) · `alavancagem_maxima` por instrumento e por escalão
 de valor · `sabe_ajustar_alavancagem` + modos (cruzado/isolado) · `teto_de_valor_por_ordem` ·
 `modelo_de_posicao` (netting/hedging) · `tipos_de_ordem[]` · `parcial_suportada[]` · `desvio_maximo` ·
-`reduce_only_nativo` · `stop_anexo` · `profundidade_de_livro` · `funding` · `relogio_de_fecho_de_barra` ·
+`reduce_only_suportado` · `stop_anexo` · `profundidade_de_livro` · `funding` · `relogio_de_fecho_de_barra` ·
 `idempotencia` · `marca_de_posse` (forma aceita: `cloid` · `clientOrderId` · `magic` · `comment` ·
 `nenhuma`, e se liga ordem a posição) · `estado_do_mercado` (RN-D8) · `versao` (RN-E18).
 

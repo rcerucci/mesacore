@@ -1,0 +1,60 @@
+{
+  "mensagem": "referencia",
+  "nota": "A decisao de reenviar, caso a caso. A chave e `referencia_do_cliente`; o que decide sao tres entradas: o que o registo sabe, se o venue declara idempotencia, e se o prazo passou. Uma ordem duplicada custa dinheiro duas vezes.",
+  "casos": [
+    {
+      "nome": "referencia/primeira-vez-envia",
+      "entrada": {"referencia_do_cliente": "r-1", "estado_no_registo": "ausente", "idempotencia_do_venue": true, "passou_do_prazo": false},
+      "decisao_esperada": "enviar",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "referencia/ja-tem-desfecho-aceite",
+      "entrada": {"referencia_do_cliente": "r-2", "estado_no_registo": "aceite", "idempotencia_do_venue": true, "passou_do_prazo": false},
+      "decisao_esperada": "nao_enviar",
+      "motivo_esperado": "referencia_ja_tem_desfecho"
+    },
+    {
+      "nome": "referencia/ja-tem-desfecho-parcial",
+      "entrada": {"referencia_do_cliente": "r-3", "estado_no_registo": "parcial", "idempotencia_do_venue": false, "passou_do_prazo": false},
+      "decisao_esperada": "nao_enviar",
+      "motivo_esperado": "referencia_ja_tem_desfecho"
+    },
+    {
+      "nome": "referencia/ja-tem-desfecho-recusado",
+      "entrada": {"referencia_do_cliente": "r-4", "estado_no_registo": "recusado", "idempotencia_do_venue": true, "passou_do_prazo": true},
+      "decisao_esperada": "nao_enviar",
+      "motivo_esperado": "referencia_ja_tem_desfecho"
+    },
+    {
+      "nome": "referencia/enviada-e-no-prazo-espera",
+      "entrada": {"referencia_do_cliente": "r-5", "estado_no_registo": "enviada_sem_desfecho", "idempotencia_do_venue": true, "passou_do_prazo": false},
+      "decisao_esperada": "aguardar",
+      "motivo_esperado": "prazo_de_resposta_em_curso"
+    },
+    {
+      "nome": "referencia/no-prazo-estourado-sem-idempotencia-reconcilia",
+      "entrada": {"referencia_do_cliente": "r-6", "estado_no_registo": "enviada_sem_desfecho", "idempotencia_do_venue": false, "passou_do_prazo": true},
+      "decisao_esperada": "reconciliar_antes_de_enviar",
+      "motivo_esperado": "venue_sem_idempotencia_declarada"
+    },
+    {
+      "nome": "referencia/no-prazo-estourado-com-idempotencia-reenvia",
+      "entrada": {"referencia_do_cliente": "r-7", "estado_no_registo": "enviada_sem_desfecho", "idempotencia_do_venue": true, "passou_do_prazo": true},
+      "decisao_esperada": "enviar_seguro",
+      "motivo_esperado": "venue_declara_idempotencia_pela_referencia"
+    },
+    {
+      "nome": "referencia/desconhecido-com-idempotencia-reenvia",
+      "entrada": {"referencia_do_cliente": "r-8", "estado_no_registo": "desconhecido", "idempotencia_do_venue": true, "passou_do_prazo": true},
+      "decisao_esperada": "enviar_seguro",
+      "motivo_esperado": "venue_declara_idempotencia_pela_referencia"
+    },
+    {
+      "nome": "referencia/desconhecido-sem-idempotencia-reconcilia",
+      "entrada": {"referencia_do_cliente": "r-9", "estado_no_registo": "desconhecido", "idempotencia_do_venue": false, "passou_do_prazo": false},
+      "decisao_esperada": "reconciliar_antes_de_enviar",
+      "motivo_esperado": "venue_sem_idempotencia_declarada"
+    }
+  ]
+}

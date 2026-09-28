@@ -107,7 +107,10 @@ class ManifestoDoConector(BaseModel):
         ...,
         description='Desvio maximo que o venue aceita, em percentagem de movimento.',
     )
-    reduce_only_nativo: bool
+    reduce_only_suportado: bool = Field(
+        ...,
+        description='Se o pedido reduce_only pode ser HONRADO — nativo ou emulado pelo conector. Nao diz o mecanismo: diz a capacidade. Sem esta declaracao, a mesa recusa a boleta em vez de mandar um reduce-only que o venue pode ignorar.',
+    )
     stop_anexo: bool = Field(
         ...,
         description='Se o venue sabe prender stop a uma posicao (o que muda o desfecho de uma parcial).',

@@ -29,6 +29,8 @@ import sys
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from pathlib import Path
 
+import venue
+
 AQUI = Path(__file__).resolve().parent
 CONTRATOS = AQUI.parent.parent
 
@@ -116,6 +118,42 @@ def main() -> int:
 
     preco = Decimal(argumento("--preco") or conta["precos"][instrumento])
     saldo = Decimal(conta["saldo"])
+
+    # IDEMPOTENCIA (RN-C4): o manifesto declara-a, portanto o mock tem de a cumprir. Reenviar a
+    # MESMA referencia devolve a ordem que ja esta la — e nao cria uma segunda. Um venue que declara
+    # idempotencia e nao a cumpre esta a mentir no proprio manifesto.
+    if manifesto["idempotencia"]:
+        existente = venue.por_referencia(boleta["referencia_do_cliente"])
+        if existente is not None:
+            resolucao_existente = {
+                "quantidade": existente["quantidade"],
+                "nocional": str(quantizar(Decimal(existente["quantidade"]) * Decimal(existente["preco"]), CENTAVO)),
+                "margem_empenhada": str(quantizar(
+                    Decimal(existente["quantidade"]) * Decimal(existente["preco"])
+                    / Decimal(boleta["alavancagem"]), CENTAVO)),
+                "alavancagem_efectiva": boleta["alavancagem"],
+                "preco_de_liquidacao": str(quantizar(
+                    Decimal(existente["preco"]) * (1 - 1 / Decimal(boleta["alavancagem"])),
+                    Decimal(unidade["tick"]))),
+            }
+            emitir({"_tipo": "resolucao", **resolucao_existente}, f"{identificador}/resolucao")
+            # O silencio vale tambem aqui: e uma propriedade do VENUE (nao respondeu a tempo), nao
+            # do caminho que se seguiu. Faltava — uma corrida sem resposta respondia.
+            if "--silencioso" in sys.argv:
+                return 0
+            emitir({
+                "_tipo": "desfecho",
+                "classificacao": "aceite",
+                "resolucao": resolucao_existente,
+                "resposta_do_venue": {
+                    "order_id": existente["order_id"],
+                    "estado": "filled",
+                    "duplicado": True,
+                    "nota": "a mesma referencia ja tinha ordem; devolvida a existente, sem criar segunda",
+                },
+            }, f"{identificador}/desfecho")
+            return 0
+
     pedida = Decimal(boleta["alavancagem"])
     maxima = Decimal(unidade["alavancagem_maxima"])
     if pedida > maxima:
@@ -185,6 +223,20 @@ def main() -> int:
     if classificacao == "desconhecido":
         carga["resposta_do_venue"] = {"erro": "sem_confirmacao_no_prazo"}
     emitir(carga, f"{identificador}/desfecho")
+
+    # A ordem fica no VENUE com a marca, na forma que o manifesto declara. E por ela que o
+    # reinicio a vai reconhecer — nada disto vive do lado da mesa (RN-T16.1).
+    if classificacao in ("aceite", "parcial"):
+        venue.registrar_ordem(
+            order_id=resposta["order_id"],
+            instrumento=instrumento,
+            lado=boleta["lado"],
+            quantidade=resolucao["quantidade"],
+            preco=str(preco),
+            marca_de_posse=boleta["marca_de_posse"],
+            forma_da_marca=manifesto["marca_de_posse"],
+            referencia_do_cliente=boleta["referencia_do_cliente"],
+        )
     return 0
 
 

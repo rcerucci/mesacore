@@ -1,0 +1,174 @@
+{
+  "mensagem": "conferencia",
+  "nota": "A conferencia contra o manifesto: o que a mesa pode enviar, sem o venue ter declarado. Os manifestos sao fixtures por nome, para os casos nao repetirem 30 linhas cada. `enviadas_esperadas` e o que SC-003 exige: uma mensagem recusada nao gera envio nenhum.",
+  "manifestos": {
+    "completo": {
+      "conector": {"nome": "mock_conector", "versao": "1.0.0"},
+      "versao": "1.0.0",
+      "instrumentos": [
+        {"simbolo": "EURUSD", "minimo": "0.01", "passo": "0.01", "tick": "0.00001", "alavancagem_maxima": "30", "alavancagem_por_escalao": [{"ate": "50000", "maxima": "30"}, {"ate": "200000", "maxima": "20"}]},
+        {"simbolo": "XAUUSD", "minimo": "0.01", "passo": "0.01", "tick": "0.01", "alavancagem_maxima": "100"}
+      ],
+      "sabe_ajustar_alavancagem": true,
+      "modos_de_margem": ["cruzado", "isolado"],
+      "teto_de_valor_por_ordem": "50000.00",
+      "modelo_de_posicao": "netting",
+      "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite"],
+      "parcial_suportada": ["o_que_der", "tudo_ou_nada"],
+      "desvio_maximo": "0.5",
+      "reduce_only_suportado": false,
+      "stop_anexo": false,
+      "profundidade_de_livro": 10,
+      "funding": true,
+      "relogio_de_fecho_de_barra": "horario",
+      "idempotencia": true,
+      "marca_de_posse": "comment",
+      "marca_liga_ordem_a_posicao": false,
+      "estado_do_mercado": true
+    },
+    "com_reduce_only": {
+      "conector": {"nome": "mock_conector", "versao": "1.0.0"},
+      "versao": "1.0.0",
+      "instrumentos": [
+        {"simbolo": "EURUSD", "minimo": "0.01", "passo": "0.01", "tick": "0.00001", "alavancagem_maxima": "30"}
+      ],
+      "sabe_ajustar_alavancagem": true,
+      "modos_de_margem": ["cruzado"],
+      "teto_de_valor_por_ordem": "50000.00",
+      "modelo_de_posicao": "netting",
+      "tipos_de_ordem": ["mercado"],
+      "parcial_suportada": ["o_que_der"],
+      "desvio_maximo": "0.5",
+      "reduce_only_suportado": true,
+      "stop_anexo": false,
+      "profundidade_de_livro": 10,
+      "funding": true,
+      "relogio_de_fecho_de_barra": "horario",
+      "idempotencia": true,
+      "marca_de_posse": "comment",
+      "marca_liga_ordem_a_posicao": false,
+      "estado_do_mercado": true
+    },
+    "so_eurusd_sem_parcial_e_sem_marca": {
+      "conector": {"nome": "mock_conector", "versao": "1.0.0"},
+      "versao": "1.0.0",
+      "instrumentos": [
+        {"simbolo": "EURUSD", "minimo": "0.01", "passo": "0.01", "tick": "0.00001", "alavancagem_maxima": "30"}
+      ],
+      "sabe_ajustar_alavancagem": false,
+      "modos_de_margem": ["cruzado"],
+      "teto_de_valor_por_ordem": "50000.00",
+      "modelo_de_posicao": "netting",
+      "tipos_de_ordem": ["mercado"],
+      "parcial_suportada": ["o_que_der"],
+      "desvio_maximo": "0.1",
+      "reduce_only_suportado": false,
+      "stop_anexo": false,
+      "profundidade_de_livro": 5,
+      "funding": false,
+      "relogio_de_fecho_de_barra": "horario",
+      "idempotencia": false,
+      "marca_de_posse": "nenhuma",
+      "marca_liga_ordem_a_posicao": false,
+      "estado_do_mercado": false
+    }
+  },
+  "casos": [
+    {
+      "nome": "conferencia/boleta-valida-no-manifesto-completo",
+      "manifesto": "completo",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "c-1", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "enviadas_esperadas": 1
+    },
+    {
+      "nome": "conferencia/tipo-de-ordem-nao-declarado",
+      "manifesto": "completo",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "iceberg", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "c-2", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "capacidade_nao_declarada",
+      "enviadas_esperadas": 0
+    },
+    {
+      "nome": "conferencia/instrumento-fora-do-manifesto",
+      "manifesto": "so_eurusd_sem_parcial_e_sem_marca",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "XAUUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "c-3", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "instrumento_desconhecido_no_manifesto",
+      "enviadas_esperadas": 0
+    },
+    {
+      "nome": "conferencia/politica-de-parcial-nao-suportada",
+      "manifesto": "so_eurusd_sem_parcial_e_sem_marca",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "tudo_ou_nada", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "c-4", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "capacidade_nao_declarada",
+      "enviadas_esperadas": 0
+    },
+    {
+      "nome": "conferencia/reduce-only-sem-declaracao",
+      "manifesto": "completo",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "sell", "tipo": "mercado", "saldo_pct": "1", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "cancelar", "reduce_only": true, "referencia_do_cliente": "c-5", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "capacidade_nao_declarada",
+      "enviadas_esperadas": 0
+    },
+    {
+      "nome": "conferencia/reduce-only-com-declaracao",
+      "manifesto": "com_reduce_only",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "sell", "tipo": "mercado", "saldo_pct": "1", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "cancelar", "reduce_only": true, "referencia_do_cliente": "c-6", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "enviadas_esperadas": 1
+    },
+    {
+      "nome": "conferencia/desvio-acima-do-que-o-venue-aceita",
+      "manifesto": "so_eurusd_sem_parcial_e_sem_marca",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.9", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "c-7", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda",
+      "enviadas_esperadas": 0
+    },
+    {
+      "nome": "conferencia/alavancagem-acima-da-maxima-do-instrumento",
+      "manifesto": "completo",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "31", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "c-8", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda",
+      "enviadas_esperadas": 0
+    },
+    {
+      "nome": "conferencia/marca-nao-verificavel-pelo-venue",
+      "manifesto": "so_eurusd_sem_parcial_e_sem_marca",
+      "alvo": {"tipo": "boleta", "carga": {"instrumento": "EURUSD", "lado": "buy", "tipo": "mercado", "saldo_pct": "2", "alavancagem": "1", "parcial": "o_que_der", "desvio_maximo": "0.1", "prazo_da_passiva_ms": 3000, "destino_do_resto": "agressivo", "reduce_only": false, "referencia_do_cliente": "c-9", "marca_de_posse": 1694498816}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "enviadas_esperadas": 1
+    },
+    {
+      "nome": "conferencia/resolucao-valida",
+      "manifesto": "completo",
+      "alvo": {"tipo": "resolucao", "instrumento": "EURUSD", "carga": {"quantidade": "18.42", "nocional": "19993.44", "margem_empenhada": "19993.44", "alavancagem_efectiva": "1", "preco_de_liquidacao": "0.00000"}},
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "enviadas_esperadas": 1
+    },
+    {
+      "nome": "conferencia/resolucao-acima-do-teto-por-ordem",
+      "manifesto": "completo",
+      "alvo": {"tipo": "resolucao", "instrumento": "EURUSD", "carga": {"quantidade": "500.00", "nocional": "542710.00", "margem_empenhada": "18090.33", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.04922"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda",
+      "enviadas_esperadas": 0
+    },
+    {
+      "nome": "conferencia/resolucao-acima-do-escalao-de-valor",
+      "manifesto": "completo",
+      "alvo": {"tipo": "resolucao", "instrumento": "EURUSD", "carga": {"quantidade": "55.00", "nocional": "60000.00", "margem_empenhada": "2000.00", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.08542"}},
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda",
+      "enviadas_esperadas": 0
+    }
+  ]
+}

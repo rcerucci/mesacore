@@ -59,7 +59,10 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 | `setup.prazo_de_resposta_ms` | ms | **setup** | **`[falta]`** — RN-S8 fala de "silêncio além do prazo" e o prazo não tinha chave; num **setup manual** é prazo humano (RN-T15.1) |
 | `setup.parcial` | enum (tudo-ou-nada / o-que-der) | setup | boleta (RN-B6) |
 | `setup.desvio_maximo` | % de movimento | setup | boleta, conferido no manifesto (RN-B3) |
-| `setup.<itens do template>` | conforme o template (`ema_fast`, `ema_slow`, `stop_pct`, limiares…) | **forma**: setup · **valores**: dono | mesa **pelo template**, nunca por nome (RN-S3, RN-S4) |
+| `setup.stop_pct` | % de movimento | setup | boleta, **limitado pela banda** `bandas.stop_pct` (RN-B7, RN-S11) |
+| `setup.tp_pct` | % de movimento | setup | boleta, **limitado pela banda** `bandas.tp_pct` (RN-B7, RN-S11) |
+| `setup.relogio.proxima_consulta_ms` | ms | **setup** (declaração) | mesa: quando voltar a consultar este setup (RN-S2, RN-T5) |
+| `setup.<itens do template>` | conforme o template (`ema_fast`, `ema_slow`, limiares…) | **forma**: setup · **valores**: dono | mesa **pelo template**, nunca por nome (RN-S3, RN-S4) |
 
 ## 4. A boleta — documento, não configuração: **cada campo tem de vir de um sítio**
 
@@ -83,7 +86,8 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 
 Instrumentos e unidades (mínimo, passo, tick) · alavancagem máxima por instrumento e por escalão de valor ·
 se sabe ajustar alavancagem e em que modos · teto de valor por ordem · modelo de posição (netting/hedging) ·
-tipos de ordem disponíveis · política de parcial suportada · desvio máximo · `reduce-only` nativo ·
+tipos de ordem disponíveis · política de parcial suportada · desvio máximo · `reduce-only` **suportado**
+(nativo ou emulado pelo conector — é a **capacidade** que se declara, não o mecanismo) ·
 stop anexo · profundidade de livro · funding · relógio de fecho de barra · idempotência ·
 **marca de posse**: em que forma a aceita (`cloid`, `clientOrderId`, `magic`, `comment` ou `nenhuma`) e se
 liga ordem a posição nos seus próprios registros · **estado do mercado** (aberto/fechado, RN-D8) ·

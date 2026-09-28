@@ -111,10 +111,10 @@ quantidade/lote/preço absoluto é **recusada com motivo**, sem nada enviado.
 ### Implementação de US2
 
 - [x] T024 [US2] Escrever `contracts/boleta.schema.json` conforme a secção 4 do `data-model.md`: os 14 campos, `parcial` **obrigatório**, `stop_pct`/`tp_pct` ausentes permitidos, `marca_de_posse` inteiro entre 0 e 2147483647 — fechado
-- [x] T025 [US2] Escrever `tools/verificar-contrato/ts/inspecionar.ts`: percorre `boleta.schema.json` e falha com o nome de cada campo proibido encontrado (`quantidade`, `lote`, `preco_absoluto`, `pontos`, `tick`, `contrato`) — é o SC-001
+- [x] T025 [US2] Escrever `tools/verificar-contrato/ts/inspecionar.ts`: percorre os schemas das mensagens que a **mesa envia** (declaradas em `vocabulario.json` como `unidades_neutras_em`) e falha com o nome de cada campo em unidade de corretora (`quantidade`, `lote`, `preco_absoluto`, `pontos`, `tick`, `tamanho_do_contrato`) — é o SC-001
 - [x] T026 [US2] Escrever `contracts/manifesto.schema.json` com todos os campos de RN-C1 (secção 7 do `data-model.md`), incluindo `marca_de_posse` como enum de forma e `versao`
-- [x] T027 [US2] Implementar a tradução da boleta no mock de conector em Python (`contracts/mocks/conector/traducao.py`): percentagem do saldo × alavancagem → quantidade na unidade do instrumento, **sem arredondar em silêncio**, e **recusa** com `minimo_do_instrumento_acima_da_banda` quando não cabe
-- [ ] T028 [US2] Implementar a conferência contra o manifesto antes do envio em `contracts/esqueleto/conferir.ts`: sem capacidade declarada para o que a boleta pede, **recusa** (`campo_desconhecido`/`valor_fora_da_banda` conforme o caso) — nunca adapta
+- [x] T027 [US2] Implementar a tradução da boleta no mock de conector em Python (`contracts/mocks/conector/main.py`): percentagem do saldo × alavancagem → quantidade na unidade do instrumento, **sem arredondar em silêncio**, e **recusa** com `minimo_do_instrumento_acima_da_banda` quando não cabe
+- [x] T028 [US2] Implementar a conferência contra o manifesto antes do envio em `contracts/esqueleto/conferir.ts`: sem capacidade declarada para o que a boleta pede, **recusa** — `capacidade_nao_declarada`, `instrumento_desconhecido_no_manifesto` ou `valor_fora_da_banda`, conforme o caso — nunca adapta (12 casos em `contracts/casos/conferencia.conformidade.json`)
 - [x] T029 [US2] Correr a bateria de `boleta` e `manifesto` contra o mock de conector e guardar em `specs/001-contrato-neutro/relatorios/us2.jsonl`
 
 **Checkpoint**: US1 e US2 testáveis, cada uma com o seu relatório.
@@ -138,9 +138,9 @@ inconformidade; com silêncio do venue, o desfecho é `desconhecido` e o instrum
 
 - [x] T032 [P] [US3] Escrever `contracts/resolucao.schema.json` (quantidade, nocional, margem_empenhada, alavancagem_efectiva, preco_de_liquidacao — todos decimais textuais)
 - [x] T033 [P] [US3] Escrever `contracts/desfecho.schema.json`: `classificacao` enum dos quatro, `motivo` **obrigatório quando `recusado`** (via `if/then`), `resolucao` obrigatória, `resposta_do_venue` obrigatória
-- [ ] T034 [US3] Implementar a conferência da resolução contra a banda em `contracts/esqueleto/conferir.ts` (depende de T028): fora da banda → registra inconformidade e **não envia**; contagem de enviadas = 0
-- [x] T035 [US3] Implementar o silêncio do venue no mock de conector (`contracts/mocks/conector/silencio.py`): sem confirmação no prazo → desfecho `desconhecido`, instrumento marcado, nenhuma ordem nova
-- [ ] T036 [US3] Implementar a não-duplicação em `contracts/esqueleto/referencia.ts`: reenvio com a mesma `referencia_do_cliente` não cria segunda ordem; sem idempotência declarada no manifesto, **reconciliar antes de reenviar**
+- [x] T034 [US3] Implementar a conferência da resolução contra a banda em `contracts/esqueleto/conferir.ts` (depende de T028): fora da banda → registra inconformidade e **não envia**; contagem de enviadas = 0 (a resolução confere outra vez, agora contra o **escalão do valor real**, que a boleta não permitia saber)
+- [x] T035 [US3] Implementar o silêncio do venue no mock de conector (`contracts/mocks/conector/main.py`, `--silencioso`): sem confirmação no prazo → desfecho `desconhecido`, instrumento marcado, nenhuma ordem nova
+- [x] T036 [US3] Implementar a não-duplicação em `contracts/esqueleto/referencia.ts`: reenvio com a mesma `referencia_do_cliente` não cria segunda ordem; sem idempotência declarada no manifesto, **reconciliar antes de reenviar**
 - [x] T037 [US3] Correr a bateria de `resolucao` e `desfecho` e guardar em `specs/001-contrato-neutro/relatorios/us3.jsonl`
 
 **Checkpoint**: o MVP do contrato fechado — proposta, boleta, resolução, desfecho.
@@ -171,10 +171,10 @@ seu — e trata o resto como alheio.
 alheia, sem ordem de fecho por iniciativa da mesa.
 
 - [x] T042 [P] [US5] Escrever `contracts/casos/marca.casos.json`: marca válida, marca no limite (0 e 2147483647), e **três inválidos** (negativa, acima de 31 bits, hexadecimal da HL na boleta)
-- [x] T043 [US5] Escrever `contracts/marca.schema.json` com o inteiro de 31 bits e a forma declarada pelo manifesto
-- [ ] T044 [US5] Implementar a geração determinística da marca em `contracts/esqueleto/marca.ts` (identificador da ficha + contador de ciclo) e o teste de determinismo: a mesma entrada produz a mesma marca, e a marca é única por (ficha, ciclo)
-- [ ] T045 [US5] Implementar `marcar → reiniciar → reencontrar` em `contracts/mocks/conector/marca.py` (marca a ordem) e `contracts/mocks/conector/posicoes.py` (leitura que reconhece pela marca, **pelos registos do venue**)
-- [ ] T046 [US5] Implementar a posição **alheia** no mock: posição sem a marca da mesa é relatada como vista e **não gerida**, e o caso é coberto em `contracts/casos/marca.casos.json`
+- [x] T043 [US5] A marca é **definição partilhada** em `contracts/_defs/forma.schema.json#/$defs/marca_de_posse` (usada por boleta, mercado e histórico), com a **forma** declarada pelo manifesto — não um `marca.schema.json` próprio
+- [x] T044 [US5] Implementar a geração determinística da marca em `contracts/esqueleto/marca.ts` (ficha × ciclo, layout declarado em `vocabulario.json` e **conferido por aritmética**): seis invariantes — determinismo, ida e volta, unicidade nas 4095 fichas, ciclo que não dá a volta em silêncio, ficha 0 recusada, marca acima de 31 bits recusada
+- [x] T045 [US5] Implementar `marcar → reiniciar → reencontrar`: a ordem fica no venue com a marca (`contracts/mocks/conector/venue.py`, chamado por `main.py`) e a leitura reconhece pela marca, **pelos registos do venue** (`contracts/mocks/conector/posicoes.py --reiniciar`), provado em `tools/verificar-contrato/reinicio.sh`
+- [x] T046 [US5] Implementar a posição **alheia**: posição sem a marca da mesa é relatada como vista e **não gerida**, sem ordem de fecho por iniciativa da mesa (`posicoes.py --semear-alheia`, conferido em `reinicio.sh`: 1 ordem no venue, a alheia intacta)
 - [x] T047 [US5] Correr a bateria de US5 e guardar em `specs/001-contrato-neutro/relatorios/us5.jsonl`
 
 **Checkpoint**: reinício coberto, sem base de dados própria de posições.
@@ -187,7 +187,7 @@ alheia, sem ordem de fecho por iniciativa da mesa.
 
 - [x] T048 [P] [US6] Escrever `contracts/casos/historico.casos.json`: execuções, taxas, funding separado, e **dois inválidos** (funding somado ao resultado, campo de resultado recalculado pela mesa)
 - [x] T049 [US6] Escrever `contracts/historico.schema.json` — vista normalizada de execuções, taxas, funding e resultado realizado, com **funding em campo próprio**
-- [ ] T050 [US6] Implementar a leitura do histórico no mock de conector (`contracts/mocks/conector/historico.py`) e confirmar que **nenhum** caminho de código soma ou recalcula o resultado
+- [x] T050 [US6] Implementar a leitura do histórico no mock de conector (`contracts/mocks/conector/historico.py`): taxas e funding em campos próprios, **nenhum** caminho soma ou recalcula o resultado — e o próprio ficheiro mede que as parcelas reportadas (−0,02) **não dão** o resultado do venue (12,40)
 - [x] T051 [US6] Correr a bateria de US6 e guardar em `specs/001-contrato-neutro/relatorios/us6.jsonl`
 
 ---
@@ -196,12 +196,12 @@ alheia, sem ordem de fecho por iniciativa da mesa.
 
 - [x] T052 [P] Escrever o **teste de frescura**: regenerar `contracts/gerado/ts` e `contracts/gerado/py` a partir dos schemas e falhar se houver diff (D8) — em `tools/verificar-contrato/frescura.sh`
 - [x] T053 [P] Correr `tools/verificar-contrato/porteiro-dependencias.sh` (T006) e registar a saída
-- [ ] T054 [P] Conferir `docs/inventario-de-chaves.md` contra os schemas: toda grandeza declarada no schema tem chave no inventário, e toda chave do inventário é lida por alguém (RN-A2) — corrigir o documento, não o schema, quando a divergência for de escrita
+- [x] T054 [P] Conferir o inventário contra os schemas (**44 grandezas**, nas duas direções: grandeza sem origem, declaração sem grandeza, chave do dono fora do inventário) em `contracts/origem-das-grandezas.json` + `tools/verificar-contrato/py/inventario.py`, com **prova negativa** de que o conferidor reprova (`prova-negativa-inventario.py`). O documento foi corrigido onde faltava nomear chave (`setup.stop_pct`, `setup.tp_pct`, `setup.relogio.proxima_consulta_ms`)
 - [x] T055 [P] Actualizar `contracts/README.md` com os ficheiros que passaram a existir e a ordem de geração
 - [x] T056 Escrever `specs/001-contrato-neutro/relatorios/RESULTADO.md`: os dez critérios de sucesso, cada um com o comando que o mediu e a saída — **nada afirmado sem número**
-- [x] T057 Secções 1 a 4 do `quickstart.md` trazem a **saída real**; a secção 5 (reinício) fica marcada como promessa até T044–T046, em vez de passar por medida
+- [x] T057 Secções 1 a 5 do `quickstart.md` trazem a **saída real** — a secção 5 (reinício) deixou de ser promessa quando T044–T046 ficaram medidos por `tools/verificar-contrato/reinicio.sh`
 - [x] T058 `README.md` da raiz aponta para `relatorios/RESULTADO.md`, e `contracts/README.md` lista o que existe e como se corre
-- [ ] T059 Revisão final contra `.specify/memory/constitution.md`: os oito princípios, um a um, com o ficheiro onde cada um se prova
+- [x] T059 Revisão final contra `.specify/memory/constitution.md`: os oito princípios, um a um, com o comando que mede cada um e o que fica por medir — `specs/001-contrato-neutro/relatorios/constituicao.md`
 
 ---
 

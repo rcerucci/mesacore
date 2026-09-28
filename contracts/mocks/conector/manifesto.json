@@ -33,7 +33,7 @@
     "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite"],
     "parcial_suportada": ["o_que_der", "tudo_ou_nada"],
     "desvio_maximo": "0.5",
-    "reduce_only_nativo": false,
+    "reduce_only_suportado": false,
     "stop_anexo": false,
     "profundidade_de_livro": 10,
     "funding": true,

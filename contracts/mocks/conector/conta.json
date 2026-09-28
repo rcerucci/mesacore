@@ -1,9 +1,19 @@
 {
-  "nota": "A conta SIMULADA. O conector e quem tem a ligacao ao venue: e por isso que so ELE sabe o saldo e o preco. A boleta so traz percentagens (RN-B0).",
+  "nota": "A conta SIMULADA. O conector e quem tem a ligacao ao venue: e por isso que so ELE sabe o saldo, o preco e o resultado realizado. A boleta so traz percentagens (RN-B0).",
   "saldo": "1000.00",
   "moeda": "USD",
   "precos": {
     "EURUSD": "1.08542",
     "XAUUSD": "2650.25"
+  },
+  "taxas_do_venue": {
+    "nota": "A regra de custo do VENUE, guardada do lado dele. A mesa nunca a aplica: ela mostra a taxa que vier no historico (RN-D6).",
+    "por_execucao_pct": "0.02",
+    "funding_por_execucao": "-0.02"
+  },
+  "resultado_realizado": {
+    "nota": "O numero do VENUE, por instrumento, como o venue o reporta. Nao se reconstroi a partir de precos: ver historico.py, que mostra que a soma de taxas e funding NAO da este numero — uma mesa que recalcula-lo estaria a escrever a conta da corretora por conta propria.",
+    "EURUSD": "12.40",
+    "XAUUSD": "-3.15"
   }
 }

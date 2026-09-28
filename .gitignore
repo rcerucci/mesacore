@@ -4,6 +4,7 @@ node_modules/
 __pycache__/
 *.pyc
 .geracao-entrada/
+.estado-do-venue.json
 
 # Os lockfiles SÃO versionados: fixam o que correu, e sem eles o "regenera e não dá diff"
 # não prova nada.

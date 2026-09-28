@@ -1,8 +1,9 @@
 # Quickstart — como se prova o contrato
 
-**Estado: parcialmente executado.** As secções 1 a 4 foram corridas em 28 set 2026 e trazem a saída
-real; a secção 5 (reinício) ainda é promessa. Os números de tudo isto estão em
-[`relatorios/RESULTADO.md`](relatorios/RESULTADO.md).
+**Estado: executado.** As secções 1 a 5 foram corridas em 28 set 2026 e trazem a saída **real** — a
+secção 5 (reinício) deixou de ser promessa quando as tarefas T044–T046 ficaram medidas. Os números de
+tudo isto estão em [`relatorios/RESULTADO.md`](relatorios/RESULTADO.md), e a revisão dos oito
+princípios da constituição em [`relatorios/constituicao.md`](relatorios/constituicao.md).
 
 ## Pré-requisitos
 
@@ -77,20 +78,32 @@ echo '{"contrato":"1.0.0","tipo":"boleta","id":"b-1","carga":{"instrumento":"EUR
 ```
 
 Ou, com as duas fronteiras de uma vez: `bash tools/verificar-contrato/ponta-a-ponta.sh` (hoje: **0
-falhas** em 10 verificações). A resolução vem sempre **primeiro** e o desfecho depois; com
-`--silencioso` só vem a resolução, porque quem diz "não sei" é a mesa, não o conector.
+falhas** em 13 verificações — e a prova mede duas coisas, não uma: o que a ponta **envia** passa o
+contrato, e o que a ponta **decide** é o que se esperava dela). A resolução vem sempre **primeiro** e
+o desfecho depois; com `--silencioso` só vem a resolução, porque quem diz "não sei" é a mesa, não o
+conector.
 
-## 5. O reinício (SC-006) — **ainda promessa**
-
-Este passo **não** foi executado: o mock do conector ainda não sabe marcar, reiniciar e reencontrar
-(tarefas T044–T046 de `tasks.md`). Fica aqui escrito para não se confundir com o que já se mediu.
+## 5. O reinício (SC-006) — medido
 
 ```bash
-bun run contracts/mocks/setup/reiniciar.ts --marcar --reiniciar
+bash tools/verificar-contrato/reinicio.sh
 ```
 
-**Esperado**: a posição marcada é **reencontrada pelos registos do venue**; a posição sem marca é
-relatada como **alheia** e **não é gerida** (nenhuma ordem de fecho por iniciativa da mesa).
+**Saída real (28 set 2026)**:
+```
+reinicio: nenhum estado da mesa guardado (nao ha base de dados de posse)
+{"instrumento":"EURUSD","marca_de_posse":1694498816,"posse":"nossa","gerida":true,"unidades":"18.42","forma_da_marca":"comment"}
+{"instrumento":"EURUSD","marca_de_posse":null,"posse":"alheia","gerida":false,"unidades":"0.07","motivo":"sem a marca da mesa (RN-T16.1)"}
+reinicio: 0 falhas — a posse le-se do venue, pela marca
+```
+
+O reinício **não guarda nada** (não há base de dados de posse do lado da mesa): a posição marcada é
+**reencontrada pelos registos do venue**, e a posição sem marca é relatada como **alheia** e **não é
+gerida** — nenhuma ordem de fecho por iniciativa da mesa, e o venue continua com a ordem que era dela.
+
+A marca em si (`bun run esqueleto/marca.ts`) traz seis invariantes: determinismo, ida e volta,
+unicidade nas 4095 fichas, ciclo que não dá a volta em silêncio, ficha 0 recusada, e marca acima de 31
+bits recusada — o limite do `POSITION_MAGIC`.
 
 ## O que **não** se prova aqui
 
