@@ -20,6 +20,9 @@ Cada conector entrega:
 Regras que estes diretórios DEVEM cumprir:
 
 - importam `contracts`; NUNCA `core` (RN-E1);
+- **a linguagem do plugin é decisão da spec deste conector** (RN-E16): ele fala a mensagem do contrato e
+  declara a versão que fala (RN-E18). É esta liberdade que permite um conector de MT5 correr onde o MT5
+  corre, sem arrastar o core atrás;
 - nunca adaptam uma boleta em silêncio (RN-C3) e não decidem nada: não alteram lado, quantidade,
   preço nem momento (RN-C5);
 - sem estado em disco próprio: a posição lê-se da corretora, a durabilidade mora no ledger (RN-T8);

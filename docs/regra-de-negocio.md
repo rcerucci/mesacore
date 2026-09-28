@@ -383,7 +383,7 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 ### 11.1. Diretórios
 
 ```
-/contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho
+/contracts      o schema neutro das portas (boleta, resolução, desfecho, objecto, ficha) e o que cada linguagem gera dele
 /core           a mesa (ciclo, normalização, boleta, ledger, mandato, servidor) e o vigia (RN-V*)
 /setups/<nome>  o plugin, o seu template de configuração, o schema do seu estado, os seus testes
 /brokers/<nome> o conector, o seu manifesto, a bateria de conformidade, as suas fixtures
@@ -406,6 +406,22 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 - **RN-E13.** `/tools` é do **dono** e roda **sem operar**: lê dados da corretora pelo contrato de dados
   e produz relatórios para escolher números de risco com medição. Um número escolhido a partir de um
   estudo registra **qual estudo o sustentou** e quando — estudo sem data não sustenta número nenhum.
+
+**O contrato entre linguagens** — o core é TypeScript e o `/tools` é Python; a linguagem de cada plugin
+  é decisão da **spec daquele plugin**, tomada quando ele se constrói. Para que isso seja verdade:
+
+- **RN-E16.** O **contrato é neutro de linguagem**: o que cruza uma fronteira é **mensagem**, descrita
+  por um **schema próprio** em `/contracts`, e cada linguagem **gera** dele o que precisar (tipos em TS,
+  modelos em Python). Nenhuma ponta depende dos tipos internos de outra, e nenhum plugin é obrigado à
+  linguagem do core.
+- **RN-E17.** A prova do contrato é feita com **mocks dos dois lados** — um setup falso e um conector
+  falso — e a neutralidade só fica provada com **pelo menos um mock escrito noutra linguagem** que não a
+  do core: um mock na mesma linguagem prova a lógica, não prova a fronteira.
+- **RN-E18.** Cada ponta declara **a versão do contrato** que fala, e a mesa verifica-a no arranque.
+  Versão incompatível **recusa**, não tenta.
+- **RN-E19.** No contrato, **dinheiro e percentagem nunca viajam como número de vírgula flutuante**:
+  viajam como **decimal textual com precisão declarada**, para que duas linguagens cheguem ao mesmo
+  número. Vale para todas as mensagens — boleta, resolução, desfecho e objecto normalizado.
 
 ### 11.2. Topologia de processos
 
@@ -552,22 +568,33 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
     **histórico e o detalhe das ordens vêm da corretora**, que já fez esse trabalho — a mesa lê e mostra,
     não reconstrói resultado a partir de execuções (RN-D6, RN-C11).
 
+18. **Linguagem:** **TypeScript** no core e na superfície, **Python no `/tools`**; a linguagem de cada
+    **plugin** é decisão da **spec daquele plugin**, tomada na hora de o construir. Para isso o contrato
+    é **neutro de linguagem** — o schema é a fonte e cada linguagem gera dele (RN-E16 a RN-E19).
+19. **Mocks de setup e de conector** para prova de contrato, com **pelo menos um escrito noutra
+    linguagem** que não a do core: um mock na mesma linguagem prova a lógica, não prova a fronteira
+    (RN-E17).
+
 **Proposta minha, à espera da tua palavra**
 
-18. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo de
-    mesas (RN-E8), para a topologia não aparecer na superfície.
-19. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+20. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
+    de mesas (RN-E8), para a topologia não aparecer na superfície.
+21. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
     liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
     impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-20. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
+22. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
     lança o processo é o vigia, não a web.
 
-**Abertas — os números que faltam**
+**Abertas — o que depende de ti (não são números: são chaves)**
 
-21. Confirmar o **2% de risco máximo por ordem** no macro (ou outro valor).
-22. A **sessão** é a corrida da mesa desde o arranque (RN-M3) — confirmar que não é o dia.
-23. As **bandas** de cada item limitável: stop, tp, alavancagem, tempo máximo em posição.
-24. Instrumento a instrumento: a **distância mínima de liquidação**, quando um estudo a justificar.
+23. **O inventário de chaves**: fechar a lista das chaves e as suas omissões. Os valores — 5%, 2%, 0,5% —
+    são exemplos, mudam com o dono e com a conta (RN-A1 a RN-A3).
+24. A **sessão** do circuit breaker é a corrida da mesa desde o arranque (RN-M3) — confirmar que não é
+    o dia.
+25. **RN-T15**: a proposta manual do dono existe? E **RN-T16**: posição manual no instrumento é
+    tolerada, ou a mesa pausa nesse instrumento?
+26. As **bandas** de cada item limitável (stop, tp, alavancagem, tempo máximo em posição).
+27. Instrumento a instrumento: a **distância mínima de liquidação**, quando um estudo a justificar.
 
 ---
 

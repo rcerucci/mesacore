@@ -17,6 +17,8 @@ Cada setup entrega:
 Regras que estes diretórios DEVEM cumprir:
 
 - importam `contracts`; NUNCA `core` (RN-E1);
+- **a linguagem do plugin é decisão da spec deste setup** (RN-E16): ele fala a mensagem do contrato e
+  declara a versão que fala (RN-E18). Nenhum setup é obrigado à linguagem do core;
 - não vêem tamanho, risco, execução nem a corretora (RN-S1, RN-M4.1);
 - não mandam na boleta: quem a preenche é a mesa (RN-S9);
 - variantes são **fichas** do mesmo plugin, não plugins novos (RN-S5).
