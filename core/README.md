@@ -12,7 +12,7 @@ A mesa: o que não muda com o setup nem com a corretora.
 - a **reconciliação** com a corretora (RN-T8);
 - o **ledger** (RN-L*);
 - o **servidor de leitura** para a web e a publicação da identidade da mesa (RN-E8);
-- o **vigia** (segundo ponto de entrada): start, stop, pause e reset (RN-V1 a RN-V6).
+- o **vigia** (segundo ponto de entrada): start, stop, pause, reset e nova_sessao (RN-V1 a RN-V10).
 
 Este diretório NUNCA converte nada para unidades de corretora — quantidade, contrato, lote, ponto,
 tick ou preço absoluto são do conector (RN-B0). Se aparecer aritmética de corretora aqui, o desenho

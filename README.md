@@ -26,7 +26,7 @@ core de engessar os setups — e é por isso que as variantes de um setup são a
 
 ```
 /contracts      as portas: setup, conector, objecto normalizado, boleta, desfecho
-/core           a mesa (ciclo, boleta, ledger, mandato, servidor) e o vigia (start/stop/pause/reset)
+/core           a mesa (ciclo, boleta, ledger, mandato, servidor) e o vigia (start/stop/pause/reset/nova_sessao)
 /setups/<nome>  o plugin, o template de configuração, o schema do seu estado, os testes
 /brokers/<nome> o conector, o manifesto, a bateria de conformidade, as fixtures
 /config         os arquivos do dono: config macro da conta e fichas (risco + setup)

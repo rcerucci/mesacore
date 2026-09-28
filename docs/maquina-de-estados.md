@@ -24,9 +24,13 @@ E três **marcas persistidas**, que sobrevivem ao processo (é onde moram os def
 
 | Marca | O que guarda | Regra |
 |---|---|---|
-| `sessao` | instante e equity de partida da corrida | RN-M3.4 |
+| `sessao` | instante, equity de partida e a **configuração em vigor** (ficha, versão do setup e do mandato) | RN-M3.4, RN-M3.5 |
 | `inibicao_cb` | que o circuit breaker disparou e o motivo | RN-M3.1, RN-M3.3 |
 | `desconhecido` | desfecho sem confirmação, por instrumento | RN-T7.1, RN-V3 |
+
+Há uma quarta marca que **não é nossa**: a **posse de uma posição** lê-se da **corretora**, pela marca de
+posse que a ordem levou (RN-B10, RN-T16.1) — o ledger guarda só o mapa marca → ciclo/ficha. É por isso
+que a mesa se pode reinstalar sem história e ainda saber o que é dela.
 
 **`reset` não apaga marca nenhuma** (RN-V3). É a única razão de as marcas serem marcas e não estados: um
 estado morreria com o processo.
@@ -40,7 +44,7 @@ estado morreria com o processo.
 | `parada` | nada: o processo não corre | tudo | `stop` concluído; queda; CB | `em_operacao` (**start**, se a validação passar e não houver `inibicao_cb`); permanece com motivo registrado (**start** recusado) |
 | `em_operacao` | lê, consulta o setup pelo relógio dele, monta boleta, envia, reconcilia, registra (RN-T1 a RN-T12) | — | validação do arranque aprovada | `pausada` (**pause**); `encerrando` (**stop** com posição, ou CB); `parada` (**stop** sem posição) |
 | `pausada` | **reconcilia e defende**: lê, verifica o CB, adota ordens vivas | **abrir** (RN-V2) | **pause** | `em_operacao` (**start**/retomar); `encerrando` (**stop** com posição); `parada` (**stop** sem posição) |
-| `encerrando` | para de abrir, apresenta o **resumo** e **pergunta** se fecha a mercado (RN-V7, RN-V8) | **abrir** | **stop** com posição aberta; CB | `parada` (**fechar a mercado** → liquida; **manter** → parada com posição viva); *volta a operar sem decisão* (RN-V9 — ver lacuna 3) |
+| `encerrando` | para de abrir, apresenta o **resumo** e **pergunta** se fecha a mercado (RN-V7, RN-V8) | **abrir** | **stop** com posição aberta; CB | `parada` (**fechar a mercado** → liquida; **manter** → parada com posição viva); `em_operacao` **sem resposta** (RN-V9.1: volta ao normal, `stop` fica pendente) |
 
 **`parada` com `inibicao_cb`** é o estado depois do alerta grave: o processo está em baixo, a posição foi
 liquidada e o motivo está registrado. `start` **recusa** (RN-M3.3) — e é aqui que a máquina revelou o
@@ -87,7 +91,7 @@ que alguém inventaria primeiro.
 | Evento | Vem de | Efeito |
 |---|---|---|
 | `start` / `stop` / `pause` / `reset` | vigia (RN-V1) | transições da §2; `reset` = reinício sem mexer em nada (RN-V3) |
-| `nova_sessao` | **verbo que falta** (§6, lacuna 1) | único caminho fora de `inibicao_cb` |
+| `nova_sessao` | vigia (RN-V10) | único caminho fora de `inibicao_cb`; grava instante, equity de partida, autor, motivo e a **configuração em vigor** — é a fronteira entre duas configurações comparadas |
 | `buy` · `sell` · `hold` · `caixa` | setup (RN-S1) | monta (ou não) boleta, respeitando mandato e template (RN-T6) |
 | proposta inválida (5º valor, ausente) | setup | trata como `hold` e registra a invalidade (RN-T4) |
 | silêncio além do prazo do setup | setup | **congela** o instrumento (RN-S8, RN-T10) |
@@ -131,28 +135,23 @@ distinguir-se:
 
 ---
 
-## 6. Lacunas que a máquina revelou
+## 6. Lacunas que a máquina revelou — todas fechadas
 
-1. **Falta um verbo.** Depois do CB a mesa está em `parada` com `inibicao_cb` e o `start` **recusa**
-   (RN-M3.3). `reset` não serve — é reinício sem mexer em nada (RN-V3). Logo, **não existe forma legal de
-   abrir sessão nova**: a regra exige uma decisão explícita e o sistema não tem onde a receber. Duas
-   saídas: **(a)** um **quinto verbo** `nova_sessao` (autor, instante, motivo, e é o único que limpa a
-   inibição) — recomendado; **(b)** `start` com motivo obrigatório quando há inibição, o que enfraquece o
-   `start` como verbo determinístico.
-2. **O CB corre em `pausada`?** A regra diz que em `pause` a mesa "continua a reconciliar" (RN-V2), mas não
-   diz se o **CB continua a ser verificado**. Tem de continuar: `pause` suspende **abertura**, nunca
-   **defesa** — se uma posição aberta caminhar para o limite com a mesa pausada, quem fecha é o CB.
-3. **`encerrando` sem resposta.** O RN-V9 diz que sem decisão a mesa "continua a correr e a reconciliar",
-   mas não diz se volta a **abrir**. Ambiguidade real na minha própria escrita: parada perpétua (nunca
-   mais abre, e o `stop` fica pendente para sempre) ou volta ao normal (abre, com o pedido de stop
-   registrado). Recomendo **voltar ao normal** — um pedido ignorado não deve paralisar a mesa — e está à
-   tua palavra.
-4. **Contradição entre o encerramento e o RN-T16.** Se o encerramento for "manter posição" (RN-V8), a mesa
-   fica em baixo com posição viva. No arranque seguinte, o RN-T16 manda **não governar** o que a mesa não
-   abriu — e, sem memória própria (a posição é a da corretora, RN-T8), a mesa não sabe que foi ela. A
-   posição ficaria sem governo para sempre. **Correcção:** a posse da posição **lê-se do ledger** — se há
-   ciclo que a registre como aberta por esta mesa e nenhum que a feche, é dela; se não há, é manual.
-5. **`congelada` não está na lista de eventos que avisam** (RN-E15): sem isso, um setup quebrado deixa a
-   mesa em gelo e o dono sem saber.
-6. **Fechar foi recusado** (transição `fechando --recusado--> aberta`) não tinha tratamento declarado: é
-   alarme grave, não uma tentativa falhada.
+1. **Falta um verbo — FECHADA.** Depois do CB a mesa está em `parada` com `inibicao_cb` e o `start`
+   **recusa** (RN-M3.3); o `reset` não mexe em nada (RN-V3), logo não havia forma legal de abrir sessão
+   nova. Entrou um **quinto verbo**, `nova_sessao` (RN-V1, RN-V10), que é o único caminho fora da inibição
+   — e que ganhou uma segunda função: **fechar a unidade de comparação**, porque uma sessão tem uma
+   configuração em vigor (RN-M3.5). Trocar de setup sem sessão nova somaria dois setups no mesmo número.
+2. **O CB corre em `pausada` — FECHADA** (RN-V2.1): `pause` suspende **abertura**, nunca **defesa**. Se uma
+   posição aberta caminhar para o limite com a mesa pausada, quem fecha é o CB.
+3. **`encerrando` sem resposta — FECHADA** (RN-V9.1): volta ao normal, **abre incluído**, e o pedido de
+   `stop` fica registrado como pendente. Um pedido ignorado não paralisa a mesa.
+4. **Contradição entre o encerramento e o RN-T16 — FECHADA**, e com uma solução melhor do que a minha: a
+   posse de uma posição lê-se da **corretora**, pela **marca de posse** que a ordem levou (RN-B10,
+   RN-T16.1), e não do nosso registro. O `cloid` da HL, o `clientOrderId` do cTrader e o `magic`/`comment`
+   do MT5 (na própria posição) existem para isto: a mesa reencontra o que é dela **pelos registros do
+   venue**, sem base de dados própria de posições.
+5. **`congelada` não avisava — FECHADA**: entrou na lista de eventos que exigem aviso (RN-E15), com a
+   recusa ao fechar.
+6. **Fechar foi recusado — FECHADA** (RN-T7.3): é alarme grave, com nova tentativa declarada, não uma
+   tentativa falhada sem consequência.

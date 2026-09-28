@@ -83,7 +83,9 @@ Instrumentos e unidades (mínimo, passo, tick) · alavancagem máxima por instru
 se sabe ajustar alavancagem e em que modos · teto de valor por ordem · modelo de posição (netting/hedging) ·
 tipos de ordem disponíveis · política de parcial suportada · desvio máximo · `reduce-only` nativo ·
 stop anexo · profundidade de livro · funding · relógio de fecho de barra · idempotência ·
-**estado do mercado** (aberto/fechado, RN-D8) · **versão do contrato** (RN-E18) — todos por RN-C1.
+**marca de posse**: em que forma a aceita (`cloid`, `clientOrderId`, `magic`, `comment` ou `nenhuma`) e se
+liga ordem a posição nos seus próprios registros · **estado do mercado** (aberto/fechado, RN-D8) ·
+**versão do contrato** (RN-E18) — todos por RN-C1.
 
 ---
 

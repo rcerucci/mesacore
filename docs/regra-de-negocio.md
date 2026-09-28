@@ -50,6 +50,9 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
   versão.
 - **Setup manual** — um setup cujo lado vem de uma **pessoa** (uma interface que ela preenche), não de um
   cálculo. É um setup como qualquer outro: o core não sabe a diferença nem precisa de saber (RN-T15).
+- **Marca de posse** — o identificador curto que a mesa põe em cada ordem e que diz que aquela ordem é
+  dela e daquela ficha. É o que permite reencontrar as **suas** posições pelos registros da corretora, sem
+  base de dados própria (RN-B10, RN-T16.1).
 - **Ficha** — a configuração concreta de um instrumento: **dois arquivos**, um de risco e um do setup,
   mais o nome do setup e da variante.
 - **Arquivo de risco** — o arquivo de forma **fixa** (vem do core, igual em todos os setups):
@@ -95,7 +98,7 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
 | Mesa → Setup | o objecto normalizado de mercado e conta | ninguém: o setup recebe sempre o mesmo objecto |
 | Mesa → Conector | a boleta — mensagem padrão (percentagem do saldo, alavancagem, percentagens de movimento) | a mesa (sem capacidade declarada) e o conector (recusa da corretora) |
 | Conector → Mesa | a **resolução** (quantidade, nocional, margem, alavancagem efectiva, preço de liquidação) e o desfecho | a mesa (exposição fora da banda do mandato) |
-| Vigia → Mesa | os quatro verbos: start, stop, pause, reset | a mesa (mandato fora de banda: o start falha) |
+| Vigia → Mesa | os cinco verbos: start, stop, pause, reset, nova_sessao | a mesa (mandato fora de banda: o start falha; sessão inibida pelo CB: o start falha) |
 | Mesa → Web | a leitura (posição, ciclos, resultado, ledger) | ninguém |
 | Mesa → Ledger | snapshot, proposta, boleta, resolução e desfecho | ninguém |
 
@@ -128,6 +131,9 @@ transporta. Quem decide é a mesa, dentro do mandato.
     `reset` (que existe para destravar, não para alterar, RN-V3) limparia o circuit breaker, e o alerta
     grave passaria a depender de quem carrega no botão. Sessão nova, só por decisão explícita do dono,
     registrada.
+  - **RN-M3.5.** A sessão é a **unidade de comparação**: grava, além do instante e do equity de partida, a
+    **configuração em vigor** — ficha, versão do setup, versão do mandato. Mudar ficha ou setup exige
+    **sessão nova** (RN-V10): é isso que permite comparar o resultado de dois setups em vez de os somar.
 - **RN-M4.** O mandato declara o que é **soma**: a **margem total máxima** da conta, em percentagem do
   saldo — e **100% é um valor legítimo** (a 1x, com um ou dois pares, empenhar o saldo inteiro é uma
   escolha do dono, típica em instrumentos de variação baixa) — e o circuit breaker da conta (RN-M3). As
@@ -328,6 +334,12 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   absoluto, pontos, distância em ticks) e recusa quando o instrumento não o permite. É esta unidade que
   impede a salada de configurações — e é a mesma unidade da distância de liquidação (RN-M4.4).
 
+- **RN-B10.** Toda ordem leva **marca de posse**: um identificador curto, **numérico e determinístico**,
+  gerado pela mesa, que diz que aquela ordem é desta mesa e desta ficha. A marca tem de **caber na forma
+  mais restrita** dos venues que a transportam (inteiro no MT5, hexadecimal na HL, texto no cTrader) —
+  quem a resolve é o conector (RN-C9) e quem declara a forma é o manifesto (RN-C1). É ela que permite à
+  mesa reconhecer as **suas** posições sem base de dados própria de posições (RN-T16.1).
+
 ---
 
 ## 9. Regras do conector (a corretora)
@@ -338,7 +350,8 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   ou isolado); teto de valor por ordem; modelo de posição (netting ou hedging); tipos de ordem
   disponíveis; política de execução parcial suportada; desvio máximo; se garante `reduce-only`
   nativamente; se aceita stop anexado à ordem; profundidade de livro; funding; relógio do fecho de
-  barra; e se tem idempotência.
+  barra; **marca de posse**: em que forma a aceita (`cloid`, `clientOrderId`, `magic`, `comment` ou
+  `nenhuma`) e se a corretora **liga ordem a posição** nos seus próprios registros; e se tem idempotência.
 - **RN-C2.** O conector devolve SEMPRE um desfecho normalizado; a recusa traz motivo.
 - **RN-C3.** O conector NUNCA adapta uma boleta em silêncio.
 - **RN-C4.** Reenvio com a mesma referência de cliente não duplica ordem. Quando a corretora não tiver
@@ -351,7 +364,9 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   4. recusa explícita (abaixo do mínimo, margem insuficiente) — nunca silêncio;
   5. reenvio com a mesma referência não duplica;
   6. reconexão com posição aberta → a mesa retoma a posição que a corretora reporta;
-  7. o **relógio de fecho de barra** da corretora é conferido contra UTC e o desvio é publicado.
+  7. o **relógio de fecho de barra** da corretora é conferido contra UTC e o desvio é publicado;
+  8. **marcar, reiniciar, reencontrar**: uma ordem marcada é reconhecida como nossa depois de a mesa
+     reiniciar, **pelos registros da própria corretora** (RN-B10, RN-T16.1).
 - **RN-C7.** O resultado da bateria é registrado por versão. Mudança de condições na corretora tem de
   ser **detectada**, não sofrida.
 - **RN-C8.** Onde o conector tiver verbo para **ajustar a alavancagem** de um instrumento (a HL tem:
@@ -459,14 +474,14 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 
 ---
 
-### 11.4. O vigia (start, stop, pause, reset e encerramento gracioso)
+### 11.4. O vigia (start, stop, pause, reset, nova_sessao e encerramento gracioso)
 
 O servidor é **puro** e não há agente administrador: na inicialização sobe um processo pequeno e
-determinístico que só obedece a quatro verbos. Não sabe de estratégia, de mercado nem de ledger.
+determinístico que só obedece a cinco verbos. Não sabe de estratégia, de mercado nem de ledger.
 
-- **RN-V1.** Os verbos são quatro e determinísticos: **start** (põe uma mesa a correr), **stop**
-  (termina a mesa), **pause** (a mesa continua viva, para de abrir, continua a reconciliar) e
-  **reset** (reinício sem mexer em nada, RN-V3).
+- **RN-V1.** Os verbos são **cinco** e determinísticos: **start** (põe uma mesa a correr), **stop**
+  (termina a mesa), **pause** (a mesa continua viva, para de abrir, continua a reconciliar),
+  **reset** (reinício sem mexer em nada, RN-V3) e **nova_sessao** (RN-V10).
 - **RN-V2.** **Pause não é stop.** Terminar o processo com posição aberta deixaria a posição sem
   governo: em `pause` a mesa mantém-se a reconciliar e apenas NÃO abre — é a mesma inibição do
   RN-M3.1.
@@ -493,6 +508,13 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 - **RN-V9.** Sem decisão, a mesa **continua a correr e a reconciliar** — nunca fecha por prazo, nunca
   sai em silêncio. A decisão (fechar a mercado ou manter) é registrada com autor e hora, e o
   encerramento com posição aberta é o único caminho legítimo para terminar com posição viva.
+- **RN-V9.1.** `encerrando` **sem resposta** volta ao normal: a mesa volta a operar, abre incluído, e o
+  pedido de `stop` fica registrado como **pendente**. Um pedido ignorado não paralisa a mesa.
+- **RN-V10.** **`nova_sessao`** é o único verbo que abre sessão: limpa a inibição do circuit breaker
+  (RN-M3.3) e grava instante, equity de partida, autor e **motivo**. É também o verbo que **fecha uma
+  unidade de comparação** — uma sessão tem uma configuração em vigor (ficha, versão do setup, versão do
+  mandato), e mudar ficha ou setup exige sessão nova, senão os resultados de dois setups ficam somados no
+  mesmo número (RN-M3.5). `reset` NUNCA limpa a inibição: ele não altera nada (RN-V3).
 
 ---
 
@@ -545,7 +567,9 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
 3. Estrutura de diretórios `/core`, `/setups`, `/brokers`, `/web` (mais `/contracts`, `/config`,
    `/tools` e `/docs`).
 4. O servidor é puro e **não há agente administrador**: um processo pequeno e determinístico obedece a
-   start, stop, pause e reset (RN-V1 a RN-V6). `pause` não é `stop`; `reset` nunca apaga o ledger.
+   start, stop, pause, reset e nova_sessao (RN-V1 a RN-V10). `pause` não é `stop`; `reset` nunca apaga o
+   ledger nem limpa inibição; `nova_sessao` é o único verbo que abre sessão — e é ele que fecha uma
+   unidade de comparação.
 5. **A tradução é do conector.** A boleta é uma mensagem padrão em percentagem do saldo, alavancagem e
    percentagens de movimento; quem calcula quantidade, unidade, pontos, tick e o protocolo de ordem da
    sua corretora é o plugin (RN-B0, RN-B7, RN-C9). O core deixa de ter aritmética de corretora.
@@ -596,23 +620,36 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
     ("o humano preenche a boleta"), recuperada **por composição** em vez de por excepção: o humano ganha
     as mesmas travas e a mesma auditoria (RN-T15, RN-T15.1, §2).
 
+22. **`nova_sessao` existe** — e é mais do que a saída da inibição: é o que **fecha uma unidade de
+    comparação**. Uma sessão tem uma configuração em vigor, e trocar de setup exige sessão nova, para dois
+    setups não somarem o resultado no mesmo número (RN-V10, RN-M3.5).
+23. **`encerrando` sem resposta volta ao normal** — abre incluído, com o pedido de `stop` registrado como
+    pendente: um pedido ignorado não paralisa a mesa (RN-V9.1).
+24. **A posse de uma posição é da corretora, não nossa.** A ordem leva **marca de posse** e a mesa
+    reencontra as suas posições pelos registros do venue — **sem base de dados própria de posições**
+    (RN-B10, RN-T16.1). Verificado nos três venues: MT5 tem `POSITION_MAGIC` e `POSITION_COMMENT` **na
+    própria posição** (e `POSITION_IDENTIFIER` liga-a a ordens e negócios); no cTrader o `clientOrderId`
+    (texto, até 50) viaja na ordem e o vínculo à posição vem do `positionId` de cada negócio; a HL usa
+    `cloid` (hex de 128 bits) e permite **consultar e cancelar por cloid**. Por isso a marca é desenhada
+    para **caber na forma mais restrita** — o inteiro do MT5 —, não para o venue mais generoso.
+
 **Proposta minha, à espera da tua palavra**
 
-22. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
+25. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
     de mesas (RN-E8), para a topologia não aparecer na superfície.
-23. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+26. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
     liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
     impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-24. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
+27. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
     lança o processo é o vigia, não a web.
 
 **Abertas — o que depende de ti (não são números: são chaves)**
 
-25. **O inventário de chaves**: fechar a lista das chaves e as suas omissões (`docs/inventario-de-chaves.md`,
+28. **O inventário de chaves**: fechar a lista das chaves e as suas omissões (`docs/inventario-de-chaves.md`,
     em rascunho). Os valores — 5%, 2%, 0,5% — são exemplos, mudam com o dono e com a conta (RN-A1 a RN-A3).
-26. As **bandas** de cada item limitável (stop, tp, alavancagem, tempo máximo em posição) e a
+29. As **bandas** de cada item limitável (stop, tp, alavancagem, tempo máximo em posição) e a
     **tolerância de posição manual** por instrumento (RN-T16).
-27. Instrumento a instrumento: a **distância mínima de liquidação**, quando um estudo a justificar.
+30. Instrumento a instrumento: a **distância mínima de liquidação**, quando um estudo a justificar.
 
 ---
 
@@ -670,10 +707,12 @@ as que dependem de decisão do dono estão marcadas `ABERTA`.
   A ficha declara se aquele instrumento **tolera** posição manual; se não tolerar, a mesa fica em pausa
   nesse instrumento em vez de a gerir. Note-se que a operação manual do dono **não** cai aqui quando é
   feita por um setup manual (RN-T15): essa é da mesa, e é governada como qualquer outra.
-- **RN-T16.1.** A **posse de uma posição lê-se do ledger**, não se adivinha: havendo ciclo que a registre
-  como aberta por esta mesa e nenhum que a feche, a posição é dela; não havendo, é manual. É isto que
-  permite retomar corretamente depois de um encerramento com "manter posição" (RN-V8) — sem esta regra, a
-  posição ficaria sem governo para sempre, porque a mesa não guarda posição própria (RN-T8).
+- **RN-T16.1.** A posse de uma posição **lê-se da corretora**, pela **marca de posse** que a ordem levou
+  (RN-B10): o conector declara no manifesto em que forma ela viaja, e a mesa reencontra as suas posições
+  **pelos registros do venue** — sem base de dados própria de posições. O ledger guarda o **mapa**
+  marca → ciclo/ficha, que é o detalhe legível; a corretora guarda a **prova**. Onde o venue não tiver
+  marca, o manifesto declara `nenhuma` e a mesa cai para o registro do ledger: limitação **declarada**,
+  nunca descoberta em produção.
 
 **Segurança e operação**
 
