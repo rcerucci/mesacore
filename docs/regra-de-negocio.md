@@ -48,6 +48,8 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
   conta e margem total máxima.
 - **Setup** — o plugin que propõe lado e publica o template do seu arquivo de configuração. Tem nome e
   versão.
+- **Setup manual** — um setup cujo lado vem de uma **pessoa** (uma interface que ela preenche), não de um
+  cálculo. É um setup como qualquer outro: o core não sabe a diferença nem precisa de saber (RN-T15).
 - **Ficha** — a configuração concreta de um instrumento: **dois arquivos**, um de risco e um do setup,
   mais o nome do setup e da variante.
 - **Arquivo de risco** — o arquivo de forma **fixa** (vem do core, igual em todos os setups):
@@ -121,6 +123,11 @@ transporta. Quem decide é a mesa, dentro do mandato.
   - **RN-M3.2.** A verificação é da mesa, **em cada ciclo**, e não depende do setup nem da sua proposta.
   - **RN-M3.3.** Depois de um circuit breaker a mesa NÃO volta sozinha: o arranque seguinte exige decisão
     explícita do dono, que revê o motivo antes de levantar a inibição.
+  - **RN-M3.4.** O **início da sessão é gravado** — instante e equity de partida — e **sobrevive ao
+    processo**: reinício, queda ou `reset` **retomam a sessão em curso**, não abrem uma nova. Sem isto, o
+    `reset` (que existe para destravar, não para alterar, RN-V3) limparia o circuit breaker, e o alerta
+    grave passaria a depender de quem carrega no botão. Sessão nova, só por decisão explícita do dono,
+    registrada.
 - **RN-M4.** O mandato declara o que é **soma**: a **margem total máxima** da conta, em percentagem do
   saldo — e **100% é um valor legítimo** (a 1x, com um ou dois pares, empenhar o saldo inteiro é uma
   escolha do dono, típica em instrumentos de variação baixa) — e o circuit breaker da conta (RN-M3). As
@@ -575,25 +582,30 @@ determinístico que só obedece a quatro verbos. Não sabe de estratégia, de me
     linguagem** que não a do core: um mock na mesma linguagem prova a lógica, não prova a fronteira
     (RN-E17).
 
+20. **A sessão do circuit breaker é a corrida da mesa** — desde o arranque, não a do instrumento. A ideia
+    inicial era a sessão do instrumento; o dono corrigiu: o sistema opera no automático, logo a janela é
+    a da mesa (RN-M3).
+21. **Um setup pode ser manual.** O desenho de plugins admite — sem mudar o core — um **setup cujo lado
+    vem de uma pessoa** (uma interface que ela preenche), e não de um cálculo. É a imagem inicial do dono
+    ("o humano preenche a boleta"), recuperada **por composição** em vez de por excepção: o humano ganha
+    as mesmas travas e a mesma auditoria (RN-T15, RN-T15.1, §2).
+
 **Proposta minha, à espera da tua palavra**
 
-20. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
+22. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
     de mesas (RN-E8), para a topologia não aparecer na superfície.
-21. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
+23. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
     liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
     impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-22. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
+24. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
     lança o processo é o vigia, não a web.
 
 **Abertas — o que depende de ti (não são números: são chaves)**
 
-23. **O inventário de chaves**: fechar a lista das chaves e as suas omissões. Os valores — 5%, 2%, 0,5% —
-    são exemplos, mudam com o dono e com a conta (RN-A1 a RN-A3).
-24. A **sessão** do circuit breaker é a corrida da mesa desde o arranque (RN-M3) — confirmar que não é
-    o dia.
-25. **RN-T15**: a proposta manual do dono existe? E **RN-T16**: posição manual no instrumento é
-    tolerada, ou a mesa pausa nesse instrumento?
-26. As **bandas** de cada item limitável (stop, tp, alavancagem, tempo máximo em posição).
+25. **O inventário de chaves**: fechar a lista das chaves e as suas omissões (`docs/inventario-de-chaves.md`,
+    em rascunho). Os valores — 5%, 2%, 0,5% — são exemplos, mudam com o dono e com a conta (RN-A1 a RN-A3).
+26. As **bandas** de cada item limitável (stop, tp, alavancagem, tempo máximo em posição) e a
+    **tolerância de posição manual** por instrumento (RN-T16).
 27. Instrumento a instrumento: a **distância mínima de liquidação**, quando um estudo a justificar.
 
 ---
@@ -636,15 +648,22 @@ as que dependem de decisão do dono estão marcadas `ABERTA`.
 - **RN-D8.** **Mercado fechado é estado declarado pelo conector**, não erro de dado. Fechado: não abre,
   não alarmiza dado velho, continua a reconciliar. Sem isto, todos os fins de semana de FX viram alarme.
 
-**O humano na operação (a tua imagem inicial, que o desenho tinha perdido)** `ABERTA`
+**O humano na operação (a tua imagem inicial, que o desenho tinha perdido)**
 
-- **RN-T15.** A **proposta manual** — o dono como fonte da decisão, a tua imagem original de "o humano
-  preenche a boleta e envia" — entra pelo **mesmo caminho** que a do setup: mandato, bandas, boleta,
-  resolução, ledger. Não há caminho paralelo nem excepção de risco. `ABERTA`: existe, ou o dono opera
-  pela aplicação da corretora e a mesa só reconcilia?
-- **RN-T16.** A mesa **não governa o que não abriu**: posição que apareça sem ter sido a mesa a abri-la
-  é vista, dita e **não gerida** (nem stop, nem fecho). A ficha declara se aquele instrumento **tolera**
-  posição manual; se não tolerar, a mesa fica em pausa nesse instrumento em vez de a gerir.
+- **RN-T15.** **Não há caminho especial para o dono**: o que existe é um **setup manual** — um plugin de
+  setup cujo lado vem de uma **pessoa** (uma interface que ela preenche) em vez de um cálculo. É um setup
+  por contrato, e por isso a proposta dele entra pelo **mesmo caminho**: mandato, bandas, boleta,
+  resolução, ledger. A boleta NÃO ganha campo de origem — quem propôs é o setup, e o ledger já registra
+  o nome e a versão dele (RN-L1). O mandato não abre excepção, e é isso que o torna útil: o humano ganha
+  **as mesmas travas** que o automático — CB, margem total, risco por ordem, bandas, auditoria.
+  - **RN-T15.1.** Um setup manual DEVE declarar um **prazo de resposta generoso** — quem responde é uma
+    pessoa. Prazo de máquina num setup humano faria a mesa congelar à espera (RN-S8), que é punir o
+    humano por ser humano.
+- **RN-T16.** A mesa **não governa o que não abriu**: posição que apareça sem ter sido a mesa a abri-la —
+  aberta na aplicação da corretora, por exemplo — é vista, dita e **não gerida** (nem stop, nem fecho).
+  A ficha declara se aquele instrumento **tolera** posição manual; se não tolerar, a mesa fica em pausa
+  nesse instrumento em vez de a gerir. Note-se que a operação manual do dono **não** cai aqui quando é
+  feita por um setup manual (RN-T15): essa é da mesa, e é governada como qualquer outra.
 
 **Segurança e operação**
 
