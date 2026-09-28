@@ -15,7 +15,7 @@ Cada conector entrega:
   preço de liquidação (RN-C10) — é ela que a mesa confere contra a banda e grava no ledger;
 - o **desfecho normalizado** (aceite, parcial, desconhecido, recusado) com motivo na recusa (RN-C2);
 - as **leituras** de posição, equity e marcas;
-- a **bateria de conformidade** de sete provas (RN-C6) e as suas fixtures.
+- a **bateria de conformidade** de **oito** provas (RN-C6) e as suas fixtures.
 
 Regras que estes diretórios DEVEM cumprir:
 
