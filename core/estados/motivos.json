@@ -161,6 +161,11 @@
       "quando": "chega um reset",
       "regra": "FR-005",
       "porque": "O reset reinicia sem mexer em nada - nem nas marcas. E um efeito, e nao uma ausencia: registra-lo e o que distingue um reset de um esquecimento."
+    },
+    "registo_nao_retomavel": {
+      "quando": "o registo de operacao nao foi possivel retomar",
+      "regra": "FR-031",
+      "porque": "Uma mesa que arranca sem saber o que ja fez repete o que ja fez. Nao se retoma por optimismo: ou o registo esta retomado, ou a mesa fica parada."
     }
   },
   "ordem_de_leitura": [

@@ -1,0 +1,66 @@
+US4 — o arranque passa por seis portas: saida real
+data: 2026-09-28 18:15 -0300
+
+=== bateria do arranque: as seis portas, uma de cada vez ===
+
+ok    arranque/todas-as-portas-passam (o caminho feliz, para as recusas significarem alguma coisa)
+ok    FR-032/todas-as-portas-passam (o caminho feliz, para as recusas significarem alguma coisa): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/manifesto-sem-as-unidades-de-um-instrumento-configurado
+ok    FR-032/manifesto-sem-as-unidades-de-um-instrumento-configurado: a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/manifesto-que-o-contrato-recusa (falta um campo obrigatorio)
+ok    FR-032/manifesto-que-o-contrato-recusa (falta um campo obrigatorio): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/mandato-com-saldo-zero (nada e ajustado para passar)
+ok    FR-032/mandato-com-saldo-zero (nada e ajustado para passar): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/mandato-negativo
+ok    FR-032/mandato-negativo: a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/mandato-fora-da-banda-declarada (a alavancagem nao encolhe para caber)
+ok    FR-032/mandato-fora-da-banda-declarada (a alavancagem nao encolhe para caber): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/o-que-se-leu-sai-igual-ao-que-entrou (FR-032, medido)
+ok    FR-032/o-que-se-leu-sai-igual-ao-que-entrou (FR-032, medido): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/contenda-sem-politica-declarada-recusa (contenda nao se resolve por omissao)
+ok    FR-032/contenda-sem-politica-declarada-recusa (contenda nao se resolve por omissao): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/contenda-com-politica-declarada-arranca (os MESMOS numeros, outra declaracao)
+ok    FR-032/contenda-com-politica-declarada-arranca (os MESMOS numeros, outra declaracao): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/chave-em-uso-fora-do-inventario-recusa
+ok    FR-032/chave-em-uso-fora-do-inventario-recusa: a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/o-inventario-a-serio (a porta ligada ao conferidor que ja existe)
+ok    FR-032/o-inventario-a-serio (a porta ligada ao conferidor que ja existe): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/versao-do-contrato-incompativel-recusa-antes-de-tudo
+ok    FR-032/versao-do-contrato-incompativel-recusa-antes-de-tudo: a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/sessao-inibida-pelo-CB-recusa
+ok    FR-032/sessao-inibida-pelo-CB-recusa: a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/registo-nao-retomavel-recusa
+ok    FR-032/registo-nao-retomavel-recusa: a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+ok    arranque/a-ordem-das-portas-e-a-declarada (falha tres, reporta a primeira)
+ok    FR-032/a-ordem-das-portas-e-a-declarada (falha tres, reporta a primeira): a configuracao, as marcas e o manifesto sairam iguais ao que entraram
+
+=== criterio de sucesso ===
+
+ok    SC-006: 0 arranques com porta falhada (tem de ser 0) e 11 de 11 recusas com o motivo da porta
+
+resumo: 31 verificacoes · 0 divergentes · 15 casos · 11 portas falhadas de proposito
+relatorio: specs/002-maquina-de-estados/relatorios/us4.jsonl
+exit=0
+
+--- regressao ---
+### bun run core/ciclo/provar.ts
+
+resumo: 62 verificacoes · 0 divergentes · 13 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+### bun run tools/verificar-maquina/tabela.ts --prova-negativa
+  ok    prova negativa 6-par-sem-linha-sempre: reprovada pelo invariante 6.
+  ok    prova negativa 7-motivo-com-nome-do-contrato: reprovada pelo invariante 7 (nome 'versao_do_contrato_divergente').
+### bun run core/estados/provar.ts
+
+resumo: 29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo
+### bun run core/mesa.prova.ts
+
+resumo: 24 verificacoes · 0 falhas
+### bash tools/verificar-maquina/porteiro-do-estado.sh
+
+resumo: 2 verificacoes · 0 falhas
+### bash tools/verificar-maquina/reiniciar.sh
+SC-010: 0 marcas perdidas · o reset nao tocou em nada
+resumo: 3 processos + 1 leitura externa · 0 falhas
+### bash tools/verificar-contrato/ponta-a-ponta.sh
+
+ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam

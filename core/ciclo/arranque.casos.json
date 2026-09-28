@@ -1,0 +1,187 @@
+{
+  "nota": "A bateria do arranque: cada uma das seis portas falhada de proposito, uma de cada vez, e a ordem declarada provada com um caso que falha tres. Os pares importam tanto como as recusas: os mesmos numeros de contenda que recusam sem politica arrancam COM politica declarada, e o mesmo mandato que e recusado por zero arranca quando o valor e legitimo - e o valor sai igual ao que entrou (FR-032).",
+  "fonte": "core/ciclo/arranque.ts + contracts/manifesto.schema.json",
+  "manifesto_fixture": "contracts/mocks/conector/manifesto.json",
+  "padrao": {
+    "config": {
+      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "dado_velho"],
+      "margem_total_maxima_pct": "100",
+      "politica_de_contencao": null,
+      "fichas": {
+        "EURUSD": {
+          "saldo_pct": "1",
+          "alavancagem": "2",
+          "bandas": {
+            "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+            "alavancagem": { "minimo": "1", "maximo": "10" }
+          }
+        },
+        "XAUUSD": {
+          "saldo_pct": "1",
+          "alavancagem": "5",
+          "bandas": {
+            "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+            "alavancagem": { "minimo": "1", "maximo": "20" }
+          }
+        }
+      }
+    },
+    "marcas": { "sessao": null, "inibicao_cb": null, "desconhecido": [], "pedidos": [] },
+    "registo_retomavel": true,
+    "inventario": { "ok": true, "problemas": [] }
+  },
+  "casos": [
+    {
+      "nome": "todas-as-portas-passam (o caminho feliz, para as recusas significarem alguma coisa)",
+      "arrancou_esperado": true,
+      "estado_esperado": "em_operacao",
+      "porta_esperada": null,
+      "motivo_esperado": null,
+      "portas_conferidas_esperadas": ["manifesto", "mandato", "contenda", "inventario", "versao_do_contrato", "sessao"],
+      "historico": "US4 cenario 7 (o lado de la)"
+    },
+    {
+      "nome": "manifesto-sem-as-unidades-de-um-instrumento-configurado",
+      "config_mudanca": {
+        "fichas": {
+          "EURUSD": { "saldo_pct": "1", "alavancagem": "2" },
+          "GBPUSD": { "saldo_pct": "1", "alavancagem": "2" }
+        }
+      },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "manifesto",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "US4 cenario 1 / FR-031 (RN-M1)"
+    },
+    {
+      "nome": "manifesto-que-o-contrato-recusa (falta um campo obrigatorio)",
+      "manifesto_remover": ["reduce_only_suportado"],
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "manifesto",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "motivo_do_contrato_esperado": "campo_obrigatorio_ausente",
+      "historico": "FR-031: a carga e conferida pelo contrato, e o motivo do contrato fica ao lado"
+    },
+    {
+      "nome": "mandato-com-saldo-zero (nada e ajustado para passar)",
+      "config_mudanca": { "fichas": { "EURUSD": { "saldo_pct": "0", "alavancagem": "2" } } },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "mandato",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "US4 cenario 2 / FR-032 (RN-M9)"
+    },
+    {
+      "nome": "mandato-negativo",
+      "config_mudanca": { "fichas": { "EURUSD": { "saldo_pct": "-1", "alavancagem": "2" } } },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "mandato",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "FR-032: negativo nao se corrige"
+    },
+    {
+      "nome": "mandato-fora-da-banda-declarada (a alavancagem nao encolhe para caber)",
+      "config_mudanca": { "fichas": { "EURUSD": { "saldo_pct": "1", "alavancagem": "99", "bandas": { "alavancagem": { "minimo": "1", "maximo": "10" } } } } },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "mandato",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "US4 cenario 2 (a banda declarada pelo dono)"
+    },
+    {
+      "nome": "o-que-se-leu-sai-igual-ao-que-entrou (FR-032, medido)",
+      "config_mudanca": { "fichas": { "EURUSD": { "saldo_pct": "3.5", "alavancagem": "7", "bandas": { "saldo_pct": { "minimo": "0.1", "maximo": "5" }, "alavancagem": { "minimo": "1", "maximo": "10" } } } } },
+      "arrancou_esperado": true,
+      "estado_esperado": "em_operacao",
+      "porta_esperada": null,
+      "motivo_esperado": null,
+      "nota": "O runner confere, alem disto, que o objecto de configuracao NAO foi mutado e que 'lido' devolve exactamente os valores de entrada. Se a mesa ajustasse um valor em silencio, este caso e o caso do zero juntos seriam a contradicao."
+    },
+    {
+      "nome": "contenda-sem-politica-declarada-recusa (contenda nao se resolve por omissao)",
+      "config_mudanca": { "fichas": {"EURUSD": {"saldo_pct": "60", "alavancagem": "2", "bandas": {"saldo_pct": {"minimo": "0.1", "maximo": "100"}, "alavancagem": {"minimo": "1", "maximo": "10"}}}, "XAUUSD": {"saldo_pct": "60", "alavancagem": "5", "bandas": {"saldo_pct": {"minimo": "0.1", "maximo": "100"}, "alavancagem": {"minimo": "1", "maximo": "20"}}}} },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "contenda",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "US4 cenario 3 / FR-033 (RN-M4.7)"
+    },
+    {
+      "nome": "contenda-com-politica-declarada-arranca (os MESMOS numeros, outra declaracao)",
+      "config_mudanca": {
+        "politica_de_contencao": "espera",
+        "fichas": {"EURUSD": {"saldo_pct": "60", "alavancagem": "2", "bandas": {"saldo_pct": {"minimo": "0.1", "maximo": "100"}, "alavancagem": {"minimo": "1", "maximo": "10"}}}, "XAUUSD": {"saldo_pct": "60", "alavancagem": "5", "bandas": {"saldo_pct": {"minimo": "0.1", "maximo": "100"}, "alavancagem": {"minimo": "1", "maximo": "20"}}}}
+      },
+      "arrancou_esperado": true,
+      "estado_esperado": "em_operacao",
+      "porta_esperada": null,
+      "motivo_esperado": null,
+      "nota": "Par de controle do caso anterior: sem esta metade, 'recusar acima do tecto' poderia estar no codigo e nao na declaracao."
+    },
+    {
+      "nome": "chave-em-uso-fora-do-inventario-recusa",
+      "inventario_mudanca": { "ok": false, "problemas": ["boleta.desvio_maximo nao consta do inventario de chaves"] },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "inventario",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "US4 cenario 4 / FR-031 (RN-A2)"
+    },
+    {
+      "nome": "o-inventario-a-serio (a porta ligada ao conferidor que ja existe)",
+      "inventario": "real",
+      "arrancou_esperado": true,
+      "estado_esperado": "em_operacao",
+      "porta_esperada": null,
+      "motivo_esperado": null,
+      "nota": "Aqui a porta do inventario e a implementacao a serio: corre o `tools/verificar-contrato/py/inventario.py` num processo e le o resultado. Sem este caso, 'uma so fonte de verdade' seria uma intencao."
+    },
+    {
+      "nome": "versao-do-contrato-incompativel-recusa-antes-de-tudo",
+      "manifesto_mudanca": { "versao": "0.9.0" },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "versao_do_contrato",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "motivo_do_contrato_esperado": "versao_do_contrato_divergente",
+      "historico": "US4 cenario 5 / RN-E18 (igualdade exacta, D7)"
+    },
+    {
+      "nome": "sessao-inibida-pelo-CB-recusa",
+      "marcas_mudanca": { "inibicao_cb": { "motivo": "perda_medida_acima_do_teto", "instante_ms": 1790628001000, "perda_medida": "5.20" } },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "sessao",
+      "motivo_esperado": "sessao_inibida",
+      "historico": "US4 cenario 6 / a ordem do livro: o mais especifico primeiro"
+    },
+    {
+      "nome": "registo-nao-retomavel-recusa",
+      "registo_retomavel": false,
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "sessao",
+      "motivo_esperado": "registo_nao_retomavel",
+      "historico": "US4 cenario 6 / FR-031 (sessao)"
+    },
+    {
+      "nome": "a-ordem-das-portas-e-a-declarada (falha tres, reporta a primeira)",
+      "config_mudanca": {
+        "margem_total_maxima_pct": "0.5",
+        "fichas": { "EURUSD": { "saldo_pct": "0", "alavancagem": "2" }, "GBPUSD": { "saldo_pct": "1", "alavancagem": "2" } }
+      },
+      "manifesto_remover": ["reduce_only_suportado"],
+      "inventario_mudanca": { "ok": false, "problemas": ["uma chave qualquer"] },
+      "marcas_mudanca": { "inibicao_cb": { "motivo": "x", "instante_ms": 1, "perda_medida": "9" } },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "manifesto",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "portas_conferidas_esperadas": ["manifesto"],
+      "nota": "Falha manifesto, mandato, contenda, inventario e sessao. O que o dono le e a PRIMEIRA porta - e 'portas_conferidas' tem de parar nela, em vez de dizer que se olhou tudo."
+    }
+  ]
+}

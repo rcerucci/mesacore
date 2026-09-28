@@ -13,7 +13,7 @@ Caminhos concretos em todas as tarefas.
 
 ## Estado da execução (medido em 28 set 2026)
 
-Fases 1 e 2 fechadas, **US1**, **US2** e **US3** com as baterias a correr. As tres P1 estao fechadas. Comandos e números reais em
+Fases 1 e 2 fechadas. **As tres P1 (US1, US2, US3) e a US4 estao fechadas** — 42 de 63 tarefas. Comandos e números reais em
 `relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
 
 | O que | Comando | Medido |
@@ -80,6 +80,33 @@ explicitamente (FR-029) e a porta por onde uma posição órfã entraria sem nin
 porque não existia no livro. Passou a existir (FR-005) **e** a bateria ganhou a conferência cruzada dos
 dois vocabulários — todos os motivos da mesa contra `motivos.json`, todos os motivos do contrato contra
 `vocabulario.json`.
+
+### US4 — o arranque passa por seis portas (T037–T042)
+
+| O que | Comando | Medido |
+|---|---|---|
+| As seis portas, falhadas uma de cada vez | `bun run tools/verificar-maquina/arranque.ts` | **15 casos · 0 divergentes** |
+| **SC-006** | idem | **0 arranques com porta falhada** · **11 de 11 recusas com o motivo daquela porta** |
+| FR-032 (nada é ajustado) | idem | **15 de 15** casos com a configuração, as marcas e o manifesto iguais ao que entraram |
+| A porta do inventário ligada ao conferidor que já existe | idem (caso `o-inventario-a-serio`) | corre o `inventario.py` num processo e lê o veredicto |
+| Regressão | baterias 002 + ponta-a-ponta do 001 | **0 falhas** |
+
+**Uma tarefa mudou de sítio, e por uma razão de fronteira.** As tarefas diziam `core/ciclo/ciclo.ts
+--casos ...`: o runner ficou em `tools/verificar-maquina/arranque.ts` porque a porta do inventário corre
+um processo, e o core não chama processos (RN-E2 — o porteiro do estado reprova quem o faça). A porta
+entra no core como **função**, sem valor por omissão: uma porta que passa quando ninguém a ligou seria
+pior do que não ter porta nenhuma. A implementação a sério vive em `tools/`, e a bateria usa-a nos casos
+que não pedem um stub.
+
+**O que a bancada de prova apanhou em si mesma**: o `fundir()` devolvia o objecto partilhado quando um
+caso não trazia mudança, e o caso que apagava um campo do manifesto apagava-o para todos os seguintes — a
+partir dali a bateria media outra coisa. Só apareceu porque a FR-032 obriga a comparar o que entrou com o
+que saiu; a partir de agora o manifesto entra nessa comparação.
+
+**Os pares de controle, que é onde está o valor**: os mesmos 60%+60% que recusam sem política declarada
+**arrancam** com `politica_de_contencao, e o mesmo mandato que é recusado por zero arranca quando o valor
+é legítimo. Sem as metades que passam, «recusa acima do tecto» podia estar no código em vez de na
+declaração do dono.
 
 Três tarefas mudaram de forma ao serem executadas, e ficam registadas para não parecer que foram
 feitas como escritas:
@@ -194,12 +221,12 @@ feitas como escritas:
 
 **Independent Test**: `bun run core/ciclo/ciclo.ts --casos core/ciclo/arranque.casos.json --historia US4` → cada porta falhada recusa o arranque com o motivo daquela porta e a mesa fica `parada` (SC-006).
 
-- [ ] T037 [P] [US4] Escrever `core/ciclo/arranque.casos.json`: as seis portas falhadas uma de cada vez, com o motivo esperado e `estado_esperado: parada`
-- [ ] T038 [US4] Implementar `core/ciclo/arranque.ts`: as seis portas em sequência (manifesto, mandato, contenda, inventário, versão do contrato, sessão), cada uma a recusar com o seu motivo
-- [ ] T039 [US4] Ligar a porta do inventário ao conferidor existente (`tools/verificar-contrato/py/inventario.py`) — uma só fonte de verdade sobre as chaves, em vez de uma segunda implementação
-- [ ] T040 [US4] Implementar a recusa de corrigir: mandato com valor zero, negativo ou fora da banda recusa o arranque e **nada** é ajustado (FR-032)
-- [ ] T041 [US4] Implementar a contenda: soma das fichas ≤ teto **ou** política de contenção declarada; sem declaração, recusa (FR-033)
-- [ ] T042 [US4] Correr a bateria de US4 e guardar `specs/002-maquina-de-estados/relatorios/us4.jsonl`
+- [x] T037 [P] [US4] Escrever `core/ciclo/arranque.casos.json`: as seis portas falhadas uma de cada vez, com o motivo esperado e `estado_esperado: parada`
+- [x] T038 [US4] Implementar `core/ciclo/arranque.ts`: as seis portas em sequência (manifesto, mandato, contenda, inventário, versão do contrato, sessão), cada uma a recusar com o seu motivo
+- [x] T039 [US4] Ligar a porta do inventário ao conferidor existente (`tools/verificar-contrato/py/inventario.py`) — uma só fonte de verdade sobre as chaves, em vez de uma segunda implementação
+- [x] T040 [US4] Implementar a recusa de corrigir: mandato com valor zero, negativo ou fora da banda recusa o arranque e **nada** é ajustado (FR-032)
+- [x] T041 [US4] Implementar a contenda: soma das fichas ≤ teto **ou** política de contenção declarada; sem declaração, recusa (FR-033)
+- [x] T042 [US4] Correr a bateria de US4 e guardar `specs/002-maquina-de-estados/relatorios/us4.jsonl`
 
 ---
 
