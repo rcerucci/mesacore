@@ -1,0 +1,55 @@
+US5 — a sessao e a unidade de comparacao: saida real
+data: 2026-09-28 18:23 -0300
+
+=== bateria da sessao: o CB por sessao, a inibicao e a sessao nova ===
+
+ok    sessao/cb-dispara-no-limite-exacto (atingir o limite e atingir)
+ok    sessao/cb-um-centavo-antes-do-limite-nao-dispara
+ok    sessao/cb-dispara-com-o-nao-realizado-dentro (nada foi fechado)
+ok    sessao/cb-corre-com-a-mesa-pausada (a pausa nao silencia o CB)
+ok    FR-040/cb-corre-com-a-mesa-pausada (a pausa nao silencia o CB): o CB nao menciona o estado da mesa em sítio nenhum do seu codigo
+ok    FR-040/cb-corre-com-a-mesa-pausada (a pausa nao silencia o CB): prova negativa do conferidor (um texto que olha para a pausa e acusado)
+ok    sessao/cb-na-janela-do-dia-de-calendario
+ok    sessao/cb-na-janela-do-dia-sem-o-inicio-do-dia-grita: GRITA em vez de medir sem base
+ok    sessao/cb-sem-a-lista-do-dono-nao-avisa (mas dispara na mesma)
+ok    sessao/depois-do-disparo-o-start-recusa (SC-007, lado A)
+ok    SC-007/depois-do-disparo-o-start-recusa (SC-007, lado A): o start recusa com a inibicao marcada
+ok    sessao/e-a-sessao-nova-e-que-levanta-a-inibicao (SC-007, lado B)
+ok    SC-007/e-a-sessao-nova-e-que-levanta-a-inibicao (SC-007, lado B): a sessao nova gravou instante, equity, autor, motivo e configuracao em vigor
+ok    SC-007/e-a-sessao-nova-e-que-levanta-a-inibicao (SC-007, lado B): a sessao nova levantou a inibicao
+ok    SC-007/e-a-sessao-nova-e-que-levanta-a-inibicao (SC-007, lado B): depois da sessao nova a mesa volta a arrancar
+ok    sessao/sessao-nova-com-a-configuracao-em-vigor-vazia-grita
+ok    sessao/sessao-nova-com-a-configuracao-em-vigor-vazia-grita: uma sessao sem ficha em vigor GRITA
+ok    sessao/trocar-o-setup-sem-sessao-nova-recusa
+ok    sessao/trocar-o-setup-sem-sessao-nova-recusa
+ok    sessao/trocar-para-a-mesma-configuracao-nao-muda-nada
+ok    sessao/trocar-para-a-mesma-configuracao-nao-muda-nada
+ok    sessao/sem-sessao-em-curso-a-troca-vale-para-a-proxima: sem sessao em curso o CB GRITA em vez de medir
+ok    sessao/sem-sessao-em-curso-a-troca-vale-para-a-proxima
+ok    os 6 motivos usados pela bateria constam todos do livro (core/estados/motivos.json)
+
+=== criterios de sucesso ===
+
+ok    SC-007 (lado A): 0 de 1 starts aceites depois do CB (tem de ser 0)
+ok    SC-007 (lado B): 1 de 1 sessoes novas gravaram a configuracao em vigor
+ok    SC-008 (lado do CB): 1 de 1 casos com a mesa pausada dispararam
+
+resumo: 27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB
+relatorio: specs/002-maquina-de-estados/relatorios/us5.jsonl
+exit=0
+
+--- regressao ---
+### bun run core/ciclo/provar.ts
+resumo: 62 verificacoes · 0 divergentes · 13 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+### bun run tools/verificar-maquina/arranque.ts
+resumo: 31 verificacoes · 0 divergentes · 15 casos · 11 portas falhadas de proposito
+### bun run core/estados/provar.ts
+resumo: 29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo
+### bun run core/mesa.prova.ts
+resumo: 24 verificacoes · 0 falhas
+### bash tools/verificar-maquina/porteiro-do-estado.sh
+resumo: 2 verificacoes · 0 falhas
+### bash tools/verificar-maquina/reiniciar.sh
+resumo: 3 processos + 1 leitura externa · 0 falhas
+### bash tools/verificar-contrato/ponta-a-ponta.sh
+ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam

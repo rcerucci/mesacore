@@ -1,0 +1,13 @@
+{"caso":"cb-dispara-no-limite-exacto (atingir o limite e atingir)","disparou":true,"deficit":"50.00","janela":"corrida_da_mesa","avisa":true,"encadeamento":["encerrar","liquidar","inibir_e_parar"],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"cb-um-centavo-antes-do-limite-nao-dispara","disparou":false,"deficit":"49.99","janela":"corrida_da_mesa","avisa":false,"encadeamento":[],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"cb-dispara-com-o-nao-realizado-dentro (nada foi fechado)","disparou":true,"deficit":"60.00","janela":"corrida_da_mesa","avisa":true,"encadeamento":["encerrar","liquidar","inibir_e_parar"],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"cb-corre-com-a-mesa-pausada (a pausa nao silencia o CB)","disparou":true,"deficit":"60.00","janela":"corrida_da_mesa","avisa":true,"encadeamento":["encerrar","liquidar","inibir_e_parar"],"gritou":false,"mesa":"pausada","ok":true}
+{"caso":"cb-na-janela-do-dia-de-calendario","disparou":true,"deficit":"100.00","janela":"dia_de_calendario","avisa":true,"encadeamento":["encerrar","liquidar","inibir_e_parar"],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"cb-na-janela-do-dia-sem-o-inicio-do-dia-grita","encadeamento":[],"gritou":true,"mesa":"em_operacao","ok":true}
+{"caso":"cb-sem-a-lista-do-dono-nao-avisa (mas dispara na mesma)","disparou":true,"deficit":"60.00","janela":"corrida_da_mesa","avisa":false,"encadeamento":["encerrar","liquidar","inibir_e_parar"],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"depois-do-disparo-o-start-recusa (SC-007, lado A)","disparou":true,"deficit":"60.00","janela":"corrida_da_mesa","avisa":true,"encadeamento":["encerrar","liquidar","inibir_e_parar"],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"e-a-sessao-nova-e-que-levanta-a-inibicao (SC-007, lado B)","disparou":true,"deficit":"60.00","janela":"corrida_da_mesa","avisa":true,"encadeamento":["encerrar","liquidar","inibir_e_parar"],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"sessao-nova-com-a-configuracao-em-vigor-vazia-grita","disparou":false,"deficit":"0.00","janela":"corrida_da_mesa","avisa":false,"encadeamento":[],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"trocar-o-setup-sem-sessao-nova-recusa","disparou":false,"deficit":"0.00","janela":"corrida_da_mesa","avisa":false,"encadeamento":[],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"trocar-para-a-mesma-configuracao-nao-muda-nada","disparou":false,"deficit":"0.00","janela":"corrida_da_mesa","avisa":false,"encadeamento":[],"gritou":false,"mesa":"em_operacao","ok":true}
+{"caso":"sem-sessao-em-curso-a-troca-vale-para-a-proxima","encadeamento":[],"gritou":true,"mesa":"em_operacao","ok":true}

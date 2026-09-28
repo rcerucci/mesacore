@@ -1,0 +1,183 @@
+{
+  "nota": "A bateria da sessao: o CB a disparar (e a NAO disparar um centavo antes), a inibicao a travar o start, a sessao nova a gravar a configuracao em vigor e a levantar a inibicao, e a troca de setup a ser recusada sem sessao nova. O caso 5 e o que prova que a pausa nao silencia o CB.",
+  "fonte": "core/ciclo/cb.ts + core/estado/sessao.ts",
+  "padrao": {
+    "config": {
+      "eventos_que_avisam": ["cb", "desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "encerramento", "contenda"],
+      "perda_maxima_pct": "5",
+      "perda_maxima_janela": "corrida_da_mesa",
+      "arranque_apos_cb": "exige_decisao",
+      "margem_total_maxima_pct": "100",
+      "politica_de_contencao": null,
+      "fichas": {
+        "EURUSD": {
+          "saldo_pct": "1",
+          "alavancagem": "2",
+          "bandas": {
+            "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+            "alavancagem": { "minimo": "1", "maximo": "10" }
+          }
+        }
+      }
+    },
+    "marcas": {
+      "sessao": {
+        "instante_ms": 1790628000000,
+        "equity_de_partida": "1000.00",
+        "autor": "dono",
+        "motivo": "nova_sessao_do_dono",
+        "configuracao_em_vigor": { "ficha": "3232", "versao_do_setup": "1.0.0", "versao_do_mandato": "1.0.0" }
+      },
+      "inibicao_cb": null,
+      "desconhecido": [],
+      "pedidos": []
+    }
+  },
+  "casos": [
+    {
+      "nome": "cb-dispara-no-limite-exacto (atingir o limite e atingir)",
+      "equity": "950.00",
+      "disparou_esperado": true,
+      "deficit_esperado": "50.00",
+      "avisa_esperado": true,
+      "encadeamento_esperado": ["encerrar", "liquidar", "inibir_e_parar"],
+      "historico": "US5 cenario 1 / FR-035, FR-036"
+    },
+    {
+      "nome": "cb-um-centavo-antes-do-limite-nao-dispara",
+      "equity": "950.01",
+      "disparou_esperado": false,
+      "deficit_esperado": "49.99",
+      "avisa_esperado": false,
+      "encadeamento_esperado": [],
+      "nota": "A comparacao e exacta e nao arredondada. Se a mesa calculasse a percentagem com casas fixas, este caso e o anterior poderiam cair para o mesmo lado."
+    },
+    {
+      "nome": "cb-dispara-com-o-nao-realizado-dentro (nada foi fechado)",
+      "equity": "940.00",
+      "medido_com": "uma posicao aberta a caminho do limite, e o equity da corretora ja com o nao realizado",
+      "disparou_esperado": true,
+      "deficit_esperado": "60.00",
+      "avisa_esperado": true,
+      "encadeamento_esperado": ["encerrar", "liquidar", "inibir_e_parar"],
+      "historico": "US5 cenario 6 / FR-035 (RN-M3)"
+    },
+    {
+      "nome": "cb-corre-com-a-mesa-pausada (a pausa nao silencia o CB)",
+      "equity": "940.00",
+      "mesa": "pausada",
+      "disparou_esperado": true,
+      "deficit_esperado": "60.00",
+      "avisa_esperado": true,
+      "encadeamento_esperado": ["encerrar", "liquidar", "inibir_e_parar"],
+      "historico": "US5 cenario 6 / FR-040 (RN-V2.1)",
+      "nota": "Medido de duas maneiras: o CB dispara com os mesmos dados, E o runner confere na fonte que o CB nao tem por onde saber o estado da mesa (nao recebe estado nenhum). A segunda e o que impede a primeira de ser coincidencia."
+    },
+    {
+      "nome": "cb-na-janela-do-dia-de-calendario",
+      "config_mudanca": { "perda_maxima_janela": "dia_de_calendario" },
+      "equity": "1900.00",
+      "equity_de_abertura_do_dia": "2000.00",
+      "disparou_esperado": true,
+      "deficit_esperado": "100.00",
+      "avisa_esperado": true,
+      "encadeamento_esperado": ["encerrar", "liquidar", "inibir_e_parar"],
+      "nota": "Com esta janela, a base e o equity de abertura do dia - e nao o da sessao."
+    },
+    {
+      "nome": "cb-na-janela-do-dia-sem-o-inicio-do-dia-grita",
+      "config_mudanca": { "perda_maxima_janela": "dia_de_calendario" },
+      "equity": "1900.00",
+      "grita_esperado": true,
+      "nota": "Sem o equity de abertura do dia, a janela nao tem inicio. Medir a partir de uma base inventada daria uma perda que ninguem teve - a mesa grita em vez de disparar por aproximacao."
+    },
+    {
+      "nome": "cb-sem-a-lista-do-dono-nao-avisa (mas dispara na mesma)",
+      "config_mudanca": { "eventos_que_avisam": ["recusa"] },
+      "equity": "940.00",
+      "disparou_esperado": true,
+      "deficit_esperado": "60.00",
+      "avisa_esperado": false,
+      "encadeamento_esperado": ["encerrar", "liquidar", "inibir_e_parar"],
+      "historico": "FR-042: a lista e do dono. O que ela decide e o AVISO - nunca o disparo."
+    },
+    {
+      "nome": "depois-do-disparo-o-start-recusa (SC-007, lado A)",
+      "equity": "940.00",
+      "depois": "start",
+      "disparou_esperado": true,
+      "deficit_esperado": "60.00",
+      "avisa_esperado": true,
+      "encadeamento_esperado": ["encerrar", "liquidar", "inibir_e_parar"],
+      "start_esperado": { "arrancou": false, "estado": "parada", "porta": "sessao", "motivo": "sessao_inibida" },
+      "historico": "US5 cenario 3 / FR-037, SC-007"
+    },
+    {
+      "nome": "e-a-sessao-nova-e-que-levanta-a-inibicao (SC-007, lado B)",
+      "equity": "940.00",
+      "depois": "nova_sessao",
+      "disparou_esperado": true,
+      "deficit_esperado": "60.00",
+      "avisa_esperado": true,
+      "encadeamento_esperado": ["encerrar", "liquidar", "inibir_e_parar"],
+      "sessao_nova": {
+        "instante_ms": 1790628060000,
+        "equity_de_partida": "940.00",
+        "autor": "dono",
+        "motivo": "decisao_do_dono_apos_o_cb",
+        "configuracao_em_vigor": { "ficha": "3232", "versao_do_setup": "1.1.0", "versao_do_mandato": "1.0.0" }
+      },
+      "historico": "US5 cenario 4 / FR-038, SC-007"
+    },
+    {
+      "nome": "sessao-nova-com-a-configuracao-em-vigor-vazia-grita",
+      "equity": "1000.00",
+      "disparou_esperado": false,
+      "deficit_esperado": "0.00",
+      "avisa_esperado": false,
+      "encadeamento_esperado": [],
+      "sessao_nova": {
+        "instante_ms": 1790628060000,
+        "equity_de_partida": "1000.00",
+        "autor": "dono",
+        "motivo": "nova_sessao_do_dono",
+        "configuracao_em_vigor": { "ficha": "", "versao_do_setup": "1.0.0", "versao_do_mandato": "1.0.0" }
+      },
+      "grita_esperado": true,
+      "nota": "Uma unidade de comparacao sem ficha nao compara nada: gravar 'ficha vazia' seria criar a sessao que depois nao se consegue explicar."
+    },
+    {
+      "nome": "trocar-o-setup-sem-sessao-nova-recusa",
+      "equity": "1000.00",
+      "disparou_esperado": false,
+      "deficit_esperado": "0.00",
+      "avisa_esperado": false,
+      "encadeamento_esperado": [],
+      "troca": { "ficha": "3232", "versao_do_setup": "2.0.0", "versao_do_mandato": "1.0.0" },
+      "troca_esperada": { "aceite": false, "motivo": "troca_de_configuracao_sem_sessao_nova" },
+      "historico": "US5 cenario 5 / FR-039"
+    },
+    {
+      "nome": "trocar-para-a-mesma-configuracao-nao-muda-nada",
+      "equity": "1000.00",
+      "disparou_esperado": false,
+      "deficit_esperado": "0.00",
+      "avisa_esperado": false,
+      "encadeamento_esperado": [],
+      "troca": { "ficha": "3232", "versao_do_setup": "1.0.0", "versao_do_mandato": "1.0.0" },
+      "troca_esperada": { "aceite": true, "motivo": "troca_sem_mudanca" },
+      "nota": "Par de controle do caso anterior: sem esta metade, 'recusar a troca' poderia estar no codigo a recusar tudo."
+    },
+    {
+      "nome": "sem-sessao-em-curso-a-troca-vale-para-a-proxima",
+      "equity": "1000.00",
+      "marcas_mudanca": { "sessao": null },
+      "disparou_esperado": false,
+      "deficit_esperado": "0.00",
+      "avisa_esperado": false,
+      "encadeamento_esperado": [],
+      "troca": { "ficha": "3232", "versao_do_setup": "2.0.0", "versao_do_mandato": "1.1.0" },
+      "troca_esperada": { "aceite": true, "motivo": "troca_sem_sessao" }
+    }
+  ]
+}

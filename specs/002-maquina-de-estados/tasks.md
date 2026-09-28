@@ -13,7 +13,7 @@ Caminhos concretos em todas as tarefas.
 
 ## Estado da execução (medido em 28 set 2026)
 
-Fases 1 e 2 fechadas. **As tres P1 (US1, US2, US3) e a US4 estao fechadas** — 42 de 63 tarefas. Comandos e números reais em
+Fases 1 e 2 fechadas. **As tres P1 (US1, US2, US3), a US4 e a US5 estao fechadas** — 48 de 63 tarefas. Comandos e números reais em
 `relatorios/fundacional.txt` e `relatorios/us1.jsonl`.
 
 | O que | Comando | Medido |
@@ -107,6 +107,38 @@ que saiu; a partir de agora o manifesto entra nessa comparação.
 **arrancam** com `politica_de_contencao, e o mesmo mandato que é recusado por zero arranca quando o valor
 é legítimo. Sem as metades que passam, «recusa acima do tecto» podia estar no código em vez de na
 declaração do dono.
+
+### US5 — a sessão é a unidade de comparação (T043–T048)
+
+| O que | Comando | Medido |
+|---|---|---|
+| CB por sessão, com não realizado, nas duas janelas | `bun run tools/verificar-maquina/sessao.ts` | **13 casos · 0 divergentes · 7 disparos** |
+| **SC-007** (lado A) | idem | **0 de 1** `start` aceites depois do CB |
+| **SC-007** (lado B) | idem | **1 de 1** sessões novas gravou a configuração em vigor antes de a mesa voltar a operar |
+| **SC-008** (lado do CB) | idem | **1 de 1** casos com a mesa `pausada` dispararam |
+| Motivos | idem | **6 de 6** constam do livro (conferência cruzada) |
+| Regressão | baterias 002 + ponta-a-ponta do 001 | **0 falhas** |
+
+**Três decisões que valem mais do que os números:**
+
+1. **A comparação é exacta.** `perda ≥ limite` decide-se por multiplicação cruzada em `BigInt` — não há
+   divisão, logo não há dízima, logo não há terceira casa decimal a decidir um disparo. O que se reporta é
+   o **défice** (exacto), nunca uma percentagem arredondada ao lado de um limite de 5%. O par de casos que
+   o prova: 5,00% de perda **dispara**, e 4,999% **não dispara**.
+2. **O estado da mesa não entra no CB** (FR-040), e isso é medido de duas maneiras: o CB dispara com os
+   mesmos dados com a mesa `pausada`, **e** o runner confere na fonte (já sem comentários) que o `cb.ts`
+   não menciona estado nenhum. A segunda é o que impede a primeira de ser coincidência — e tem prova
+   negativa própria. Se o estado entrasse como parâmetro, alguém acabaria a usá-lo para «não verificar
+   quando está pausada», e a pausa passaria a ser o lugar onde a conta se afunda.
+3. **`nova_sessao` é o único caminho fora da inibição** (FR-038): não há neste recorte nenhuma outra
+   função que toque na inibição, e a sessão nova grava a configuração em vigor **no mesmo passo** em que a
+   levanta — para não existir o instante em que há sessão nova com a inibição velha, nem inibição
+   levantada sem sessão que a justifique.
+
+**O defeito que a bateria apanhou em mim**: um caso sem sessão em curso (a troca de configuração antes de
+haver sessão) fez o CB medir contra `null`. O conserto certo não foi no runner — foi no CB, que passou a
+**gritar** quando não há sessão: *«não há sessão, a corrida não tem início, e uma perda sem início não se
+mede»*. Devolver «não disparou» seria a mesa a dizer a si própria que está tudo bem para poder continuar.
 
 Três tarefas mudaram de forma ao serem executadas, e ficam registadas para não parecer que foram
 feitas como escritas:
@@ -236,12 +268,12 @@ feitas como escritas:
 
 **Independent Test**: `bun run core/ciclo/ciclo.ts --casos core/ciclo/sessao.casos.json --historia US5` → CB dispara, liquida, deixa inibição marcada; `start` recusa em 100% dos casos com a marca (SC-007); `nova_sessao` grava a configuração em vigor.
 
-- [ ] T043 [P] [US5] Escrever `core/ciclo/sessao.casos.json`: CB a disparar, `start` com inibição, `nova_sessao` com e sem posição viva, troca de setup sem sessão nova
-- [ ] T044 [US5] Implementar `core/ciclo/cb.ts`: o CB por sessão sobre a perda do equity da corretora **com não realizado**, contra o limite declarado
-- [ ] T045 [US5] Implementar `nova_sessao` em `core/estado/sessao.ts`: gravar instante, equity de partida, autor, motivo e a configuração em vigor; e levantar a inibição
-- [ ] T046 [US5] Implementar a recusa de `start` com a inibição marcada e a recusa de trocar ficha/setup sem `nova_sessao`
-- [ ] T047 [US5] Implementar o encadeamento do CB: `encerrando` → liquidação → `parada` com `inibicao_cb` e o motivo
-- [ ] T048 [US5] Correr a bateria de US5 e guardar `specs/002-maquina-de-estados/relatorios/us5.jsonl`
+- [x] T043 [P] [US5] Escrever `core/ciclo/sessao.casos.json`: CB a disparar, `start` com inibição, `nova_sessao` com e sem posição viva, troca de setup sem sessão nova
+- [x] T044 [US5] Implementar `core/ciclo/cb.ts`: o CB por sessão sobre a perda do equity da corretora **com não realizado**, contra o limite declarado
+- [x] T045 [US5] Implementar `nova_sessao` em `core/estado/sessao.ts`: gravar instante, equity de partida, autor, motivo e a configuração em vigor; e levantar a inibição
+- [x] T046 [US5] Implementar a recusa de `start` com a inibição marcada e a recusa de trocar ficha/setup sem `nova_sessao`
+- [x] T047 [US5] Implementar o encadeamento do CB: `encerrando` → liquidação → `parada` com `inibicao_cb` e o motivo
+- [x] T048 [US5] Correr a bateria de US5 e guardar `specs/002-maquina-de-estados/relatorios/us5.jsonl`
 
 ---
 

@@ -166,6 +166,31 @@
       "quando": "o registo de operacao nao foi possivel retomar",
       "regra": "FR-031",
       "porque": "Uma mesa que arranca sem saber o que ja fez repete o que ja fez. Nao se retoma por optimismo: ou o registo esta retomado, ou a mesa fica parada."
+    },
+    "cb_disparou_no_ciclo": {
+      "quando": "a perda da corrida atingiu o limite declarado",
+      "regra": "FR-035, FR-036",
+      "porque": "O CB nao 'avisa': ele encerra. Liquidar antes de parar e o que impede uma posicao ficar viva numa mesa parada - e uma mesa parada nao defende nada."
+    },
+    "sessao_nova_gravada": {
+      "quando": "o dono abriu sessao nova",
+      "regra": "FR-038, RN-V10",
+      "porque": "A sessao nova e o unico caminho fora da inibicao, e grava a configuracao em vigor: e ela que fecha a unidade de comparacao."
+    },
+    "troca_sem_sessao": {
+      "quando": "pediu-se troca de configuracao sem haver sessao em curso",
+      "regra": "FR-039",
+      "porque": "Sem sessao nao ha unidade de comparacao para proteger: a troca vale para a proxima sessao."
+    },
+    "troca_sem_mudanca": {
+      "quando": "pediu-se a configuracao que ja esta em vigor",
+      "regra": "FR-039",
+      "porque": "Nada muda, nada se grava, e a unidade de comparacao fica intacta."
+    },
+    "troca_de_configuracao_sem_sessao_nova": {
+      "quando": "pediu-se trocar ficha/setup com uma sessao em curso",
+      "regra": "FR-039, RN-M3.5",
+      "porque": "Duas configuracoes no mesmo numero nao se comparam. A troca exige uma sessao nova - e recusar e o que impede a troca silenciosa que faria o numero perder o sentido."
     }
   },
   "ordem_de_leitura": [
