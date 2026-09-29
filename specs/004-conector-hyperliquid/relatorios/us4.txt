@@ -1,0 +1,188 @@
+# US4 — silencio e estado, e reconciliar antes de agir (T031 a T038)
+
+contrato: **1.4.0** (lido de `contracts/versao.json`) · medido em: 2026-09-29T15:45:07-03:00 · quem mediu: esta vaga, na hora
+
+Regra da casa: **nenhum numero deste relatorio foi digitado** — todos saem crus dos comandos que aparecem por
+cima de cada bloco. Onde um numero nao foi medido, diz-se que nao foi.
+
+---
+
+## T031 — os casos do silencio
+
+**Comando 1** (os casos do conector, um por regra; `bun run brokers/hyperliquid/processo.ts --bancada`,
+31 casos · 31 ok · 0 divergentes):
+
+```
+{"caso":"processo/silencio-do-venue","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"arranque/ordem-em-repouso","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"arranque/venue-calado-no-arranque","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:falhou"}
+{"caso":"arranque/conta-nao-lida-antes-do-envio","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+processo: 31 casos · 31 ok · 0 divergentes · 223 verificacoes · 7 portas do arranque em ["ficha","versao_do_contrato","uma_conta","ambiente_e_rede","chave","ligacao","sonda_e_manifesto"]
+```
+
+**Comando 2** (a parte da regra que e da MESA, nao do conector — FR-014/FR-015 vivem no `core`, e o conector
+NAO importa o `core`, RN-E1; `bun run core/ciclo/provar.ts`):
+
+```
+ok    desfecho/no-instante-do-prazo-ainda-e-tempo-de-resposta
+ok    desfecho/um-milissegundo-alem-do-prazo-ja-e-desconhecido
+ok    desfecho/aceite-traz-a-posicao
+ok    desfecho/parcial-tambem-e-posicao (nao e desconhecido)
+ok    desfecho/recusa-devolve-a-nenhuma-com-o-motivo-do-venue
+ok    desfecho/confirmacao-ilegivel-nao-e-confirmacao (falha para o lado de nao sei)
+ok    desfecho/desfecho-com-um-quinto-valor-e-ilegivel
+ok    desfecho/a-lista-do-dono-manda-no-aviso (o desfecho e o mesmo, o dono e outro)
+ok    reconciliacao/preenchida-devolve-o-instrumento-a-aberta
+ok    reconciliacao/inexistente-devolve-o-instrumento-a-nenhuma
+ok    reconciliacao/indecidivel-mantem-a-marca (nao decidir nao e decidir que nao entrou)
+ok    reconciliacao/reconciliar-outro-instrumento-nao-toca-nesta-marca
+ok    reconciliacao/reset-nao-limpa-a-marca (FR-029, o caso que a spec pede explicitamente)
+ok    reconciliacao/a-lista-do-dono-decide-o-aviso-da-resolucao
+resumo: 64 verificacoes · 0 divergentes · 12 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+```
+
+**Comando 3** (a bateria da maquina, que inclui as duas anteriores):
+
+```
+condicoes, ciclo, desfecho                 OK   resumo: 64 verificacoes · 0 divergentes · 12 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+arranque (sete portas)                     OK   resumo: 35 verificacoes · 0 divergentes · 17 casos · 13 portas falhadas de proposito
+conector hyperliquid (offline, US1)        OK   provas offline do conector: 0 falhas
+provar: 27 de 27 passaram — a maquina decide o que devia, e explica o que nao fez
+```
+
+## T032 — `espera` dentro do prazo, `desconhecido` depois (nunca sucesso)
+
+Caso do venue que nao responde (a boleta de `processo/silencio-do-venue`, com o prazo declarado a 200 ms):
+
+```
+{"etapa": "envio", "veredicto": "sem_resposta", "erro": "o venue nao respondeu em 200 ms", "prazo_ms": 200}
+{"etapa": "fim", "atendidas": 1, "nota": "o cano fechou: nenhuma operacao fica nas maos deste processo"}
+```
+
+```
+{"contrato":"1.4.0","tipo":"resolucao","id":"b-0300/resolucao","carga":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"}}
+{"contrato":"1.4.0","tipo":"desfecho","id":"b-0300","carga":{"classificacao":"desconhecido","resolucao":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"},"resposta_do_venue":{"estado":"sem_resposta_no_prazo","prazo_ms":200,"erro":"o venue nao respondeu em 200 ms","origem_dos_numeros":"calculo_antes_do_envio"}}}
+```
+
+A leitura do silencio no REGISTO da mesa (prova 7 da conformidade, com o par de controle dos dois lados):
+
+```
+PROVA 7 — a volta que ESPERA nao e acontecimento, e a RECUSA DE COMANDO transita X->X
+OK   — dentro do prazo: 1 -> 1 linhas (nada escrito) · fora do prazo: 1 -> 2 (1 linha) · recusa de comando: 2 -> 3 com motivo
+passou     espera e recusa no registo: dentro do prazo: 1 -> 1 linhas (nada escrito) · fora do prazo: 1 -> 2 (1 linha) · recusa de comando: 2 -> 3 com motivo
+```
+
+E o lado do prazo, medido no milissegundo (bateria do ciclo, onde o prazo e do dono):
+
+```
+ok    desfecho/no-instante-do-prazo-ainda-e-tempo-de-resposta
+ok    desfecho/um-milissegundo-alem-do-prazo-ja-e-desconhecido
+ok    desfecho/confirmacao-ilegivel-nao-e-confirmacao (falha para o lado de nao sei)
+```
+
+## T033 — reconciliar antes de agir (FR-014)
+
+**A reconciliacao nao vive no conector, e nao pode viver**: ela decide (RN-E1/FR-024 proibe o conector de
+decidir), e o conector nao importa o `core`. Medido por comando:
+
+```
+$ grep -rc "reconcilia" brokers/hyperliquid/*.ts
+brokers/hyperliquid/cloid.ts:0
+brokers/hyperliquid/conector.ts:0
+brokers/hyperliquid/credencial.ts:0
+brokers/hyperliquid/leitura.ts:0
+brokers/hyperliquid/manifesto.ts:0
+brokers/hyperliquid/ordens.ts:0
+brokers/hyperliquid/processo.ts:0
+brokers/hyperliquid/sonda.ts:1
+```
+
+(a única ocorrencia e uma frase dentro de um texto de `sonda.ts`, nao um leitor: nao ha codigo de
+reconciliacao no conector.)
+
+Onde ela vive e onde esta medida: `core/ciclo/reconciliacao.ts`, com **6 casos** na bateria do ciclo:
+
+```
+ok    reconciliacao/preenchida-devolve-o-instrumento-a-aberta
+ok    reconciliacao/inexistente-devolve-o-instrumento-a-nenhuma
+ok    reconciliacao/indecidivel-mantem-a-marca (nao decidir nao e decidir que nao entrou)
+ok    reconciliacao/reconciliar-outro-instrumento-nao-toca-nesta-marca
+ok    reconciliacao/reset-nao-limpa-a-marca (FR-029, o caso que a spec pede explicitamente)
+ok    reconciliacao/a-lista-do-dono-decide-o-aviso-da-resolucao
+```
+
+## T034 — com `desconhecido` pendente: abertura recusada, fecho permitido
+
+A regra e do ciclo da mesa (`core/ciclo/ciclo.ts`: `abrir_bloqueado_por_desconhecido`), e tem os dois lados
+medidos — bloqueio da abertura e permissao do que reduz risco:
+
+```
+ok    ciclo/com-desconhecido-nao-abre (a mesma proposta do caso 1, agora bloqueada)
+ok    ciclo/com-desconhecido-defender-continua (a marca nao impede reduzir risco)
+```
+
+E o criterio de sucesso do proprio ciclo:
+
+```
+ok    SC-005: 0 de 1 tentativas de abrir com a marca desconhecido passaram
+ok    SC-003 (lado B): 1 de 1 pedidos legitimos de fechar com dado velho foram permitidos
+```
+
+## T035 — o estado da ligacao pelo protocolo do venue; silencio = `desconhecido`
+
+A porta `ligacao` do arranque, com o duble a responder (FR-020):
+
+```
+{"porta": "ligacao", "veredicto": "passou", "porque": "estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot"}
+```
+
+E o mesmo venue CALADO no arranque — **comando**: `echo -n "" | bun run brokers/hyperliquid/processo.ts --casos
+brokers/hyperliquid/casos/processo.casos.json --ficha base --venue venue_calado_no_arranque --so-sonda`
+(o STDOUT foi vazio e o codigo de saida 2: o processo NAO sobe, e nao serve linha nenhuma):
+
+```
+{"porta":"ligacao","veredicto":"falhou","motivo":"campo_obrigatorio_ausente","porque":"o venue nao respondeu o que a leitura precisa: nenhuma das DUAS carteiras do venue respondeu: perpetuo (a leitura clearinghouseState falhou: o duble foi declarado a falhar esta leitura: sem resposta no arranque) e spot (a leitura spotClearinghouseState falhou: o duble foi declarado a falhar esta leitura: sem resposta no arranque). Sem leitura da conta o conector nao manda ordem que aumente exposicao (FR-021)"}
+{"etapa":"arranque","veredicto":"recusado","porta_que_falhou":"ligacao","motivo":"campo_obrigatorio_ausente","porque":"o venue nao respondeu o que a leitura precisa: nenhuma das DUAS carteiras do venue respondeu: perpetuo (a leitura clearinghouseState falhou: o duble foi declarado a falhar esta leitura: sem resposta no arranque) e spot (a leitura spotClearinghouseState falhou: o duble foi declarado a falhar esta leitura: sem resposta no arranque). Sem leitura da conta o conector nao manda ordem que aumente exposicao (FR-021)","nota":"o processo NAO sobe: um conector que arranca a fingir e pior do que um conector que nao arranca"}
+```
+
+O caso que mede o venue calado esta na bancada (o processo recusa na porta `ligacao`):
+
+```
+{"caso":"arranque/venue-calado-no-arranque","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:falhou"}
+```
+
+## T036 — sem leitura da conta, nenhuma ordem que aumente exposicao (FR-021)
+
+Caso `arranque/conta-nao-lida-antes-do-envio` (o arranque leu a conta; a leitura que antecede o ENVIO falha):
+
+```
+{"etapa": "desfecho", "veredicto": "recusado", "motivo": "campo_obrigatorio_ausente", "porque": "a leitura da conta falhou: nenhuma das DUAS carteiras do venue respondeu: perpetuo (a leitura clearinghouseState falhou: o duble foi declarado a falhar esta leitura: HTTP 502) e spot (a leitura spotClearinghouseState falhou: o duble foi declarado a falhar esta leitura: HTTP 502). Sem leitura da conta o conector nao manda ordem que aumente exposicao (FR-021)"}
+{"etapa": "fim", "atendidas": 1, "nota": "o cano fechou: nenhuma operacao fica nas maos deste processo"}
+```
+
+```
+{"contrato":"1.4.0","tipo":"desfecho","id":"b-sem-leitura","carga":{"classificacao":"recusado","motivo":"campo_obrigatorio_ausente","resposta_do_venue":{}}}
+```
+
+Leitura: nao ha passo de `envio` nenhum no diagnostico — a ordem **nao sai**. E o mesmo no ciclo da mesa, com
+a diferenca declarada (sem leitura, nem o fecho por iniciativa propria passa):
+
+```
+ok    ciclo/sem-leitura-nao-abre
+ok    ciclo/sem-leitura-com-posicao-tambem-NAO-fecha
+ok    ciclo/sem-ligacao-com-posicao-nossa-PODE-fechar
+```
+
+## T037 — este relatorio
+
+E o proprio.
+
+## T038 — commit
+
+Um commit desta vaga com o assunto `specs/004: T037/T038 (US4)` — o hash esta no `RESULTADO.md` (§ commit).
+
+## O que este relatorio NAO prova, e di-lo
+
+- O «silêncio do venue» foi medido com o DUBLE a nao responder dentro do prazo, nao com a rede a cair.
+- A reconciliacao contra o venue real (posicao, ordens abertas, execucoes desde o instante) **nao** foi
+  medida: exige uma ordem viva no venue, que exige enviar (T057).
