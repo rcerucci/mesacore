@@ -987,6 +987,29 @@ sempre sim prova a fiação, não o comportamento. O `ponta-a-ponta.sh` já apre
 simulado tem de começar **limpo**, senão a idempotência responde pela corrida anterior e o caso da recusa
 passa **sem recusar** — o verde era do estado, não do código (está escrito no cabeçalho do script).
 
+**Simetria (decisão do dono, mesmo dia): a tática vale nos dois sentidos.**
+
+> «Para plugins a tática pode ser a mesma, sem usar a mesa real e sim um dublê de mesa para teste neles.»
+
+- **RN-E24.** Cada ponta constrói-se contra um **dublê da outra ponta**, e o real só entra quando a
+  **bateria de conformidade daquela ponta** correr. Nunca se põe meia operação de pé para provar a outra
+  metade:
+
+  | O que se está a provar | O que é real | O que é dublê |
+  |---|---|---|
+  | a **mesa** e o **vigia** | mesa, vigia | dublê de setup · dublê de conector |
+  | um **setup** (plugin) | o setup | **dublê de mesa** |
+  | um **conector** (plugin) | o conector | **dublê de mesa** (+ o venue de teste, RN-C6) |
+
+  - O dublê de mesa vive **com o contrato** (`contracts/mocks/mesa/`), é escrito **do contrato** e nunca da
+    implementação do core: um dublê copiado do core prova compatibilidade com a **nossa implementação**, não
+    com o **contrato** — e esconde o defeito dos dois lados ao mesmo tempo. É o mesmo motivo do RN-E17 (um
+    mock na mesma linguagem do core prova a lógica, não a fronteira).
+  - O dublê é **adversário** (recusa, atrasa, cala-se, devolve fora da banda) e os seus casos são **dado**.
+  - **O que esta regra não dispensa:** a **bateria de conformidade por venue** (RN-C6) e a ponta-a-ponta com
+    as duas pontas **reais**, que continuam a ser o **aceite** de cada plugin. O dublê é ferramenta de
+    construção; o aceite é contra o real.
+
 **O que isto faz ao recorte seguinte.** O recorte 003 deixa de ser «o conector» e passa a ser **o vigia e a
 mesa, ponta-a-ponta, contra dublês**. O primeiro conector real (cTrader) passa a recorte próprio, com a
 bateria de conformidade (RN-C6) a correr no ambiente de teste do venue. E, ao pôr o vigia no ar, abre-se a
