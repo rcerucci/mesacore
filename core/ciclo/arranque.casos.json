@@ -1,5 +1,5 @@
 {
-  "nota": "A bateria do arranque: cada uma das seis portas falhada de proposito, uma de cada vez, e a ordem declarada provada com um caso que falha tres. Os pares importam tanto como as recusas: os mesmos numeros de contenda que recusam sem politica arrancam COM politica declarada, e o mesmo mandato que e recusado por zero arranca quando o valor e legitimo - e o valor sai igual ao que entrou (FR-032).",
+  "nota": "A bateria do arranque: cada uma das sete portas falhada de proposito, uma de cada vez, e a ordem declarada provada com um caso que falha tres (a primeira e a dos conectores: sem conector nao ha manifesto). Os pares importam tanto como as recusas: os mesmos numeros de contenda que recusam sem politica arrancam COM politica declarada, e o mesmo mandato que e recusado por zero arranca quando o valor e legitimo - e o valor sai igual ao que entrou (FR-032).",
   "fonte": "core/ciclo/arranque.ts + contracts/manifesto.schema.json",
   "manifesto_fixture": "contracts/mocks/conector/manifesto.json",
   "padrao": {
@@ -47,7 +47,10 @@
           }
         }
       },
-      "arranque_apos_cb": "exige_decisao"
+      "arranque_apos_cb": "exige_decisao",
+      "conectores": [
+        "mock_conector"
+      ]
     },
     "marcas": {
       "sessao": null,
@@ -59,7 +62,10 @@
     "inventario": {
       "ok": true,
       "problemas": []
-    }
+    },
+    "conectores_de_pe": [
+      "mock_conector"
+    ]
   },
   "casos": [
     {
@@ -69,6 +75,7 @@
       "porta_esperada": null,
       "motivo_esperado": null,
       "portas_conferidas_esperadas": [
+        "conectores",
         "manifesto",
         "mandato",
         "contenda",
@@ -366,6 +373,7 @@
       "porta_esperada": "manifesto",
       "motivo_esperado": "porta_do_arranque_falhou",
       "portas_conferidas_esperadas": [
+        "conectores",
         "manifesto"
       ],
       "nota": "Falha manifesto, mandato, contenda, inventario e sessao. O que o dono le e a PRIMEIRA porta - e 'portas_conferidas' tem de parar nela, em vez de dizer que se olhou tudo."
@@ -410,6 +418,20 @@
       "porta_esperada": "contenda",
       "motivo_esperado": "porta_do_arranque_falhou",
       "nota": "Par de controle do caso 'com politica declarada arranca' (politica 'espera', mesmos numeros): a mesma contenda, duas declaracoes, dois desfechos. Antes desta emenda, qualquer string declarada passava - a politica era um campo decorativo."
+    },
+    {
+      "nome": "conector-declarado-e-nao-de-pe-recusa (a T027: dizer QUAL)",
+      "conectores_de_pe": [],
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "conectores",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "motivo_do_contrato_esperado": null,
+      "detalhe_esperado": "mock_conector",
+      "portas_conferidas_esperadas": [
+        "conectores"
+      ],
+      "historico": "T027 / FR-005 / RN-E21 - o vigia arranca os conectores; a mesa recusa sem eles, e diz qual"
     }
   ]
 }

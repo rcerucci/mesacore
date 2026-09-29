@@ -6,7 +6,7 @@
     "sempre": "Verdadeira. Tem de existir como ULTIMA linha de cada par (de, verbo) - e o que garante que nenhum par cai num vazio nao declarado.",
     "com_inibicao": "A marca inibicao_cb esta presente.",
     "sem_inibicao": "A marca inibicao_cb NAO esta presente.",
-    "portas_do_arranque_falham": "Pelo menos uma das seis portas do arranque recusa (manifesto, mandato, contenda, inventario, versao, sessao).",
+    "portas_do_arranque_falham": "Pelo menos uma das sete portas do arranque recusa (conectores, manifesto, mandato, contenda, inventario, versao, sessao).",
     "com_liquidacao_em_curso": "A liquidacao a mercado do encerramento ja comecou.",
     "sem_posicao_viva": "Nenhum instrumento esta em abrindo, aberta ou fechando, e nenhuma marca desconhecido bloqueia.",
     "com_posicao_viva": "Algum instrumento esta em abrindo, aberta ou fechando."

@@ -46,7 +46,7 @@
     },
     "porta_do_arranque_falhou": {
       "cruzam_a_fronteira": true,
-      "quando": "start com uma das seis portas a falhar",
+      "quando": "start com uma das sete portas a falhar",
       "regra": "FR-031, FR-032",
       "porque": "Manifesto, mandato, contenda, inventario, versao e sessao: a mesa nao arranca pela metade, e nao corrige nada para conseguir entrar. O motivo especifico da porta vai na resposta."
     },

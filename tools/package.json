@@ -1,0 +1,14 @@
+{
+  "name": "@mesacore/tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "As portas e as bancadas. Corre tudo o que prova a maquina; nao faz parte do produto.",
+  "scripts": {
+    "tipos": "bash verificar-maquina/tipos.sh"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
+  }
+}

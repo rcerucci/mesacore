@@ -25,6 +25,11 @@ import {
 import { type Marcas } from "../estado/marcas.ts";
 
 export const PORTAS = [
+  // AS SETE PORTAS. A dos conectores entrou na frente das outras seis por uma razao de ordem, e nao de
+  // importancia: o MANIFESTO vem do conector. Sem o conector de pe nao ha manifesto a ler, e uma porta de
+  // manifesto a recusar "instrumento desconhecido" por o conector estar morto daria o diagnostico errado
+  // (T027, FR-005).
+  "conectores",
   "manifesto",
   "mandato",
   "contenda",
@@ -55,6 +60,14 @@ export interface EntradaDoArranque {
   /** O registo de operacao foi retomado? Se nao foi, a mesa nao arranca (FR-031, sessao). */
   registo_retomavel: boolean;
   portaDoInventario: PortaDoInventario;
+  /**
+   * OS CONECTORES QUE ESTAO DE PE, pelos nomes que a configuracao declara.
+   *
+   * Quem os arranca e o vigia (RN-E21) e quem os sonda e ele; a mesa so tem a REGRA. Vem de fora e nao de
+   * um import pelo mesmo motivo da porta do inventario: quem liga a mesa ao processo alheio e quem monta o
+   * processo, e a mesa continua a poder ser exercitada sem shell.
+   */
+  conectores_de_pe: string[];
 }
 
 export interface Recusa {
@@ -64,16 +77,25 @@ export interface Recusa {
   /** O motivo do CONTRATO, quando foi ele a recusar a carga. */
   motivo_do_contrato: string | null;
   porque: string;
+  /**
+   * O NOME do que faltou, quando ha um (o conector que nao esta de pe). Vai para o registro de quem
+   * comanda, que e quem o pode ler; a resposta do contrato nao tem campo para isto e nao se inventa um
+   * para caber um diagnostico. O `porque` ja o diz em palavras; este campo diz-o por nome, para quem
+   * quiser agir sem ler portugues.
+   */
+  detalhe?: string;
 }
 
 export interface ResultadoDoArranque {
   arrancou: boolean;
-  /** `em_operacao` so quando as seis portas passam; em qualquer recusa, `parada`. */
+  /** `em_operacao` so quando as sete portas passam; em qualquer recusa, `parada`. */
   estado: "parada" | "em_operacao";
   porta: NomeDaPorta | null;
   motivo: string | null;
   motivo_do_contrato: string | null;
   porque: string;
+  /** O nome do que faltou, quando a recusa tem um (o conector que nao esta de pe - T027). */
+  detalhe: string | null;
   /** As portas conferidas ate parar - o que se chegou a olhar, e nao o que se diz que se olhou. */
   portas_conferidas: NomeDaPorta[];
   /** A fila da contenda, quando houve: quem entra, quem espera e o criterio que decidiu o corte. */
@@ -98,7 +120,7 @@ interface Ficha {
   bandas?: Record<string, { minimo?: string; maximo?: string }>;
 }
 
-// ---------------------------------------------------------------- as seis portas
+// ---------------------------------------------------------------- as sete portas
 
 function portaDoManifesto(manifesto: any, config: ConfiguracaoDaConta): Recusa | null {
   // O envelope e NOSSO (por isso nasce com a versao vigente): o que se confere aqui e a FORMA da carga.
@@ -213,6 +235,30 @@ function portaDaContenda(
   };
 }
 
+/** OS CONECTORES: a mesa arranca sem os que ela propria nomeia? Nao arranca - e diz QUAL. */
+function portaDosConectores(config: ConfiguracaoDaConta, dePe: string[]): Recusa | null {
+  const declarados = (config.conectores ?? []) as unknown;
+  if (!Array.isArray(declarados) || declarados.length === 0) {
+    return {
+      porta: "conectores",
+      motivo: "porta_do_arranque_falhou",
+      motivo_do_contrato: null,
+      porque:
+        "A configuracao nao declara conector nenhum (conta.conectores). Uma mesa sem conector nao tem por onde " +
+        "falar com a corretora: recusa-se aqui, e nao no primeiro ciclo sem ligacao.",
+    };
+  }
+  const faltam = declarados.map(String).filter((nome) => !dePe.includes(nome));
+  if (faltam.length === 0) return null;
+  return {
+    porta: "conectores",
+    motivo: "porta_do_arranque_falhou",
+    motivo_do_contrato: null,
+    porque: `Conector(es) declarado(s) e NAO de pe: ${faltam.join(", ")} (de pe: ${dePe.join(", ") || "nenhum"}). O vigia arranca os conectores (RN-E21) e a mesa recusa arrancar sem eles.`,
+    detalhe: faltam[0]!,
+  };
+}
+
 function portaDoInventario(porta: PortaDoInventario): Recusa | null {
   const { ok, problemas } = porta();
   if (ok) return null;
@@ -268,7 +314,7 @@ function portaDaSessao(marcas: Marcas, registoRetomavel: boolean, config: Config
   return null;
 }
 
-/** As seis portas, por ordem. Devolve a recusa da PRIMEIRA que falhar, ou `null`. */
+/** As sete portas, por ordem. Devolve a recusa da PRIMEIRA que falhar, ou `null`. */
 export function passarPelasPortas(entrada: EntradaDoArranque): {
   recusa: Recusa | null;
   conferidas: NomeDaPorta[];
@@ -277,6 +323,7 @@ export function passarPelasPortas(entrada: EntradaDoArranque): {
   const conferidas: NomeDaPorta[] = [];
   let contenda: Contenda | null = null;
   const passos: [NomeDaPorta, () => Recusa | null][] = [
+    ["conectores", () => portaDosConectores(entrada.config, entrada.conectores_de_pe ?? [])],
     ["manifesto", () => portaDoManifesto(entrada.manifesto, entrada.config)],
     ["mandato", () => portaDoMandato(entrada.config)],
     ["contenda", () => portaDaContenda(entrada.config, (c) => { contenda = c; })],
@@ -311,6 +358,7 @@ export function arrancar(entrada: EntradaDoArranque): ResultadoDoArranque {
       motivo: recusa.motivo,
       motivo_do_contrato: recusa.motivo_do_contrato,
       porque: recusa.porque,
+      detalhe: recusa.detalhe ?? null,
       portas_conferidas: conferidas,
       contenda,
       lido,
@@ -323,7 +371,8 @@ export function arrancar(entrada: EntradaDoArranque): ResultadoDoArranque {
     porta: null,
     motivo: null,
     motivo_do_contrato: null,
-    porque: "As seis portas passaram: o manifesto declara o que a configuracao usa, o mandato cabe nas bandas, a conta cabe no tecto, as chaves tem dono, a versao bate certo e a sessao pode correr.",
+    detalhe: null,
+    porque: "As sete portas passaram: os conectores estao de pe, o manifesto declara o que a configuracao usa, o mandato cabe nas bandas, a conta cabe no tecto, as chaves tem dono, a versao bate certo e a sessao pode correr.",
     portas_conferidas: conferidas,
     contenda,
     lido,

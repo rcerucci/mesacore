@@ -66,7 +66,7 @@ uma só.
 `tools/verificar-maquina/servidor.ts` (**77 verificações · 0 divergentes · 6 casos · 6 processos**), e a porta
 única passou a **17 de 17**. Três achados, todos medidos, e um deles **contra a minha própria recomendação**:
 
-1. **A mesa não pode correr as seis portas sozinha.** O `arrancar()` precisa de quatro coisas que não nascem
+1. **A mesa não pode correr as sete portas sozinha.** O `arrancar()` precisa de quatro coisas que não nascem
    na mesa: o *registo de operação retomado* (é do vigia), o *conferidor de inventário* (vive em `tools/`, e
    o `/core` não pode importá-lo — RN-E2), o manifesto e a posição. Corrigi a recomendação que tinha dado ao
    dono: quem **produz** o desfecho das portas é o vigia (T021 decide por que canal); à mesa cabe **decidir
@@ -96,7 +96,7 @@ uma só.
 
 - [x] T019 [US1] `vigia/vigia.ts` — o processo: cinco verbos, uma linha por comando, uma por resposta
 - [x] T020 [US1] `vigia/registro.ts` — `.vigia.json` com escrita **atómica** (tmp + rename), uma linha por transição
-- [x] T021 [US1] `start` submete a mesa às **seis portas** e devolve a recusa com o motivo **daquela** porta (`porta_do_arranque_falhou` traz o nome dela no detalhe)
+- [x] T021 [US1] `start` submete a mesa às **sete portas** e devolve a recusa com o motivo **daquela** porta (`porta_do_arranque_falhou` traz o nome dela no detalhe)
 - [x] T022 [US1] `start` numa mesa em operação → `mesa_ja_em_operacao`; `stop` numa mesa parada → `mesa_ja_parada`; ambos com transição `{de, para}`
 - [x] T023 [US1] A resposta de comando: aceito traz **efeito**, recusado traz **motivo**, e o `instante_ms` é do **relógio da mesa** (RN-M4.9)
 - [x] T024 [P] [US1] `tools/verificar-maquina/vigia.ts --arranque` — casos: porta falhada por porta (cada uma das seis), `start` repetido, `stop` em parada, comando com campo a mais
@@ -126,12 +126,45 @@ Duas coisas que a implementação mudou em relação ao que estava escrito aqui:
 
 **Independent Test**: `bash tools/verificar-maquina/vigia.sh --orfandade` — mata o vigia com a mesa a operar, corre N ciclos e conta as linhas **novas** do ledger: têm de ser **N** (SC-001).
 
-- [ ] T027 [US2] O vigia arranca a mesa como **processo separado** e arranca os **conectores** que a configuração nomeia (RN-E21); se um conector faltar, a mesa recusa o arranque **dizendo qual**
-- [ ] T028 [US2] Com o vigia morto, a mesa continua a reconciliar, a conferir o CB e a escrever no ledger (RN-V6)
-- [ ] T029 [US2] Quando o vigia volta, ele **lê o estado da mesa** e não tenta arrancar nada por conta própria
-- [ ] T030 [US2] Um só escritor na costura: um segundo canal é **recusado** (o precedente é o RN-E7)
-- [ ] T031 [P] [US2] `tools/verificar-maquina/vigia.ts --orfandade` — a contagem das linhas novas e a leitura do estado no regresso
-- [ ] T032 [US2] `relatorios/us2.txt` — comando e saída, e o número de ciclos comparado com as linhas
+- [x] T027 [US2] O vigia arranca a mesa como **processo separado** e arranca os **conectores** que a configuração nomeia (RN-E21); se um conector faltar, a mesa recusa o arranque **dizendo qual**
+- [x] T028 [US2] Com o vigia morto, a mesa continua a reconciliar, a conferir o CB e a escrever no ledger (RN-V6)
+- [x] T029 [US2] Quando o vigia volta, ele **lê o estado da mesa** e não tenta arrancar nada por conta própria
+- [x] T030 [US2] Um só escritor na costura: um segundo canal é **recusado** (o precedente é o RN-E7)
+- [x] T031 [P] [US2] `tools/verificar-maquina/vigia.ts --orfandade` — a contagem das linhas novas e a leitura do estado no regresso
+- [x] T032 [US2] `relatorios/us2.txt` — comando e saída, e o número de ciclos comparado com as linhas
+
+**Checkpoint (medido)**: US2 prova que a fronteira é real — o vigia morre e a mesa continua. T027–T032
+fechadas; números crus em `relatorios/us2.txt`.
+
+Quatro coisas que a implementação decidiu, e que não estavam escritas aqui:
+
+- **A sétima porta (`conectores`), e na frente das outras seis (T027).** A FR-005 exigia que a mesa recusasse
+  arrancar sem os conectores que a configuração nomeia, dizendo **qual**. O manifesto **vem do conector**:
+  sem ele de pé não há manifesto a ler, e uma porta de manifesto a recusar «instrumento desconhecido» por o
+  conector estar morto daria o diagnóstico errado. A recusa leva o `detalhe` com o **nome** que faltou, e o
+  registro do vigia guarda-o — a resposta do contrato é fechada e não se inventa um campo para caber um
+  diagnóstico (a mesma decisão da T021).
+- **A mesa ganhou relógio, e a costura fechada deixou de ser ordem de saída (FR-006/T028).** Até aqui a mesa
+  só agia quando lhe chegava uma linha: o vigia morria, o `stdin` fechava, e a mesa **saía** — o oposto do que
+  a FR-006 promete. Nasceu `core/ciclo/relogio.ts` (uma volta lê os instrumentos que a operação declara, decide
+  cada um e escreve no registo) e a mesma regra dos dois lados da fronteira: **quem tem operação nas mãos não
+  sai porque o cano fechou**. `pausada` cicla (a pausa suspende abrir e mais nada); `parada` não.
+- **A leitura do estado no regresso é do LEDGER da mesa (T029), não uma mensagem nova no contrato.** A mesa
+  não persiste estado (R3) — mas o que ela **escreveu** persiste. O vigia lê a última transição do ledger dela
+  e anota a leitura numa lista própria (`leituras`, não `transicoes`: uma leitura não obedece a nenhum dos
+  cinco verbos). Um ledger **ilegível** não vira «parada»: o vigia **não** arranca uma mesa nova por cima
+  (podia haver uma a operar, e dois escritores no mesmo ledger é o que a RN-E7 proíbe) — e é isso que a T030
+  mede, pelo que **não** aconteceu.
+- **`tsc` entrou na porta única (18 de 18).** `bun` corre TypeScript **sem** conferir tipos: num campo escrito
+  com uma letra trocada o programa corre e rebenta em execução — foi o que aconteceu. Na mesma sessão o `tsc`
+  apanhou duas quebras que nenhuma bancada apanhou (o `baseUrl` removido no tsc 7 e uma bancada do recorte 002
+  que deixou de receber os conectores). `tools/verificar-maquina/tipos.sh`, com o `typescript` pinado no
+  lockfile para a porta correr sem rede.
+
+Um defeito da própria bancada, medido e corrigido: a bancada do vigia usava o **ledger do repositório** (valor
+por omissão). Com o vigia a passar a **ler** o ledger no regresso, um ledger sujo decidia a bancada inteira —
+todas as respostas vinham `mesa_ja_em_operacao`, **35 divergências**. O ledger agora é da bancada, num
+directório temporário, como já eram as marcas e o manifesto.
 
 ---
 

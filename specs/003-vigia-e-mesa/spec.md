@@ -30,7 +30,7 @@ a operar a conta.
 
 ### User Story 1 - O dono pede arranque e a mesa só arranca se puder (Priority: P1)
 
-O dono manda `start`. A mesa passa pelas **seis portas** do arranque (RN-M9) e, se uma delas recusar, a mesa
+O dono manda `start`. A mesa passa pelas **sete portas** do arranque (RN-M9) e, se uma delas recusar, a mesa
 **não arranca** — e o que volta ao vigia é a **recusa com o motivo dela**, como mensagem do contrato, não um
 silêncio, não um processo morto e não uma excepção. Se todas as portas passarem, a mesa fica **em operação** e
 o vigia registra a transição.
@@ -218,7 +218,8 @@ acrescenta comportamento: só o guarda.
 
 **Os verbos, um a um**
 
-- **FR-009**: `start` DEVE submeter a mesa às **seis portas** do arranque e recusar com o motivo da **primeira** que falhar.
+- **FR-009**: `start` DEVE submeter a mesa às **sete portas** do arranque e recusar com o motivo da **primeira** que falhar.
+  *(Emenda da US2/T027: eram seis, e a FR-005 exigiu a sétima — `conectores` —, que corre **na frente**: o manifesto vem do conector, e sem conector de pé não há manifesto a ler. Uma porta de manifesto a recusar «instrumento desconhecido» por o conector estar morto daria o diagnóstico errado.)*
 - **FR-010**: `pause` DEVE suspender **abertura** e **NÃO** DEVE suspender reconciliação nem a verificação do circuit breaker (RN-V2.1).
 - **FR-011**: `reset` DEVE reiniciar a mesa **sem alterar nada**: nem ledger, nem fichas, nem marcas; e **NUNCA** DEVE limpar a inibição do CB nem a marca de desfecho `desconhecido` (RN-V3).
 - **FR-012**: `nova_sessao` DEVE ser o **único** caminho fora da inibição do CB, e DEVE exigir **autor** e **motivo**, gravando instante e equity de partida (RN-V10).

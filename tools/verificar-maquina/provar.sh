@@ -38,7 +38,8 @@ declarar "porteiro do estado (negativo)" bun run tools/verificar-maquina/tabela.
 declarar "a mesa (maquina + marcas)"     bun run core/mesa.prova.ts
 declarar "maquina de estados"            bun run core/estados/provar.ts
 declarar "condicoes, ciclo, desfecho"    bun run core/ciclo/provar.ts
-declarar "arranque (seis portas)"        bun run tools/verificar-maquina/arranque.ts
+declarar "arranque (sete portas)"        bun run tools/verificar-maquina/arranque.ts
+declarar "tipos (tsc)"                   bash tools/verificar-maquina/tipos.sh
 declarar "sessao e CB"                   bun run tools/verificar-maquina/sessao.ts
 declarar "pausa e encerramento"          bun run tools/verificar-maquina/pausa.ts
 declarar "registo (SC-011)"              bun run tools/verificar-maquina/registo.ts

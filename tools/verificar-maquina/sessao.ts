@@ -142,6 +142,9 @@ for (const caso of bateria.casos) {
       config,
       marcas,
       registo_retomavel: true,
+      // Os conectores: a configuracao desta bateria declara `mock_conector`, e quem os poe de pe e o vigia.
+      // Aqui o que se prova e a sessao, nao a ligacao - por isso o duble de conector entra por DADO.
+      conectores_de_pe: ["mock_conector"],
       portaDoInventario: inventarioASerio,
     });
     if (r.arrancou) startsAceitesAposCB += 1;
@@ -194,6 +197,7 @@ for (const caso of bateria.casos) {
         config,
         marcas,
         registo_retomavel: true,
+        conectores_de_pe: ["mock_conector"],
         portaDoInventario: inventarioASerio,
       });
       exigir(a.arrancou === true, `SC-007/${caso.nome}: depois da sessao nova a mesa volta a arrancar`, [a.porque]);

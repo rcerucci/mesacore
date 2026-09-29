@@ -1,0 +1,46 @@
+US2 — A MESA SOBREVIVE A MORTE DO VIGIA (T027-T032)
+
+O que se mediu, e com que comando. As saidas estao cruas; nao ha parafrase delas em sitio nenhum.
+
+  $ bash tools/verificar-maquina/vigia.sh --orfandade
+ok    orfandade/mesa-com-vigia-vivo · 13 voltas antes da morte do vigia
+ok    orfandade/mesa-com-vigia-MORTO (FR-006) · 10 voltas novas depois do SIGKILL · SC-001: 10 voltas contadas pela mesa x 10 linhas escritas
+ok    regresso/T029 · estado lido no ledger da mesa: "em_operacao" · transicoes novas do vigia: 1 · resposta ao start: "mesa_ja_em_operacao"
+ok    regresso/T030 · um so escritor: 1 mesa(s) no registro (nenhuma nova)
+
+resumo: 11 verificacoes · 0 divergentes · 10 voltas com o vigia morto · 10 voltas contadas x 10 linhas
+  $ bash tools/verificar-maquina/vigia.sh --arranque
+ok    porta/campo-a-mais · resposta="comando_com_campo_a_mais" (o vigia recusa sem incomodar a mesa)
+
+resumo: 51 verificacoes · 0 divergentes · 11 cenarios · vigia + mesa como processos
+  $ bun run tools/verificar-maquina/arranque.ts
+resumo: 35 verificacoes · 0 divergentes · 17 casos · 13 portas falhadas de proposito
+  $ bash tools/verificar-maquina/provar.sh
+provar: 18 de 18 passaram — a maquina decide o que devia, e explica o que nao fez
+O QUE ESTES NUMEROS DIZEM, e o que nao dizem:
+
+  - com o vigia MORTO (SIGKILL, sem despedida), a mesa continuou a ciclar sozinha: 10 voltas novas, e SC-001
+    fecha por igualdade - as 10 voltas que a PROPRIA MESA numerou sao as 10 linhas que o ficheiro tem. A
+    contagem nao vem do relogio de quem mede: se uma volta se perder, os dois numeros discordam;
+  - no regresso, o vigia LE o estado da mesa no ledger DELA (`em_operacao`) e nao arranca nada: a resposta
+    ao `start` e `mesa_ja_em_operacao`, e nenhuma transicao nova e um arranque. A leitura fica anotada numa
+    lista propria (`leituras`) - nao e uma transicao, porque nao obedeceu verbo nenhum sao cinco (FR-002);
+  - um so escritor (T030): o vigia que volta NAO levanta uma segunda mesa. A prova e o que nao aconteceu -
+    uma mesa nova seria um segundo processo a escrever no mesmo ledger (RN-E7);
+  - os conectores: o vigia arranca os que a configuracao nomeia e diz quais estao de pe; a mesa recusa
+    arrancar sem eles e DIZ QUAL. A porta e a setima, e corre na frente das outras seis.
+
+A MEDIDA QUE FALTAVA, e a razao de a US2 existir: ate aqui a mesa so agia quando lhe chegava uma linha pela
+costura. O vigia morria, o `stdin` fechava, e a mesa saia - o oposto da FR-006. Nasceu o RELOGIO da mesa
+(`core/ciclo/relogio.ts`, `--tick`): uma volta le os instrumentos que a operacao declara, decide cada um e
+escreve no registo. `pausada` CICLA (a pausa suspende abrir e mais nada); `parada` nao (nao ha operacao para
+defender). E o fim da entrada deixou de ser uma ordem de saida, nos dois lados da fronteira: a mesa em
+operacao nao sai porque o cano fechou, e o vigia tambem nao - quem tem operacao nas maos nao larga.
+
+O que NAO se prova aqui: a ligacao a corretora. O duble de conector e um processo de UMA boleta, e a
+prontidao dele e «continua vivo depois da janela»; o protocolo do conector (RN-E20) e o recorte do plugin.
+Nada aqui toca numa corretora nem pede chave (RN-E24).
+
+NADA FOI AJUSTADO PARA ISTO PASSAR. As mutacoes das portas continuam a sair de `core/ciclo/arranque.casos.json`,
+e a leitura que o relogio usa e o caso declarado em `core/ciclo/ciclo.casos.json` - a decisao que o relogio
+toma e conferida contra a que a bateria do ciclo ja declara para a mesma leitura.

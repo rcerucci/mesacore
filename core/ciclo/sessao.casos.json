@@ -33,7 +33,10 @@
             }
           }
         }
-      }
+      },
+      "conectores": [
+        "mock_conector"
+      ]
     },
     "marcas": {
       "sessao": {

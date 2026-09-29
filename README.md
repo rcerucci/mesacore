@@ -125,7 +125,8 @@ aceite. O comportamento dele é o **oráculo de aceite**: medido, não opinado.
 | Pasta | O que é |
 |---|---|
 | `contracts/` | **normativo** (recorte 001, fechado): 9 schemas, vocabulário, mocks das duas pontas, bateria de 81 casos nas duas linguagens |
-| `core/` | a mesa: a tabela, o intérprete, o ciclo, as marcas, o registo. **Decide e não envia** |
+| `core/` | a mesa: a tabela, o intérprete, o ciclo, o relógio, as marcas, o registo. **Decide e não envia** |
+| `vigia/` | **a camada de operação** (recorte 003): uma linha entra e uma sai; arranca a mesa e os conectores como **processos**, corre as sete portas, guarda o registro da operação. Não decide risco, nem estado, nem marcas |
 | `tools/verificar-maquina/` | as bancadas da mesa (tabela, arranque, sessão, pausa, registo, chaves) |
 | `tools/verificar-contrato/` | as do contrato (001): ponta-a-ponta, frescura, inventário, porta da dependência |
 | `specs/001-contrato-neutro/` | a spec do contrato — **59/59 tarefas**, fechada |

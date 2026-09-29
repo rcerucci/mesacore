@@ -33,6 +33,7 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 | `conta.ordem_de_atendimento[]` | lista de símbolos | vazio = alfabética | mesa no ciclo de contenda (RN-M4.9) |
 | `conta.eventos_que_avisam[]` | lista de eventos | CB, encerramento, desconhecido, recusa, divergência, falha de leitura, contenda | avisos (RN-E15) |
 | `conta.arranque_apos_cb` | enum `exige_decisao` | `exige_decisao` | arranque (RN-M3.3) |
+| `conta.conectores[]` | lista de **nomes** de conector | ausente = recusa; nome sem dublê/plugin = não está de pé | arranque, porta dos conectores (T027, RN-E21) |
 | `conta.invalidos_seguidos_para_inibir` | contagem | **`[novo]`** — RN-T4 dizia `ABERTA` e a chave não existia | mesa, ao contar inválidos seguidos (RN-T4) |
 | `conta.credencial` | **referência**, nunca o valor | — | conector (RN-E14) |
 | `conta.idade_maxima_do_dado_ms` | ms | **`[falta]`** — RN-D3 diz "limite declarado" e ninguém o declarou | mesa, cada ciclo (RN-D3) |
@@ -157,6 +158,7 @@ onde ajustar (RN-A1).
 | `conta.contencao` | `core/ciclo/arranque.ts` (porta da contenda) | resolve a contenda entre fichas: `recusar` ou `espera`. **Ausente = recusa** (RN-M4.7) |
 | `conta.margem_total_maxima_pct` | `core/ciclo/arranque.ts` (porta da contenda) | o tecto que as fichas somadas nao podem passar |
 | `conta.arranque_apos_cb` | `core/ciclo/arranque.ts` (porta da sessao) | `exige_decisao`: depois do CB, o `start` recusa ate haver sessao nova (FR-037) |
+| `conta.conectores[]` | `core/ciclo/arranque.ts` (porta dos conectores) + `vigia/vigia.ts` (quem os arranca) | os **nomes** dos conectores que a mesa precisa de ter de pé. A mesa recusa arrancar sem eles e **diz qual**; o vigia arranca-os, e onde/como correr cada um é do host — os nomes resolvem-se no mapa de dublês (`vigia/vigia.ts`) até existir o registo de plugins |
 | `fichas/<i>.risco.*`, `fichas/<i>.setup.*` | `core/ciclo/arranque.ts`, `core/ciclo/decisao.ts` | o que a mesa le para montar a boleta (bandas, parcial, desvio, stop, tp, relogio) |
 
 **A lacuna que o recorte 003 fecha: o prazo de resposta do encerramento.** Em `encerrando` a mesa pergunta e

@@ -27,7 +27,8 @@ A ordem é sempre a mesma: **posição → condição → lado → decisão**.
 | `ciclo/reconciliacao.ts` | três veredictos; só os que **decidem** limpam a marca de desconhecido |
 | `ciclo/cb.ts` | o circuit breaker: comparação **exacta**, sem percentagem arredondada |
 | `ciclo/encerramento.ts` | o resumo e a pergunta; sem resposta, a mesa **volta a operar** com o `stop` pendente |
-| `ciclo/arranque.ts` | as seis portas, por ordem; a primeira falha recusa com o motivo **dela**, e nada é corrigido |
+| `ciclo/arranque.ts` | as sete portas, por ordem (`conectores` **na frente**: o manifesto vem do conector); a primeira falha recusa com o motivo **dela**, e nada é corrigido |
+| `ciclo/relogio.ts` | **o relógio**: uma volta lê os instrumentos da operação, decide cada um e escreve no registo. Existe por uma regra só — a mesa em operação **não** depende de ninguém vivo (FR-006/RN-V6) |
 
 ## 3. O que persiste (`estado/`)
 

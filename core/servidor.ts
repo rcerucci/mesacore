@@ -26,8 +26,14 @@
 //      RECUSA com `posicao_desconhecida` - porque o caminho `encerrando` (o resumo e a pergunta) e o US3,
 //      e entrar em `encerrando` sem perguntar seria pior do que nao parar.
 //
+// O RELOGIO. A mesa NAO vive da costura: uma mesa em operacao continua a operar com o vigia morto
+// (FR-006/RN-V6), e por isso tem um relogio proprio (`--tick`), armado no arranque e NAO desligado pelo fim
+// da entrada. Quem o desliga e o estado: `parada` nao tem operacao para defender, e a volta nao decide.
+// `pausada` CICLA - a pausa suspende abrir e mais nada (RN-V2.1).
+//
 // Uso:  echo '<mensagem>' | bun run core/servidor.ts [--uma-linha] [--portas f.json] [--posicao-viva false]
 //                                                  [--marcas f.json] [--registo f.jsonl]
+//        [--tick <ms> --operacao f.json --config f.json]   # liga o relogio (a mesa opera sozinha)
 
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
@@ -36,6 +42,7 @@ import { Mesa, type ContextoDaMesa } from "./mesa.ts";
 import { aplicar, verbosDeclarados } from "./estados/maquina.ts";
 import { haInibicao, lerMarcas } from "./estado/marcas.ts";
 import { motivoConhecido } from "./livro-de-motivos.ts";
+import { conferirMandatos, correrUmCiclo, lerOperacao } from "./ciclo/relogio.ts";
 
 /** O contrato recusa a MENSAGEM; a mesa fala dos seus motivos. Nada atravessa sem nome de um dos dois. */
 export const TRADUCAO: Record<string, string> = {
@@ -60,11 +67,17 @@ export const TRADUCAO: Record<string, string> = {
 export interface Opcoes {
   caminhoDasMarcas?: string;
   caminhoDoRegisto?: string;
-  /** O CAMINHO do desfecho das seis portas, escrito por quem as corre (o vigia). Le-se a cada `start`:
+  /** O CAMINHO do desfecho das sete portas, escrito por quem as corre (o vigia). Le-se a cada `start`:
    *  fixado no arranque do processo, um segundo `start` usaria as portas de uma corrida antiga - e o
    *  vigia teria de reiniciar a mesa para cada arranque, perdendo o estado dela. */
   caminhoDasPortas?: string;
   posicaoViva?: boolean;
+  /** O periodo do relogio da mesa, em ms. Sem ele a mesa so age quando lhe falam - e a morte do vigia
+   *  pararia a operacao, que e o contrario da FR-006. */
+  tickMs?: number;
+  /** A operacao (o que o conector e o setup reportam) e a configuracao do dono, para o relogio. */
+  caminhoDaOperacao?: string;
+  caminhoDaConfig?: string;
 }
 
 function lerArgumentos(argv: string[]): Opcoes {
@@ -75,11 +88,14 @@ function lerArgumentos(argv: string[]): Opcoes {
     else if (a === "--registo") o.caminhoDoRegisto = argv[++i];
     else if (a === "--portas") o.caminhoDasPortas = argv[++i];
     else if (a === "--posicao-viva") o.posicaoViva = argv[++i] === "true";
+    else if (a === "--tick") o.tickMs = Number(argv[++i]);
+    else if (a === "--operacao") o.caminhoDaOperacao = argv[++i];
+    else if (a === "--config") o.caminhoDaConfig = argv[++i];
   }
   return o;
 }
 
-/** O desfecho das seis portas, como quem as correu o escreveu. Nao se le: RECUSA - e a unica leitura
+/** O desfecho das sete portas, como quem as correu o escreveu. Nao se le: RECUSA - e a unica leitura
  *  honesta, porque a tabela trata "nao sei" como "as portas passaram". */
 function lerPortas(caminho: string | undefined): { passam: boolean; porta?: string; motivo?: string } | null {
   if (caminho === undefined) return null;
@@ -203,11 +219,69 @@ async function main() {
     caminhoDasMarcas: opcoes.caminhoDasMarcas,
     caminhoDoRegisto: opcoes.caminhoDoRegisto,
   });
+  // Escrever para um cano fechado (o vigia morreu) NAO pode matar a mesa: seria a morte a chegar pela
+  // costura, que e exactamente o que a FR-006 proibe.
+  process.stdout.on("error", () => {
+    /* a costura fechou; o registo continua a ser escrito */
+  });
+  // O `stderr` tambem e um cano de quem chamou: sem isto, a linha "a costura fechou" (escrita DEPOIS de a
+  // costura fechar) rebentava a mesa - a morte a chegar pela costura, que e o que a FR-006 proibe.
+  process.stderr.on("error", () => {
+    /* idem */
+  });
+
+  // O RELOGIO, armado no arranque. Quem o desliga e o ESTADO, nunca o fim da entrada.
+  let relogio: ReturnType<typeof setInterval> | null = null;
+  if (opcoes.tickMs !== undefined) {
+    if (opcoes.caminhoDaOperacao === undefined || opcoes.caminhoDaConfig === undefined) {
+      throw new Error(
+        "`--tick` sem `--operacao` ou sem `--config`: um relogio sem operacao ciclaria em branco, e decidir " +
+          "sem o mandato do dono seria decidir por ele.",
+      );
+    }
+    const operacao = lerOperacao(opcoes.caminhoDaOperacao);
+    const config = JSON.parse(readFileSync(opcoes.caminhoDaConfig, "utf8"));
+    conferirMandatos(operacao, config);
+    let ciclo = 0;
+    relogio = setInterval(() => {
+      if (mesa.estado === "parada") return; // sem operacao para defender, a volta nao decide
+      ciclo += 1;
+      try {
+        correrUmCiclo({
+          operacao,
+          config,
+          marcas: mesa.marcas(),
+          estado: mesa.estado,
+          ciclo,
+          instante_ms: Date.now(),
+          caminhoDoRegisto: opcoes.caminhoDoRegisto,
+        });
+      } catch (erro) {
+        // Uma volta que rebenta e um defeito NOSSO (a linha do registo e obrigatoria em `registarCiclo`).
+        // Grita e continua: parar o relogio deixaria a posicao sem defesa por causa de um erro de codigo -
+        // e a contagem da bancada (N ciclos = N linhas) apanha a volta que faltou.
+        console.error(`ciclo ${ciclo} rebentou: ${(erro as Error).message}`);
+      }
+    }, opcoes.tickMs);
+  }
+
   const rl = createInterface({ input: process.stdin });
   for await (const linha of rl) {
     if (linha.trim() === "") continue;
     process.stdout.write(atender(linha, mesa, opcoes) + "\n");
     if (umaLinha) break;
+  }
+
+  // FIM DA ENTRADA: a costura fechou. Duas respostas, e a diferenca e o que a mesa tem para defender:
+  //  - em operacao (ou pausada): NAO sai. Continua a defender com o vigia morto - e a FR-006 inteira;
+  //  - parada: sai. Sem operacao, sem costura e sem ninguem que a possa arrancar, ficar seria um processo
+  //    a segurar um estado que ninguem pode usar.
+  if (relogio !== null) {
+    if (mesa.estado === "parada") {
+      clearInterval(relogio);
+    } else {
+      console.error(`a costura fechou; a mesa continua em operacao (FR-006), estado ${mesa.estado}`);
+    }
   }
 }
 

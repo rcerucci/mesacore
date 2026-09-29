@@ -1,4 +1,4 @@
-// O runner da US4: o arranque pelas seis portas.
+// O runner da US4: o arranque pelas sete portas.
 //
 // Vive em `/tools` e nao em `/core` por uma razao de fronteira: a porta do inventario corre um processo
 // (o conferidor em python), e o core nao chama processos (RN-E2 - o porteiro do estado reprova quem o
@@ -46,7 +46,7 @@ const manifestoDoFixture = JSON.parse(
   readFileSync(join(RAIZ_DO_REPO, bateria.manifesto_fixture), "utf8"),
 ).carga as any;
 
-console.log("=== bateria do arranque: as seis portas, uma de cada vez ===\n");
+console.log("=== bateria do arranque: as sete portas, uma de cada vez ===\n");
 
 let recusas = 0;
 let arranquesComPortaFalhada = 0;
@@ -79,6 +79,7 @@ for (const caso of bateria.casos) {
     config,
     marcas,
     registo_retomavel: caso.registo_retomavel ?? bateria.padrao.registo_retomavel,
+    conectores_de_pe: caso.conectores_de_pe ?? bateria.padrao.conectores_de_pe ?? [],
     portaDoInventario,
   });
 
@@ -87,6 +88,11 @@ for (const caso of bateria.casos) {
     r.estado === caso.estado_esperado ? null : `estado: esperado '${caso.estado_esperado}', obtido '${r.estado}'`,
     (r.porta ?? null) === (caso.porta_esperada ?? null) ? null : `porta: esperada '${caso.porta_esperada}', obtida '${r.porta}'`,
     (r.motivo ?? null) === (caso.motivo_esperado ?? null) ? null : `motivo: esperado '${caso.motivo_esperado}', obtido '${r.motivo}'`,
+    // `detalhe`: o NOME do que faltou (hoje, o conector). Sem ele a recusa diz "falta um conector" e o dono
+    // tem de ir ler a configuracao para saber qual - que e o que a T027 proibe.
+    (r.detalhe ?? null) === (caso.detalhe_esperado ?? null)
+      ? null
+      : `detalhe: esperado '${caso.detalhe_esperado ?? ""}', obtido '${r.detalhe ?? ""}'`,
     caso.motivo_do_contrato_esperado === undefined || r.motivo_do_contrato === caso.motivo_do_contrato_esperado
       ? null
       : `motivo_do_contrato: esperado '${caso.motivo_do_contrato_esperado}', obtido '${r.motivo_do_contrato}'`,

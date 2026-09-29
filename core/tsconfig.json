@@ -10,7 +10,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
       "@contrato/*": ["../contracts/gerado/ts/*"]
     }

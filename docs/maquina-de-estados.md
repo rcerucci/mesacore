@@ -106,17 +106,22 @@ que alguém inventaria primeiro.
 | risco por ordem excedido | mesa, antes de enviar | **não envia** e registra (RN-M4.12) |
 | banda violada | mesa | recusa, nunca corrige (RN-M6.2, RN-M9) |
 
-### 4.1. As seis portas do arranque (`start`)
+### 4.1. As sete portas do arranque (`start`)
 
 O `start` só leva a `em_operacao` se **todas** passarem; qualquer uma recusa o arranque e registra o motivo
 — a mesa nunca corrige nada para entrar:
 
-1. **manifesto** declara os instrumentos e as unidades (RN-M1, RN-C1);
-2. **mandato** dentro das bandas: nada zero, negativo ou absurdo (RN-M9);
-3. **contenda resolvida**: soma das fichas ≤ teto **ou** política de contenção declarada (RN-M4.7);
-4. **inventário de chaves** fecha: nenhuma chave em uso fora dele (RN-A2);
-5. **versão do contrato** compatível em cada ponta (RN-E18);
-6. **sessão**: retomada do registro, e não inibida — ou o arranque recusa (RN-M3.3, RN-M3.4).
+1. **conectores** de pé (RN-E21): sem conector de pé não há manifesto a ler — e é por isso que ela corre
+   **na frente**. A recusa diz **qual** conector faltou (T027 do recorte 003);
+2. **manifesto** declara os instrumentos e as unidades (RN-M1, RN-C1);
+3. **mandato** dentro das bandas: nada zero, negativo ou absurdo (RN-M9);
+4. **contenda resolvida**: soma das fichas ≤ teto **ou** política de contenção declarada (RN-M4.7);
+5. **inventário de chaves** fecha: nenhuma chave em uso fora dele (RN-A2);
+6. **versão do contrato** compatível em cada ponta (RN-E18);
+7. **sessão**: retomada do registro, e não inibida — ou o arranque recusa (RN-M3.3, RN-M3.4).
+
+*(A porta dos conectores entrou no recorte 003 (T027), pelo que eram seis passaram a ser sete. Quem as corre é
+a camada de operação — o vigia — e o desfecho vai no ficheiro que a mesa lê a cada `start`.)*
 
 ---
 
