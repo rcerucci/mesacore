@@ -31,6 +31,10 @@ brokers/*/conformidade/
 # A trava da bateria: estado de execucao, nunca forma.
 .provar.lock
 
+# A configuracao das contas do dono e ESTADO (enderecos, politica, referencias de credencial): vive em
+# config/contas/ e nao se versiona. O que se versiona e a FORMA — o README e os exemplos.
+config/contas/
+
 # Nada com cara de segredo entra por engano. O valor da credencial nao tem casa no repositorio
 # (RN-E14/RN-C20): o que se versiona e o EXEMPLO, como no outro projeto, onde so o
 # `.wallets.example.json` esta no git. Estas linhas sao a rede para um `git add -A` distraido.

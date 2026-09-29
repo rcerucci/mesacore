@@ -216,5 +216,19 @@ else
   falhou "exit=$CODIGO_D"; printf '%s\n' "$SAIDA_D" | tail -4
 fi
 
+prova "10. editar com Enter na chave NAO toca no ficheiro de credencial"
+H_ANTES=$(sha256sum "$CRED/conta-de-prova.key" | cut -d" " -f1)
+cat > "$CASA/respostas-enter-chave.json" <<EOF
+{ "_questionario": "$ESPERADO", "margem_total_maxima_pct": "80", "chave_privada": "" }
+EOF
+SAIDA_C=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-enter-chave.json" --conta "$CFG/conta-de-prova.json" 2>&1)
+H_DEPOIS=$(sha256sum "$CRED/conta-de-prova.key" | cut -d" " -f1)
+MM=$(jq -r '.conta.margem_total_maxima_pct' "$CFG/conta-de-prova.json" 2>/dev/null)
+if [ "$H_ANTES" = "$H_DEPOIS" ] && [ "$MM" = "80" ] && ! grep -q "ficheiro:" "$CRED/conta-de-prova.key"; then
+  ok "chave intacta (sha256 igual) e a margem mudou para $MM"
+else
+  falhou "a chave foi tocada, ou a margem nao mudou (margem=$MM)"
+fi
+
 printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"
 [ "$FALHAS" -eq 0 ] || exit 1

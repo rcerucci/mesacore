@@ -194,13 +194,20 @@ perguntar() {  # $1=id $2=chave $3=tipo $4=pergunta $5=explicacao $6=opcional $7
     dizer "   $_explicacao"
     [ -n "$_opcoes" ] && [ "$_opcoes" != "null" ] && dizer "   opcoes: $(printf '%s' "$_opcoes" | jq -r 'join(" | ")')"
     if [ "$_tipo" = "segredo" ]; then
-      printf '   valor (nao sera mostrado): '
+      [ -n "$_padrao" ] && printf '   valor (nao sera mostrado; Enter mantem a chave actual): ' || printf '   valor (nao sera mostrado): '
       stty -echo 2>/dev/null; read -r _resp; stty echo 2>/dev/null; dizer ""
     else
       [ -n "$_padrao" ] && _dica=" [$_padrao]" || _dica=""
       printf '   resposta%s: ' "$_dica"
       read -r _resp
     fi
+  fi
+  # Numa pergunta de SEGREDO, resposta vazia quer dizer MANTER — nunca «gravar o que la esta».
+  # Sem isto, editar a conta com Enter na pergunta da chave escrevia a REFERENCIA por cima da chave
+  # no ficheiro de credencial (defeito medido antes de o dono o apanhar).
+  if [ "$_tipo" = "segredo" ] && [ -z "$_resp" ] && [ -n "$_padrao" ]; then
+    dizer "   (mantida a chave que ja esta no ficheiro)"
+    return 2
   fi
   [ -n "$_resp" ] || _resp="$_padrao"
   if [ -z "$_resp" ]; then
