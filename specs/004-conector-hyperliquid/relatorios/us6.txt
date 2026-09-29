@@ -1,0 +1,230 @@
+# US6 — as leituras, os cinco numeros e o historico (T047 a T049, T059, T060)
+
+contrato: **1.4.0** (lido de `contracts/versao.json`) · medido em: 2026-09-29T15:46:05-03:00 · quem mediu: esta vaga, na hora
+
+Regra da casa: nenhum numero deste relatorio foi digitado. Um numero que nao foi medido aparece DITO como
+nao medido, e nao com um valor plausivel.
+
+---
+
+## T047 — o historico do venue (execucoes, taxas, funding, resultado realizado), FR-018
+
+**NAO FECHADA — e a razao e medida, nao suposta: nao existe leitor de historico no conector.** O que existe
+dos endpoints de historico no conector e so o que a SONDA usa para medir o manifesto (tipos de ordem,
+reduce-only, marca de posse, politica de parcial) — nao ha mensagem de historico servida, nem por soma
+reconstruida:
+
+```
+$ grep -n 'tipo !== "boleta"' -A 10 brokers/hyperliquid/conector.ts
+827:  if (tipo !== "boleta") {
+828-    diag.push({
+829-      etapa: "tipo_nao_servido",
+830-      tipo,
+831-      porque:
+832-        "esta porta de processo entrega a BOLETA (FR-019/T010). As leituras de mercado e o comando sao tarefas " +
+833-        "proprias e nao se improvisam aqui: nao sai linha nenhuma, e o silencio faz a mesa ficar em ESPERA " +
+834-        "dentro do prazo (nunca em sucesso)",
+835-    });
+836-    return { linhas: [], diag };
+837-  }
+```
+
+```
+$ grep -rn "userFills\|fundingHistory\|userFees\|historicalOrders" brokers/hyperliquid/*.ts
+brokers/hyperliquid/sonda.ts:103:  historicalOrders(p: { user: string }): Promise<unknown>;
+brokers/hyperliquid/sonda.ts:104:  userFills(p: { user: string }): Promise<unknown>;
+brokers/hyperliquid/sonda.ts:116:    ordensHistoricas: (conta) => cliente.historicalOrders({ user: conta }),
+brokers/hyperliquid/sonda.ts:117:    execucoes: (conta) => cliente.userFills({ user: conta }),
+brokers/hyperliquid/sonda.ts:498:  const razaoDasOrdens = razaoDaFalha(respostas.ordens_historicas, "historicalOrders");
+brokers/hyperliquid/sonda.ts:526:        "info.historicalOrders()[].order.orderType",
+brokers/hyperliquid/sonda.ts:546:        "info.historicalOrders()[].order.reduceOnly",
+brokers/hyperliquid/sonda.ts:558:        "info.historicalOrders()[].order.cloid",
+brokers/hyperliquid/sonda.ts:577:      razaoDaFalha(respostas.execucoes, "userFills") ??
+brokers/hyperliquid/sonda.ts:614:        "info.userFills() somado por `oid` contra info.historicalOrders()[].order.origSz",
+```
+
+```
+$ grep -rc "historico" brokers/hyperliquid/*.ts
+brokers/hyperliquid/cloid.ts:0
+brokers/hyperliquid/conector.ts:0
+brokers/hyperliquid/credencial.ts:2
+brokers/hyperliquid/leitura.ts:0
+brokers/hyperliquid/manifesto.ts:0
+brokers/hyperliquid/ordens.ts:0
+brokers/hyperliquid/processo.ts:0
+brokers/hyperliquid/sonda.ts:1
+```
+
+(as duas ocorrencias em `credencial.ts` sao texto de mensagem de recusa — «apague-a do historico» —, nao
+codigo de leitura; a de `sonda.ts` tambem e texto.)
+
+**Consequencia, dita**: o FR-018 nao tem quem o cumpra nesta ponta. Nao se fecha esta tarefa com prova, porque
+nao ha comportamento a citar. O que se pode dizer e exactamente isto: **nao foi medido porque nao existe
+ainda**.
+
+## T048 — os cinco numeros contra o venue, no mesmo instante (SC-007) — BLOQUEADA PELA DECISAO DO DONO
+
+**O que FOI medido (leitura, sem chave, sem assinar nada)**: o caminho de leitura do conector foi corrido
+contra o venue de teste neste instante — `bun -e` com `leitura.ts`/`lerNoVenue` e o endereco MASTER da conta
+(o mesmo comando de `sonda-real.txt` §3.1), a 2026-09-29T15:46:05-03:00:
+
+```
+{
+ "ok": true,
+ "leitura": {
+  "conta": "0xb58ad66147d86c58d32613ecc6ae4d10d7a6d13b",
+  "instante_do_venue_ms": 1790707537419,
+  "carteiras": {
+   "perpetuo": {
+    "estado": "lida",
+    "contrato": "perpetuo",
+    "origem": "info.clearinghouseState({user}).marginSummary",
+    "equity": "0.0",
+    "nocional_total": "0.0",
+    "margem_usada": "0.0",
+    "retiravel": "0.0"
+   },
+   "spot": {
+    "estado": "lida",
+    "contrato": "spot",
+    "origem": "info.spotClearinghouseState({user}).balances[]",
+    "saldos": []
+   },
+   "confirmadas_pelo_venue": 2,
+   "nomes": [
+    "perpetuo",
+    "spot"
+   ],
+   "nota": "este venue tem DUAS carteiras e o conector NAO as soma: cada valor leva a carteira de onde veio (T071). O equity e os numeros de margem sao do PERPETUO; os saldos sao do SPOT. Quem so le o perpetuo conclui «conta sem fundos» com o dinheiro no spot, e quem so le o spot conclui o mesmo com o dinheiro no perpetuo — por isso as duas sao lidas, e as duas sao ditas.",
+   "nao_lidas": []
+  },
+  "posicoes": [],
+  "identidade": {
+   "origem": "info.extraAgents({user})",
+   "agentes": [],
+   "nota": "quem o venue diz que ASSINA por esta conta (agente, com validade). A chave NAO entra aqui (RN-C20, RN-E14): esta leitura traz enderecos, nunca segredos. Consultar a conta com o endereco do AGENTE devolve vazio — por isso `conta` e o endereco principal"
+  },
+  "origens": {
+   "equity_do_perpetuo": "info.clearinghouseState({user}).marginSummary.accountValue — [V] do venue, so do perpetuo",
+   "nocional_total_do_perpetuo": "info.clearinghouseState({user}).marginSummary.totalNtlPos — [V]",
+   "margem_usada_do_perpetuo": "info.clearinghouseState({user}).marginSummary.totalMarginUsed — [V]",
+   "retiravel_do_perpetuo": "info.clearinghouseState({user}).withdrawable — [V]",
+   "saldo_do_spot": "info.spotClearinghouseState({user}).balances[].total — [V], por moeda e SO do spot",
+   "unidades_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.szi — [V], o sinal e o lado",
+   "preco_medio": "info.clearinghouseState({user}).assetPositions[].position.entryPx — [V]",
+   "nocional_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.positionValue — [V]",
+   "margem_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.marginUsed — [V]",
+   "resultado_nao_realizado": "info.clearinghouseState({user}).assetPositions[].position.unrealizedPnl — [V], nunca recalculado",
+   "preco_de_liquidacao": "info.clearinghouseState({user}).assetPositions[].position.liquidationPx — [V], nunca recalculado",
+   "marca_para_a_distancia": "info.activeAssetData({user,coin}).markPx — [V]",
+   "distancia_de_liquidacao": "[C] NOSSA: |marca - liquidationPx| / marca, em percentagem da marca. Ausente sem posicao (FR-017)",
+   "alavancagem_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.leverage — [V]",
+   "agentes_da_conta": "info.extraAgents({user}) — [V]; enderecos, nunca chaves",
+   "instante_do_venue": "info.clearinghouseState({user}).time — [V]; o relogio da conta, nao o nosso"
+  }
+ }
+}
+```
+
+Leitura crua: o venue confirmou **2** carteiras; o PERPETUO leu-se `equity 0.0`, `nocional_total 0.0`,
+`margem_usada 0.0`, `retiravel 0.0`; o SPOT leu-se com `saldos: []` (nenhuma moeda); `posicoes: []`;
+`instante_do_venue_ms 1790707537419`.
+
+**PORQUE NAO SE FECHA**: o SC-007 pede «os cinco numeros ... para a MESMA POSICAO, no mesmo instante — 5 de
+5». Com **zero posicoes** abertas na conta, nao ha cinco numeros a comparar: nao e uma medicao que falhou, e
+uma medicao que **nao existe** sem uma posicao viva. Abrir uma posicao exige **enviar ordem** ao venue.
+
+- **Comando que a correria** (com a decisao do dono, um envio autorizado, e o envio ao vivo ligado):
+  `bun run brokers/hyperliquid/processo.ts --casos brokers/hyperliquid/casos/processo.casos.json --ficha
+  @config/contas/hl-teste-plugin.json --ao-vivo` (uma boleta) e, com a posicao viva, a leitura do resumo:
+  o mesmo `bun -e` de cima — a comparacao e `posicao, nocional, margem, distancia_de_liquidacao,
+  resultado_nao_realizado` do conector contra o `clearinghouseState` cru da conta, no mesmo instante.
+- **A parede, medida no codigo** (o envio ao vivo nao esta ligado de proposito):
+
+```
+$ grep -n 'o envio AO VIVO nao esta implementado' -B 3 -A 3 brokers/hyperliquid/processo.ts
+307-    envio: {
+308-      enviar: async () => {
+309-        throw new Error(
+310:          "o envio AO VIVO nao esta implementado nesta porta de processo: exige ASSINAR, e assinar sem a bateria " +
+311-            "de conformidade ter medido o venue seria encomendar as cegas. O envio esta provado contra o duble do venue",
+312-        );
+313-      },
+```
+
+- **Nota de estado da conta, medida**: `relatorios/sonda-real.txt` (§3.1, 14h33) registou `998.46` na carteira
+  do PERPETUO; agora (15h45) a mesma conta responde `0.0` no perpetuo e `[]` no spot. A conta mudou entre as
+  duas leituras — fica dito, e nao se explica (nao foi medido o porquê).
+
+**O que a leitura de agora PROVA**: o caminho de leitura do conector funciona contra o venue real, le as duas
+carteiras e nao inventa posicao nenhuma quando nao ha nenhuma. **O que NAO prova**: o 5 de 5 do SC-007.
+
+## T059 — as bordas de leitura: `liquidationPx` nulo, pedido de outra conta, credencial ausente
+
+**FECHADA COM PROVA.** As tres bordas tem caso proprio, e a bancada mede-as (comando:
+`bash tools/verificar-conector/provas-offline.sh` → `0 falhas`; as bancadas isoladas, abaixo).
+
+`liquidationPx` nulo → a distancia fica **AUSENTE** (nunca zero), 14 casos da leitura da conta:
+
+```
+$ bun brokers/hyperliquid/casos/correr-leitura.ts
+{"caso":"leitura/as-duas-carteiras-respondem-e-o-venue-confirma-as-duas","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/caso-gemeo-zero-posicoes-nao-e-sem-leitura","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/spot-falha-a-carteira-e-dita-nao_lida-com-o-motivo","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/perpetuo-falha-recusa-as-posicoes-nao-se-leem","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"leitura/as-duas-carteiras-falham-recusa-nomeando-as-duas","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"leitura/posicao-com-liquidacao-publicada-a-distancia-e-calculada","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/posicao-com-liquidacao-a-null-a-distancia-fica-AUSENTE","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/posicao-com-liquidacao-sem-marca-a-razao-fica-dita","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/posicao-vendida-e-lida-com-unidades-sem-sinal-e-lado-sell","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/equity-a-null-nao-vira-zero","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/equity-em-numero-do-json-nao-vira-decimal","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/equity-com-expoente-nao-e-decimal-textual","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/sem-withdrawable-a-carteira-do-perpetuo-fica-nao_lida","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"leitura/saldo-do-spot-em-numero-nao-vira-saldo","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+leitura: 14 casos · 14 ok · 0 divergentes · 14 declarados
+```
+
+Credencial ausente/ilegivel → recusa NOMEADA (nunca uma tentativa com o que houver a mao), 9 casos:
+
+```
+$ bun brokers/hyperliquid/casos/correr-credencial.ts
+{"caso":"credencial/variavel-de-ambiente-ok","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"credencial/ficheiro-0600-ok","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"credencial/ficheiro-legivel-por-outros-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"credencial/ficheiro-inexistente-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"credencial/variavel-nao-definida-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"credencial/valor-vazio-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"credencial/formato-sem-forma-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"credencial/sem-referencia-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"credencial/valor-que-esta-no-repositorio-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+credencial: 9 casos · 9 ok · 0 divergentes
+```
+
+Pedido que nomeie outra conta → recusa na porta `uma_conta`/`ficha` (FR-022):
+
+```
+{"caso":"arranque/ficha-sem-conta","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:falhou"}
+{"caso":"arranque/duas-contas-na-ficha","veredicto":"ok","esperado_ok":true,"portas":"ficha:falhou"}
+```
+
+E a leitura contra o VENUE real de uma posicao VENDIDA (o sinal negativo, que ja foi defeito) esta medida em
+`relatorios/sonda-real.txt` §3 e no caso `leitura/posicao-vendida-e-lida-com-unidades-sem-sinal-e-lado-sell`.
+
+## T060 — historico e taxas: casos do historico sem reconstrucao (FR-018)
+
+**NAO FECHADA, pela mesma razao medida em T047**: nenhum caso de historico existe, porque nao existe leitor
+de historico no conector (o `grep` de T047 mostra onde estao as unicas referencias, e todas sao da sonda ou
+texto de mensagem). Escrever casos para um comportamento inexistente seria inventar prova — nao se faz.
+
+## T049 — commit
+
+Um commit desta vaga com o assunto `specs/004: T047-T049/T059/T060 (US6)` — o hash esta em `RESULTADO.md`
+(§ commit).
+
+## O que este relatorio NAO prova, e di-lo
+
+- O SC-007 (**5 de 5**) **nao** foi medido: sem posicao aberta na conta, nao ha os cinco numeros. Fica
+  bloqueada pela decisao do dono (exige enviar uma ordem).
+- O **FR-018** (historico do venue) nao foi provado por nao estar implementado — nao e um numero que falta, e
+  um caminho que falta.
