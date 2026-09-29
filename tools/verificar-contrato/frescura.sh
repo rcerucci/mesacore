@@ -11,6 +11,38 @@
 set -uo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# A PROVA NEGATIVA (T057): um gerado atrasado TEM de ser recusado, e a frescura seguinte tem de o curar.
+# Vive dentro do proprio script (e nao num teste a parte) porque um portao que nunca falhou nao e um portao:
+# guardada assim, ela corre sempre que alguem duvida do verde.
+if [ "${1:-}" = "--prova-negativa" ]; then
+  alvo="$RAIZ/contracts/gerado/ts/mercado.d.ts"
+  [ -f "$alvo" ] || { echo "frescura/prova-negativa: nao ha $alvo para atrasar"; exit 2; }
+  antes="$(cd "$RAIZ" && git status --porcelain contracts/gerado | wc -l)"
+  [ "$antes" -eq 0 ] || { echo "frescura/prova-negativa: o gerado ja estava sujo antes da prova"; exit 2; }
+  printf '\n// um gerado atrasado a mao, de proposito (T057)\n' >> "$alvo"
+  if bash "$0" >/dev/null 2>&1; then
+    echo "frescura/prova-negativa: FALHOU — o gerado atrasado passou como fresco"
+    exit 1
+  fi
+  echo "ok    o gerado atrasado a mao foi REPROVADO pela frescura"
+  # A frescura regenera por cima: o ficheiro tem de voltar ao que o schema diz, sozinho.
+  if bash "$0" >/dev/null 2>&1; then
+    echo "ok    e a frescura seguinte cura-o: o gerado voltou a corresponder aos schemas"
+  else
+    echo "frescura/prova-negativa: a frescura NAO curou o gerado"
+    exit 1
+  fi
+  depois="$(cd "$RAIZ" && git status --porcelain contracts/gerado | wc -l)"
+  if [ "$depois" -eq 0 ]; then
+    echo "ok    e a arvore ficou limpa (0 ficheiros sujos em contracts/gerado)"
+  else
+    echo "frescura/prova-negativa: a arvore ficou com $depois ficheiros sujos em contracts/gerado"
+    exit 1
+  fi
+  exit 0
+fi
+
 cd "$RAIZ/contracts"
 
 ANTES="$(mktemp -d)"

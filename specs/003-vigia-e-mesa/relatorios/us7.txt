@@ -1,0 +1,126 @@
+US7 — O QUE JA CORRIA NAO SE PERDE (T056-T058)
+
+As saidas estao cruas. Nao ha parafrase delas em sitio nenhum.
+
+ANTES (o recorte 002, como ficou fechado — `specs/002-maquina-de-estados/relatorios/fase10.txt`):
+
+tabela de transicoes                       OK   conferencia: 0 falhas nos 7 invariantes.
+porteiro do estado (negativo)              OK     ok    prova negativa 7-motivo-com-nome-do-contrato: reprovada pelo invariante 7 (nome 'versao_do_contrato_divergente').
+a mesa (maquina + marcas)                  OK   resumo: 24 verificacoes · 0 falhas
+maquina de estados                         OK   resumo: 29 casos · 13 aceites · 16 recusados · 0 divergentes · 0 recusas sem motivo
+condicoes, ciclo, desfecho                 OK   resumo: 64 verificacoes · 0 divergentes · 12 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+arranque (seis portas)                     OK   resumo: 33 verificacoes · 0 divergentes · 16 casos · 12 portas falhadas de proposito
+sessao e CB                                OK   resumo: 27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB
+pausa e encerramento                       OK   resumo: 21 verificacoes · 0 divergentes · 5 casos US6 · 7 casos US7
+registo (SC-011)                           OK   resumo: 8 verificacoes · 0 divergentes · 11 linhas de registo reconstruidas
+contenda (T066)                            OK   resumo: 35 verificacoes · 0 divergentes · 7 casos
+chaves do core (SC-012)                    OK   resumo: 3 verificacoes · 0 divergentes · 7 chaves
+porteiro do estado (script)                OK   resumo: 2 verificacoes · 0 falhas
+marcas sobrevivem ao reinicio              OK   resumo: 3 processos + 1 leitura externa · 0 falhas
+contrato neutro (recorte 001)              OK   ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam
+frescura do contrato                       OK   frescura: 0 divergencias — o gerado corresponde aos schemas (19 ficheiros)
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 16 de 16 passaram — a maquina decide o que devia, e explica o que nao fez
+
+DEPOIS (este recorte, `bash tools/verificar-maquina/provar.sh`):
+
+arranque (sete portas)                     OK   resumo: 35 verificacoes · 0 divergentes · 17 casos · 13 portas falhadas de proposito
+tipos (tsc)                                OK   tipos: 0 erros em 4 directorios (o tsc confere o produto e as bancadas)
+sessao e CB                                OK   resumo: 27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB
+pausa e encerramento                       OK   resumo: 21 verificacoes · 0 divergentes · 5 casos US6 · 7 casos US7
+registo (SC-011)                           OK   resumo: 8 verificacoes · 0 divergentes · 11 linhas de registo reconstruidas
+contenda (T066)                            OK   resumo: 35 verificacoes · 0 divergentes · 7 casos
+chaves do core (SC-012)                    OK   resumo: 3 verificacoes · 0 divergentes · 8 chaves
+porteiro do estado (script)                OK   resumo: 2 verificacoes · 0 falhas
+marcas sobrevivem ao reinicio              OK   resumo: 3 processos + 1 leitura externa · 0 falhas
+porta da mesa (T014-T016)                  OK   resumo: 91 verificacoes · 0 divergentes · 9 casos · 9 processos + 1 prova negativa
+vigia + mesa (--arranque)                  OK   resumo: 51 verificacoes · 0 divergentes · 11 cenarios · vigia + mesa como processos
+vigia: orfandade (--orfandade)             OK   resumo: 11 verificacoes · 0 divergentes · 10 voltas com o vigia morto · 10 voltas contadas x 10 linhas
+encerramento (--encerramento)              OK   resumo: 15 verificacoes · 0 divergentes · 7 cenarios (prazo, manter, fechar, decisao-sem-pergunta, sem-numeros, sem-prazo, liquidacao-cumprida)
+verbos (--verbos, T044)                    OK   resumo: 12 verificacoes · 0 divergentes · 9 cenarios (pausa-abrir, pausa-fechar, reset, sem-motivo, sem-equity, sem-unidade, completa, posicao-viva, campo-a-mais)
+contrato neutro (recorte 001)              OK   ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam
+frescura do contrato                       OK   frescura: 0 divergencias — o gerado corresponde aos schemas (30 ficheiros)
+frescura (prova negativa, T057)            OK   ok    e a arvore ficou limpa (0 ficheiros sujos em contracts/gerado)
+fronteira (SC-003, T046-T049)              OK   fronteira: 0 falhas — os motivos fecham nas duas direcoes, todo o campo tem leitor, e os casos somam
+duble de mesa (US6, SC-004)                OK   duble de mesa: 0 falhas — os casos declarados, contra os mocks do 001 e contra o motor do contrato
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 25 de 25 passaram — a maquina decide o que devia, e explica o que nao fez
+
+LADO A LADO — as tres linhas que interessam, e que nao podem encolher:
+
+  bateria                          ANTES (002)                     DEPOIS (003)
+  -------------------------------  ------------------------------  ------------------------------
+  maquina de estados               29 casos · 13 aceites · 16 rec.  35 casos · 13 aceites · 22 rec.
+  condicoes, ciclo, desfecho       64 verificacoes · 0 divergentes  64 verificacoes · 0 divergentes
+  arranque                         33 verif. · 16 casos · SEIS      35 verif. · 17 casos · SETE
+  sessao e CB                      27 verificacoes · 13 casos       27 verificacoes · 13 casos
+  pausa e encerramento             21 verificacoes                 21 verificacoes
+  registo (SC-011)                 8 verificacoes                  8 verificacoes
+  contenda                         35 verificacoes                 35 verificacoes
+  chaves do core (SC-012)          3 verif. · 7 chaves             3 verif. · 8 chaves
+  porta da mesa (a porta unica)    -- (nasceu no 002)              91 verif. · 9 casos
+  vigia + mesa (--arranque)        --                              51 verif. · 11 cenarios
+  vigia: orfandade                 --                              11 verif. · 10 voltas
+  encerramento                     --                              15 verif. · 7 cenarios
+  verbos (T044)                    --                              12 verif. · 9 cenarios
+  contrato neutro (001)            0 falhas                        0 falhas
+  frescura do contrato            19 ficheiros · 0 divergencias    30 ficheiros · 0 divergencias
+  fronteira (SC-003)               --                              0 falhas
+  duble de mesa (US6)              --                              0 falhas
+  inventario de chaves            0 falhas                        0 falhas
+  -------------------------------  ------------------------------  ------------------------------
+  provar                           16 de 16 passaram               25 de 25 passaram (com a prova
+                                                                   negativa da frescura, T057)
+
+NENHUMA verificacao do 002 perdeu-se: as sete linhas que ja existiam continuam com a MESMA contagem, e as que
+crescem crescem por casos novos somados (a maquina 29 -> 35; o arranque 16 -> 17 casos, seis -> SETE portas;
+as chaves do core 7 -> 8). As duas que o 002 fechou com `33 verificacoes` e `19 ficheiros` crescem porque
+SOMAM: a porta `conectores` entrou na frente das seis (FR-009, emendada) e o contrato ganhou os gerados das
+mensagens novas.
+
+A BATERIA DO CONTRATO (T056, segundo lado): 81 casos comparados no recorte 001 -> 98 no inicio do 003 -> 100
+hoje (34 aceites · 66 recusados · 0 divergentes nas DUAS linguagens). Os 19 casos que subiram sao das
+mensagens novas do 003, e entraram SOMANDO (T049, medido: um caso a mais faz o total subir um nas duas
+linguagens e voltar quando ele sai).
+
+T057 — A FRESCURA, E A PROVA DE QUE ELA RECUSA (FR-026, aceite 3 da US7).
+
+O gerado continua versionado e a sua frescura conferida; o que faltava era a prova negativa - um portao que
+nunca falhou nao e um portao. Ela vive dentro do proprio script (`frescura.sh --prova-negativa`), porque assim
+corre sempre que alguem duvidar do verde:
+
+ok    o gerado atrasado a mao foi REPROVADO pela frescura
+ok    e a frescura seguinte cura-o: o gerado voltou a corresponder aos schemas
+ok    e a arvore ficou limpa (0 ficheiros sujos em contracts/gerado)
+
+As tres linhas sao as tres coisas que se querem saber: um gerado ATRASADO a mao e REPROVADO; a frescura
+seguinte CURA-o (regenera por cima do que estava errado); e a arvore fica limpa. A prova confirma o estado
+antes de comecar e recusa-se a correr se o gerado ja estiver sujo - senao ela mediria a sujidade que ja la
+estava.
+
+T058 — O MOTOR ANTIGO NAO FOI TOCADO (FR-035).
+
+  $ (~/Projects/jev-trade-fusao) git status && git log --oneline -1
+HEAD: b2f12c4 feat(desk): título limpo, boot na coluna, s menor e no sítio (#69)
+ramo: ## main...origin/main
+ficheiros versionados: 185
+ficheiros versionados MODIFICADOS (git status --untracked-files=no): 0
+untracked (nao sao deste recorte):
+  ?? .worktrees/
+  ?? tv/sigma-3emas.pine
+  2026-09-26 14:09:27.232187608 -0300  .worktrees
+  2026-09-27 14:01:56.980943662 -0300  tv/sigma-3emas.pine
+
+  - **0 ficheiros versionados modificados**: `git status --porcelain --untracked-files=no` nao devolve linha
+    nenhuma. Os 185 ficheiros versionados do motor antigo estao como estavam;
+  - o HEAD e `b2f12c4` ("feat(desk): titulo limpo, boot na coluna, s menor e no sitio (#69)"), no ramo
+    `main...origin/main` — o motor continua a operar a conta, e continua a ser o oraculo de aceite;
+  - as duas entradas `??` (untracked) nao sao deste recorte: `tv/sigma-3emas.pine` e de 27/09 14:01 e
+    `.worktrees/` de 26/09 14:09, ambos anteriores a qualquer commit do 003 (o primeiro e de
+    2026-09-28 21:35:47 -0300). Ficam declaradas em vez de ignoradas: quem so ve "0 modificados" nao percebe que ha duas
+    entradas por versionar, e uma delas pode nao ser de ninguem.
+
+Nada no MesaCore le, escreve ou importa o motor antigo: o motor antigo e oraculo de aceite, e a comparacao
+com ele faz-se lendo, no recorte proprio.

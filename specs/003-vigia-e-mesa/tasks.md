@@ -323,9 +323,9 @@ O que a implementação teve de decidir e não estava aqui:
 
 **Independent Test**: `bash tools/verificar-maquina/provar.sh` — a contagem do 002 não cai, e a do contrato soma.
 
-- [ ] T056 [US7] Contagem antes/depois da porta única e da bateria do contrato, lado a lado em `relatorios/us7.txt`
-- [ ] T057 [P] [US7] A **frescura** do gerado: um gerado atrasado em relação ao esquema tem de ser **recusado** (ensaio negativo, não só o positivo)
-- [ ] T058 [US7] Nenhum ficheiro de `~/Projects/jev-trade-fusao` tocado: medido (a árvore do motor antigo, e o `git status` dela)
+- [x] T056 [US7] Contagem antes/depois da porta única e da bateria do contrato, lado a lado em `relatorios/us7.txt`
+- [x] T057 [P] [US7] A **frescura** do gerado: um gerado atrasado em relação ao esquema tem de ser **recusado** (ensaio negativo, não só o positivo)
+- [x] T058 [US7] Nenhum ficheiro de `~/Projects/jev-trade-fusao` tocado: medido (a árvore do motor antigo, e o `git status` dela)
 
 ---
 
