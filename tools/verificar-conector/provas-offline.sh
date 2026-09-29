@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Provas do conector que NAO precisam do venue: casos em dado (credencial, manifesto, ORDENS+cloid e a
-# LEITURA DA CONTA) + a porta das dependencias + a BATERIA DE CONFORMIDADE (que corre o duble de mesa que
-# ja existe, sem rede e sem chave).
+# Provas do conector que NAO precisam do venue: casos em dado (credencial, manifesto, ORDENS+cloid, a
+# LEITURA DA CONTA e o HISTORICO do venue) + a porta das dependencias + a BATERIA DE CONFORMIDADE (que
+# corre o duble de mesa que ja existe, sem rede e sem chave).
 # Uso: provas-offline.sh [--prova-negativa]
 set -uo pipefail
 cd "$(dirname "$0")/../.."
@@ -79,6 +79,19 @@ if printf '%s\n' "$saida_l" | tail -1 | grep -q "0 divergentes"; then
   echo "OK   $(printf '%s\n' "$saida_l" | tail -1)"
 else
   echo "FALHOU"; printf '%s\n' "$saida_l" | grep divergente | head -5; falhas=$((falhas+1))
+fi
+
+# A LEITURA DO HISTORICO (T047/T060, FR-018/FR-019): as execucoes, as taxas, o funding e o resultado realizado
+# do venue — em dado, com a captura CRUA do venue como base. O que o venue nao da fica `nao_publicado` (nunca
+# zero), o que falha RECUSA nomeado, e a PROVA NEGATIVA soma os `closedPnl` do venue so para exigir que essa
+# soma NAO apareca na leitura (somar execucoes seria reconstruir o resultado — o defeito que a regra proibe).
+# Nao estava ligada a porta nenhuma: passava quando alguem se lembrava de a correr, que e o mesmo que nao passar.
+declarar "casos do historico do venue (hyperliquid)"
+saida_h=$(bun brokers/hyperliquid/casos/correr-historico.ts 2>&1)
+if printf '%s\n' "$saida_h" | tail -1 | grep -q "0 divergentes"; then
+  echo "OK   $(printf '%s\n' "$saida_h" | tail -1)"
+else
+  echo "FALHOU"; printf '%s\n' "$saida_h" | grep -i "diverge\|provocacao" | head -5; falhas=$((falhas+1))
 fi
 
 # 2. A porta das dependencias: o conector importa `contracts`, NUNCA `core` (RN-E1).

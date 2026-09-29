@@ -13,7 +13,9 @@ teste** (a bateria de conformidade).
 **Estado da execução** (medido em 29/09, contrato em **1.4.0**): fechadas a **fase 1**, a **fase 2** (T010
 incluído — a porta de processo existe e está medida) e a **fase 10** (a emenda que os dois achados de
 `data-model.md` §7 exigiram — `relatorios/emenda-1.4.0.txt`), e com elas a tradução (US2), a derivação da
-referência (US5), a leitura das **duas** carteiras (US6, T071) e a bateria de conformidade **offline** (US7).
+referência (US5), a leitura das **duas** carteiras (US6, T071), a bateria de conformidade **offline** (US7) e
+o **histórico do venue** (US6/US9 — T047 e T060, com leitor próprio, bancada de 24 casos e a recusa nomeada
+medida contra o venue a sério: ver `relatorios/us6.txt`).
 O que **fica aberto** é o que precisa do venue **com chave**: as provas no ambiente de TESTE (SC-004), o
 registo por versão e data, e os relatórios de US2/US3/US4/US7. Este recorte não cria tipo novo (R8): a
 emenda 1.4.0 acrescentou campos e motivos ao que já existia, e o conector fala o que já existe. Linha de
@@ -87,7 +89,7 @@ base em `relatorios/linha-de-base.txt`.
 - [x] T044 [US6] Casos das leituras (posição viva, sem posição, leitura falhada) — **feito:** `brokers/hyperliquid/casos/leitura.casos.json`, **14 casos** (posição viva com e sem liquidação publicada, zero posições ≠ sem leitura, cada carteira a falhar sozinha, as duas a falhar, `equity` a `null`/número/expoente). Medido: `leitura: 14 casos · 14 ok · 0 divergentes`
 - [x] T045 [US6] `brokers/hyperliquid/leitura.ts` — **o nome REAL é este** (este plano dizia `leituras.ts`): posição, equity, marcas e os **cinco números** do resumo do encerramento, com a origem nomeada (FR-016) — **feito:** `leitura.ts`, com a origem de cada grandeza declarada, e a leitura passou a caber nos TRÊS padrões de decimal do contrato (`contracts/_defs/forma.schema.json`) por campo, como o contrato os declara
 - [x] T046 [US6] Sem posição, a distância de liquidação é **ausente** (nunca zero); leitura falhada é dita como falha (FR-017) — **feito:** `posicao-com-liquidacao-a-null-a-distancia-fica-AUSENTE`, `sem-withdrawable-a-carteira-do-perpetuo-fica-nao_lida`, `perpetuo-falha-recusa-as-posicoes-nao-se-leem`, `as-duas-carteiras-falham-recusa-nomeando-as-duas`
-- [ ] T047 [US6] Histórico do venue (execuções, taxas, funding, resultado realizado) sem reconstrução (FR-018) — **NAO FECHADA — razao medida:** nao existe leitor de historico no conector — o `atender` so serve `boleta` (`tipo_nao_servido`) e os unicos usos de `userFills`/`historicalOrders`/`userFees` sao da SONDA (para medir tipos de ordem, reduce-only, marca de posse e parcial no manifesto). Sem comportamento, nao ha prova a citar. Ver `relatorios/us6.txt`
+- [x] T047 [US6] Histórico do venue (execuções, taxas, funding, resultado realizado) sem reconstrução (FR-018) — **FECHADA — prova medida:** leitor novo `brokers/hyperliquid/historico.ts` (execuções, taxas da conta, funding da conta e o publicado, e o resultado POR EXECUÇÃO com a origem de cada número — RN-C11), servido pelo `atender` (tipo `historico`) e pelo modo `--historico <coin>` do `processo.ts`; bancada `bun brokers/hyperliquid/casos/correr-historico.ts` = **24 casos · 24 ok · 0 divergentes · 4 declarações · 0 provocações divergentes**, ligada a `tools/verificar-conector/provas-offline.sh`. Contra o venue REAL, só leitura e sem chave: `bun run brokers/hyperliquid/processo.ts --casos brokers/hyperliquid/casos/processo.casos.json --ficha @config/contas/hl-teste-plugin.json --ao-vivo --historico BTC` → lê **56 execuções** (e 2 com `--desde-ms 1790200000000`, a janela declarada a mudar a chamada para `userFillsByTime`) e o **CONTRATO recusa a carga** (`campo_obrigatorio_ausente`): a resposta é a **recusa nomeada**, com a leitura crua dentro — nunca zero, nunca uma soma nossa. **Razão medida da recusa** (e é do contrato com o venue, não deste leitor): (a) o venue escreve a moeda da taxa como `USDC`, quatro letras, e o contrato pede `^[A-Z]{3}$`; (b) o resultado realizado só existe POR EXECUÇÃO (`closedPnl`), e somar as parcelas para o dar por instrumento é a reconstrução que FR-018/RN-H14 proíbem; (c) a marca de posse deste venue é `cloid` (0x+32 hexadecimais) e o contrato pede o inteiro de 31 bits; (d) esta conta tem 415 de 415 ordens com `cloid` nulo, portanto nenhuma referência de cliente a ler; (e) o funding não é publicado por execução. Sai cru (as duas medições, com o diagnóstico inteiro) em `relatorios/us6.txt`
 - [ ] T048 [US6] Medição dos cinco números contra o venue, no mesmo instante (SC-007) em `relatorios/us6.txt` — **BLOQUEADA — decisao do dono.** A leitura FOI medida contra o venue agora (comando em `relatorios/us6.txt`): `equity 0.0`, `saldos: []`, `posicoes: []`, 2 carteiras confirmadas, `instante_do_venue_ms 1790707537419`. Mas o SC-007 pede **5 de 5 «para a MESMA POSICAO»** e a conta nao tem posicao nenhuma: abrir uma exige ENVIAR ordem. Comando que a correria: o mesmo `bun -e` com `leitura.ts`/`lerNoVenue` (em `us6.txt`) depois de um envio autorizado. NAO corrido
 - [x] T049 [US6] Commit da US6 e resumo ao dono — **feito:** commit `specs/004: T059 (US6) - as bordas de leitura e o historico que nao existe` (hash em `relatorios/RESULTADO.md` §commit)
 
@@ -106,7 +108,7 @@ base em `relatorios/linha-de-base.txt`.
 ## Fase 9 — Fecho do recorte (T059–T065)
 
 - [x] T059 [US8] Alavancagem e leituras de borda: os casos de `liquidationPx` nulo, pedido de outra conta, credencial ausente (FR-022, FR-023) — **fechado com prova:** 14 casos da leitura (incl. `leitura/posicao-com-liquidacao-a-null-a-distancia-fica-AUSENTE` — ausente, nunca zero) + 9 da credencial (ausente/ilegivel = recusa nomeada) + as portas `ficha`/`uma_conta` para o pedido de outra conta. Ver `relatorios/us6.txt`
-- [ ] T060 [US9] Histórico e taxas: casos do histórico sem reconstrução (FR-018) — se não couber na US6, é história própria — **NAO FECHADA — razao medida (a mesma de T047):** nao ha comportamento de historico no conector, logo nao ha caso a escrever — escreve-los seria inventar prova. Ver `relatorios/us6.txt`
+- [x] T060 [US9] Histórico e taxas: casos do histórico sem reconstrução (FR-018) — **FECHADA — prova medida:** **24 casos** em `brokers/hyperliquid/casos/historico.casos.json`, corridos por `bun brokers/hyperliquid/casos/correr-historico.ts` = **24 casos · 24 ok · 0 divergentes · 4 declarações · 0 provocações divergentes** (a base `real` é a resposta CRUA do venue, gravada a 30/09 — 56 execuções, 92 ordens casadas de 415, a tabela de taxas, o funding vazio e as 5 pontas de 500 períodos; a base `duble_declarado` traz os `cloid` derivados por `cloid.ts` e diz que não é medição desta conta). Cobre: execuções lidas com a taxa do venue; **taxa ausente → desconhecida, nunca zero**; taxa negativa (rebate) e taxa em número do JSON fora da forma; moeda `USDC` fora da forma do contrato; funding da conta que não se leu → **desconhecido**; funding vazio é declaração do venue, não zero; venue que não responde → **recusa nomeada**; e a **prova negativa de FR-019** (o conferidor soma os 56 `closedPnl` do venue = `-0.22078`, medido, e exige que essa soma **não apareça** na leitura). O conferidor traz ainda 4 provocações de si mesmo (o veredicto invertido, a conferência errada, o ausente que existe, a recusa invertida): um portão que nunca reprovou não é um portão. Ver `relatorios/us6.txt`
 - [x] T061 Prova de que o conector **não importa o `core`** (RN-E1), por comando, e de que não contém regra de decisão (FR-024) — **feito:** a porta da própria bateria: `porta: importa contracts, nunca o core (RN-E1)  OK  0 importacoes do core em brokers/hyperliquid` (`tools/verificar-conector/provas-offline.sh`)
 - [x] T062 Varredura de credenciais (RN-E14) em `brokers/`, `docs/` e `config/`: **zero** valores — **feito:** é a prova 8 da bateria de conformidade, e ela traz os **dois controlos** (o varrimento tem de saber ENCONTRAR o que existe, senão o zero não mede nada)
 - [x] T063 `relatorios/RESULTADO.md`: os 8 SC, cada um com o comando que o mediu e o número que saiu — **feito:** `relatorios/RESULTADO.md` — os 8 SC, cada um com o comando que o mediu e o numero que saiu, e no fim a tabela do que ficou provado / por provar
@@ -141,17 +143,23 @@ renumerar 65 tarefas — renumerar reescreveria o ficheiro e não muda nada do q
 
 Medido em 29/09, com esta vaga: `provar.sh` (**27 de 27**), `provas-offline.sh` (`0 falhas`), a conformidade
 (`conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes`) e a bancada do processo (`processo: 31
-casos · 31 ok · 0 divergentes`). Das **33 tarefas abertas**, **28 fecham com prova** (o comando e o número
-estão na linha de cada uma e no relatório do caso de uso) e **5 ficam com `[ ]` de propósito**, todas com a
-razão escrita na própria linha — nenhuma em silêncio:
+casos · 31 ok · 0 divergentes`) e `historico: 24 casos · 24 ok · 0 divergentes ...` (`bun
+brokers/hyperliquid/casos/correr-historico.ts`). Das **33 tarefas abertas**, **30 fecham com prova** (o comando
+e o número estão na linha de cada uma e no relatório do caso de uso) e **3 ficam com `[ ]` de propósito**,
+todas com a razão escrita na própria linha — nenhuma em silêncio:
 
 - **Bloqueadas pela decisão do dono** (exigem ASSINAR e ENVIAR ao venue — não é do agente, RN-H17): **T042**
   (SC-003, a contagem de idempotência no venue), **T048** (SC-007, os cinco números no mesmo instante — a conta
   de teste está sem posição: medido `equity 0.0`, `saldos: []`, `posicoes: []`), **T057** (SC-004, as 8 provas no
   ambiente de TESTE). O comando exacto que as correria está na linha de cada uma e em `relatorios/us5.txt`,
   `us6.txt` e `us7.txt`.
-- **Sem comportamento no código, logo sem prova a citar**: **T047** e **T060** (o histórico do venue, FR-018 —
-  não existe leitor de histórico no conector; medido por `grep` em `relatorios/us6.txt`).
+- **Fechado com a recusa nomeada, e não em silêncio**: **T047** e **T060** (o histórico do venue, FR-018) —
+  o leitor existe, lê o venue a sério (56 execuções medidas) e o **CONTRATO recusa a carga** contra este venue,
+  por três divergências medidas: a moeda da taxa é `USDC` (quatro letras) e o contrato pede `^[A-Z]{3}$`; o
+  resultado realizado só existe **por execução** (`closedPnl`), e somar as parcelas seria a reconstrução que
+  FR-018/RN-H14 proíbem; a marca de posse deste venue é `cloid` e o contrato pede o inteiro de 31 bits. O que
+  as desbloquearia é uma **emenda aditiva ao contrato** — decisão do dono, e não se remenda por aqui. A recusa
+  vai nomeada, com a leitura crua dentro (ver `relatorios/us6.txt`).
 - **Trabalho por fazer, declarado onde foi achado**: o **registador automático** do resultado da bateria (o
   `conformidade.sh` que o plano §D3 e o `quickstart.md` nomeiam não existe — o registo da T055 foi escrito à
   mão), o **envio ao vivo** (a porta recusa de propósito: exige assinar — FR-019, T042, T057), e as **três

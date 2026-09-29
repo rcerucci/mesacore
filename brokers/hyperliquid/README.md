@@ -11,6 +11,7 @@ O que ele entrega, e onde:
 | A traducao | `traducao.ts` | boleta em unidades neutras → quantidade e preco na unidade do instrumento, com recusa nomeada para tudo o que nao cabe (FR-006 a FR-011) |
 | O desfecho | `desfecho.ts` | normaliza nas quatro classificacoes, reconcilia o desconhecido (FR-012 a FR-015) |
 | As leituras | `leituras.ts` | posicao, equity, marcas e os cinco numeros do resumo do encerramento (FR-016 a FR-018) |
+| O historico do venue | `historico.ts` | execucoes, taxas, funding e o resultado POR EXECUCAO, com a origem de cada numero (FR-018/FR-019): o que o venue nao da fica `nao_publicado`, e somar e do venue — nunca da mesa |
 | A ligacao | `ligacao.ts` | uma ligacao, uma chave, um processo; o estado vem do protocolo do venue (FR-019 a FR-023) |
 | A porta de processo | `processos.ts` | o vigia arranca-o; ele fala o contrato por stdio |
 | Os casos | `casos/*.casos.json` | em dado, e correm nos DOIS lados: aqui e no duble do conector do recorte 001 — divergencia e falha |

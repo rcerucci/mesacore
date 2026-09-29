@@ -44,6 +44,13 @@ import {
   type RespostasDaConta,
 } from "./leitura.ts";
 import { traduzirOrdem, type AccaoDoVenue, type Boleta, type ManifestoDoVenue } from "./ordens.ts";
+import {
+  cargaDoHistorico,
+  lerDoVenueDoHistorico,
+  lerHistorico,
+  type PedidoDeHistorico,
+  type PortaDeHistorico,
+} from "./historico.ts";
 import { carregarCredencial } from "./credencial.ts";
 // O contrato e a lingua do conector (FR-024: importa `contracts`, nunca o `core`). O enquadramento, a versao
 // e o vocabulario vem de LA — nao ha aqui uma segunda copia das regras do envelope.
@@ -87,8 +94,13 @@ export type PortaDeEnvio = {
   enviar(accao: AccaoDoVenue, conta: string, referencia_do_cliente?: string): Promise<Resposta>;
 };
 
-/** A porta do venue inteira: as leituras da sonda, as da conta e o envio. */
-export type Porta = { leitura: PortaDeLeitura; conta: PortaDeConta; envio: PortaDeEnvio };
+/** A porta do venue inteira: as leituras da sonda, as da conta, as do historico e o envio. */
+export type Porta = {
+  leitura: PortaDeLeitura;
+  conta: PortaDeConta;
+  historico: PortaDeHistorico;
+  envio: PortaDeEnvio;
+};
 
 /** O que a bateria de conformidade MEDIU dos campos que o venue nao publica (FR-027). `null` = nao mediu nada. */
 export type Bateria = Record<string, unknown> | null;
@@ -752,6 +764,100 @@ export type OpcoesDaConversa = {
 };
 
 /**
+ * SERVE UM PEDIDO DE HISTORICO (FR-018, RN-H14) — a leitura do trilho do dinheiro, do venue.
+ *
+ * E uma funcao propria, e nao um pedaco dentro do `atender`, por uma razao MEDIDA: o contrato nao tem tipo
+ * de mensagem para PEDIR o historico (o `historico` do envelope e o CORPO do que o venue conta — o
+ * esquema dele exige instrumento, moeda, instante e execucoes, que e a forma de uma RESPOSTA, nao a de um
+ * pedido). Quem o serve, entao, e: (a) uma linha `historico` que chegue ao processo (o `atender` chama
+ * isto), e (b) o modo `--historico <instrumento>` do `processo.ts`, que da a mesma leitura sem pedido —
+ * como o `--so-sonda` faz com o manifesto. Uma funcao, dois caminhos.
+ *
+ * A ordem: le-se o venue; o que ele nao deu fica `nao_publicado`, pelo nome; a carga do contrato leva SO o
+ * que foi lido; e quem julga se ela esta completa e O ESQUEMA DO CONTRATO. Se ele a recusar, NAO se serve
+ * uma mensagem com um campo preenchido por nos — sai a RECUSA NOMEADA, com o motivo do contrato, a razao e
+ * a lista do que o venue nao publica. Nunca zero, nunca soma (somar execucoes para «reconstruir» o
+ * resultado e o defeito que a regra proibe).
+ */
+export async function servirHistorico(
+  id: string,
+  instrumento: string,
+  estado: EstadoDoProcesso,
+  porta: Porta,
+  opcoes: { inicio_ms?: number; defeito?: string } = {},
+): Promise<Atendimento> {
+  const diag: Record<string, unknown>[] = [];
+  const defeito = opcoes.defeito;
+  const versao = defeito === "versao" ? "9.9.9" : versaoVigente();
+
+  function conferivel(l: string): string {
+    if (defeito === undefined) conferirAntesDeSair(l);
+    return l;
+  }
+
+  function recusar(motivo: string, porque: string, resposta: Record<string, unknown>): Atendimento {
+    const limpo = motivoDoContrato(motivo);
+    diag.push({ etapa: "historico", veredicto: "recusado", motivo: limpo, porque });
+    const carga: Record<string, unknown> = { classificacao: "recusado", motivo: limpo, resposta_do_venue: resposta };
+    if (defeito === "sem_motivo") delete carga.motivo;
+    return { linhas: [conferivel(envelope("desfecho", id, carga, versao))], diag };
+  }
+
+  const pedido: PedidoDeHistorico = {
+    conta: estado.ficha.conta,
+    instrumento,
+    ...(opcoes.inicio_ms !== undefined ? { inicio_ms: opcoes.inicio_ms } : {}),
+  };
+  const respostas = await lerDoVenueDoHistorico(porta.historico, pedido);
+  const h = lerHistorico(respostas, pedido);
+  if (!h.ok) {
+    diag.push({ etapa: "historico", veredicto: "nao_lido", motivo: h.motivo, porque: h.porque });
+    return recusar(h.motivo, `o historico do venue nao se leu: ${h.porque}`, {
+      estado: "historico_nao_lido",
+      instrumento,
+    });
+  }
+
+  const carga = cargaDoHistorico(h.leitura);
+  diag.push({
+    etapa: "historico",
+    veredicto: "lido",
+    instrumento,
+    execucoes: h.leitura.execucoes.length,
+    instante_do_venue_ms: h.leitura.instante_ms,
+    moeda: h.leitura.moeda,
+    taxas_da_conta: h.leitura.taxas_da_conta,
+    funding_da_conta: h.leitura.funding_da_conta,
+    funding_publicado: h.leitura.funding_publicado,
+    resultado_realizado_do_instrumento: h.leitura.resultado_realizado_do_instrumento,
+    marca_de_posse: h.leitura.marca_de_posse,
+    nao_publicados: h.leitura.nao_publicados,
+    origens: h.leitura.origens,
+    notas: h.leitura.notas,
+  });
+
+  const linhaDoHistorico = envelope("historico", `${id}/historico`, carga, versao);
+  const decisao = validar(linhaDoHistorico);
+  if (decisao.veredicto === "erro_de_execucao") {
+    throw new Error("o instrumento de medicao (o contrato) falhou a julgar o historico: nao se serve por omissao");
+  }
+  if (decisao.veredicto !== "aceite") {
+    // O CONTRATO e o juiz da completude: se ele recusa a carga, o que falta e DO VENUE, e a resposta honesta
+    // e a recusa NOMEADA. A leitura crua vai na resposta para nada depender da nossa interpretacao.
+    return recusar(
+      decisao.motivo ?? "campo_obrigatorio_ausente",
+      `o historico lido do venue nao passou o envelope do contrato: ${decisao.veredicto}/${decisao.motivo}` +
+        `${decisao.detalhe ? ` (${decisao.detalhe})` : ""} — as grandezas que o contrato exige e que o venue NAO deu ` +
+        `(ou nao deu na forma do contrato) sao: ${h.leitura.nao_publicados.join(", ")}. ` +
+        "Nenhum desses campos se preenche por nossa conta: somar as parcelas seria reconstruir o resultado e " +
+        "escrever zero seria inventar um numero medido (FR-018/RN-H14)",
+      { estado: "historico_lido_e_nao_servivel", instrumento, leitura: h.leitura },
+    );
+  }
+  return { linhas: [conferivel(linhaDoHistorico)], diag };
+}
+
+/**
  * Atende UMA mensagem. Devolve as linhas que saem (zero, uma ou duas) e o diagnostico.
  *
  * A ordem das linhas e a ordem dos factos: a `resolucao` sai antes do envio; o `desfecho` sai depois. Nada sai
@@ -824,14 +930,45 @@ export async function atender(
   }
 
   const tipo = pedido?.tipo as string;
+
+  // -------------------------------------------------------------------------------------------------------
+  // O TIPO `historico` (FR-018, RN-H14) — o trilho do dinheiro, como o venue o conta.
+  //
+  // O corpo esta em `servirHistorico` (acima) porque este mesmo trabalho tem DOIS caminhos de entrada: uma
+  // linha `historico` que chegue ao processo, e o modo `--historico <instrumento>` do `processo.ts` — que
+  // existe porque o contrato NAO tem tipo de mensagem para PEDIR o historico (medido: o esquema do
+  // `historico` exige instrumento, moeda, instante e execucoes — a forma de uma RESPOSTA). Uma funcao, dois
+  // caminhos, para nao haver duas regras a divergir.
+  // -------------------------------------------------------------------------------------------------------
+  if (tipo === "historico") {
+    const cargaDoPedido = objecto(pedido?.carga) ?? {};
+    const instrumento = texto(cargaDoPedido.instrumento);
+    if (instrumento === undefined) {
+      return recusa(
+        id,
+        "campo_obrigatorio_ausente",
+        "o pedido de historico nao nomeia o `instrumento`: o trilho do dinheiro e por instrumento, e sem o nome nao se sabe de quem e",
+        {},
+        [],
+      );
+    }
+    const inicio = typeof cargaDoPedido.inicio_ms === "number" && Number.isInteger(cargaDoPedido.inicio_ms)
+      ? (cargaDoPedido.inicio_ms as number)
+      : undefined;
+    return servirHistorico(id, instrumento, estado, porta, {
+      ...(inicio !== undefined ? { inicio_ms: inicio } : {}),
+      ...(opcoes.defeito !== undefined ? { defeito: opcoes.defeito } : {}),
+    });
+  }
+
   if (tipo !== "boleta") {
     diag.push({
       etapa: "tipo_nao_servido",
       tipo,
       porque:
-        "esta porta de processo entrega a BOLETA (FR-019/T010). As leituras de mercado e o comando sao tarefas " +
-        "proprias e nao se improvisam aqui: nao sai linha nenhuma, e o silencio faz a mesa ficar em ESPERA " +
-        "dentro do prazo (nunca em sucesso)",
+        "esta porta de processo entrega a BOLETA e o HISTORICO do venue (FR-019/T010/T047). As leituras de " +
+        "mercado e o comando sao tarefas proprias e nao se improvisam aqui: nao sai linha nenhuma, e o " +
+        "silencio faz a mesa ficar em ESPERA dentro do prazo (nunca em sucesso)",
     });
     return { linhas: [], diag };
   }

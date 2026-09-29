@@ -8,7 +8,7 @@
 //   * STDERR e o DIAGNOSTICO: uma linha de JSON por etapa (as portas do arranque, a conta lida, o envio, o
 //     desfecho). E onde vive o PORQUE, que o contrato nao tem campo para transportar.
 //
-// Tres modos, e todos dizem o que fazem:
+// Quatro modos, e todos dizem o que fazem:
 //
 //   1. SERVIR (por omissao): arranca, cumpre as portas, e atende as mensagens que chegam pelo `stdin` ate ao
 //      fim do cano. Arrancado pelo vigia, com uma ficha: uma ligacao, uma chave (FR-019).
@@ -24,6 +24,13 @@
 //      modo NAO serve boletas (quem nao pode assinar nao pode encomendar).
 //        bun run brokers/hyperliquid/processo.ts --casos <ficheiro> --ficha base --ao-vivo --so-sonda
 //
+//   4. HISTORICO (`--historico <coin>`): le o HISTORICO do venue do instrumento (execucoes, taxas, funding,
+//      resultado realizado) e escreve na costura a linha que o contrato aceitar — ou a RECUSA NOMEADA, quando
+//      o venue nao publica uma grandeza que o contrato exige (FR-018/FR-019: o que o venue nao diz fica
+//      desconhecido, e nao se reconstroi). Existe porque o CONTRATO NAO TEM TIPO DE MENSAGEM PARA PEDIR O
+//      HISTORICO: sem pedido possivel, este modo e o caminho de fora para a mesma leitura. Nao assina nada.
+//        bun run brokers/hyperliquid/processo.ts --casos <ficheiro> --ficha base --ao-vivo --historico BTC
+//
 // O veneno de teste: `--defeito <nome>` (classificacao | sem_motivo | versao) faz o processo responder uma
 // mensagem DEFEITUOSA DE PROPOSITO, para a bancada provar que o outro lado a apanha. Sem esta bandeira, cada
 // linha que sai e conferida contra o contrato antes de sair.
@@ -36,6 +43,7 @@ import {
   PORTAS_DO_PROCESSO,
   arrancar,
   atender,
+  servirHistorico,
   type Bateria,
   type EstadoDoProcesso,
   type Ficha,
@@ -46,6 +54,10 @@ import {
   type ClienteDeLeitura,
 } from "./sonda.ts";
 import { portaDoCliente as portaDeContaDoCliente, type ClienteDeConta } from "./leitura.ts";
+import {
+  portaDoCliente as portaDeHistoricoDoCliente,
+  type ClienteDeHistorico,
+} from "./historico.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..");
 const CASOS_POR_OMISSAO = join(import.meta.dir, "casos", "processo.casos.json");
@@ -53,6 +65,7 @@ const CASOS_POR_OMISSAO = join(import.meta.dir, "casos", "processo.casos.json");
 const USO = `uso:
   bun run brokers/hyperliquid/processo.ts --casos <ficheiro> [--ficha <nome|@caminho>] [--venue <variante>]
         [--prazo-do-venue-ms <ms>] [--manifesto-em <caminho>] [--ao-vivo] [--so-sonda] [--defeito <nome>]
+  bun run brokers/hyperliquid/processo.ts --casos <ficheiro> --ao-vivo --historico <instrumento> [--desde-ms <ms>]
   bun run brokers/hyperliquid/processo.ts --casos <ficheiro> --bancada
 
   --ficha <nome>      a ficha do processo, declarada em \`fichas\` do ficheiro de casos
@@ -60,6 +73,9 @@ const USO = `uso:
   --venue <variante>  o duble do venue, declarado em \`venues\` do ficheiro de casos (por omissao: base)
   --ao-vivo           fala com o venue a serio (SDK), so LEITURAS: este modo nao assina nada
   --so-sonda          arranca sem ler a chave, publica o manifesto e sai (nao serve boletas)
+  --historico <coin>  le o HISTORICO do venue (execucoes, taxas, funding, resultado) do instrumento e sai:
+                      escreve na costura a linha que o contrato aceitar, ou a RECUSA NOMEADA (FR-018)
+  --desde-ms <ms>     a janela DECLARADA do historico (por omissao: sem janela, o que o venue devolver)
   --bateria <nome>    a bateria de conformidade declarada em \`venues.<nome>.bateria\` (FR-027)
   --defeito <nome>    classificacao | sem_motivo | versao — responde mal DE PROPOSITO (prova negativa)
   --bancada           corre os casos deste ficheiro e sai`;
@@ -174,6 +190,10 @@ function resposta(v: unknown): Resposta {
  * falha a MEIO: `conta` (o arranque, rodada 1), `conta_apos_o_pedido` (da rodada 2 em diante, antes do envio) e
  * `apos_o_envio[referencia]` (depois de a ordem ter saido). Uma leitura declarada a falhar responde com ERRO —
  * e o processo diz que nao leu, em vez de servir o valor anterior (FR-017).
+ *
+ * As leituras do HISTORICO (FR-018) vivem em `historico.<leitura>` — a mesma regra: o que o duble nao
+ * declarar NAO vira resposta vazia, vira falha dita (uma lista vazia e uma declaracao do venue, e tem de ser
+ * declarada como tal).
  */
 function portaDoDuble(dados: any): Porta {
   let rodada = 0;
@@ -195,6 +215,18 @@ function portaDoDuble(dados: any): Porta {
       // Uma leitura que o duble nao declara nao vira «resposta vazia»: vira FALHA declarada, e o processo diz
       // que nao leu (a mesma regra do `envio`).
       throw new Error(`o duble do venue nao declara a leitura publica \`${chave}\``);
+    }
+    return resposta(v);
+  };
+
+  /** Uma leitura do HISTORICO declarada pelo duble (`historico.<chave>`) — ou falha dita, como as da sonda. */
+  const historicoDe = (chave: string): Resposta => {
+    const v = dados.historico?.[chave];
+    if (v === undefined) {
+      throw new Error(
+        `o duble do venue nao declara a leitura do historico \`historico.${chave}\`: uma leitura nao declarada ` +
+          "nao vira resposta vazia (FR-018)",
+      );
     }
     return resposta(v);
   };
@@ -270,6 +302,33 @@ function portaDoDuble(dados: any): Porta {
         return r.valor;
       },
     },
+    historico: {
+      execucoes: async () => {
+        const r = historicoDe("execucoes");
+        if (!r.ok) throw new Error(r.erro);
+        return r.valor;
+      },
+      ordensHistoricas: async () => {
+        const r = historicoDe("ordens");
+        if (!r.ok) throw new Error(r.erro);
+        return r.valor;
+      },
+      taxasDaConta: async () => {
+        const r = historicoDe("taxas");
+        if (!r.ok) throw new Error(r.erro);
+        return r.valor;
+      },
+      fundingDaConta: async () => {
+        const r = historicoDe("funding_da_conta");
+        if (!r.ok) throw new Error(r.erro);
+        return r.valor;
+      },
+      fundingPublicado: async () => {
+        const r = historicoDe("funding_publicado");
+        if (!r.ok) throw new Error(r.erro);
+        return r.valor;
+      },
+    },
     envio: {
       enviar: async (_accao: unknown, _conta: string, referencia?: string) => {
         if (referencia === undefined || referencia === null) {
@@ -300,10 +359,12 @@ async function portaAoVivo(ficha: Ficha): Promise<Porta> {
   const isTestnet = ficha.venue.ambiente !== "producao";
   const transporte = new modulo.HttpTransport({ isTestnet });
   const info = new modulo.InfoClient({ transport: transporte });
-  const cliente = info as unknown as ClienteDeLeitura & ClienteDeConta;
+  const cliente = info as unknown as ClienteDeLeitura & ClienteDeConta & ClienteDeHistorico;
   return {
     leitura: portaDeLeituraDoCliente(cliente),
     conta: portaDeContaDoCliente(cliente),
+    // O historico (FR-018): as cinco leituras que o venue publica. A leitura e so isso — nenhuma assina nada.
+    historico: portaDeHistoricoDoCliente(cliente),
     envio: {
       enviar: async () => {
         throw new Error(
@@ -342,6 +403,9 @@ async function servir(args: {
   prazoDoVenueMs?: number;
   manifestoEm?: string;
   soSonda?: boolean;
+  /** O modo de LEITURA do historico (`--historico <instrumento>`): le o venue, serve a linha que o contrato
+   *  aceitar — ou a recusa NOMEADA — e sai. Nada se assina e nenhuma ordem sai por este caminho. */
+  historicoDoInstrumento?: string;
 }): Promise<void> {
   const portas = bandeira("--sem-chave") ? { sem_chave: true } : {};
   const arranque = await arrancar(
@@ -390,6 +454,37 @@ async function servir(args: {
   if (args.soSonda === true) {
     process.stdout.write(estado.linha_do_manifesto + "\n");
     diag({ etapa: "sonda", veredicto: "publicado", nota: "modo de sonda: nenhuma boleta e servida, nada foi assinado" });
+    process.exit(0);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // O MODO DE LEITURA DO HISTORICO (`--historico <instrumento>`), FR-018/RN-H14.
+  //
+  // Existe por uma razao MEDIDA, e nao por conveniencia: o contrato NAO tem tipo de mensagem para PEDIR o
+  // historico (o `historico` do envelope exige instrumento, moeda, instante e execucoes — a forma de uma
+  // RESPOSTA). Sem um pedido possivel, a leitura so se exerceria por dentro; este modo da o MESMO caminho
+  // de fora, como o `--so-sonda` faz com o manifesto. Ele le o venue e escreve na costura a linha que o
+  // contrato aceitar — ou a recusa NOMEADA, com a razao e a lista do que o venue nao publica. Nao assina
+  // nada e nao envia ordem nenhuma.
+  // ---------------------------------------------------------------------------------------------------------
+  if (args.historicoDoInstrumento !== undefined) {
+    const desde = argumento("--desde-ms");
+    const r = await servirHistorico(
+      `${estado.ficha.conector}/historico`,
+      args.historicoDoInstrumento,
+      estado,
+      args.porta,
+      desde !== undefined ? { inicio_ms: Number(desde) } : {},
+    );
+    for (const d of r.diag) diag(d);
+    for (const l of r.linhas) process.stdout.write(l + "\n");
+    diag({
+      etapa: "historico",
+      veredicto: r.linhas.length > 0 ? "servido" : "sem_resposta",
+      instrumento: args.historicoDoInstrumento,
+      janela: desde !== undefined ? `desde ${desde} ms (declarada)` : "sem janela declarada (o que o venue devolver)",
+      nota: "modo de leitura: nada foi assinado e nenhuma ordem foi enviada (FR-018: o historico e do venue, nao se reconstroi)",
+    });
     process.exit(0);
   }
 
@@ -716,7 +811,12 @@ async function main(): Promise<void> {
     return;
   }
   const caminhoDosCasos = argumento("--casos") ?? CASOS_POR_OMISSAO;
-  if (!process.argv.includes("--casos") && bandeira("--bancada") === false && !bandeira("--so-sonda")) {
+  if (
+    !process.argv.includes("--casos") &&
+    bandeira("--bancada") === false &&
+    !bandeira("--so-sonda") &&
+    argumento("--historico") === undefined
+  ) {
     // Servir sem ficheiro de casos: usa o de omissao, e di-lo no diagnostico.
     diag({ etapa: "casos", caminho: caminhoDosCasos, nota: "nenhum --casos dado: a usar o ficheiro de casos do recorte" });
   }
@@ -760,10 +860,13 @@ async function main(): Promise<void> {
       // resposta declarada, e qualquer envio nesse modo e um defeito do proprio caso.
       porta,
     bateria,
-    semChave: soSonda,
+    // A porta da CHAVE nao se corre no modo de historico: a leitura do historico nao assina nada e o venue
+    // publica-a a quem pergunta. Um processo que le a chave para nao a usar arrisca-a sem ganho nenhum.
+    semChave: soSonda || argumento("--historico") !== undefined,
     prazoDoVenueMs: argumento("--prazo-do-venue-ms") !== undefined ? Number(argumento("--prazo-do-venue-ms")) : undefined,
     manifestoEm: argumento("--manifesto-em"),
     soSonda,
+    historicoDoInstrumento: argumento("--historico"),
   });
 }
 
