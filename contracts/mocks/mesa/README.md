@@ -37,5 +37,14 @@ não muda.
 ## Como se corre
 
 ```
-bash tools/verificar-contrato/duble-de-mesa.sh          # os casos declarados, nas duas direções
+bash tools/verificar-contrato/duble-de-mesa.sh          # os casos declarados, nas duas direccoes
+
+# e, caso a caso, a fidelidade contra o motor do contrato (SC-004):
+cd contracts && uv run python mocks/mesa/main.py --papel setup    --casos setup.casos.json    --fidelidade
+cd contracts && uv run python mocks/mesa/main.py --papel conector --casos conector.casos.json --fidelidade
 ```
+
+O modo `--fidelidade` manda os **mesmos** casos ao motor do contrato (`esqueleto/casos.py` e `casos.ts`) e
+compara veredicto e motivo com os do dublê: divergência é falha, e é defeito de **um dos dois**. Foi assim que
+apareceu a primeira — o dublê dizia `aceita` e o motor diz `aceite` —, e não havia como a apanhar sem correr
+os dois: cada um, sozinho, era coerente.

@@ -1,0 +1,324 @@
+{
+  "mensagem": "proposta",
+  "dono": "contracts/mocks/mesa/setup.casos.json",
+  "nota": "A mesa DE MENTIRA virada a um setup: entrega o mercado, confere a proposta. Casos em DADO (FR-029): um caso novo e um caso novo neste ficheiro, a bateria nao muda.",
+  "casos": [
+    {
+      "nome": "proposta-valida",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "a proposta do template, e a unica que um setup de verdade tem de saber entregar - este caso corre contra o mock de setup do recorte 001 (FR-031: estendido, nao substituido)",
+      "prazo_de_resposta_ms": 3000,
+      "resposta_do_plugin": {
+        "contrato": "1.3.0",
+        "tipo": "proposta",
+        "id": "p-1",
+        "carga": {
+          "setup": {
+            "nome": "manual",
+            "versao": "1.0.0"
+          },
+          "lado": "buy"
+        }
+      },
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      },
+      "com_plugin": true
+    },
+    {
+      "nome": "proposta-sem-setup",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "sem a assinatura do setup nao se sabe que estrategia propoe isto",
+      "prazo_de_resposta_ms": 3000,
+      "resposta_do_plugin": {
+        "contrato": "1.3.0",
+        "tipo": "proposta",
+        "id": "p-2",
+        "carga": {
+          "lado": "buy"
+        }
+      },
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "proposta-com-campo-a-mais",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido",
+      "nota": "um campo a mais na proposta e a porta dos setups a alargarem-se sozinhos",
+      "prazo_de_resposta_ms": 3000,
+      "resposta_do_plugin": {
+        "contrato": "1.3.0",
+        "tipo": "proposta",
+        "id": "p-3",
+        "carga": {
+          "setup": {
+            "nome": "manual",
+            "versao": "1.0.0"
+          },
+          "lado": "buy",
+          "certeza": "alta"
+        }
+      },
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "proposta-em-unidade-de-corretora",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora",
+      "nota": "grandeza do venue nao entra na proposta: quem converte e a mesa",
+      "prazo_de_resposta_ms": 3000,
+      "resposta_do_plugin": {
+        "contrato": "1.3.0",
+        "tipo": "proposta",
+        "id": "p-4",
+        "carga": {
+          "setup": {
+            "nome": "manual",
+            "versao": "1.0.0"
+          },
+          "lado": "buy",
+          "quantidade": "0.18"
+        }
+      },
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "proposta-lado-fora-do-conjunto",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "nota": "o lado e do conjunto fechado - nao ha 'talvez'",
+      "prazo_de_resposta_ms": 3000,
+      "resposta_do_plugin": {
+        "contrato": "1.3.0",
+        "tipo": "proposta",
+        "id": "p-5",
+        "carga": {
+          "setup": {
+            "nome": "manual",
+            "versao": "1.0.0"
+          },
+          "lado": "talvez"
+        }
+      },
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "proposta-nula",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_nulo_nao_permitido",
+      "nota": "nulo nao e ausente: recusa-se com o nome proprio",
+      "prazo_de_resposta_ms": 3000,
+      "resposta_do_plugin": {
+        "contrato": "1.3.0",
+        "tipo": "proposta",
+        "id": "p-6",
+        "carga": {
+          "setup": {
+            "nome": "manual",
+            "versao": "1.0.0"
+          },
+          "lado": null
+        }
+      },
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "proposta-de-versao-atrasada",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "versao_do_contrato_divergente",
+      "nota": "a versao confere-se por igualdade exacta, e a recusa diz as duas versoes",
+      "prazo_de_resposta_ms": 3000,
+      "resposta_do_plugin": {
+        "contrato": "1.0.0",
+        "tipo": "proposta",
+        "id": "p-7",
+        "carga": {
+          "setup": {
+            "nome": "manual",
+            "versao": "1.0.0"
+          },
+          "lado": "buy"
+        }
+      },
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "plugin-mudo-dentro-do-prazo",
+      "veredicto_esperado": "espera",
+      "motivo_esperado": null,
+      "nota": "ADVERSARIO. O setup nao respondeu, mas o prazo ainda corre: ainda se sabe que ele pode responder - e 'espera', nunca sucesso (SC-008)",
+      "modo_adversario": "silencio",
+      "prazo_de_resposta_ms": 3000,
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "plugin-mudo-passado-o-prazo",
+      "veredicto_esperado": "desconhecido",
+      "motivo_esperado": "atraso_alem_do_prazo",
+      "nota": "ADVERSARIO. Passado o prazo ja nao se sabe se chegou a tempo: 'desconhecido' - nunca sucesso (SC-008)",
+      "modo_adversario": "silencio",
+      "chegada_ms": 9000,
+      "prazo_de_resposta_ms": 3000,
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    },
+    {
+      "nome": "plugin-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "plugin_recusou",
+      "nota": "ADVERSARIO. O setup disse que nao: o duble regista, e nao inventa uma proposta",
+      "modo_adversario": "recusa",
+      "prazo_de_resposta_ms": 3000,
+      "mercado": {
+        "contrato": "1.3.0",
+        "tipo": "mercado",
+        "id": "m-1",
+        "carga": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "equity": "1000.00"
+        }
+      }
+    }
+  ],
+  "vocabulario_do_duble": {
+    "plugin_recusou": "o plugin escreveu uma saida que nao e uma mensagem",
+    "atraso_alem_do_prazo": "a resposta chegou depois do prazo"
+  },
+  "esquemas_que_ele_le": [
+    "contracts/envelope.schema.json",
+    "contracts/proposta.schema.json",
+    "contracts/vocabulario.json",
+    "contracts/versao.json"
+  ]
+}

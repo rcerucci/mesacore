@@ -292,11 +292,28 @@ O que a implementação teve de decidir e não estava aqui:
 
 **Independent Test**: `bash tools/verificar-contrato/duble-de-mesa.sh` — os mesmos casos dão o mesmo veredicto no dublê e na mesa real; com o venue mudo, «espera» e depois `desconhecido`.
 
-- [ ] T051 [US6] `contracts/mocks/mesa/main.py` — o dublê: entrega `mercado` e confere `proposta`; entrega `boleta` e confere `desfecho`; lê os **esquemas** e **não** importa `core/`
-- [ ] T052 [P] [US6] Os casos do dublê em **dado** (`contracts/mocks/mesa/*.casos.json`) e os modos adversários: recusa, atraso, silêncio, números fora da banda
-- [ ] T053 [US6] A prova de fidelidade: os **mesmos** casos contra a mesa real, com divergência = **falha** (SC-004)
-- [ ] T054 [P] [US6] `tools/verificar-contrato/duble-de-mesa.sh` — a bancada, ligada à porta do contrato
-- [ ] T055 [US6] `relatorios/us6.txt`
+- [x] T051 [US6] `contracts/mocks/mesa/main.py` — o dublê: entrega `mercado` e confere `proposta`; entrega `boleta` e confere `desfecho`; lê os **esquemas** e **não** importa `core/`
+- [x] T052 [P] [US6] Os casos do dublê em **dado** (`contracts/mocks/mesa/*.casos.json`) e os modos adversários: recusa, atraso, silêncio, números fora da banda
+- [x] T053 [US6] A prova de fidelidade: os **mesmos** casos contra a mesa real, com divergência = **falha** (SC-004)
+- [x] T054 [P] [US6] `tools/verificar-contrato/duble-de-mesa.sh` — a bancada, ligada à porta do contrato
+- [x] T055 [US6] `relatorios/us6.txt`
+
+**Checkpoint (medido)**: `provar` **24 de 24** (entrou `duble-de-mesa.sh`); dublê de mesa **0 falhas** (10 casos em cada papel, 1 deles contra o plugin a sério em cada, **7+8** conferidos contra as **duas** linguagens do motor); `tsc` 0 erros; número cru em `relatorios/us6.txt`.
+
+O que a implementação teve de decidir e não estava aqui:
+
+- **A fidelidade (SC-004) apanhou uma divergência no primeiro minuto**, e era do meu lado: o dublê dizia `aceita`
+  e o motor do contrato diz `aceite`. Cada um, sozinho, era coerente — só correndo os dois aparece. O
+  vocabulário do contrato é o árbitro.
+- **Validar a mensagem contra o schema do TIPO dá `campo_desconhecido` em todas** (as chaves do envelope não são
+  da carga): quem encaminha é o **envelope**, e a bateria mostrou-o em vez de um «0 falhas» enganador.
+- **O desfecho RECUSADO exige o `motivo` da corretora** (medido no caso do recorte 001), e `taxa` **não** é campo
+  em unidade de corretora — `pontos` é. Duas expectativas minhas que a medição derrubou.
+- **O dublê não importa o `core/`** — e isso é verificado por comando na bateria (RN-E17/RN-E24), porque um
+  dublê copiado do core prova compatibilidade com a nossa implementação e esconde o defeito dos dois lados.
+- **Só os casos que declaram `com_plugin` falam com o plugin a sério**, e o resumo diz **quantos** foram (1 em
+  cada papel): «correu contra o mock» e «correu com a resposta declarada no caso» não podem parecer o mesmo.
+- **O plugin calado dentro do prazo é ESPERA, depois do prazo é DESCONHECIDO — nunca sucesso** (SC-008).
 
 ---
 

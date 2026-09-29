@@ -1,0 +1,87 @@
+US6 — O DUBLE DE MESA, PARA OS PLUGINS SE CONSTRUIREM SEM A MESA REAL (T051-T055)
+
+As saidas estao cruas. Nao ha parafrase delas em sitio nenhum.
+
+  $ bash tools/verificar-contrato/duble-de-mesa.sh
+ok      duble/setup (casos declarados)                 duble de mesa (setup): 0 falhas — 10 casos, cada um com o veredicto declarado
+ok      duble/conector (casos declarados)              duble de mesa (conector): 0 falhas — 10 casos, cada um com o veredicto declarado
+ok      duble/setup x mock de setup (001)              duble de mesa (setup): 0 falhas — 10 casos, cada um com o veredicto declarado, 1 deles contra o plugin a serio
+ok      duble/conector x mock de conector (001)        duble de mesa (conector): 0 falhas — 10 casos, cada um com o veredicto declarado, 1 deles contra o plugin a serio
+ok      fidelidade/setup (SC-004)                      fidelidade: 0 falhas — o duble e o motor do contrato dao o mesmo veredicto nos mesmos casos
+ok      fidelidade/conector (SC-004)                   fidelidade: 0 falhas — o duble e o motor do contrato dao o mesmo veredicto nos mesmos casos
+ok      duble/lido do contrato (RN-E17)                nenhum import do core; os motivos vem dos esquemas
+
+duble de mesa: 0 falhas — os casos declarados, contra os mocks do 001 e contra o motor do contrato
+
+  $ (contracts/) uv run python mocks/mesa/main.py --papel setup --casos setup.casos.json      (fim)
+{"caso": "plugin-recusa", "papel": "setup", "modo": "recusa", "veredicto": "recusado", "motivo": "plugin_recusou", "nota": "o plugin disse que nao", "esperado_ok": true}
+
+duble de mesa (setup): 0 falhas — 10 casos, cada um com o veredicto declarado
+
+  $ (contracts/) uv run python mocks/mesa/main.py --papel conector --casos conector.casos.json (fim)
+{"caso": "conector-mudo-passado-o-prazo", "papel": "conector", "modo": "silencio", "veredicto": "desconhecido", "motivo": "atraso_alem_do_prazo", "nota": "calado 20000 ms depois, e o prazo era 3000 ms", "esperado_ok": true}
+
+duble de mesa (conector): 0 falhas — 10 casos, cada um com o veredicto declarado
+
+  $ bash tools/verificar-maquina/provar.sh
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 24 de 24 passaram — a maquina decide o que devia, e explica o que nao fez
+
+  $ bash tools/verificar-maquina/tipos.sh
+vigia: 0 erros de tipo
+  tools: 0 erros de tipo
+  contracts: 0 erros de tipo
+tipos: 0 erros em 4 directorios (o tsc confere o produto e as bancadas)
+
+T051/T052 - O DUBLE, E OS CASOS EM DADO (FR-027, FR-029).
+
+`contracts/mocks/mesa/main.py` e o ASSENTO DA MESA virado a um plugin: entrega o snapshot de mercado a um
+setup e confere a proposta que ele devolve; entrega a boleta a um conector e confere o desfecho. Os casos sao
+DADO: `setup.casos.json` e `conector.casos.json`, dez cada - um caso novo e um caso novo no ficheiro, e a
+bateria nao muda.
+
+O duble e escrito DO CONTRATO: le `contracts/*.schema.json` e `vocabulario.json`, e a traducao do erro do
+esquema para o nome do motivo esta escrita DE NOVO aqui, de proposito - o motor do contrato faz a dele, e se
+as duas nao concordarem a fidelidade fica vermelha. Nao ha um unico `import` do core, e a bateria verifica-o
+por comando (RN-E17, RN-E24): um duble copiado do core prova compatibilidade com a nossa implementacao, e
+esconde o defeito dos dois lados ao mesmo tempo. Em Python, que e a lingua que o core nao fala.
+
+Os ADVERSARIOS estao nos casos, nao em ramos de codigo (FR-029): o plugin CALADO dentro do prazo da ESPERA
+(ainda se sabe que pode responder), calado depois do prazo da DESCONHECIDO (ja nao se sabe se chegou a tempo),
+o plugin que RECUSA, o campo a mais, a grandeza em unidade de corretora (`pontos`), o lado fora do conjunto
+(`talvez`), o nulo, a versao atrasada e a versao a frente. Nenhum deles da sucesso - e SC-008 pede isso mesmo:
+espera e desconhecido, em 100% dos casos declarados.
+
+FR-031 - ESTENDIDOS, NAO SUBSTITUIDOS: dois dos casos correm contra os mocks de VERDADE do recorte 001 (o
+`mocks/setup/main.ts` com `--lado buy`, e o `mocks/conector/main.py`), pelo cano deles: o duble escreve a
+mensagem no stdin do plugin e le a resposta do stdout. Nao e simulacao do cano - e o cano. O resumo di-lo com
+numero: "1 deles contra o plugin a serio", porque "correu contra o mock" e "correu com a resposta declarada
+no proprio caso" nao sao a mesma coisa e nao podem parecer.
+
+T053 - A FIDELIDADE (SC-004), e a divergencia que ela apanhou a primeira vez que correu.
+
+Os MESMOS casos vao, inteiros e na forma dos casos do contrato, para o MOTOR (`esqueleto/casos.py` e
+`casos.ts`), que da o veredicto dele; o duble da o seu; os dois comparam-se. Uma divergencia sai como FALHA.
+
+E saiu, no primeiro minuto: no caso `proposta-valida` o duble dizia `aceita` e o motor diz `aceite`. Uma letra.
+O vocabulario do contrato e o arbitro - o duble e que se corrigiu. E exactamente o defeito que este par
+existe para apanhar, e nao havia maneira de o apanhar sem correr os dois: cada um, sozinho, era coerente.
+
+Depois da correccao: 7 casos no papel setup e 8 no papel conector, nas DUAS linguagens do motor, 0 falhas.
+
+O QUE SE DESCOBRIU A CORRER (duas coisas que o texto nao dizia):
+
+  - validar a mensagem contra o schema do TIPO (`proposta.schema.json`) da `campo_desconhecido` em TODAS as
+    mensagens, porque as chaves do envelope nao sao da carga - quem encaminha e o ENVELOPE
+    (`envelope.schema.json`). A primeira corrida do duble reprovou a proposta valida, e foi a bateria que o
+    mostrou em vez de um "0 falhas" enganador;
+  - o desfecho RECUSADO exige o `motivo` da corretora na carga (medido no caso do recorte 001, nao inventado),
+    e `taxa` nao e campo em unidade de corretora - `pontos` e. Duas expectativas minhas que a medicao derrubou.
+
+T055 - O QUE NAO SE PROVA AQUI.
+
+Nao se prova comportamento da mesa, e o README do duble di-lo: ele responde o que os casos dizem, nao decide
+risco, nao contende, nao mede CB. A conformidade da corretora (RN-C6) e o aceite do conector REAL, no recorte
+dele. Nenhuma linha daqui toca num venue nem pede chave (RN-E24). E os plugins de verdade continuam sob
+demanda, como o dono decidiu.
