@@ -93,6 +93,12 @@ stop anexo · profundidade de livro · funding · relógio de fecho de barra · 
 liga ordem a posição nos seus próprios registros · **estado do mercado** (aberto/fechado, RN-D8) ·
 **versão do contrato** (RN-E18) — todos por RN-C1.
 
+**Por conta, quando o plugin serve várias** (emenda do dono, 28 set 2026): um plugin que carregue as
+constantes de **várias corretoras e contas** no arranque tem de declarar o manifesto **por conta** — cada
+conta com os seus instrumentos, escalões e mínimos. Hoje `manifesto.conector` é `{nome, versao}` e
+`instrumentos` é uma lista só: um conector = uma conta. E a **constante de destino é um nome, nunca uma
+credencial** (RN-E14): o alias é que viaja, a referência fica na tabela que o plugin carrega.
+
 ---
 
 ## 6. Lacunas que o inventário revelou

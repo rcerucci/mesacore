@@ -85,6 +85,13 @@ vontade do plugin — e o desenho desta casa é o contrário disso.
 **Onde se conserta.** No recorte do conector, com **subida de versão do contrato** (o esquema é fechado,
 `additionalProperties: false`: acrescentar campo é mudar contrato, e mudar contrato é acto declarado).
 
+**Ampliado em 28 set 2026 (plugin do cTrader).** O dono descreveu o plugin como quem **carrega as constantes
+de todas as corretoras e contas no arranque** e é escolhido por uma **constante de destino**. Nesse desenho o
+manifesto não pode continuar a ser de uma conta: `manifesto.conector` é `{nome, versao}` e `instrumentos` é
+**uma** lista. Tem de passar a declarar **por conta** (instrumentos, escalões de alavancagem, mínimos daquela
+conta) — senão a porta do manifesto aprova uma mesa que não sabe o que está a aprovar, e o instrumento de uma
+conta passa a valer para a outra.
+
 **Como se saberá que está fechado.** Com um caso que faz falhar a **porta do manifesto** quando uma das
 três não está declarada, e um caso de controle em que as três estão e o arranque passa.
 
@@ -112,3 +119,39 @@ chegada no seu próprio relógio e a fila passa a ter ordem. Não é trabalho do
 **Como se saberá que está fechado.** Um caso em que dois pedidos com horas de chegada distintas disparam o
 arranque e **o primeiro a chegar fica com o lugar** — com a metade de controle: os mesmos dois com as horas
 trocadas, e o lugar vai para o outro.
+
+---
+
+## D-004 — A constante de destino não cabe no contrato de hoje
+
+**O que devia acontecer.** A ordem diz **para que conta** vai: o plugin serve várias, carrega as constantes
+de todas no arranque, e a escolha tem de vir nomeada — um alias que ele resolve na tabela que carregou.
+
+**O que há.** Medido em 28 set 2026, e a medição é o defeito:
+
+```
+$ python3 -c "import json;print(list(json.load(open('contracts/boleta.schema.json'))['properties']))"
+14 campos — nenhum nomeia conta, corretora ou constante
+$ python3 -c "import json;p=json.load(open('contracts/proposta.schema.json'));print(p['required'],list(p['properties']))"
+['setup', 'lado'] ['setup', 'lado', 'relogio']
+```
+
+O **setup** não pode escolher a conta: a proposta tem três campos e é fechada — uma constante vinda dele
+seria recusada com `campo_desconhecido`. (Isto é a fronteira a funcionar, não um defeito.) E a **boleta**,
+que é onde a constante teria de viajar, não tem campo para ela — o esquema é fechado, logo acrescentar campo
+é **subir a versão do contrato**.
+
+**A consequência.** Hoje o destino só pode ser **implícito**: ou o processo serve uma conta (o que a mesa
+declara em `conta.corretora`/`conta.identificador`), ou o plugin adivinha. Um plugin multi-conta sem
+constante nomeada teria de escolher a conta por conta própria — e escolher a conta é decidir risco, que é
+exactamente o que o plugin não faz.
+
+**Onde se conserta.** No recorte do **conector**, e a decisão é do dono (`docs/regra-de-negocio.md`,
+«Emenda do dono — o plugin da corretora e a constante do destino»): **(A)** a constante viaja na boleta
+(campo novo, versão nova, e a mensagem diz para que conta foi) ou **(B)** a ligação é a conta (nada muda no
+contrato, e a atribuição por conta fica presa ao processo que escreveu a linha).
+
+**Como se saberá que está fechado.** Com o par de controle: (a) uma boleta com a constante de uma conta e o
+plugin a executar **naquela** conta (e não noutra que também tem o instrumento); (b) a mesma ordem com a
+constante de outra conta, e o resultado a ir para a outra. Sem a metade (b), "foi para a conta certa" podia
+ser coincidência de haver só uma conta ligada.

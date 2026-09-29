@@ -774,8 +774,11 @@ que vale é o parágrafo abaixo de cada uma.
   Entra: o **motivo decide a acção** (*repetir com atraso* · *recusar e registar* · *parar e
   reconciliar*), e **só se repete o que provadamente não foi feito**. Sem confirmação dentro do prazo,
   reconcilia-se **antes** de repetir — repetir às cegas abre uma segunda posição.
-- **RN-M4.9 (contenda e ordem de atendimento)** — a ordem é **FIFO** pelo instante do pedido no relógio do
-  venue; empate resolve-se por ordem **alfabética** do símbolo (comparação simples de caracteres). A ordem
+- **RN-M4.9 (contenda e ordem de atendimento)** — a ordem é **FIFO pela hora de chegada à mesa**, no relógio
+  da **mesa** (não o do venue: esta fila é de intenções que chegaram a nós, e o venue nunca as viu; o instante
+  que o pedido traga de fora **não se usa**, senão quem chama escolhe o lugar na fila). Empate resolve-se por
+  ordem **alfabética** do símbolo (comparação simples de caracteres). A soma das parcelas é feita em
+  **inteiros escalados**, nunca em vírgula flutuante. A ordem
   decide **quem fica de fora**, nunca a ordem de execução; havendo lugar para todos, entram todos.
 - **RN-M4.12 (risco por ordem)** — o limite por ordem **não** é número da mesa. O mandato limita
   **exposição (nocional)** e **distância mínima até à liquidação**; a alavancagem é **facto do
@@ -783,6 +786,81 @@ que vale é o parágrafo abaixo de cada uma.
 - **RN-B11 (nova) — o preço que serve de régua** — o preço enviado à corretora como referência do desvio é
   **relido no momento do envio**, pelo conector. Régua velha desloca a janela do desvio: o desvio medido a
   partir de uma régua velha pode **autorizar** um preenchimento longe do mercado — não protege nada.
-- **RN-E20 (nova) — o que a mesa confere antes de executar** — a resolução devolvida pela corretora é
-  conferida contra a banda do mandato **antes** de mandar executar. Sem este passo, o plugin decide
-  tamanho e ninguém verifica: passa o cálculo **e o limite** para fora da mesa.
+- **RN-E20 (nova, corrigida em 28 set 2026) — a conferência da conta da corretora tem DOIS momentos.** Não
+  se confundem, e confundi-los foi o erro da primeira versão desta regra:
+  - **antes de enviar**, e só onde o venue deixar perguntar (cotação/estimativa): a mesa confere a
+    estimativa contra a banda e **não envia** se não couber — a recusa é dela;
+  - **sobre a resolução**, que é o caso geral de uma ordem **a mercado**: o venue calcula quantidade e
+    margem **ao executar**, logo não há nada para conferir antes. Se os números caírem **fora** da banda, a
+    resposta da mesa não é «recusar» (já está executado): é **reduzir** (reduzir é sempre permitido, mesmo
+    sem leitura e sem ligação) e **registar a divergência**, sem abrir risco novo naquele instrumento até ela
+    estar explicada.
+  Para isto ser conferível, a **resolução tem de trazer números** (quantidade na unidade da corretora, margem
+  exigida, alavancagem efectiva, preço de liquidação) e não um veredicto: «executou» não se confere. Se o
+  plugin devolver só o veredicto, quem garante a banda passa a ser ele — e isso é uma decisão diferente, que
+  transfere interpretação para quem existe para **traduzir e transportar**.
+
+## Emenda do dono — o plugin da corretora e a constante do destino (28 set 2026)
+
+Registado a partir das palavras do dono, sem as corrigir:
+
+> «Plugin do cTrader: ele carrega constantes de todas as corretoras e contas no arranque; setup X manda a
+> ordem e a constante que o plugin deve escolher. Ele consulta essa conta, faz os cálculos e executa
+> devolvendo o resultado.»
+
+### O que isto decide
+
+1. **O plugin carrega as constantes das corretoras e das contas no arranque.** Não é configuração do dono: é
+   **sondagem** — o que é da corretora é dela (§5 do inventário: manifesto *sondado, não configurado*).
+2. **O destino é escolhido por uma constante nomeada, não por uma ligação implícita.** O mesmo plugin serve
+   várias contas, e quem diz para onde vai a ordem é a constante.
+3. **O plugin consulta a conta, faz as contas e executa, devolvendo o resultado.** É o desenho já decidido: o
+   plugin **traduz** (percentagem do saldo → quantidade, pelas constantes daquele instrumento), o **venue
+   calcula** (margem, alavancagem efectiva, liquidação) e **executa ou recusa com motivo**, e a **mesa
+   confere** contra a banda (RN-E20).
+
+### As duas fronteiras que esta emenda NÃO move
+
+- **A constante é um nome, nunca uma credencial.** O que a mensagem leva é o alias que o plugin resolve na
+  sua tabela carregada; a referência à credencial fica onde sempre esteve — fora da mensagem, do ledger e
+  do log (RN-E14).
+- **As constantes que o plugin carrega são FACTOS DO VENUE; os limites são do dono e não migram.** As
+  constantes dizem o que a corretora permite (mínimo, passo, escalões de alavancagem, modelo de margem,
+  regra de liquidação). O **teto de margem**, a **perda máxima** (CB) e o **risco por ordem** continuam a
+  ser valores do dono, na configuração da mesa. Se as duas coisas se confundirem, o limite da conta passa a
+  ser lido da corretora — e o dono fica a governar um número que não escreveu.
+
+### O que a emenda deixa por decidir (e o que se mediu)
+
+**a) De onde vem a constante — e por onde viaja.** Medido em 28 set 2026:
+
+- `contracts/proposta.schema.json` tem **três** campos (`setup`, `lado`, `relogio`) e é fechado:
+  `additionalProperties: false`. **O setup não pode escolher a conta** — se mandasse a constante, o contrato
+  recusá-la-ia com `campo_desconhecido`. É a fronteira a funcionar, e é bom que assim seja: quem propõe o
+  lado não escolhe o destino.
+- `contracts/boleta.schema.json` tem **14** campos e **nenhum** nomeia conta ou corretora. Logo a constante
+  — se tiver de viajar — **não cabe no contrato de hoje**: exige campo novo na boleta e **subida de versão**
+  (o esquema é fechado; acrescentar campo é mudar contrato, e mudar contrato é acto declarado).
+
+Os dois caminhos honestos, para decisão do dono:
+
+| Caminho | Como fica | Custo | Ganho |
+|---|---|---|---|
+| **(A) A constante viaja no pedido** | a **ficha de risco** nomeia a conta; a mesa escreve a constante na boleta; o plugin resolve e executa | campo novo na boleta + versão nova do contrato (recorte 003) | a **mensagem diz para que conta foi** — e é isso que o ledger e a reconciliação por conta precisam; um processo serve n contas |
+| **(B) A ligação é a conta** | o que há hoje: `conta.corretora` (nome do conector) + `conta.identificador` no macro; cada instância serve uma conta | um processo (e um carregamento de constantes) por conta | nada muda no contrato; a conta é implícita e a atribuição por processo é trivial |
+
+**Recomendação:** **(A)**, e por uma razão de auditoria antes de ser de conveniência: com a constante na
+boleta, a atribuição por conta deixa de depender de *qual processo escreveu a linha* — que é o único dado
+que se perde quando alguém reorganiza a implantação. Mas é decisão sua, e a (B) é legítima.
+
+**b) Os três agregados passam a ter dimensão de conta.** Hoje são «da mesa»: o **teto de margem** (a soma
+das fichas é comparada com ele), o **CB** (a perda máxima mede-se sobre o equity daquela conta) e a **fila
+da contenda** (o lugar disputado é margem daquela conta). Numa configuração com várias contas, cada um
+passa a valer **por conta** — e o registo tem de dizer de que conta fala. Sem isso, a soma de duas contas
+compara-se com o tecto de uma.
+
+**c) O manifesto passa a ser por conta.** Hoje `manifesto.conector` é `{nome, versao}` e `instrumentos` é
+uma lista só: um conector = uma conta. Um plugin que carrega constantes de várias contas tem de o declarar
+**por conta** (cada conta com os seus instrumentos, escalões e mínimo), senão a porta do manifesto aprova
+uma mesa que não sabe o que está a aprovar. Fica registado em `specs/002-maquina-de-estados/relatorios/DEFEITOS.md`
+(D-002 ampliado).
