@@ -148,7 +148,12 @@ mudar de conta. Sem a metade (b), "atribuiu certo" podia ser coincidência de ha
 
 ---
 
-## D-005 — A fronteira vigia ↔ mesa não tem mensagem no contrato
+## D-005 — A fronteira vigia ↔ mesa não tem mensagem no contrato — **FECHADO pelo recorte 003** (29 set 2026)
+
+O recorte 003 pôs a fronteira no contrato: quatro tipos (`comando`, `resposta_de_comando`,
+`pergunta_do_encerramento`, `decisao_do_encerramento`), com casos próprios em `contracts/casos/vigia.casos.json`,
+o contrato em 1.3.0, e a conferência dos **motivos nas duas direções** (`tools/verificar-contrato/fronteira.sh`,
+0 falhas, com prova negativa). O texto do defeito fica abaixo, como estava.
 
 **O que devia acontecer.** O vigia é um **processo separado** que só obedece a cinco verbos (RN-V1 a RN-V10),
 e uma mesa em operação **nunca depende de ele estar vivo** (RN-V6) — as duas coisas só são verdade se houver

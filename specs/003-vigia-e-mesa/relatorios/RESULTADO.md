@@ -105,3 +105,49 @@ com o veredicto declarado e **nenhum** com sucesso — em 100% dos casos declara
 - A superfície web (RN-E8/RN-E23) fica fora, como a spec declara.
 - A pergunta em aberto do registo de transições (se `desde_ms` é o relógio do venue ou o nosso, FR-041) não
   foi fechada neste recorte.
+
+## O que falta para sair da bancada e ir a campo
+
+Levantado a 29 set 2026, com o comando ao lado de cada linha. **A mesa pode ser declarada concluída para
+teste — em bancada, contra dublês.** Para teste **com dinheiro numa conta** falta:
+
+**1. Blocos que ainda não existem** (e são recortes próprios, sob demanda, como o dono decidiu):
+
+| Bloco | Estado medido |
+|---|---|
+| Conector real (protocolo RN-E20 + conformidade por venue RN-C6) | nenhum: `contracts/mocks/conector/` é dublê |
+| Setup (`setups/`) | só o `README.md` — nenhum setup escrito |
+| Superfície web (RN-E8/RN-E23) | fora do âmbito do 003 (assunção declarada na spec) |
+
+**2. Valores e decisões do dono.** O inventário ainda dá **nove** chaves como `[falta]`. Medido o que o código
+lê hoje (`grep` em `core/` e `vigia/`):
+
+| Chave | O código lê? |
+|---|---|
+| `bandas.saldo_pct` · `alavancagem` · `stop_pct` · `tp_pct` | **sim** — `core/ciclo/arranque.ts` valida a ficha contra elas (o `[falta]` é o **valor**, não o leitor) |
+| `setup.prazo_de_resposta_ms` | **sim** — `core/servidor.ts` (`lerPrazoDoDono`); sem ela o `stop` com posição viva **recusa** |
+| `conta.idade_maxima_do_dado_ms` | **não** — e o `core/ciclo/condicoes.ts` diz porquê, em comentário: «não é um limiar de idade: em varejo o silêncio do tick não distingue mercado calmo de ligação morta». **Isto contradiz a RN-D3, que fala de «limite declarado»** — há que reconciliar: ou a regra muda, ou o código muda |
+| `conta.retencao_ledger` | **não** — a retenção (RN-L6) não está implementada |
+| `tolera_posicao_manual` (RN-T16) | **não** |
+| `bandas.tempo_maximo_em_posicao` (RN-S11) | **não** |
+
+**3. Defeitos declarados em aberto** (`relatorios/DEFEITOS.md` do recorte 002):
+
+- **D-001 — a banda do mandato não é conferida em lado nenhum.** O mais sério para dinheiro real: passar o
+  cálculo do risco para o plugin passa também o **limite**, e ninguém verifica a resolução contra a banda. Os
+  dois momentos estão desenhados no defeito (antes de enviar, onde o venue deixa perguntar; e depois da
+  resposta, sobre a **resolução**, com a resposta a ser **reduzir** e registar a divergência, nunca recusar o
+  que já está executado).
+- **D-002** — as três obrigações do conector não têm casa no manifesto.
+- **D-003** — a fila da contenda não tem hora de chegada no arranque.
+- **D-006** — a tabela trata «não sei» como «não há».
+- **D-004** retratado; **D-005 fechado por este recorte** (a fronteira vigia↔mesa passou a ter mensagem no
+  contrato, com quatro tipos e casos próprios).
+
+**4. Uma pergunta em aberto:** no registo de transições, o `desde_ms` (FR-041) é o relógio do **venue** ou o
+**nosso**? A decisão é do dono, e nenhum dos dois é errado — é preciso é escolher.
+
+**Recomendação, na ordem:** (1) fechar **D-001**, porque é o único pendente que pode custar dinheiro;
+(2) reconciliar a `idade_maxima_do_dado_ms` (regra contra código); (3) o **conector real**, que é o que
+destrava a ida a campo; (4) o setup — que pode começar **manual**, e é o caminho mais curto para o dono operar
+com a mesa a sério; (5) a superfície web, por último: ela consome, não decide.
