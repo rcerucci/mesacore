@@ -1,0 +1,66 @@
+{
+  "plugin": "cruzamento-de-media",
+  "tipo": "setup",
+  "versao_do_questionario": "1.0.0",
+  "escreve_em": "ficha",
+  "incluir": [
+    "risco_do_instrumento"
+  ],
+  "nota_de_fronteira": "Um SETUP cria UMA ficha, para UM instrumento, numa conta escolhida. Os valores sao SO daquele instrumento — nao ha aqui nada da conta, e nada de outro instrumento. O setup ja tem de existir para correr isto; a ficha dele entra no ficheiro da conta que o dono escolher.",
+  "preenche_sempre": {
+    "fichas.<instrumento>.risco.bandas": {
+      "saldo_pct": {
+        "minimo": "0.1",
+        "maximo": "10"
+      },
+      "alavancagem": {
+        "minimo": "1",
+        "maximo": "20"
+      },
+      "stop_pct": {
+        "minimo": "0.2",
+        "maximo": "20"
+      },
+      "tp_pct": {
+        "minimo": "0.2",
+        "maximo": "100"
+      }
+    },
+    "fichas.<instrumento>.setup.versao_do_setup": "0.1.0",
+    "_nota": "a versao do setup e verdade do PLUGIN: ele declara a sua, nao pergunta ao dono"
+  },
+  "perguntas": [
+    {
+      "id": "media_curta",
+      "chave": "fichas.<instrumento>.setup.media_curta",
+      "tipo": "inteiro",
+      "obrigatorio": true,
+      "omissao": "9",
+      "pergunta": "Periodo da media curta",
+      "explicacao": "O cruzamento so dispara quando a media curta cruza a longa. Este e um parametro DESTE instrumento."
+    },
+    {
+      "id": "media_longa",
+      "chave": "fichas.<instrumento>.setup.media_longa",
+      "tipo": "inteiro",
+      "obrigatorio": true,
+      "omissao": "21",
+      "pergunta": "Periodo da media longa",
+      "explicacao": "A media lenta do cruzamento, tambem por instrumento."
+    },
+    {
+      "id": "lado",
+      "chave": "fichas.<instrumento>.setup.lado",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "opcoes": [
+        "comprado",
+        "vendido",
+        "ambos"
+      ],
+      "omissao": "ambos",
+      "pergunta": "Que lado o setup opera?",
+      "explicacao": "Se o setup aceita so comprado, so vendido, ou os dois."
+    }
+  ]
+}

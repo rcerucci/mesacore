@@ -161,7 +161,9 @@ export function conferir(caminho: string): { ficheiro: string; achados: Achado[]
     for (const campo of CAMPOS) julgar(campo, bruto, achados);
     const fichas = ler(bruto, "fichas").valor;
     const nomes = fichas && typeof fichas === "object" ? Object.keys(fichas) : [];
-    if (nomes.length === 0) achados.push({ chave: "fichas", motivo: "campo_obrigatorio_ausente", porque: "nenhuma ficha de instrumento declarada" });
+    // Conta sem ficha nenhuma e um estado LEGITIMO: o conector sobe com a conta, e as fichas entram
+    // depois, uma a uma, pelo fluxo do plugin de setup (por instrumento). E aviso, nunca recusa.
+    if (nomes.length === 0) achados.push({ chave: "fichas", motivo: "campo_desconhecido", porque: "nenhuma ficha declarada ainda — a conta esta configurada, os instrumentos entram pelo fluxo do setup" });
     for (const nome of nomes) {
       const ficha = fichas[nome];
       for (const campo of CAMPOS_DO_RISCO) julgar(campo, ficha, achados);
@@ -187,7 +189,8 @@ if (import.meta.main) {
   } else {
     for (const a of r.achados) console.log(`${a.motivo === "campo_desconhecido" ? "aviso" : "RECUSA"}  ${a.chave}  ${a.motivo}  — ${a.porque}`);
     const recusas = r.achados.filter((a) => a.motivo !== "campo_desconhecido").length;
-    console.log(`conferidor: ${r.veredicto} — ${recusas} recusa(s), ${r.achados.length - recusas} aviso(s) · fichas: ${r.fichas.join(", ") || "nenhuma"}`);
+    const avisos = r.achados.length - recusas;
+    console.log(`conferidor: ${r.veredicto} — ${recusas} recusa(s), ${avisos} aviso(s) · fichas: ${r.fichas.join(", ") || "nenhuma (entram pelo fluxo do setup)"}`);
   }
   process.exit(r.veredicto === "aprovado" ? 0 : 1);
 }

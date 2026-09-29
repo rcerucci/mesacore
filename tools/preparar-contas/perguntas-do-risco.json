@@ -1,0 +1,95 @@
+{
+  "nota": "Perguntas da FICHA DO INSTRUMENTO. A forma e do CORE (config/README.md): todo setup que crie uma ficha faz estas perguntas, e nao as repete no seu questionario. O setup acrescenta as SUAS por cima — e os valores sao por instrumento: BTC com stop de 5% e ETH com 8% sao duas fichas diferentes.",
+  "perguntas": [
+    {
+      "id": "versao_do_mandato",
+      "chave": "fichas.<instrumento>.risco.versao_do_mandato",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Versao do mandato desta ficha (ex.: 2026-09-29-a)",
+      "explicacao": "Identifica a versao da ficha. Sem ela a mesa RECUSA arrancar sessao nova — nao se opera dinheiro com uma ficha que nao diz qual e."
+    },
+    {
+      "id": "saldo_pct",
+      "chave": "fichas.<instrumento>.risco.saldo_pct",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "pergunta": "Percentagem do saldo por ordem (%)",
+      "explicacao": "Quanto do saldo cada ordem DESTE instrumento compromete."
+    },
+    {
+      "id": "alavancagem",
+      "chave": "fichas.<instrumento>.risco.alavancagem",
+      "tipo": "inteiro",
+      "obrigatorio": true,
+      "pergunta": "Alavancagem (inteiro)",
+      "explicacao": "Na HL e qualquer inteiro de 1 ate ao maximo do instrumento (o manifesto da sonda publica qual)."
+    },
+    {
+      "id": "distancia_minima_liquidacao_pct",
+      "chave": "fichas.<instrumento>.risco.distancia_minima_liquidacao_pct",
+      "tipo": "decimal",
+      "opcional": true,
+      "pergunta": "Distancia minima ate a liquidacao em % (Enter = sem exigencia)",
+      "explicacao": "Declarada, a ordem que ficaria mais perto da liquidacao do que isto e RECUSADA."
+    },
+    {
+      "id": "stop_pct",
+      "chave": "fichas.<instrumento>.risco.stop_pct",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "pergunta": "Stop em % do preco de entrada",
+      "explicacao": "A distancia ate ao stop DESTE instrumento. E aqui que BTC fica com 5% e ETH com 8%, se for o que quer."
+    },
+    {
+      "id": "tp_pct",
+      "chave": "fichas.<instrumento>.risco.tp_pct",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "pergunta": "Alvo (take profit) em % do preco de entrada",
+      "explicacao": "A distancia ate ao alvo DESTE instrumento."
+    },
+    {
+      "id": "parcial",
+      "chave": "fichas.<instrumento>.risco.parcial",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "omissao": "o_que_der",
+      "pergunta": "Parcial: o que der ou um valor fixo?",
+      "explicacao": "O que fazer com o resto quando a posicao fecha em parte."
+    },
+    {
+      "id": "desvio_maximo",
+      "chave": "fichas.<instrumento>.risco.desvio_maximo",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "pergunta": "Desvio maximo em % entre o preco pedido e o do venue",
+      "explicacao": "Acima disto a ordem e RECUSADA, em vez de executada a um preco que voce nao pediu."
+    },
+    {
+      "id": "destino_do_resto",
+      "chave": "fichas.<instrumento>.risco.destino_do_resto",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "omissao": "cancelar",
+      "pergunta": "Destino do resto quando a posicao fecha",
+      "explicacao": "O que fazer com a ordem que sobra depois de a posicao fechar."
+    },
+    {
+      "id": "prazo_da_passiva_ms",
+      "chave": "fichas.<instrumento>.risco.prazo_da_passiva_ms",
+      "tipo": "inteiro",
+      "obrigatorio": true,
+      "pergunta": "Prazo da ordem passiva (ms)",
+      "explicacao": "Quanto tempo uma ordem passiva pode ficar sem ser atendida antes de a mesa agir."
+    },
+    {
+      "id": "prazo_de_resposta_ms",
+      "chave": "fichas.<instrumento>.setup.prazo_de_resposta_ms",
+      "tipo": "inteiro",
+      "obrigatorio": true,
+      "pergunta": "Prazo de resposta do dono (ms) quando a mesa pergunta",
+      "explicacao": "Quanto tempo a mesa espera por uma decisao sua antes de seguir a politica declarada. Sem ela, um `stop` com posicao viva RECUSA."
+    }
+  ]
+}

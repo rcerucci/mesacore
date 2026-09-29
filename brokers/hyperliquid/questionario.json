@@ -2,7 +2,6 @@
   "plugin": "hyperliquid",
   "tipo": "conector",
   "versao_do_questionario": "1.0.0",
-  "conta_de_exemplo": "hl-teste-a",
   "preenche_sempre": {
     "nota": "Verdade do PLUGIN, nao pergunta ao dono: quem sabe que software corre e o plugin (a configuracao da conta nao escolhe software). O script grava isto antes da primeira pergunta.",
     "conta.corretora": "hyperliquid",
@@ -56,8 +55,8 @@
       "chave": "conta.instrumentos",
       "tipo": "lista",
       "obrigatorio": true,
-      "pergunta": "Que instrumentos esta conta vai operar? (ex.: BTC ou BTC,ETH)",
-      "explicacao": "Lista separada por virgulas. Cada instrumento listado tem de ter a sua ficha (o script pergunta-as a seguir)."
+      "pergunta": "Que instrumentos esta CONTA pode operar? (ex.: BTC ou BTC,ETH)",
+      "explicacao": "A lista de instrumentos que a conta ACEITA operar — o que a conta permite, nao o que vai operar. Cada instrumento que venha a operar ganha a sua ficha no fluxo do plugin de setup, com os parametros SO daquele instrumento. O conector sobe sem nenhuma ficha."
     },
     {
       "id": "credencial",
@@ -159,107 +158,8 @@
       "explicacao": "Ainda nao ha leitor para esta chave na mesa (RN-L6 nao implementada) — mas a decisao fica declarada agora, em vez de ficar por decidir dentro de um ficheiro."
     }
   ],
-  "ficha_do_instrumento": {
-    "nota": "Estas perguntas repetem-se para cada instrumento declarado acima. A forma e do core; o questionario so as apresenta.",
-    "perguntas": [
-      {
-        "id": "versao_do_mandato",
-        "chave": "fichas.<instrumento>.risco.versao_do_mandato",
-        "tipo": "texto",
-        "obrigatorio": true,
-        "pergunta": "Versao do mandato desta ficha (ex.: 2026-09-29-a)",
-        "explicacao": "Identifica a versao da ficha que esta a operar. Sem ela, a mesa RECUSA arrancar uma sessao nova — e de proposito: nao se opera dinheiro com uma ficha que nao diz qual e."
-      },
-      {
-        "id": "saldo_pct",
-        "chave": "fichas.<instrumento>.risco.saldo_pct",
-        "tipo": "decimal",
-        "obrigatorio": true,
-        "pergunta": "Percentagem do saldo por ordem (%)",
-        "explicacao": "Quanto do saldo cada ordem desta ficha compromete."
-      },
-      {
-        "id": "alavancagem",
-        "chave": "fichas.<instrumento>.risco.alavancagem",
-        "tipo": "inteiro",
-        "obrigatorio": true,
-        "pergunta": "Alavancagem (inteiro)",
-        "explicacao": "Na HL e qualquer inteiro entre 1 e o maximo do instrumento (o manifesto do venue diz qual; nao ha degraus). O manifesto da sonda publica-o — corrija este valor depois de ver o manifesto, se ele for menor."
-      },
-      {
-        "id": "distancia_minima_liquidacao_pct",
-        "chave": "fichas.<instrumento>.risco.distancia_minima_liquidacao_pct",
-        "tipo": "decimal",
-        "opcional": true,
-        "pergunta": "Distancia minima ate a liquidacao em % (Enter = sem exigencia)",
-        "explicacao": "Se declarada, a ordem que ficaria mais perto da liquidacao do que isto e RECUSADA. E a proteccao bruta contra o que o venue leva. Sem ela, a ordem e livre."
-      },
-      {
-        "id": "stop_pct",
-        "chave": "fichas.<instrumento>.risco.stop_pct",
-        "tipo": "decimal",
-        "obrigatorio": true,
-        "pergunta": "Stop em % do preco de entrada",
-        "explicacao": "A distancia ate o stop. A mesa calcula o preco a partir dele — nunca arredonda em silencio: fora do passo do venue, recusa."
-      },
-      {
-        "id": "tp_pct",
-        "chave": "fichas.<instrumento>.risco.tp_pct",
-        "tipo": "decimal",
-        "obrigatorio": true,
-        "pergunta": "Alvo (take profit) em % do preco de entrada",
-        "explicacao": "A distancia ate o alvo."
-      },
-      {
-        "id": "parcial",
-        "chave": "fichas.<instrumento>.risco.parcial",
-        "tipo": "texto",
-        "obrigatorio": true,
-        "omissao": "o_que_der",
-        "pergunta": "Parcial: o que der ou um valor fixo?",
-        "explicacao": "O que fazer com o resto quando a posicao fecha em parte. `o_que_der` deixa a mesa fechar o que conseguir."
-      },
-      {
-        "id": "desvio_maximo",
-        "chave": "fichas.<instrumento>.risco.desvio_maximo",
-        "tipo": "decimal",
-        "obrigatorio": true,
-        "pergunta": "Desvio maximo em % entre o preco pedido e o do venue",
-        "explicacao": "Acima disto, a ordem e RECUSADA em vez de ser executada a um preco que voce nao pediu."
-      },
-      {
-        "id": "destino_do_resto",
-        "chave": "fichas.<instrumento>.risco.destino_do_resto",
-        "tipo": "texto",
-        "obrigatorio": true,
-        "omissao": "cancelar",
-        "pergunta": "Destino do resto quando a posicao fecha",
-        "explicacao": "O que fazer com a ordem que sobra depois de a posicao fechar. `cancelar` e o conservador."
-      },
-      {
-        "id": "prazo_da_passiva_ms",
-        "chave": "fichas.<instrumento>.risco.prazo_da_passiva_ms",
-        "tipo": "inteiro",
-        "obrigatorio": true,
-        "pergunta": "Prazo da ordem passiva (em milissegundos)",
-        "explicacao": "Quanto tempo uma ordem passiva (post-only) pode ficar sem ser atendida antes de a mesa agir."
-      },
-      {
-        "id": "versao_do_setup",
-        "chave": "fichas.<instrumento>.setup.versao_do_setup",
-        "tipo": "texto",
-        "obrigatorio": true,
-        "pergunta": "Versao do setup que esta ficha usa",
-        "explicacao": "Identifica o setup (o plugin de estrategia). A forma dos itens do setup e publicada por ele; aqui fica a versao."
-      },
-      {
-        "id": "prazo_de_resposta_ms",
-        "chave": "fichas.<instrumento>.setup.prazo_de_resposta_ms",
-        "tipo": "inteiro",
-        "obrigatorio": true,
-        "pergunta": "Prazo de resposta do dono (ms) quando a mesa pergunta",
-        "explicacao": "Quanto tempo a mesa espera por uma decisao sua antes de seguir a politica declarada. Sem esta chave, um `stop` com posicao viva RECUSA."
-      }
-    ]
-  }
+  "escreve_em": "conta",
+  "nota_de_fronteira": "Este questionario configura a CONTA no venue e mais nada. A ficha do instrumento (saldo %, alavancagem, stop, tp, desvio, prazo da passiva, versao do mandato) NAO se pergunta aqui: ela e por instrumento — BTC com stop de 5% e ETH com 8% sao duas fichas — e quem as cria e o fluxo do plugin de SETUP, um instrumento de cada vez, escolhendo a conta daquele instrumento. O conector sobe sem ficha nenhuma.",
+  "conta_de_exemplo": "hl-teste-a",
+  "fichas": "vazio — o conector sobe com a conta; as fichas entram pelo fluxo do setup"
 }

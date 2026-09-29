@@ -8,6 +8,46 @@ repositório**. O script pergunta; quem responde é quem sabe — você para o q
 sh tools/preparar-contas/preparar-contas.sh
 ```
 
+## Dois fluxos, e a fronteira entre eles
+
+| Fluxo | Quem cria | Pergunta | Escreve em |
+|---|---|---|---|
+| **Conta** (`escreve_em: conta`) | o questionário do **conector** | a conta no venue: endereço master, ambiente, URL, credencial, a chave (segredo) + a macro da conta | `config/contas/<nome>.json` |
+| **Ficha** (`escreve_em: ficha`) | o questionário do **setup**, um instrumento de cada vez | em que conta, que instrumento, e **só** os parâmetros **daquele** instrumento | a `fichas.<instrumento>` dessa conta, **preservando o resto** |
+
+**O conector sobe sem ficha nenhuma.** Ele configura a conta; o stop de 5% no BTC e o de 8% no ETH são
+**fichas de instrumento**, e entram pelo fluxo do setup, uma a uma. Conta sem ficha é um estado legítimo —
+o conferidor dá-o como **aviso**, nunca como recusa.
+
+O fluxo da ficha **não cria contas**: se a conta não existir, ele **recusa** e diz que se corre primeiro o
+questionário do conector. E o instrumento escolhido tem de estar em `conta.instrumentos` — o que a conta
+**aceita** operar, não o que já opera.
+
+### Risco do instrumento: forma do core, não do setup
+
+As perguntas de risco de uma ficha (saldo %, alavancagem, stop, tp, desvio, prazo da passiva, versão do
+mandato, prazo de resposta) são **forma do core** e vivem em `perguntas-do-risco.json`. Um setup não as
+repete: pede-as com
+
+```json
+"incluir": ["risco_do_instrumento"]
+```
+
+e acrescenta as suas por cima (as médias, o lado, o que for). E o que o plugin sabe sozinho — a versão do
+setup, as bandas que ele aceita — vai em `preenche_sempre`, **sem perguntar ao dono**:
+
+```json
+"preenche_sempre": {
+  "fichas.<instrumento>.setup.versao_do_setup": "0.1.0",
+  "fichas.<instrumento>.risco.bandas": {
+    "saldo_pct": { "minimo": "0.1", "maximo": "10" },
+    "stop_pct":  { "minimo": "0.2", "maximo": "20" }
+  }
+}
+```
+
+Um exemplo completo e comentado está em `setups/exemplo-cruzamento-de-media/questionario.json`.
+
 ## O script não sabe nada de nenhum venue
 
 Ele lê os **questionários que os plugins publicam**:

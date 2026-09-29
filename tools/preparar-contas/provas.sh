@@ -148,5 +148,45 @@ else
   falhou "exit=$CODIGO_E"; printf '%s\n' "$SAIDA_E" | tail -4
 fi
 
+# 6. o fluxo do SETUP: escreve UMA ficha (um instrumento) na conta que ja existe, e nao toca no resto.
+#    E a fronteira que o dono corrigiu: o conector sobe com a conta; o stop de 5% no BTC e o de 8% no ETH
+#    sao fichas de instrumento, criadas pelo setup, uma a uma.
+prova "6. o setup escreve uma ficha e preserva a conta"
+cat > "$CASA/respostas-setup.json" <<EOF
+{
+  "_questionario": "$RAIZ/setups/exemplo-cruzamento-de-media/questionario.json",
+  "conta_alvo": "conta-de-prova",
+  "instrumento": "BTC",
+  "versao_do_mandato": "2026-09-29-a",
+  "saldo_pct": "1",
+  "alavancagem": "3",
+  "stop_pct": "5",
+  "tp_pct": "3",
+  "desvio_maximo": "0.5",
+  "prazo_da_passiva_ms": "30000",
+  "prazo_de_resposta_ms": "600000"
+}
+EOF
+SAIDA_S=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-setup.json" --config-dir "$CFG" --credenciais "$CRED" 2>&1)
+CODIGO_S=$?
+ALVO_S="$CFG/conta-de-prova.json"
+if [ "$CODIGO_S" -eq 0 ] && printf '%s' "$SAIDA_S" | grep -q "conferidor: aprovado"; then
+  ST=$(jq -r '.fichas.BTC.risco.stop_pct' "$ALVO_S" 2>/dev/null)
+  MC=$(jq -r '.fichas.BTC.setup.media_curta' "$ALVO_S" 2>/dev/null)
+  CHEIO=$(jq -r '.conta.identificador' "$ALVO_S" 2>/dev/null)
+  REF=$(jq -r '.conexao.credencial.valor_em' "$ALVO_S" 2>/dev/null)
+  if [ "$ST" = "5" ] && [ "$MC" = "9" ] && [ -n "$CHEIO" ] && [ -n "$REF" ]; then
+    ok "ficha BTC (stop=$ST, media_curta=$MC) na conta, e a conta intacta"
+  else
+    falhou "a ficha entrou mal, ou a conta foi alterada (stop=$ST media=$MC ident=$CHEIO ref=$REF)"
+  fi
+else
+  falhou "exit=$CODIGO_S"; printf '%s\n' "$SAIDA_S" | tail -4
+fi
+
+prova "7. o setup RECUSA se a conta nao existir (o setup nao cria contas)"
+SAIDA_N=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-setup.json" --config-dir "$CASA/vazio" --credenciais "$CRED" 2>&1)
+if printf '%s' "$SAIDA_N" | grep -q "nenhuma conta configurada"; then ok "$(printf '%s' "$SAIDA_N" | grep RECUSADO | cut -c1-70)"; else falhou "o setup criou conta"; fi
+
 printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"
 [ "$FALHAS" -eq 0 ] || exit 1

@@ -90,6 +90,60 @@ MAU=$(jq -r '[.perguntas[], (.ficha_do_instrumento.perguntas // [])[]]
   | length' "$ESCOLHIDO")
 [ "$MAU" = "0" ] || recusar "o questionario $ESCOLHIDO tem $MAU campo(s) de segredo sem destino 'ficheiro_de_credencial' — um segredo so pode ir para o ficheiro de credencial protegido"
 
+# ── 2b. qual dos dois fluxos e este: a CONTA (conector) ou a FICHA de um instrumento (setup) ──
+ESCREVE_EM=$(jq -r '.escreve_em // "conta"' "$ESCOLHIDO")
+case "$ESCREVE_EM" in conta|ficha) ;; *) recusar "escreve_em invalido no questionario: $ESCREVE_EM (conta ou ficha)" ;; esac
+
+# 'incluir' traz blocos de perguntas que sao FORMA DO CORE e que o plugin nao repete (ex.: risco do
+# instrumento). O questionario efetivo passa a ser a juncao; o original nao se toca.
+INCLUIR=$(jq -r '(.incluir // []) | join(" ")' "$ESCOLHIDO")
+for bloco in $INCLUIR; do
+  case "$bloco" in
+    risco_do_instrumento)
+      FONTE="$AQUI/perguntas-do-risco.json"
+      [ -f "$FONTE" ] || recusar "o questionario pede o bloco '$bloco' e nao encontro $FONTE"
+      JUNTO=$(mktemp) || recusar "mktemp falhou"
+      jq -s '.[0] as $q | .[1] as $b | $q + {perguntas: ($q.perguntas + $b.perguntas)} | del(.incluir)' "$ESCOLHIDO" "$FONTE" > "$JUNTO" || recusar "nao consegui juntar o bloco '$bloco'"
+      ESCOLHIDO="$JUNTO"
+      ;;
+    *) recusar "bloco incluido desconhecido: $bloco" ;;
+  esac
+done
+
+if [ "$ESCREVE_EM" = "ficha" ]; then
+  # O setup NAO cria contas: a conta tem de existir (quem a cria e o fluxo do conector).
+  CONTAS=$(ls "$CONFIG_DIR"/*.json 2>/dev/null || true)
+  [ -n "$CONTAS" ] || recusar "nenhuma conta configurada em $CONFIG_DIR — corra primeiro o questionario do conector (o setup escreve numa conta que ja existe)"
+  ALVO=""
+  if [ -n "$RESPOSTAS" ]; then
+    ALVO=$(jq -r '.conta_alvo // empty' "$RESPOSTAS")
+  else
+    dizer "Contas configuradas:"
+    i=0; for f in $CONTAS; do i=$((i+1)); dizer "  $i) $(basename "$f" .json)"; done
+    printf 'Em que conta entra esta ficha? (numero) '
+    read -r esc
+    i=0; for f in $CONTAS; do i=$((i+1)); [ "$esc" = "$i" ] && ALVO=$(basename "$f" .json); done
+  fi
+  [ -n "$ALVO" ] || recusar "nao sei em que conta escrever"
+  CONTA=""
+  for f in $CONTAS; do [ "$(basename "$f" .json)" = "$ALVO" ] && CONTA="$f"; done
+  [ -n "$CONTA" ] || recusar "conta desconhecida: $ALVO"
+  NOME_CONTA="$ALVO"
+  # o instrumento escolhe-se AQUI, antes do preenche_sempre: as chaves desse bloco podem trazer
+  # <instrumento> (ex.: as bandas do setup) e precisam dele ja resolvido
+  PERMITIDOS=$(jq -r '.conta.instrumentos[]?' "$CONTA" 2>/dev/null | tr '\n' ' ')
+  [ -n "$PERMITIDOS" ] || recusar "a conta $NOME_CONTA nao declara conta.instrumentos — configure-a primeiro"
+  if [ -n "$RESPOSTAS" ]; then
+    INSTRUMENTO_FICHA=$(jq -r '.instrumento // empty' "$RESPOSTAS")
+  else
+    dizer "Instrumentos que esta conta aceita operar: $PERMITIDOS"
+    printf 'Qual deles vai ser operado por este setup? '
+    read -r INSTRUMENTO_FICHA
+  fi
+  [ -n "$INSTRUMENTO_FICHA" ] || recusar "esta ficha nao tem instrumento"
+  case " $PERMITIDOS " in *" $INSTRUMENTO_FICHA "*) ;; *) recusar "o instrumento $INSTRUMENTO_FICHA nao esta em conta.instrumentos da conta $NOME_CONTA (declarados: $PERMITIDOS)" ;; esac
+fi
+
 # ── 3. a entrevista ─────────────────────────────────────────────────────────────────────────
 PARES='[]'          # [[caminho...], valor] — o que vira configuracao
 SEGREDO=""
@@ -98,8 +152,10 @@ CAMINHO_DO_SEGREDO=""
 # o que o questionario preenche sozinho (verdade do plugin, nao do dono): grava-se antes da primeira pergunta
 for _k in $(jq -r '.preenche_sempre // {} | keys[]' "$ESCOLHIDO" 2>/dev/null); do
   case "$_k" in nota) continue ;; esac
+  _k_orig=$_k   # o valor vive sob a chave ORIGINAL (com o marcador); o caminho e que vai substituido
+  [ "$ESCREVE_EM" = "ficha" ] && _k=$(printf '%s' "$_k" | sed "s/<instrumento>/$INSTRUMENTO_FICHA/")
   _pj=$(printf '%s' "$_k" | jq -Rc 'split(".")')
-  _v=$(jq -c --arg k "$_k" '.preenche_sempre[$k]' "$ESCOLHIDO")
+  _v=$(jq -c --arg k "$_k_orig" '.preenche_sempre[$k]' "$ESCOLHIDO")
   [ -n "$_pj" ] && [ -n "$_v" ] && [ "$_v" != "null" ] || recusar "preenche_sempre invalido em '$_k'"
   PARES=$(printf '%s' "$PARES" | jq -c --argjson p "$_pj" --argjson v "$_v" '. + [[$p, $v]]') \
     || recusar "nao consegui acrescentar '$_k' a configuracao" 
@@ -187,8 +243,10 @@ correr_perguntas() {  # $1=ficheiro de perguntas dentro do questionario, $2=pref
   done
 }
 
-# o nome da conta define o ficheiro e a chave
-if [ -n "$RESPOSTAS" ]; then
+# o nome da conta define o ficheiro e a chave — so no fluxo da CONTA; no da ficha, a conta ja foi escolhida
+if [ "$ESCREVE_EM" = "ficha" ]; then
+  :
+elif [ -n "$RESPOSTAS" ]; then
   NOME_CONTA=$(jq -r '.nome_da_conta // empty' "$RESPOSTAS")
   # sem nome nas respostas, vale o exemplo declarado pelo questionario (o mesmo que o modo
   # interactivo usa como omissao) — sem isto, responder so com Enter morria em «a conta ficou sem nome»
@@ -206,6 +264,11 @@ case "$NOME_CONTA" in */*|.*) recusar "nome de conta invalido: $NOME_CONTA" ;; e
 
 [ -n "$CONTA" ] || CONTA="$CONFIG_DIR/$NOME_CONTA.json"
 
+if [ "$ESCREVE_EM" = "ficha" ]; then
+  dizer ""
+  dizer "── Ficha de $INSTRUMENTO_FICHA na conta $NOME_CONTA (os valores sao SO deste instrumento)"
+  correr_perguntas '.perguntas' "$INSTRUMENTO_FICHA"
+else
 # o nome_da_conta ja foi respondido acima; a lista de instrumentos vem antes das fichas
 correr_perguntas '.perguntas | map(select(.id != "nome_da_conta" and .id != "instrumentos"))'
 # a lista de instrumentos, que manda nas fichas
@@ -223,6 +286,7 @@ LISTA_INSTRUMENTOS=$(printf '%s' "$PARES" | jq -r '.[] | select(.[0] == ["conta"
 for _instr in $LISTA_INSTRUMENTOS; do
   correr_perguntas '.ficha_do_instrumento.perguntas' "$_instr"
 done
+fi
 
 # ── 4. o segredo: para o ficheiro protegido; na configuracao fica a REFERENCIA ──────────────
 if [ -n "$SEGREDO" ]; then
@@ -240,7 +304,9 @@ fi
 # ── 5. escrever a configuracao (atomica) e julgar ───────────────────────────────────────────
 mkdir -p "$CONFIG_DIR" || recusar "nao consegui criar $CONFIG_DIR"
 TMP=$(mktemp "${TMPDIR:-/tmp}/preparar-contas.XXXXXX") || recusar "mktemp falhou"
-(umask 077; printf '%s' "$PARES" | jq 'reduce .[] as $p ({}; setpath($p[0]; $p[1]))' > "$TMP") || recusar "jq falhou a montar a configuracao"
+if [ "$ESCREVE_EM" = "ficha" ]; then BASE=$(cat "$CONTA"); else BASE='{}'; fi
+# na ficha, a montagem parte da conta que ja existe: uma ficha NOVA nao pode apagar as outras, nem a conta.
+(umask 077; printf '%s' "$PARES" | jq --argjson base "$BASE" 'reduce .[] as $p ($base; setpath($p[0]; $p[1]))' > "$TMP") || recusar "jq falhou a montar a configuracao"
 mv "$TMP" "$CONTA" || recusar "nao consegui escrever $CONTA"
 dizer ""
 dizer "configuracao escrita: $CONTA"
