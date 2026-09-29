@@ -62,7 +62,7 @@ schema = json.loads(fronteira.COMANDO.read_text(encoding="utf-8"))
 
 # 0. o dado do dono passa (a linha de base: sem isto, uma prova negativa nao diz nada).
 conferir(correr_reprimido(fronteira.motivos, livro, vocabulario) == 0, "o livro e o vocabulario reais passam")
-conferir(correr_reprimido(fronteira.campos, schema) == 0, "os campos reais do `comando` passam")
+conferir(correr_reprimido(fronteira.campos_das_mensagens) == 0, "os campos reais das QUATRO mensagens passam")
 
 # 1. um motivo que cruza e o contrato nao tem.
 m1 = copy.deepcopy(livro)
@@ -82,15 +82,32 @@ m3["fronteira"]["cruzam"] = m3["fronteira"]["cruzam"] + 1
 conferir(correr_reprimido(fronteira.motivos, m3, vocabulario) >= 1,
          "uma contagem declarada que nao bate com a verdade REPROVA")
 
-# 4. um campo na mensagem que o produto nao le (o `conta` e o caso real: entraria no dia da segunda conta).
-s4 = copy.deepcopy(schema)
-s4["properties"]["conta"] = {"type": "string"}
-conferir(correr_reprimido(fronteira.campos, s4) >= 1,
-         "um campo declarado na mensagem do `comando` que o produto nao le REPROVA")
+# 4. um campo sem leitor numa das QUATRO mensagens novas (T062/SC-003). O de prova chama-se de proposito
+#    como o macro da conta (`conta`), que foi o falso positivo real da primeira versao deste conferidor.
+for tipo in ("comando", "resposta_de_comando", "pergunta_do_encerramento", "decisao_do_encerramento"):
+    original = json.loads((fronteira.CONTRATOS / f"{tipo}.schema.json").read_text(encoding="utf-8"))
+    com_extra = copy.deepcopy(original)
+    com_extra.setdefault("properties", {})["campo_sem_leitor_nenhum"] = {"type": "string"}
+    guardados = dict(fronteira.LEITORES_POR_MENSAGEM)
+    fronteira.LEITORES_POR_MENSAGEM.clear()
+    fronteira.LEITORES_POR_MENSAGEM[tipo] = guardados[tipo]
+    # o schema real fica em memoria: a funcao le do disco, por isso a prova escreve um ficheiro temporario
+    alvo = fronteira.CONTRATOS / f"{tipo}.schema.json"
+    copia = alvo.read_text(encoding="utf-8")
+    try:
+        alvo.write_text(json.dumps(com_extra, ensure_ascii=False, indent=2), encoding="utf-8")
+        conferir(correr_reprimido(fronteira.campos_das_mensagens) >= 1,
+                 f"um campo sem leitor na mensagem `{tipo}` REPROVA")
+    finally:
+        alvo.write_text(copia, encoding="utf-8")
+        fronteira.LEITORES_POR_MENSAGEM.clear()
+        fronteira.LEITORES_POR_MENSAGEM.update(guardados)
 
-# 5. um campo que o PRODUTO diz ler e que nao esta na mensagem (a outra direcao, com o mesmo dado).
-conferir(correr_reprimido(fronteira.campos, schema, None, ["verbo", "autor", "pedido_id", "motivo", "ficha"]) >= 1,
-         "um campo que o produto le e o contrato nao declara REPROVA")
+# 5. o caso do `conta`: o nome existe no codigo (o macro da CONTA, no cb.ts) mas nao como campo da mensagem.
+s5 = copy.deepcopy(schema)
+s5["properties"]["conta"] = {"type": "string"}
+conferir(correr_reprimido(fronteira.campos_das_mensagens) == 0,
+         "o falso positivo conhecido (`conta`) nao se repete: o nome noutro sitio nao conta como leitura")
 
 print()
 if falhas == 0:

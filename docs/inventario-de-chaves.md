@@ -242,6 +242,33 @@ Da emenda do plugin e da confirmação da topologia saíram regras, e **nenhuma 
   no registo é a instalação).
 - E o **manifesto por conta** (RN-C19) fica registado como alteração ao contrato na versão seguinte —
   ver `specs/002-maquina-de-estados/relatorios/DEFEITOS.md` (D-002).
+### 8.5 O que o recorte 003 (o vigia e a mesa) passou a ler — 29 set 2026
+
+O recorte 003 não inventou chaves de risco: passou a **ler** as que já estavam declaradas, e acrescentou uma
+que faltava. Fica escrito **quem as lê**, porque uma chave que o código lê e que ninguém declarou é um valor
+ajustável que ninguém sabe onde ajustar (RN-A1) — e uma que ninguém lê é um botão falso.
+
+| Chave | Quem a lê agora | Para que |
+|---|---|---|
+| `fichas/<i>.risco.versao_do_mandato` (**nova**, §2) | `core/mesa.ts` (`novaSessao`) | fecha a **unidade de comparação** da sessão (`ficha`, `versao_do_setup`, `versao_do_mandato` — FR-034). O dono versona o mandato; a mesa **lê**, não decide. Sem ela o `nova_sessao` recusa `unidade_de_comparacao_nao_declarada` |
+| `fichas/<i>.setup.prazo_de_resposta_ms` (§7) | `core/servidor.ts` (`lerPrazoDoDono`) | quanto a mesa espera pela resposta ao «fecho a mercado?» antes de voltar a operar com o `stop` pendente (RN-V9.1). Sem ela a mesa **recusa** o `stop` com posição viva |
+| `corretora.posicao` · `nocional` · `margem` · `distancia_de_liquidacao` · `resultado_nao_realizado` (§7) | `core/servidor.ts` (`lerNumerosDaCorretora`), `core/ciclo/encerramento.ts` | os cinco números do resumo do encerramento, **relatados pelo conector**: a mesa não recalcula nenhum (RN-V8). Faltando um, recusa `numeros_da_corretora_ausentes` |
+| `mercado.equity` (grandeza do **venue**, `origem-das-grandezas.json`) | `core/servidor.ts` (`lerEquityDePartida`) | o ponto de partida da sessão. Sem ele — ausente, fora da forma decimal, ou em **desacordo** entre instrumentos — o `nova_sessao` recusa `equity_de_partida_nao_lido`: uma base vazia faz o CB medir a perda contra o nada |
+| `conta.conectores[]` (§7) | `vigia/vigia.ts` (quem os arranca), `core/ciclo/arranque.ts` (porta dos conectores) | os nomes dos conectores que têm de estar de pé antes do `start`. A porta `conectores` corre **na frente** das outras seis (FR-009) |
+
+**Os três números que o código novo tem, e por que nenhum é ajustável pelo dono.** Corrido o varrimento sobre
+os ficheiros de decisão do recorte (`vigia/*.ts`, `core/ciclo/encerramento.ts`, `core/ciclo/relogio.ts`,
+`core/estado/sessao.ts`, `core/servidor.ts`), fora de comentários, aparecem **três** números de dois ou mais
+dígitos — todos **esperas do próprio mecanismo**, nenhum deles do risco ou do dinheiro:
+
+| Onde | Número | O que é |
+|---|---|---|
+| `vigia/vigia.ts` | `JANELA_DE_PROVA_MS = 400` | quanto se espera por um conector antes de o dar por **não de pé** (sondagem, não decisão: quem decide é a porta `conectores`) |
+| `vigia/vigia.ts` | `proxima(ms = 60000)` | a espera máxima por uma linha da mesa: uma mesa muda não pode pendurar o vigia |
+| `vigia/vigia.ts` | `mesa.proxima(10000)` | a espera pela **segunda** linha de um `stop` (a pergunta do encerramento). Não é o prazo do dono: esse vem da ficha e é ele que decide se a mesa volta a operar (§7) |
+
+(O `core/estado/sessao.ts` e o `core/servidor.ts` acusam `039`, `006` e `63` — são pedaços de padrões de forma,
+`[0-9]{2,}` e `{0,63}`, e não valores.)
 
 ### 8.3 Estado desta emenda (28 set 2026, mesmo dia)
 

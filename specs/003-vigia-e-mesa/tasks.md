@@ -331,10 +331,10 @@ O que a implementação teve de decidir e não estava aqui:
 
 ## Phase 10: Polish & Cross-Cutting (T059–T063)
 
-- [ ] T059 `specs/003-vigia-e-mesa/relatorios/RESULTADO.md` — os **8 SC**, cada um com o comando que o mediu e o número que saiu
-- [ ] T060 [P] `docs/inventario-de-chaves.md` §8.5 (o que este recorte escreveu) e a actualização da §7 (a chave nova com o seu valor por omissão)
-- [ ] T061 [P] `docs/diagrama-de-blocos.html` — o vigia entra no desenho, e o dublê de mesa também
-- [ ] T062 A revisão final: nenhum campo sem leitor nas quatro mensagens novas; nenhum número ajustável no código (RN-A1); nenhuma credencial em `/config`, ledger ou log (RN-E14) — os três conferidos por comando
+- [x] T059 `specs/003-vigia-e-mesa/relatorios/RESULTADO.md` — os **8 SC**, cada um com o comando que o mediu e o número que saiu
+- [x] T060 [P] `docs/inventario-de-chaves.md` §8.5 (o que este recorte escreveu) e a actualização da §7 (a chave nova com o seu valor por omissão)
+- [x] T061 [P] `docs/diagrama-de-blocos.html` — o vigia entra no desenho, e o dublê de mesa também
+- [x] T062 A revisão final: nenhum campo sem leitor nas quatro mensagens novas; nenhum número ajustável no código (RN-A1); nenhuma credencial em `/config`, ledger ou log (RN-E14) — os três conferidos por comando
 - [ ] T063 O resumo ao dono: o que ficou feito, o que ficou declarado (conformidade por venue, campo da conta, hospedagem do setup) e o que é decisão dele
 
 ---

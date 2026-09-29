@@ -116,86 +116,56 @@ def _campos_do_produto() -> list[str]:
     return list(json.loads(processo.stdout.strip().splitlines()[-1]))
 
 
-def campos(schema: dict | None = None, ambito: list[Path] | None = None, do_produto: list[str] | None = None) -> int:
-    schema = schema if schema is not None else ler(COMANDO)
-    ambito = ambito if ambito is not None else AMBITO_DOS_LEITORES
-    do_produto = do_produto if do_produto is not None else _campos_do_produto()
-    declarados = list(schema["properties"])
-
-    print(f"    a mensagem do `comando` declara {', '.join(declarados)}")
-    print(f"    o produto declara ler {', '.join(do_produto)} (CAMPOS_DO_COMANDO, core/estados/comando.ts)")
-
-    # AS DUAS DIRECOES, com a mesma regra da conferencia dos motivos: um campo na mensagem que o produto nao
-    # le e um campo a mais (FR-020); um campo que o produto le e o contrato nao declara e a mesa a aceitar o
-    # que ninguem escreveu.
-    so_na_mensagem = sorted(set(declarados) - set(do_produto))
-    so_no_produto = sorted(set(do_produto) - set(declarados))
-    conferir(not so_na_mensagem and not so_no_produto,
-             "os campos da mensagem e os que o produto le sao OS MESMOS"
-             + (f" (so na mensagem: {so_na_mensagem or 'nenhum'}; so no produto: {so_no_produto or 'nenhum'})"
-                if (so_na_mensagem or so_no_produto) else ""))
-
-    # E cada campo tem de ser LIDO, e nao apenas listado. A leitura procura-se no modulo que VALIDA o
-    # comando, que e onde o objecto cru chega: `c.<campo>`. Um campo que entre na lista sem ser lido ali fica
-    # no conjunto sem leitor - e um campo a mais na lista e um campo a mais na mensagem.
-    fonte = sem_comentarios((RAIZ / "core" / "estados" / "comando.ts").read_text(encoding="utf-8"))
-    for campo in do_produto:
-        padrao = re.compile(rf"c\.{re.escape(campo)}\b")
-        conferir(bool(padrao.search(fonte)),
-                 f"campo '{campo}' e LIDO do comando cru (core/estados/comando.ts: c.{campo})")
-    return len(falhas)
-
-def _totais_dos_runners() -> dict[str, tuple[int, int, int]]:
-    """Corre os dois runners e le os totais que eles imprimem (e a implementacao real de cada lingua)."""
-    saida: dict[str, tuple[int, int, int]] = {}
-    for nome, comando in (("py", ["uv", "run", "python", "esqueleto/casos.py"]),
-                          ("ts", ["bun", "run", "esqueleto/casos.ts"])):
-        processo = subprocess.run(comando, cwd=CONTRATOS, capture_output=True, text=True)
-        texto = processo.stdout + processo.stderr
-        achado = re.search(r"(\d+) casos · (\d+) aceites · (\d+) recusados", texto)
-        if achado is None:
-            raise SystemExit(f"nao se leu o resumo do runner {nome}:\n{texto[-800:]}")
-        saida[nome] = (int(achado.group(1)), int(achado.group(2)), int(achado.group(3)))
-    return saida
+# OS LEITORES, POR MENSAGEM (T062): o ambito de cada mensagem esta DECLARADO, e nao se procura no repo
+# inteiro. A metade de la (a mesa) le o `comando`; a metade de ca (o vigia) le o que a mesa responde e
+# pergunta. Procurar no repo inteiro dava o falso positivo que a prova negativa ja apanhou uma vez (o macro
+# `conta` do `cb.ts` a passar por campo da mensagem).
+LEITORES_POR_MENSAGEM: dict[str, list[str]] = {
+    "comando": ["core/estados/comando.ts", "core/servidor.ts", "core/mesa.ts"],
+    "resposta_de_comando": ["vigia/vigia.ts", "vigia/registro.ts", "core/mesa.ts", "core/servidor.ts"],
+    "pergunta_do_encerramento": ["vigia/registro.ts", "vigia/vigia.ts", "core/servidor.ts", "core/ciclo/encerramento.ts"],
+    "decisao_do_encerramento": ["core/servidor.ts", "vigia/vigia.ts", "vigia/registro.ts"],
+}
 
 
-def contagem(com_prova: bool = True) -> int:
-    ficheiros = sorted(CASOS.glob("*.casos.json"))
-    por_ficheiro = {f.name: len(ler(f)["casos"]) for f in ficheiros}
-    soma = sum(por_ficheiro.values())
-    print(f"    {len(ficheiros)} ficheiros de caso · {soma} casos somados: "
-          + ", ".join(f"{nome}={quantos}" for nome, quantos in por_ficheiro.items()))
+def _campos_do_schema(tipo: str) -> list[str]:
+    """Os campos que a mensagem declara, do proprio schema - nunca de memoria."""
+    esquema = ler(CONTRATOS / f"{tipo}.schema.json")
+    out: list[str] = []
 
-    totais = _totais_dos_runners()
-    for nome, (casos, aceites, recusados) in totais.items():
-        conferir(casos == soma, f"runner {nome}: total ({casos}) e a soma dos ficheiros ({soma})")
-        conferir(aceites + recusados == casos, f"runner {nome}: aceites+recusados ({aceites}+{recusados}) e o total")
-        print(f"    runner {nome}: {casos} casos · {aceites} aceites · {recusados} recusados")
-    conferir(totais["py"][0] == totais["ts"][0],
-             f"as duas linguagens correm os mesmos casos ({totais['py'][0]} = {totais['ts'][0]})")
+    def andar(objeto: dict, prefixo: str = "") -> None:
+        for nome, valor in (objeto.get("properties") or {}).items():
+            out.append(prefixo + nome)
+            if valor.get("type") == "object" and valor.get("properties"):
+                andar(valor, prefixo + nome + ".")
 
-    if not com_prova:
-        return len(falhas)
+    andar(esquema)
+    return out
 
-    # A PROVA DA SOMA, feita a serio: entra um caso a mais, corre, e sai outra vez. Sem isto, "soma" e uma
-    # afirmacao sobre um numero que ninguem viu crescer.
-    original = CASOS / "vigia.casos.json"
-    temporario = CASOS / "zz-temp-contagem.casos.json"
-    try:
-        # UM caso a mais, e nao o ficheiro inteiro copiado: a primeira versao desta prova escrevia os 19
-        # casos do ficheiro sob outro nome e esperava +1 - e o total subiu 20. A contagem estava certa; a
-        # prova e que nao media o que dizia medir.
-        conteudo = ler(original)
-        novo = json.loads(json.dumps(conteudo["casos"][0]))
-        novo["nome"] = novo["nome"] + "-copia-para-a-prova-da-soma"
-        temporario.write_text(json.dumps({"mensagem": conteudo["mensagem"], "nota": "temporario da prova da soma", "casos": [novo]}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        depois = _totais_dos_runners()
-    finally:
-        temporario.unlink(missing_ok=True)
-    conferir(depois["py"][0] == soma + 1 and depois["ts"][0] == soma + 1,
-             f"com um caso a mais nas duas linguagens o total sobe um ({soma} -> {depois['py'][0]}/{depois['ts'][0]})")
-    conferir(_totais_dos_runners()["py"][0] == soma,
-             f"e volta ao total de antes quando o caso sai ({soma})")
+
+def campos_das_mensagens() -> int:
+    """SC-003, a outra metade: nenhum campo das quatro mensagens novas sem quem o leia.
+
+    A leitura procura-se no AMBITO DECLARADO de cada mensagem (`LEITORES_POR_MENSAGEM`), com os comentarios
+    fora: o cabecalho de um ficheiro explica porque razao um campo NAO e lido ali, e um conferidor que leia
+    comentarios acusa a propria explicacao. O que se procura e o NOME do campo num ficheiro onde alguem o le.
+    """
+    for tipo, ficheiros in LEITORES_POR_MENSAGEM.items():
+        declarados = _campos_do_schema(tipo)
+        textos = []
+        for relativo in ficheiros:
+            caminho = RAIZ / relativo
+            if not caminho.exists():
+                conferir(False, f"o leitor declarado de '{tipo}' existe ({relativo})")
+                continue
+            textos.append(sem_comentarios(caminho.read_text(encoding="utf-8")))
+        print(f"    {tipo}: {len(declarados)} campos, lidos em {len(ficheiros)} ficheiros declarados")
+        for campo in declarados:
+            # `transicao.de` procura-se pelo ultimo segmento (`de`), que e como o codigo o le.
+            nome = campo.rsplit(".", 1)[-1]
+            padrao = re.compile(rf"[.\[\"']{re.escape(nome)}(?:[\]\"']|\b)|\b{re.escape(nome)}\s*:")
+            onde = [relativo for relativo, texto in zip(ficheiros, textos) if padrao.search(texto)]
+            conferir(bool(onde), f"{tipo}.{campo} tem quem o leia ({onde[0] if onde else 'NINGUEM — campo sem leitor'})")
     return len(falhas)
 
 
@@ -206,8 +176,8 @@ def main(argv: list[str]) -> int:
         print("os motivos que CRUZAM a fronteira, nas duas direcoes")
         motivos()
     if modo in ("--campos", "--tudo"):
-        print("\nos campos da mensagem do `comando`, contra quem os le")
-        campos()
+        print("\nos campos das QUATRO mensagens novas, contra quem os le (SC-003)")
+        campos_das_mensagens()
     if modo in ("--contagem", "--tudo"):
         print("\nos casos do contrato, somando")
         contagem()
