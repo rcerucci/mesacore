@@ -62,14 +62,21 @@ neutro e têm casos próprios (`contracts/casos/`).
 ### Tradução (a boleta → o que o venue aceita)
 
 - **RN-H4.** A boleta chega em **unidades neutras** — percentagem do saldo, alavancagem, percentagens de
-  movimento (`contracts/boleta.schema.json`). O conector converte para **unidade do instrumento** usando o
-  `szDecimals` sondado, e o preço com os decimais do venue. **Conversão, não risco** (RN-C9, RN-C15).
+  movimento (`contracts/boleta.schema.json`). O conector converte para **unidade do instrumento** e o preço
+  segundo a **regra do venue, lida da documentação oficial e conferida no arranque**: tamanho arredondado ao
+  `szDecimals` sondado; preço com **no máximo 5 algarismos significativos** e **no máximo `6 − szDecimals`**
+  casas decimais (perpétuos), com preço inteiro sempre aceite (a Hyperliquid aceita `123456` e recusa
+  `12345.6`). **Conversão, não risco** (RN-C9, RN-C15).
 - **RN-H5.** **Nada arredonda em silêncio.** Se a quantidade calculada cair abaixo do mínimo do instrumento
   ou fora do passo, ou se o nocional não couber na banda autorizada, o conector **recusa com motivo**
   (RN-C9). Um valor ajustado sem dizer é uma ordem que ninguém autorizou.
 - **RN-H6.** A **alavancagem** é pedida ao venue (`updateLeverage`) quando ele tem esse verbo (RN-C8) — e
-  **só** se valor pedido **for um degrau oferecido pelo venue**. Se não for, o conector **recusa** e diz
-  quais existem: adaptar para o degrau abaixo é decidir risco por quem decide (é a diferença 1 da §1).
+  **só** se valor pedido for um **inteiro dentro de [1, máximo do instrumento]** (a regra do venue, na letra
+  da documentação oficial: «leverage can be set by a user to any integer between 1 and the max leverage»).
+  Fora disso — não inteiro, ou acima do máximo — o conector **recusa** e diz o máximo: adaptar para o valor
+  abaixo é decidir risco por quem decide (é a diferença 1 da §1). **Correcção declarada:** a §1 falava de
+  «degraus», e o que a documentação oficial diz é que a alavancagem é livre dentro do intervalo — os degraus
+  que ali se mediram são o que o **outro motor** oferece, não o que o venue impõe.
 - **RN-H7.** O **lado e o tipo de ordem** vêm da boleta, traduzidos para os TIF do venue: post-only para a
   entrada quando a boleta o pede (na Hyperliquid, `Alo`) e a mercado/`Ioc` para a saída. Onde o venue **não**
   tiver post-only, o manifesto **di-lo** e a propriedade «nunca cruza» deixa de ser prometida (é o que a
@@ -159,13 +166,58 @@ neutra em vez de um zero que parece um número medido.
 
 ---
 
-## 5. O que ainda não sei (declarado, para não parecer resolvido)
+## 5. O que a documentação oficial do venue resolveu (e o que se decide por ela)
 
-- **[?]** A **derivação** da referência de cliente para o `cloid` (16 bytes) não está decidida — há que
-  escolher uma forma determinística e escrevê-la no manifesto (`RN-H9`).
-- **[?]** A **distância de liquidação** que a mesa mostra no resumo é derivada do `liquidationPx` do venue:
-  a fórmula (e o que fazer quando `liquidationPx` é nulo, sem posição) tem de ser declarada — o outro projeto
-  lê o preço de liquidação, mas **não** calcula a distância **[V]**.
-- **[?]** As **taxas** (maker/taker) e o **funding** entram no manifesto por sondagem: onde é que o venue os
-  publica de forma estável, e com que unidade (por hora? por 8 h?) — a confirmar na bateria.
-- **[?]** O **mínimo de nocional** (o outro projeto não o lê; a bateria 3 tem de o sondar).
+Consultada a 29 set 2026 (`hyperliquid.gitbook.io/hyperliquid-docs`, páginas em `.md`), mais os tipos da
+biblioteca que o outro projeto usa (`@nktkas/hyperliquid`, que valida contra a mesma API).
+
+**a. A referência de cliente (`cloid`).** A documentação é explícita: «Client Order ID (`cloid`) is an optional
+**128 bit** hex string, e.g. `0x1234567890abcdef1234567890abcdef`». São 16 bytes, `0x` + 32 dígitos
+hexadecimais — e o SDK recusa qualquer outro comprimento (34 caracteres, medido em `cancelByCloid.d.ts:17`).
+**Decisão:** o `cloid` é **derivado da referência** por uma função pura e declarada — a mesma referência
+produz **sempre** o mesmo `cloid` (é isso que faz a idempotência; um derivado que inclua o instante tornaria
+cada reenvio numa ordem nova, que é o defeito que se quer evitar). A derivação vai escrita no manifesto
+(RN-H9), e a bateria prova-a: mesma referência duas vezes → uma ordem.
+
+**b. A distância de liquidação.** A documentação dá a regra: «Cross positions are liquidated when the account
+value (including unrealized pnl) is less than the **maintenance margin** times the total open notional
+position. The maintenance margin is currently set to **half of the initial margin at max leverage**.» E o
+venue **publica** o preço de liquidação de cada posição (`liquidationPx`, no `clearinghouseState`).
+**Decisão:** a mesa mostra a distância **a partir do número do venue** — `|mark − liquidationPx| / mark` —
+com a origem do `mark` nomeada, e **nunca recalcula** o preço de liquidação (RN-D6). Sem posição, o
+`liquidationPx` é nulo, e a distância fica **ausente** — não zero: um zero pareceria um número medido. A
+fórmula do maintenance margin (`0,5 / alavancagem máxima`) serve à **conferência de banda** (D-001), e leva a
+palavra `currently` da própria documentação: entra como **premissa versionada**, re-sondada pela bateria, nunca
+como constante escondida no código (RN-C7).
+
+**c. Taxas e funding.** As taxas do **utilizador** vêm do venue (`userFees`: `userCrossRate`, `userAddRate`,
+`feeSchedule`, `activeReferralDiscount` — medido nos tipos do SDK), e a tabela pública é por volume de 14
+dias (base: taker `0,045%`, maker `0,015%`, com rebates de maker pagos a cada execução). O **funding** é
+publicado por instrumento (`metaAndAssetCtxs` / `activeAssetCtx`: preço de marca, funding corrente, juro
+aberto), e a documentação diz o calendário: a taxa calculada é de 8 horas mas **é paga hora a hora, a um
+oitavo**. **Decisão:** o manifesto declara a taxa **lida do venue para aquela conta** (nunca a tabela base,
+que é um exemplo) e o funding **na unidade do venue, horária**; se a interface mostrar uma anualização, ela
+aparece **nomeada como nossa** (`× 24 × 365`), porque é uma conta que o venue não faz.
+
+**d. O mínimo nocional.** A documentação mostra a recusa na letra do próprio venue: «Order must have minimum
+value of **$10**». **Decisão:** os 10 dólares entram como **valor declarado e datado**, conferido pela
+bateria (a bateria manda uma ordem abaixo e **exige** a recusa do venue); o código não decide por conta
+própria o que é pequeno, e a palavra final é sempre a do venue (RN-H5, RN-H11).
+
+**e. O que a documentação oficial corrigiu neste documento.** Duas coisas: (1) o preço obedece a **5 algarismos
+significativos**, e não a «decimais do venue» (RN-H4, corrigida); (2) a alavancagem é **qualquer inteiro
+dentro do máximo**, e não «degraus» — os degraus que a §1 mediu são do outro motor, não do venue (RN-H6,
+corrigida). Fica registrado que quem escreveu isto primeiro foi a medição do outro projeto, e quem corrigiu
+foi a documentação oficial: **medição contra fonte, ganha a fonte**.
+
+## 6. O que continua em aberto (agora, mais estreito)
+
+- **[?]** A **forma exacta** da derivação do `cloid` (o algoritmo) — a decisão está tomada (§5.a: pura e
+  declarada) e a escolha é da implementação, não do dono; vai no manifesto quando existir código.
+- **[?]** **Qual** `mark` a distância usa (`markPx` do contexto, preço médio de entrada, ou o último negócio)
+  — decide-se na spec, com uma razão escrita.
+- **[?]** A **cadência** da bateria de conformidade (a `currently` da documentação envelhece: quanto tempo
+  entre re-sondagens?) — proposta: a cada arranque se lê o que é lido a cada arranque (manifesto), e a
+  bateria completa corre por versão do conector e quando o venue mudar de versão declarada.
+- **[?]** Se o venue **arredonda ou recusa** um tamanho com mais casas que o passo (a letra diz «rounded», o
+  SDK valida e recusa) — a bateria mede-o, e o resultado entra no manifesto.
