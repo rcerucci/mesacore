@@ -25,7 +25,7 @@
       "tipo": "texto",
       "obrigatorio": true,
       "pergunta": "Qual o ENDERECO (master) da conta na Hyperliquid?",
-      "explicacao": "E o endereco 0x... da conta que opera, nao o da API wallet. Nao e segredo (fica no ficheiro). Serve para o conector verificar, no venue, que a chave que ele carrega pertence mesmo a esta conta — e para consultar saldo e posicoes, que com o endereco da API wallet devolveriam vazio.",
+      "explicacao": "E o endereco 0x... da conta que opera, nao o da API wallet. Nao e segredo (fica no ficheiro). Serve para o conector verificar, no venue, que a chave que ele carrega pertence mesmo a esta conta — e para consultar saldo e posicoes, que com o endereco da API wallet devolveriam vazio. Nao ponha aqui o endereco da API wallet: sao coisas diferentes. A API wallet vive na lista de agentes do venue (ecra /API) e e onde a sua chave assina. Com o endereco errado aqui, o conector NAO arranca — ele pergunta ao venue quem assina por esta conta, nao encontra a chave, e recusa.",
       "exemplo": "0x0000000000000000000000000000000000000000"
     },
     {
