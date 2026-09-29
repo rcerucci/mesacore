@@ -380,10 +380,43 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   movimento — em quantidade da sua unidade, atendendo à especificação de ordem da sua corretora. Se o
   mínimo do instrumento exigir mais do que a banda autorizada, **recusa** com motivo. NUNCA arredonda
   em silêncio.
-- **RN-C10.** Antes de executar, o conector devolve a **resolução** (quantidade, nocional, margem,
-  alavancagem efectiva, preço de liquidação). É ela que a mesa confere contra a banda (RN-M4.5) e grava
-  no ledger (RN-B2). A resolução faz parte do desfecho, e é ela que torna o replay possível quando o
-  cálculo é da corretora.
+- **RN-C10.** O conector devolve a **resolução** (quantidade, nocional, margem, alavancagem efectiva, preço
+  de liquidação). É ela que a mesa confere contra a banda (RN-M4.5, e **RN-E20** para os **dois momentos**:
+  a pré-conferência só existe onde a corretora deixar perguntar; numa ordem **a mercado** o venue calcula ao
+  executar, e a resposta da mesa a uma resolução fora da banda é **reduzir e registar**) e grava no ledger
+  (RN-B2). A resolução faz parte do desfecho, e é ela que torna o replay possível quando o cálculo é da
+  corretora.
+- **RN-C12.** O conector reporta o **estado da ligação pelo protocolo** da corretora — nunca por silêncio de
+  tick, nunca por limiar de idade de preço. Se a corretora não tiver esse estado, o conector **declara-o no
+  manifesto** (recurso ausente, declarado) e o estado passa a ser desconhecido para a mesa — limitação
+  visível, nunca descoberta em produção. É este estado que faz a mesa **não abrir risco novo** enquanto
+  está cega, mantendo a defesa.
+- **RN-C13.** No momento de enviar, o conector **relê o preço** e é essa releitura que serve de **régua** ao
+  desvio (RN-B11). A régua que a mesa pediu e a régua usada no envio são registradas ambas quando diferirem:
+  um desvio medido a partir de régua velha pode **autorizar** um preenchimento longe do mercado.
+- **RN-C14.** A **resolução** que o conector devolve traz **números** — quantidade na unidade da corretora,
+  margem exigida, alavancagem efectiva, preço de liquidação — e **não um veredicto**. «Executou» não se
+  confere: sem os números, quem garante a banda é o conector. A resolução vai ao ledger junto da boleta
+  (RN-C10, RN-E20).
+- **RN-C15.** Os cálculos do conector são de **conversão**, nunca de risco: ele traduz percentagem do saldo e
+  alavancagem em quantidade pelas **constantes daquela conta e daquele instrumento**, e nada mais. Não
+  escolhe lado, tamanho, preço nem momento (RN-C5), não julga o mandato e não lê a estratégia.
+- **RN-C16.** O conector conhece **uma só conta**: uma ligação, uma chave, um processo (RN-E3). Um pedido que
+  não seja da **sua** conta é **recusado com motivo** — nunca executado por semelhança de instrumento. O
+  encaminhamento é da mesa: se a boleta foi escrita a este conector, é porque a ficha pertence a esta conta.
+- **RN-C17.** A **tabela de acções por motivo** chega à ponta: o conector **repete com atraso** apenas o que
+  **provadamente não saiu**, e é ele que **declara a fase** (antes de enviar / depois de enviar) de que a
+  decisão depende. `sem confirmação` nunca é repetido pelo conector: vai para **reconciliação**, que é da
+  mesa.
+- **RN-C18.** O **silêncio é estado**: dentro do prazo declarado é espera; além dele, o desfecho é
+  `desconhecido` — nunca sucesso nem falha. E o desconhecido é **dívida da mesa** (RN-T12): o conector não o
+  resolve por conta própria nem o esconde atrás de um `aceite` otimista.
+- **RN-C19.** O **manifesto é declarado por conta** (uma entrada por corretora+conta, com os instrumentos,
+  escalões de alavancagem e mínimos **daquela** conta). Um mesmo instrumento pode ter constantes diferentes
+  em contas diferentes, e a porta do manifesto do arranque confere as **da conta daquela ficha**.
+- **RN-C20.** A credencial entra por **referência** e vive fora da mensagem, do ledger e do log (RN-E14). O
+  conector lê-a do ambiente ou de cofre, e o registro diz **qual** credencial foi usada, nunca o valor. **Uma
+  chave por processo** (RN-E3) — duas contas no mesmo processo é exactamente o que a RN-E5 proíbe.
 - **RN-C11.** O conector expõe o **histórico** da corretora — execuções, taxas, funding, resultado
   realizado, detalhe de cada ordem — numa **vista normalizada** (os campos das corretoras são próximos
   uns dos outros), para que a mesa e a web o mostrem **sem o recalcular** (RN-D6).
@@ -402,6 +435,11 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   tarde e a escrita é **idempotente**.
 - **RN-L5.** O ledger é a base de reprodutibilidade: re-correr o setup sobre o snapshot DEVE produzir a
   mesma proposta.
+- **RN-L7.** A linha diz **de que conta fala** (a constante da conta, que é um nome e não uma credencial).
+  Com mais de uma conta na mesma mesa, sem isto não há atribuição: nem o CB (que se mede sobre o equity
+  daquela conta), nem a sessão (unidade de comparação), nem a reconciliação (que pergunta à **aquela**
+  corretora). A atribuição **não** vem de «qual processo escreveu a linha» — essa é a única informação que se
+  perde quando alguém reorganiza a implantação.
 
 ---
 
@@ -466,6 +504,14 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   existem nem onde corre cada instrumento. A topologia é decisão de implantação, não de código.
 - **RN-E7.** O ledger é escrito por (mesa, instrumento, dia); processos diferentes NUNCA escrevem no
   mesmo ficheiro.
+- **RN-E21.** Quem **arranca os conectores** é a **camada de operação** (o vigia, §11.4), nunca o core: o
+  core **não arranca processos**. A mesa é lançada com os conectores que a sua configuração nomeia; se um
+  conector não estiver de pé, a porta do manifesto **recusa o arranque** e diz qual — a mesa não sobe meio
+  cega. (A montagem de processos é decisão de implantação, RN-E6.)
+- **RN-E22.** Numa mesa com várias contas, o alcance dos verbos é este: **`start`/`stop`/`pause`/`reset` são
+  da MESA** (valem para todas as contas que ela serve, incluindo o encerramento gracioso), e **`nova_sessao`
+  é POR CONTA** — a sessão é a unidade de comparação do CB, e o CB mede-se sobre o equity **daquela** conta
+  (RN-M3, RN-V10). Um `nova_sessao` da mesa inteira seria abrir sessão na conta que não bateu no limite.
 
 ### 11.3. Superfície (a web)
 
@@ -474,6 +520,10 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
   descoberto em vez de mantido à mão.
 - **RN-E9.** A web reúne as mesas e apresenta-as como **uma só superfície**; não calcula nada que a
   mesa já saiba (resultado, velas, posição) nem mostra a topologia.
+- **RN-E23.** No registo da web (RN-E8), **«uma mesa» é a instalação** — a identidade que publica o seu
+  endereço —, e as contas são **vistas dela**. A superfície mostra «uma mesa com três instrumentos» e «três
+  mesas com um instrumento» iguais (RN-E10), e agora também não muda de forma por a mesa servir uma ou três
+  contas. A conta aparece onde é informação (atribuição, resumo, CB), nunca como uma segunda identidade.
 - **RN-E10.** Uma mesa com três instrumentos e três mesas com um instrumento cada DEVEM parecer iguais
   na web. É esta propriedade que mantém a topologia no campo da operação.
 
@@ -638,15 +688,26 @@ determinístico que só obedece a cinco verbos. Não sabe de estratégia, de mer
     `cloid` (hex de 128 bits) e permite **consultar e cancelar por cloid**. Por isso a marca é desenhada
     para **caber na forma mais restrita** — o inteiro do MT5 —, não para o venue mais generoso.
 
-**Proposta minha, à espera da tua palavra**
+**Confirmadas pelo dono (28 set 2026) — e a lista fechou-se aqui**
 
-25. Topologia: **uma conta por processo** com `n` instrumentos (RN-E3), e a web a falar com um registo
-    de mesas (RN-E8), para a topologia não aparecer na superfície.
-26. A mesa recebe a **resolução** do conector (quantidade, nocional, margem, alavancagem efectiva,
-    liquidação) **antes** de mandar executar, e confere-a contra as bandas (RN-M4.5, RN-C10). É o que
-    impede uma ordem maior do que o autorizado quando o cálculo é de fora.
-27. A web pode editar fichas e config macro (validado, versionado, assinado) e **pedir** arranque; quem
-    lança o processo é o vigia, não a web.
+25. **Topologia confirmada e precisada:** **uma conta por processo** com `n` instrumentos (RN-E3), e a web a
+    falar com um registo de mesas (RN-E8). A precisão que faltava é *onde* vive a multiplicidade: o
+    **conector** é um processo por (corretora, conta), a **mesa** é um só processo e **encaminha** (RN-E21).
+    Fundamento: RN-E5, e a retratação registada na emenda do plugin.
+26. **Confirmada na intenção, corrigida no tempo.** A mesa recebe a **resolução** do conector (quantidade,
+    nocional, margem, alavancagem efectiva, liquidação) e confere-a contra as bandas (RN-M4.5, RN-C10) —
+    mas **não «antes de mandar executar» em geral**: são **dois momentos** (RN-E20). Onde a corretora
+    deixar perguntar, confere-se antes e a recusa é da mesa; numa ordem **a mercado** o venue calcula **ao
+    executar**, e fora da banda a resposta é **reduzir e registar**. A intenção original («impede uma ordem
+    maior do que o autorizado quando o cálculo é de fora») mantém-se inteira — muda só o sítio onde se pode
+    dizer não.
+27. **A web pode editar fichas e config macro** (validado, versionado, assinado) e **pedir** arranque; quem
+    lança o processo é o vigia, não a web (RN-E21). É o mesmo princípio que governa os **conectores**: quem
+    monta um processo é a camada de operação, e o core — mesa e web — não arranca processos.
+
+**Fechado por estas confirmações:** as três perguntas que ficaram abertas na emenda do plugin têm resposta
+em regra — quem arranca os conectores (RN-E21), o alcance dos verbos numa mesa com várias contas (RN-E22) e
+o que «uma mesa» é no registo (RN-E23).
 
 **Abertas — o que depende de ti (não são números: são chaves)**
 

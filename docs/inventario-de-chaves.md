@@ -214,6 +214,23 @@ divergência**. Para isto ser possível, a resolução tem de trazer **números*
 margem exigida, alavancagem efectiva, preço de liquidação) e não um veredicto — «executou» não se confere.
 Fica registado como obrigação do recorte do conector — e como **defeito declarado** enquanto não existir.
 
+### 8.4 O que a emenda do plugin escreveu em regra (28 set 2026) — a base do recorte do conector
+
+Da emenda do plugin e da confirmação da topologia saíram regras, e **nenhuma chave nova**: as que faltam na
+§7 continuam a ser as mesmas (o prazo de resposta do encerramento e as bandas de cada item limitável).
+
+- **RN-C12** (estado da ligação pelo protocolo) · **RN-C13** (releitura do preço no envio) · **RN-C14** (a
+  resolução traz números, não veredicto) · **RN-C15** (cálculo é conversão, nunca risco) · **RN-C16** (o
+  conector conhece uma só conta) · **RN-C17** (a tabela de acções chega à ponta) · **RN-C18** (o silêncio é
+  estado) · **RN-C19** (manifesto por conta) · **RN-C20** (credencial por referência, uma chave por
+  processo).
+- **RN-L7** (a linha diz de que conta fala — e a atribuição não vem de qual processo escreveu).
+- **RN-E21** (quem arranca os conectores é a camada de operação; o core não arranca processos) ·
+  **RN-E22** (o alcance dos verbos: mesa, excepto `nova_sessao`, que é por conta) · **RN-E23** («uma mesa»
+  no registo é a instalação).
+- E o **manifesto por conta** (RN-C19) fica registado como alteração ao contrato na versão seguinte —
+  ver `specs/002-maquina-de-estados/relatorios/DEFEITOS.md` (D-002).
+
 ### 8.3 Estado desta emenda (28 set 2026, mesmo dia)
 
 As quatro decisões estão **implementadas e medidas** — é a **fase 10** do recorte 002, tarefas T064 a
