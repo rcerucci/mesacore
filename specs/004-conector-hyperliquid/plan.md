@@ -12,7 +12,7 @@ antes de executar e o desfecho depois, trata o silêncio como estado, reconcilia
 - **Linguagem do plugin**: **TypeScript** — decisão deste plano (RN-E16). O SDK oficial do venue é TypeScript e
   já opera uma conta a sério no outro projeto; escrever o protocolo à mão (assinatura, codificação, sockets)
   seria reconstruir uma biblioteca provada para ganhar nada.
-- **Dependências**: `@nktkas/hyperliquid` (SDK oficial do venue) e `viem` (assinatura). Ambas já provadas na
+- **Dependências**: `@nktkas/hyperliquid` (SDK oficial do venue), `viem` (assinatura) e `ajv@^8.20.0` (validação contra o contrato — a mesma linha que `core/` e `contracts/` já usam). Ambas já provadas na
   conta real no outro projeto. **Instalar pacote é fora do meu âmbito**: a instalação vai pedida ao sysadmin
   com o comando exacto e a verificação (ver «Pedido ao sysadmin», abaixo).
 - **O conector importa `contracts`, NUNCA `core`** (RN-E1) — verificado por comando, como no dublê de mesa.
@@ -47,7 +47,7 @@ conta real no outro projeto. E há uma segunda razão, mais forte: o dublê de m
 provam o contrato nos dois sentidos; um conector real em TypeScript **não** reduz a cobertura que existe, e
 aumenta-a.
 
-**Consequência declarada:** o repositório ganha duas dependências de runtime (`@nktkas/hyperliquid`, `viem`).
+**Consequência declarada:** o repositório ganha três dependências de runtime (`@nktkas/hyperliquid`, `viem`, `ajv`). O `ajv` entrou **por medição, não por gosto**: os corredores de casos do conector importavam-no sem ele estar declarado em manifesto nenhum, servido pelo auto-install global do `bun` — enquanto a raiz não tinha manifesto, a bancada passava **por acidente** (medido em 29/09: a instalação do SDK criou `package.json`/`node_modules` na raiz, o fallback desligou, e a bateria caiu de 26/26 para 25/26).
 Instalá-las é do sysadmin (abaixo), e o `bun.lock` é a prova de que a instalação é reprodutível.
 
 ### D2 — O manifesto é ficheiro do **runtime**, nunca versionado
@@ -85,9 +85,11 @@ mão (FR-023).
 
 **O que preciso**: as duas dependências de runtime do conector, instaladas no repositório `~/Projects/MesaCore`.
 
-- **Comando**: `cd ~/Projects/MesaCore && bun add @nktkas/hyperliquid viem`
+- **Comando**: `cd ~/Projects/MesaCore && bun add @nktkas/hyperliquid viem ajv@^8.20.0`
 - **Pronto quando**: `bun.lock` tem as duas entradas e `bun -e "import('@nktkas/hyperliquid').then(m=>console.log(typeof m.InfoClient))"` imprime `function` (ou o equivalente exportado).
-- **Se der errado**: nada se quebra fora do repositório; a reversão é `bun remove @nktkas/hyperliquid viem` e o `git checkout bun.lock package.json`.
+- **Se der errado**: nada se quebra fora do repositório; a reversão é `bun remove @nktkas/hyperliquid viem ajv` e o `git checkout bun.lock package.json`.
+- **Reversão medida (29/09)**: o `git checkout bun.lock package.json` escrito aqui **não funcionava** antes de os dois ficheiros serem versionados — devolvia `rc=1 (pathspec ... did not match)`, porque na raiz eram novos. Passou a funcionar com o commit `ae33a52`; em qualquer caso a reversão limpa é `bun remove ...` e apagar `node_modules/`.
+- **Porta nova**: `tools/verificar-conector/porta-das-dependencias.ts` — todo import nu do conector tem de estar declarado no manifesto da raiz, com prova negativa (`--manifesto` sem `ajv` tem de reprovar). Corre dentro da bancada do conector.
 - **Nota de versão**: fixar a mesma linha que o outro projeto usa em produção (`@nktkas/hyperliquid` da mesma série), para o comportamento do venue ser o já medido.
 
 *(Enquanto a instalação não estiver feita, as tarefas de tradução/recusas/derivação da referência — que não
