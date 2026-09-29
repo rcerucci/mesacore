@@ -24,6 +24,14 @@ else
 fi
 
 # 2. A porta das dependencias: o conector importa `contracts`, NUNCA `core` (RN-E1).
+declarar "porta: imports do conector declarados na raiz"
+saida_d=$(bun tools/verificar-conector/porta-das-dependencias.ts 2>&1)
+if printf '%s\n' "$saida_d" | grep -q '"veredicto":"aprovado"'; then
+  echo "OK   $(printf '%s\n' "$saida_d" | head -1)"
+else
+  echo "FALHOU — import nao declarado (bancada que passa por acidente)"; printf '%s\n' "$saida_d" | head -2; falhas=$((falhas+1))
+fi
+
 declarar "porta: importa contracts, nunca o core (RN-E1)"
 maus=$(grep -rnE "^\s*(import|from)\s+.*core/" brokers/hyperliquid --include=*.ts 2>/dev/null | wc -l)
 if [ "$maus" -eq 0 ]; then
