@@ -1,0 +1,21 @@
+{
+  "_como_usar": [
+    "Copie para brokers/hyperliquid/<nome>.conector.json e preencha os null.",
+    "Este ficheiro diz QUAL ambiente e QUAL credencial — nunca traz o valor dela.",
+    "O valor entra por variavel de ambiente (ou ficheiro) indicado em credencial.valor_em.",
+    "Ambiente de TESTE primeiro (RN-H17): a passagem a producao e decisao declarada do dono."
+  ],
+  "venue": "hyperliquid",
+  "ambiente": "teste",
+  "url_da_api": "https://api.hyperliquid-testnet.xyz",
+  "url_do_rpc": "https://rpc.hyperliquid-testnet.xyz",
+  "conta": "conta-de-teste-do-dono",
+  "instrumentos": [
+    "BTC"
+  ],
+  "credencial": {
+    "referencia": "hl_teste_do_dono",
+    "valor_em": "env:HL_TESTNET_PRIVATE_KEY",
+    "_nota": "a REFERENCIA viaja na mensagem e no manifesto; o VALOR fica fora do repositorio, do ledger e do log (RN-E14, RN-C20)"
+  }
+}

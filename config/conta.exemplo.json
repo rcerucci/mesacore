@@ -1,0 +1,72 @@
+{
+  "_como_usar": [
+    "Copie este ficheiro para config/<nome-da-conta>.json e preencha os null.",
+    "null NAO e um valor por omissao: a mesa RECUSA a chave que estiver null (fail-closed).",
+    "Este ficheiro nao tem (nem pode ter) nenhuma chave, token ou password — so a REFERENCIA da credencial.",
+    "A mesa LE e valida este ficheiro e nunca o escreve; quem o edita e a web, com validacao e assinatura.",
+    "As chaves que comecam por _ sao desta nota: a mesa ignora-as."
+  ],
+  "conta": {
+    "corretora": "hyperliquid",
+    "identificador": "conta-de-teste-do-dono",
+    "instrumentos": [
+      "BTC"
+    ],
+    "perda_maxima_pct": "5",
+    "perda_maxima_janela": "corrida_da_mesa",
+    "margem_total_maxima_pct": "100",
+    "contencao": "recusar",
+    "arranque_apos_cb": "exige_decisao",
+    "eventos_que_avisam": [
+      "cb",
+      "encerramento",
+      "desconhecido",
+      "recusa",
+      "divergencia",
+      "falha_de_leitura",
+      "contenda"
+    ],
+    "conectores": [
+      "hyperliquid"
+    ],
+    "credencial": "hl_teste_do_dono",
+    "retencao_ledger": {
+      "dias_integral": null,
+      "depois": null
+    }
+  },
+  "fichas": {
+    "BTC": {
+      "risco": {
+        "versao_do_mandato": null,
+        "saldo_pct": null,
+        "alavancagem": null,
+        "distancia_minima_liquidacao_pct": null,
+        "bandas": {
+          "saldo_pct": {
+            "minimo": "0.1",
+            "maximo": null
+          },
+          "alavancagem": {
+            "minimo": "1",
+            "maximo": null
+          },
+          "stop_pct": {
+            "minimo": null,
+            "maximo": null
+          }
+        },
+        "parcial": "o_que_der",
+        "desvio_maximo": null,
+        "destino_do_resto": "cancelar",
+        "prazo_da_passiva_ms": null,
+        "stop_pct": null,
+        "tp_pct": null
+      },
+      "setup": {
+        "versao_do_setup": null,
+        "prazo_de_resposta_ms": null
+      }
+    }
+  }
+}
