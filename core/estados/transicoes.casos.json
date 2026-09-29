@@ -17,7 +17,9 @@
       "nome": "start-em-parada-com-inibicao-recusa",
       "de": "parada",
       "verbo": "start",
-      "contexto": { "inibicao_cb": true },
+      "contexto": {
+        "inibicao_cb": true
+      },
       "resultado_esperado": "recusado",
       "estado_esperado": "parada",
       "motivo_esperado": "sessao_inibida",
@@ -49,7 +51,11 @@
       "verbo": "start",
       "contexto": {
         "inibicao_cb": true,
-        "portas_do_arranque": { "passam": false, "porta": "versao", "motivo": "versao divergente" }
+        "portas_do_arranque": {
+          "passam": false,
+          "porta": "versao",
+          "motivo": "versao divergente"
+        }
       },
       "resultado_esperado": "recusado",
       "estado_esperado": "parada",
@@ -81,28 +87,77 @@
       "de": "parada",
       "verbo": "reset",
       "contexto": {},
-      "marcas_presentes": ["sessao", "inibicao_cb", "desconhecido"],
+      "marcas_presentes": [
+        "sessao",
+        "inibicao_cb",
+        "desconhecido"
+      ],
       "resultado_esperado": "aceite",
       "estado_esperado": "parada",
       "motivo_esperado": null,
-      "nao_tocado_esperado": ["sessao", "inibicao_cb", "desconhecido"],
+      "nao_tocado_esperado": [
+        "sessao",
+        "inibicao_cb",
+        "desconhecido"
+      ],
       "historico": "US1 cenario 6, FR-005"
     },
     {
       "nome": "nova-sessao-em-parada-grava",
       "de": "parada",
       "verbo": "nova_sessao",
-      "contexto": {},
+      "contexto": {
+        "equity_de_partida_nao_lido": false,
+        "unidade_de_comparacao_nao_declarada": false
+      },
       "resultado_esperado": "aceite",
       "estado_esperado": "parada",
       "motivo_esperado": null,
-      "historico": "US5 cenario 4, FR-038"
+      "historico": "US5 cenario 4, FR-038, T042 - o ponto de partida e a unidade sao LIDOS pela porta; sem eles a sessao nao se grava"
+    },
+    {
+      "nome": "nova-sessao-sem-o-equity-de-partida-recusa",
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "contexto": {
+        "equity_de_partida_nao_lido": true,
+        "unidade_de_comparacao_nao_declarada": false
+      },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "equity_de_partida_nao_lido",
+      "historico": "T042/RN-M3 - sem o equity da corretora a sessao nasceria com uma base que ninguem teve, e o CB mediria a perda contra o nada"
+    },
+    {
+      "nome": "nova-sessao-sem-a-unidade-de-comparacao-recusa",
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "contexto": {
+        "equity_de_partida_nao_lido": false,
+        "unidade_de_comparacao_nao_declarada": true
+      },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "unidade_de_comparacao_nao_declarada",
+      "historico": "T042/FR-034 - a unidade (ficha, versao do setup, versao do mandato) e o que torna os numeros de duas sessoes comparaveis"
+    },
+    {
+      "nome": "nova-sessao-com-o-contexto-vazio-recusa (prova negativa do fail-closed)",
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "equity_de_partida_nao_lido",
+      "historico": "A licao do D-006: um contexto que NAO SABE se o ponto de partida foi lido recusa. O desconhecido nao vira sim por omissao"
     },
     {
       "nome": "nova-sessao-com-posicao-viva-recusa",
       "de": "parada",
       "verbo": "nova_sessao",
-      "contexto": { "posicao_viva": true },
+      "contexto": {
+        "posicao_viva": true
+      },
       "resultado_esperado": "recusado",
       "estado_esperado": "parada",
       "motivo_esperado": "sessao_nova_com_posicao_viva",
@@ -118,7 +173,6 @@
       "motivo_esperado": "verbo_desconhecido",
       "historico": "FR-004 - os verbos sao cinco; um sexto nao entra por extensao"
     },
-
     {
       "nome": "start-em-operacao-recusa-sem-reiniciar-contadores",
       "de": "em_operacao",
@@ -143,7 +197,9 @@
       "nome": "stop-sem-posicao-vai-direto-a-parada",
       "de": "em_operacao",
       "verbo": "stop",
-      "contexto": { "posicao_viva": false },
+      "contexto": {
+        "posicao_viva": false
+      },
       "resultado_esperado": "aceite",
       "estado_esperado": "parada",
       "motivo_esperado": null,
@@ -167,7 +223,11 @@
       "nome": "stop-com-posicao-e-sem-os-numeros-da-corretora-recusa",
       "de": "em_operacao",
       "verbo": "stop",
-      "contexto": { "posicao_viva": true, "numeros_da_corretora_ausentes": true, "prazo_de_resposta_nao_declarado": false },
+      "contexto": {
+        "posicao_viva": true,
+        "numeros_da_corretora_ausentes": true,
+        "prazo_de_resposta_nao_declarado": false
+      },
       "resultado_esperado": "recusado",
       "estado_esperado": "em_operacao",
       "motivo_esperado": "numeros_da_corretora_ausentes",
@@ -177,7 +237,11 @@
       "nome": "stop-com-posicao-e-sem-o-prazo-do-dono-recusa",
       "de": "em_operacao",
       "verbo": "stop",
-      "contexto": { "posicao_viva": true, "numeros_da_corretora_ausentes": false, "prazo_de_resposta_nao_declarado": true },
+      "contexto": {
+        "posicao_viva": true,
+        "numeros_da_corretora_ausentes": false,
+        "prazo_de_resposta_nao_declarado": true
+      },
       "resultado_esperado": "recusado",
       "estado_esperado": "em_operacao",
       "motivo_esperado": "prazo_de_resposta_nao_declarado",
@@ -187,7 +251,9 @@
       "nome": "stop-com-posicao-e-contexto-vazio-recusa-por-fail-closed",
       "de": "em_operacao",
       "verbo": "stop",
-      "contexto": { "posicao_viva": true },
+      "contexto": {
+        "posicao_viva": true
+      },
       "resultado_esperado": "recusado",
       "estado_esperado": "em_operacao",
       "motivo_esperado": "numeros_da_corretora_ausentes",
@@ -198,11 +264,15 @@
       "de": "em_operacao",
       "verbo": "reset",
       "contexto": {},
-      "marcas_presentes": ["sessao"],
+      "marcas_presentes": [
+        "sessao"
+      ],
       "resultado_esperado": "aceite",
       "estado_esperado": "em_operacao",
       "motivo_esperado": null,
-      "nao_tocado_esperado": ["sessao"],
+      "nao_tocado_esperado": [
+        "sessao"
+      ],
       "historico": "FR-005 - recomecar sem mexer em nada"
     },
     {
@@ -215,7 +285,6 @@
       "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
       "historico": "US5 cenario 5, FR-039"
     },
-
     {
       "nome": "retomar-da-pausa-volta-a-operar",
       "de": "pausada",
@@ -230,7 +299,9 @@
       "nome": "retomar-da-pausa-com-inibicao-recusa",
       "de": "pausada",
       "verbo": "start",
-      "contexto": { "inibicao_cb": true },
+      "contexto": {
+        "inibicao_cb": true
+      },
       "resultado_esperado": "recusado",
       "estado_esperado": "pausada",
       "motivo_esperado": "sessao_inibida",
@@ -250,7 +321,9 @@
       "nome": "stop-da-pausa-sem-posicao-vai-a-parada",
       "de": "pausada",
       "verbo": "stop",
-      "contexto": { "posicao_viva": false },
+      "contexto": {
+        "posicao_viva": false
+      },
       "resultado_esperado": "aceite",
       "estado_esperado": "parada",
       "motivo_esperado": null,
@@ -275,11 +348,17 @@
       "de": "pausada",
       "verbo": "reset",
       "contexto": {},
-      "marcas_presentes": ["sessao", "desconhecido"],
+      "marcas_presentes": [
+        "sessao",
+        "desconhecido"
+      ],
       "resultado_esperado": "aceite",
       "estado_esperado": "pausada",
       "motivo_esperado": null,
-      "nao_tocado_esperado": ["sessao", "desconhecido"],
+      "nao_tocado_esperado": [
+        "sessao",
+        "desconhecido"
+      ],
       "historico": "FR-005"
     },
     {
@@ -292,12 +371,13 @@
       "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
       "historico": "FR-039"
     },
-
     {
       "nome": "start-durante-encerramento-cancela-a-pergunta",
       "de": "encerrando",
       "verbo": "start",
-      "contexto": { "liquidacao_em_curso": false },
+      "contexto": {
+        "liquidacao_em_curso": false
+      },
       "resultado_esperado": "aceite",
       "estado_esperado": "em_operacao",
       "motivo_esperado": null,
@@ -307,7 +387,9 @@
       "nome": "start-durante-liquidacao-recusa",
       "de": "encerrando",
       "verbo": "start",
-      "contexto": { "liquidacao_em_curso": true },
+      "contexto": {
+        "liquidacao_em_curso": true
+      },
       "resultado_esperado": "recusado",
       "estado_esperado": "encerrando",
       "motivo_esperado": "liquidacao_em_curso",
@@ -338,11 +420,17 @@
       "de": "encerrando",
       "verbo": "reset",
       "contexto": {},
-      "marcas_presentes": ["sessao", "inibicao_cb"],
+      "marcas_presentes": [
+        "sessao",
+        "inibicao_cb"
+      ],
       "resultado_esperado": "aceite",
       "estado_esperado": "encerrando",
       "motivo_esperado": null,
-      "nao_tocado_esperado": ["sessao", "inibicao_cb"],
+      "nao_tocado_esperado": [
+        "sessao",
+        "inibicao_cb"
+      ],
       "historico": "edge case de FR-005 - nao apaga a inibicao nem interrompe a liquidacao"
     },
     {

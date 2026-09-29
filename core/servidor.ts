@@ -47,6 +47,7 @@ import { haInibicao, lerMarcas } from "./estado/marcas.ts";
 import { motivoConhecido } from "./livro-de-motivos.ts";
 import { conferirMandatos, correrUmCiclo, lerOperacao } from "./ciclo/relogio.ts";
 import { cargaDaPergunta, NUMEROS_DA_CORRETORA, type NumerosDaCorretora } from "./ciclo/encerramento.ts";
+import type { ConfiguracaoEmVigor } from "./estado/marcas.ts";
 import { ultimaTransicaoPara } from "./estado/registo.ts";
 
 /** O contrato recusa a MENSAGEM; a mesa fala dos seus motivos. Nada atravessa sem nome de um dos dois. */
@@ -113,6 +114,9 @@ function lerPortas(caminho: string | undefined): { passam: boolean; porta?: stri
   }
 }
 
+/** O decimal textual do contrato - o mesmo padrao do `forma.schema.json` (D4: nao se compara o que nao se leu). */
+const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
+
 /**
  * OS CINCO NUMEROS DA CORRETORA, do relato do venue que o conector traz na operacao (RN-V8).
  *
@@ -132,6 +136,63 @@ function lerNumerosDaCorretora(caminhoDaOperacao: string | undefined): NumerosDa
     numeros[nome] = relato[nome];
   }
   return numeros;
+}
+
+/**
+ * O EQUITY DE PARTIDA da sessao nova (T042): e um numero DA CORRETORA, e le-se da LEITURA do venue.
+ *
+ * `null` quando nao se leu - ausente, fora da forma decimal, ou em DESACORDO entre instrumentos. Discutir
+ * qual vale seria escolher por quem decide: uma sessao que nasce com a base de outro instrumento mede a
+ * corrida contra um numero que ninguem teve.
+ */
+function lerEquityDePartida(caminhoDaOperacao: string | undefined): string | null {
+  if (caminhoDaOperacao === undefined) return null;
+  let operacao: any;
+  try { operacao = JSON.parse(readFileSync(caminhoDaOperacao, "utf8")); } catch { return null; }
+  const instrumentos = operacao?.instrumentos;
+  if (instrumentos === null || typeof instrumentos !== "object") return null;
+  const nomes = Object.keys(instrumentos);
+  if (nomes.length === 0) return null;
+  const lidos = new Set<string>();
+  for (const nome of nomes) {
+    const equity = instrumentos[nome]?.leitura?.equity;
+    if (typeof equity !== "string" || !DECIMAL.test(equity)) return null;
+    lidos.add(equity);
+  }
+  return lidos.size === 1 ? [...lidos][0]! : null;
+}
+
+/**
+ * A UNIDADE DE COMPARACAO da sessao nova (T042/FR-034): `ficha` e `versao_do_setup` vem da PROPOSTA do
+ * setup, e a `versao_do_mandato` do mandato do DONO (`fichas.<instrumento>.versao_do_mandato`).
+ *
+ * `null` quando qualquer das tres falta (ou discorda entre instrumentos). A versao do mandato nao se
+ * substitui por nenhuma outra: a do contrato diz que lingua se fala, nao que risco se corre - e sem a
+ * unidade os numeros de duas sessoes nao se comparam entre si (FR-034, FR-039).
+ */
+function lerUnidadeDeComparacao(caminhoDaOperacao: string | undefined, caminhoDaConfig: string | undefined): ConfiguracaoEmVigor | null {
+  if (caminhoDaOperacao === undefined || caminhoDaConfig === undefined) return null;
+  let operacao: any, config: any;
+  try {
+    operacao = JSON.parse(readFileSync(caminhoDaOperacao, "utf8"));
+    config = JSON.parse(readFileSync(caminhoDaConfig, "utf8"));
+  } catch { return null; }
+  const instrumentos = operacao?.instrumentos;
+  if (instrumentos === null || typeof instrumentos !== "object") return null;
+  const nomes = Object.keys(instrumentos);
+  if (nomes.length === 0) return null;
+  const fichas = new Set<string>(), setups = new Set<string>(), mandatos = new Set<string>();
+  for (const nome of nomes) {
+    const setup = instrumentos[nome]?.proposta?.setup;
+    if (typeof setup?.nome !== "string" || setup.nome === "") return null;
+    if (typeof setup?.versao !== "string" || setup.versao === "") return null;
+    fichas.add(setup.nome); setups.add(setup.versao);
+    const versaoDoMandato = config?.fichas?.[nome]?.versao_do_mandato;
+    if (typeof versaoDoMandato !== "string" || versaoDoMandato === "") return null;
+    mandatos.add(versaoDoMandato);
+  }
+  if (fichas.size !== 1 || setups.size !== 1 || mandatos.size !== 1) return null;
+  return { ficha: [...fichas][0]!, versao_do_setup: [...setups][0]!, versao_do_mandato: [...mandatos][0]! };
 }
 
 /**
@@ -281,6 +342,20 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
   // precisa de saber se o veneno e o prazo foram D E C L A R A D O S. As duas leituras sao daqui (a mesa nao
   // le configuracao - uma segunda leitura seria uma segunda verdade), e os dois campos so entram quando o
   // verbo e o `stop`: noutro verbo nao ha resumo nenhum a construir.
+  // O PONTO DE PARTIDA DA SESSAO NOVA (T042): o equity e a unidade de comparacao. As duas leituras sao
+  // daqui pela mesma razao das outras - a mesa nao le a operacao nem a configuracao, e uma segunda leitura
+  // seria uma segunda verdade. As duas guardas da tabela julgam-nas em separado: o motivo que sai tem de
+  // dizer QUAL das duas faltou.
+  if (verbo === "nova_sessao") {
+    const equity = lerEquityDePartida(opcoes.caminhoDaOperacao);
+    const unidade = lerUnidadeDeComparacao(opcoes.caminhoDaOperacao, opcoes.caminhoDaConfig);
+    contexto.equity_de_partida_nao_lido = equity === null;
+    contexto.unidade_de_comparacao_nao_declarada = unidade === null;
+    if (equity !== null && unidade !== null) {
+      contexto.sessao_nova = { equity_de_partida: equity, configuracao_em_vigor: unidade };
+    }
+  }
+
   const numerosDaCorretora = verbo === "stop" ? lerNumerosDaCorretora(opcoes.caminhoDaOperacao) : null;
   const prazoDaFicha = verbo === "stop" ? lerPrazoDoDono(opcoes.caminhoDaConfig) : null;
   if (verbo === "stop") {

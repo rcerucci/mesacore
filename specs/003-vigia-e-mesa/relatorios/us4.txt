@@ -1,0 +1,103 @@
+US4 — OS TRES VERBOS ONDE UMA CONFUSAO CUSTA DINHEIRO (T040-T045)
+
+As saidas estao cruas. Nao ha parafrase delas em sitio nenhum.
+
+  $ bash tools/verificar-maquina/provar.sh
+tabela de transicoes                       OK   conferencia: 0 falhas nos 7 invariantes.
+porteiro do estado (negativo)              OK     ok    prova negativa 7-motivo-com-nome-do-contrato: reprovada pelo invariante 7 (nome 'versao_do_contrato_divergente').
+a mesa (maquina + marcas)                  OK   resumo: 24 verificacoes · 0 falhas
+maquina de estados                         OK   resumo: 35 casos · 13 aceites · 22 recusados · 0 divergentes · 0 recusas sem motivo
+condicoes, ciclo, desfecho                 OK   resumo: 64 verificacoes · 0 divergentes · 12 casos de condicao · 24 de ciclo · 8 de desfecho · 6 de reconciliacao
+arranque (sete portas)                     OK   resumo: 35 verificacoes · 0 divergentes · 17 casos · 13 portas falhadas de proposito
+tipos (tsc)                                OK   tipos: 0 erros em 4 directorios (o tsc confere o produto e as bancadas)
+sessao e CB                                OK   resumo: 27 verificacoes · 0 divergentes · 13 casos · 7 disparos de CB
+pausa e encerramento                       OK   resumo: 21 verificacoes · 0 divergentes · 5 casos US6 · 7 casos US7
+registo (SC-011)                           OK   resumo: 8 verificacoes · 0 divergentes · 11 linhas de registo reconstruidas
+contenda (T066)                            OK   resumo: 35 verificacoes · 0 divergentes · 7 casos
+chaves do core (SC-012)                    OK   resumo: 3 verificacoes · 0 divergentes · 8 chaves
+porteiro do estado (script)                OK   resumo: 2 verificacoes · 0 falhas
+marcas sobrevivem ao reinicio              OK   resumo: 3 processos + 1 leitura externa · 0 falhas
+porta da mesa (T014-T016)                  OK   resumo: 91 verificacoes · 0 divergentes · 9 casos · 9 processos + 1 prova negativa
+vigia + mesa (--arranque)                  OK   resumo: 51 verificacoes · 0 divergentes · 11 cenarios · vigia + mesa como processos
+vigia: orfandade (--orfandade)             OK   resumo: 11 verificacoes · 0 divergentes · 10 voltas com o vigia morto · 10 voltas contadas x 10 linhas
+encerramento (--encerramento)              OK   resumo: 15 verificacoes · 0 divergentes · 7 cenarios (prazo, manter, fechar, decisao-sem-pergunta, sem-numeros, sem-prazo, liquidacao-cumprida)
+verbos (--verbos, T044)                    OK   resumo: 12 verificacoes · 0 divergentes · 9 cenarios (pausa-abrir, pausa-fechar, reset, sem-motivo, sem-equity, sem-unidade, completa, posicao-viva, campo-a-mais)
+contrato neutro (recorte 001)              OK   ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam
+frescura do contrato                       OK   frescura: 0 divergencias — o gerado corresponde aos schemas (30 ficheiros)
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 22 de 22 passaram — a maquina decide o que devia, e explica o que nao fez
+  $ bash tools/verificar-maquina/vigia.sh --verbos
+=== bancada dos verbos: pause, reset e nova_sessao (T044)
+
+ok    cenario/pausa · abrir suspenso, fechar continua · motivo do ciclo: mesa_pausada_nao_abre
+ok    cenario/reset · efeito reset_nao_toca_em_nada · inibicao intacta · start ainda recusa
+ok    cenario/nova-sessao · equity 1000.00, unidade ema_cruz@risco-v3 · inibicao levantada
+ok    cenario/recusas · equity_de_partida_nao_lido · unidade_de_comparacao_nao_declarada · sessao_nova_com_posicao_viva · comando_com_campo_a_mais
+
+resumo: 12 verificacoes · 0 divergentes · 9 cenarios (pausa-abrir, pausa-fechar, reset, sem-motivo, sem-equity, sem-unidade, completa, posicao-viva, campo-a-mais)
+  $ bash tools/verificar-maquina/vigia.sh --encerramento
+ok    cenario/sem-prazo-do-dono · recusada: prazo_de_resposta_nao_declarado
+ok    cenario/liquidacao-cumprida · encerrando->parada (sem posicao nossa a fechar)
+
+resumo: 15 verificacoes · 0 divergentes · 7 cenarios (prazo, manter, fechar, decisao-sem-pergunta, sem-numeros, sem-prazo, liquidacao-cumprida)
+  $ bash tools/verificar-maquina/tipos.sh
+contracts: 0 erros de tipo
+tipos: 0 erros em 4 directorios (o tsc confere o produto e as bancadas)
+  $ bun run core/estados/provar.ts
+resumo: 35 casos · 13 aceites · 22 recusados · 0 divergentes · 0 recusas sem motivo
+  $ bun run core/mesa.prova.ts
+resumo: 24 verificacoes · 0 falhas
+  $ bun run tools/verificar-maquina/servidor.ts   (a porta da mesa)
+resumo: 91 verificacoes · 0 divergentes · 9 casos · 9 processos + 1 prova negativa
+O QUE SE PROVOU, e por que e ESTA a medida:
+
+  - PAUSA (T040, RN-V2.1/FR-010): o par de controlo e a prova. Com a MESMA pausa, o caso que abriria nao abre
+    (`mesa_pausada_nao_abre`) E o caso que fecharia FECHA. Sem o segundo, "a pausa suspende abrir" podia ser
+    "a pausa para a mesa" - e a posicao ficava sem defesa. O CB corre com a mesa pausada (SC-008, na bateria
+    `sessao e CB`: 1 de 1 casos com a mesa pausada dispararam): por isso o estado da mesa NAO entra no `cb.ts`;
+  - RESET (T041, FR-005): prova-se por TRES lados - o efeito na resposta (`reset_nao_toca_em_nada`), o ficheiro
+    de marcas (a inibicao do CB continua la) e o `start` seguinte (recusa `sessao_inibida`). Um reset que
+    limpasse a inibicao apagaria o CB que a propria mesa disparou;
+  - NOVA SESSAO (T042, RN-V10/FR-038): e o UNICO caminho fora da inibicao, e grava uma sessao que se pode
+    comparar - instante, autor, motivo, equity de partida e a unidade (ficha, versao do setup, versao do
+    mandato). A cadeia e o que prova: com a inibicao presente, o `nova_sessao` grava e o `start` SEGUINTE
+    arranca;
+  - ALCANCE (T043, RN-E22/FR-020): `start`/`stop`/`pause`/`reset` sao da MESA; o `nova_sessao` e por CONTA, e
+    neste recorte a mesa serve uma conta. O campo da conta NAO entra na mensagem antes de haver uma segunda
+    conta para servir: MEDIDO - um `nova_sessao` com o campo `conta` e RECUSADO (`comando_com_campo_a_mais`).
+    Um campo que ninguem le e a porta dos verbos a alargar-se sozinha.
+
+DOIS NOMES NOVOS, e o defeito que os obrigou (contrato 1.2.0 -> 1.3.0, aditiva):
+
+  - `equity_de_partida_nao_lido` - O DEFEITO: pelo portao, o `nova_sessao` gravava a sessao com
+    `equity_de_partida: ""` EM SILENCIO (o `core/mesa.ts` escrevia `?? ""`), enquanto `core/estado/sessao.ts` -
+    que existe exactamente para isto - GRITA com um ponto de partida invalido ("um ponto de partida inventado
+    faz o CB medir a perda contra uma base que ninguem teve"). O `cb.ts` compara a perda da sessao com esse
+    equity: uma base vazia nao e uma base pequena. O portao passa a LER o equity da leitura do venue
+    (`mercado.equity`, grandeza declarada do venue), e sem ele - ausente, fora da forma decimal, ou em
+    desacordo entre instrumentos - a mesa RECUSA. Discordar e nao ter lido: escolher um deles em silencio
+    seria decidir por quem decide;
+  - `unidade_de_comparacao_nao_declarada` - a sessao e a unidade de COMPARACAO (FR-034): sem ficha, versao do
+    setup e versao do mandato, dois numeros da mesma mesa podem vir de duas estrategias diferentes, e comparar
+    um com o outro nao diz nada. A chave que faltava (`fichas/<i>.risco.versao_do_mandato`) entrou no
+    inventario com dono declarado - o dono versona o mandato - e o portao le-a da configuracao.
+
+  A SESSAO PASSOU A TER UMA SO IMPLEMENTACAO: o `nova_sessao` chama `estado/sessao.ts::novaSessao` (que
+  confere o ponto de partida e a unidade e levanta a inibicao no mesmo passo), em vez de escrever a sessao a
+  mao. E a licao da `fail-closed-validation` outra vez: uma funcao partilhada vive fora de quem a copia.
+
+AS DUAS GUARDAS NOVAS SAO FAIL-CLOSED, como as do encerramento: recusam enquanto o contexto nao disser que o
+valor veio (`!== false`). Ha prova negativa declarada - `nova_sessao` com o contexto VAZIO recusa -, porque um
+contexto que nao sabe se a base foi lida nao pode deixar a sessao nascer com a base de ninguem.
+
+UMA MEDICAO QUE DERRUBOU TEXTO (meu): no MANIFESTO, o campo `versao` E a versao do CONTRATO (o portao compara-a
+por igualdade exacta, RN-E18) - e a migracao da 1.3.0 so tinha tocado em `contrato`. As sete portas do arranque
+recusaram por isso mesmo: 7 divergencias medidas, 0 depois de migrar o `carga.versao` (nos tres ficheiros de
+manifesto: `contracts/casos/manifesto.casos.json`, `conferencia.conformidade.json` e o mock do conector). O
+`versao` DENTRO de `conector` e do plugin, e essa nao se toca - sao duas versoes diferentes com o mesmo nome, e
+a configuracao em vigor guarda-as ambas.
+
+O QUE NAO SE PROVA AQUI: a corretora. O equity e a unidade vem do relato do connector/venue na operacao, e
+neste recorte esse relato e de DUBLE. O protocolo do conector (RN-E20) e a bateria por venue (RN-C6) sao os
+recortes dos plugins, sob demanda. Nada aqui toca numa corretora nem pede chave (RN-E24).

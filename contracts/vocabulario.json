@@ -1,5 +1,5 @@
 {
-  "contrato": "1.2.0",
+  "contrato": "1.3.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",
@@ -8,7 +8,7 @@
     "caixa"
   ],
   "conjuntos_do_vigia": {
-    "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 23 dos 45, research R7. `liquidacao_em_curso` e o unico nome que serve de recusa E de efeito: como recusa, e um `start` durante a liquidacao; como efeito, e a decisao do dono que a comecou (o recorte 002 ja o usava assim); as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa. Duas excecoes, e as duas da PORTA, nao do livro: `versao_do_contrato_divergente` (quem recusa e o CONTRATO, e a porta relata-o tal e qual - traduzi-lo para um motivo da mesa faria o vigia perder a razao certa, que e o que se quer saber quando nada acontece) e `posicao_desconhecida` (a porta nao sabe se ha posicao viva e NAO para por adivinhacao: a tabela trata \"nao sei\" como \"nao ha posicao\", e por isso o desconhecido sai como recusa NOMEADA).",
+    "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 25 dos 47, research R7. `liquidacao_em_curso` e o unico nome que serve de recusa E de efeito: como recusa, e um `start` durante a liquidacao; como efeito, e a decisao do dono que a comecou (o recorte 002 ja o usava assim); as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa. Duas excecoes, e as duas da PORTA, nao do livro: `versao_do_contrato_divergente` (quem recusa e o CONTRATO, e a porta relata-o tal e qual - traduzi-lo para um motivo da mesa faria o vigia perder a razao certa, que e o que se quer saber quando nada acontece) e `posicao_desconhecida` (a porta nao sabe se ha posicao viva e NAO para por adivinhacao: a tabela trata \"nao sei\" como \"nao ha posicao\", e por isso o desconhecido sai como recusa NOMEADA).",
     "verbos": [
       "start",
       "pause",
@@ -46,7 +46,9 @@
       "posicao_desconhecida",
       "prazo_de_resposta_nao_declarado",
       "numeros_da_corretora_ausentes",
-      "decisao_sem_pergunta"
+      "decisao_sem_pergunta",
+      "equity_de_partida_nao_lido",
+      "unidade_de_comparacao_nao_declarada"
     ],
     "efeitos_de_comando": [
       "sessao_nova_gravada",

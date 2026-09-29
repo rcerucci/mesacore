@@ -67,7 +67,14 @@ um sexto não entra «por omissão nem por extensão». A decisão é a **respos
 identificada pela pergunta — `pedido_id`. Sem `pedido_id`, não se sabe a que resumo ela responde, e uma
 decisão sem pergunta é uma decisão sem contexto.
 
-## 7. A versão: **1.2.0**, aditiva (1.1.0 + o encerramento)
+## 7. A versão: **1.3.0**, aditiva (1.2.0 + os pontos de partida da sessão)
+
+A **1.3.0** traz os dois nomes que a US4 obrigou a declarar — `equity_de_partida_nao_lido` e
+`unidade_de_comparacao_nao_declarada` — mais a chave do dono `fichas/<instrumento>.risco.versao_do_mandato`
+(declarada no inventário, com dono). O `versão` de um **manifesto** é a versão do CONTRATO (RN-E18, conferida
+por igualdade exacta) e migra com ela; o `versão` dentro de `conector` é do **plugin** e não se toca.
+
+## 7.1. A 1.2.0 (o encerramento)
 
 A 1.1.0 trouxe os **quatro tipos** desta fronteira; a **1.2.0** traz o que a US3 obrigou a nomear. Nada do que
 existia mudou de sentido, e quem não conhece um tipo recusa com `tipo_desconhecido` — comportamento declarado.
@@ -79,9 +86,9 @@ como **`pergunta_do_encerramento`** (o que se espera do dono). A segunda linha s
 lê sabe que vem porque a primeira **diz** que o estado é `encerrando` — nunca por tempo. Juntar as duas numa só
 obrigaria o tipo de resposta a ganhar campos que só o encerramento usa.
 
-## 8. Os motivos que atravessam: **23 dos 45**
+## 8. Os motivos que atravessam: **25 dos 47**
 
-Os **18 de recusa** e os **5 de efeito** produzidos pelo interpretador de comando e pelo encerramento (a lista
+Os **20 de recusa** e os **5 de efeito** produzidos pelo interpretador de comando e pelo encerramento (a lista
 completa está no `research.md`, R7). Os outros **22** são motivos de **ciclo, posição e reconciliação**: não
 são resposta a comando nenhum e ficam onde nascem (lêem-se no ledger e nas marcas). `liquidacao_em_curso` é o
 único nome que serve de **recusa e de efeito**: recusa um `start` durante a liquidação, e é o efeito da decisão

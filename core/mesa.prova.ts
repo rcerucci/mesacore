@@ -44,6 +44,11 @@ const ctx = (extra: Partial<ContextoDaMesa> = {}): ContextoDaMesa => ({
   instante_ms: t(0),
   posicao_viva: false,
   portas_do_arranque: { passam: true },
+  // O PONTO DE PARTIDA da sessao nova (T042): as duas leituras sao da PORTA, e as guardas de recusa sao
+  // fail-closed - um contexto que nao as declare RECUSA. Esta bancada declara-as lidas, como o portao faz:
+  // um `start`/`pause` nao as le, e so o `nova_sessao` chega a linha que as julga.
+  equity_de_partida_nao_lido: false,
+  unidade_de_comparacao_nao_declarada: false,
   ...extra,
 });
 

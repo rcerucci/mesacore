@@ -24,13 +24,13 @@ import { validar } from "../../contracts/esqueleto/framing.ts";
 import { fundir } from "./fundir.ts";
 
 const MODO = process.argv[2] ?? "";
-if (MODO !== "--arranque" && MODO !== "--orfandade" && MODO !== "--encerramento") {
-  const tarefa = MODO === "--verbos" ? "T044" : "(desconhecido)";
+if (MODO !== "--arranque" && MODO !== "--orfandade" && MODO !== "--encerramento" && MODO !== "--verbos") {
+  const tarefa = "(desconhecido)";
   console.log(`${MODO}: NAO IMPLEMENTADO (tarefa ${tarefa})`);
   process.exit(2);
 }
 
-const VERSAO = "1.2.0";
+const VERSAO = "1.3.0";
 const comando = (id: string, carga: Record<string, unknown>) =>
   JSON.stringify({ contrato: VERSAO, tipo: "comando", id, carga });
 
@@ -53,6 +53,7 @@ function conferir(nome: string, ok: boolean, detalhe = "") {
 // `manifestoDoFixture`), e chama-las antes de existirem seria ler `const` em zona morta.
 if (MODO === "--orfandade") await bancadaDaOrfandade();
 if (MODO === "--encerramento") await bancadaDoEncerramento();
+if (MODO === "--verbos") await bancadaDosVerbos();
 
 /** Escreve os tres ficheiros que o vigia le, a partir do padrao do arranque + a mudanca do caso. */
 function preparar(mudanca: Record<string, unknown>) {
@@ -168,6 +169,201 @@ O que se mede, e por que e esta a medida:
     fica `parada` quando nao ha posicao nossa para fechar em instrumento nenhum;
   - sem prazo na ficha ou sem os numeros da corretora, a mesa RECUSA o `stop` - e diz qual dos dois faltou.
 */
+/* --------------------------------------------------------------- OS TRES VERBOS (US4, T044)
+
+`pause`, `reset` e `nova_sessao` sao os tres em que uma confusao custa dinheiro. Cada cenario corre o VIGIA a
+serio, com a mesa filha, contra dubleis.
+
+O que se mede, e por que e esta a medida:
+  - a pausa suspende ABRIR e mais nada. O par de controlo e o que prova as duas metades: com a mesma pausa, o
+    caso que abriria nao abre E o caso que fecharia FECHA. Sem o segundo, "a pausa suspende abrir" podia ser
+    "a pausa para a mesa" - e a posicao ficava sem defesa;
+  - o `reset` reinicia sem tocar em nada, e di-lo. Prova-se por TRES lados: o efeito na resposta, o ficheiro de
+    marcas (a inibicao continua la) e o `start` seguinte, que continua a recusar. Um reset que limpasse a
+    inibicao apagaria o CB que a propria mesa disparou;
+  - o `nova_sessao` e o UNICO caminho fora da inibicao, e grava uma sessao que se pode comparar: o equity de
+    partida (da corretora) e a unidade (ficha, versao do setup, versao do mandato). Sem qualquer dos dois,
+    RECUSA com o nome do que faltou - e o `start` seguinte so passa depois da sessao gravada;
+  - um campo que a mensagem do comando nao tem e RECUSADO (FR-020): o campo da conta entra no dia em que a
+    mesa servir mais do que uma conta, e nao antes.
+*/
+async function bancadaDosVerbos() {
+  console.log("=== bancada dos verbos: pause, reset e nova_sessao (T044)\n");
+
+  const declaradoDoCiclo = JSON.parse(readFileSync(join(RAIZ_DO_REPO, "core/ciclo/ciclo.casos.json"), "utf8"));
+  const padraoDoCiclo = declaradoDoCiclo.padrao;
+  const casoDo = (prefixo: string) => declaradoDoCiclo.casos.find((c: any) => c.nome.startsWith(prefixo));
+  const abre = casoDo("normal-proposta-buy-abre");
+  const fecha = casoDo("normal-proposta-caixa-com-posicao");
+
+  const base = JSON.parse(JSON.stringify(declarado.padrao.config));
+  const config = (semVersaoDoMandato = false) => {
+    const c = JSON.parse(JSON.stringify(base));
+    for (const ficha of Object.values<any>(c.fichas)) {
+      ficha.setup = { prazo_de_resposta_ms: 1500 };
+      if (!semVersaoDoMandato) ficha.versao_do_mandato = "risco-v3";
+    }
+    return c;
+  };
+  const operacao = (caso: any, comEquity: boolean) => {
+    const leitura = { ...caso.leitura };
+    if (comEquity) leitura.equity = "1000.00"; else delete leitura.equity;
+    return {
+      nota: "duble de operacao dos verbos", ligacao: "ligada",
+      corretora: { posicao: "0.25", nocional: "25000.00", margem: "1000.00", distancia_de_liquidacao: "0.081", resultado_nao_realizado: "-125.40" },
+      instrumentos: {
+        EURUSD: {
+          leitura,
+          proposta: { setup: padraoDoCiclo.proposta_setup, ...caso.proposta },
+          ficha: caso.ficha ?? padraoDoCiclo.ficha,
+          template: padraoDoCiclo.template,
+          marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? [],
+        },
+      },
+    };
+  };
+  const marcasInibidas = (caminho: string) =>
+    writeFileSync(caminho, JSON.stringify({
+      sessao: null,
+      inibicao_cb: { motivo: "perda de 5% na sessao", instante_ms: 1, perda_medida: "50.00" },
+      desconhecido: [], pedidos: [],
+    }, null, 2));
+
+  const correr = async (
+    nome: string,
+    linhas: string[],
+    quantasRespostas: number,
+    opcoesCenario: { config?: any; operacao?: any; inibida?: boolean; espera?: number; posicaoViva?: boolean } = {},
+  ) => {
+    const dir = mkdtempSync(join(tmpdir(), `vigia-verbos-${nome}-`));
+    const c = {
+      config: join(dir, "config.json"), manifesto: join(dir, "manifesto.json"),
+      operacao: join(dir, "operacao.json"), marcas: join(dir, "marcas.json"),
+      registo: join(dir, "vigia.json"), portas: join(dir, "portas.json"), ledger: join(dir, "ledger.jsonl"),
+    };
+    writeFileSync(c.config, JSON.stringify(opcoesCenario.config ?? config()));
+    writeFileSync(c.manifesto, JSON.stringify(manifestoDoFixture));
+    writeFileSync(c.operacao, JSON.stringify(opcoesCenario.operacao ?? operacao(fecha, true)));
+    if (opcoesCenario.inibida) marcasInibidas(c.marcas);
+    writeFileSync(c.portas, JSON.stringify({ passam: true, portas_conferidas: ["conectores"] }));
+    const proc = spawn("bun", [
+      "run", join(RAIZ_DO_REPO, "vigia", "vigia.ts"),
+      "--config", c.config, "--manifesto", c.manifesto, "--marcas", c.marcas,
+      "--registo", c.registo, "--portas", c.portas, "--ledger", c.ledger, "--operacao", c.operacao,
+      "--posicao-viva", String(opcoesCenario.posicaoViva ?? false), "--tick", "150",
+    ], { stdio: ["pipe", "pipe", "pipe"] });
+    let bruto = "", erros = "";
+    proc.stdout!.setEncoding("utf8"); proc.stderr!.setEncoding("utf8");
+    proc.stderr!.on("data", (p: string) => { erros += p; });
+    const respostas = () => bruto.split("\n").filter((l) => l.trim() !== "");
+    const chegou = new Promise<void>((resolver) => {
+      const limite = setTimeout(resolver, 30000);
+      proc.stdout!.on("data", (p: string) => {
+        bruto += p;
+        if (respostas().length >= quantasRespostas) { clearTimeout(limite); resolver(); }
+      });
+    });
+    proc.stdin!.write(linhas.join("\n") + "\n");
+    await chegou;
+    if (opcoesCenario.espera) await new Promise((r) => setTimeout(r, opcoesCenario.espera));
+    const saida = respostas();
+    proc.kill("SIGKILL");
+    let registro: any = { transicoes: [], processos: [] };
+    try { registro = JSON.parse(readFileSync(c.registo, "utf8")); } catch { /* as provas reprovam */ }
+    for (const p of registro.processos ?? []) {
+      if (typeof p.pid === "number") { try { process.kill(p.pid, "SIGKILL"); } catch { /* ja morreu */ } }
+    }
+    const lerLedger = () => {
+      try { return readFileSync(c.ledger, "utf8").split("\n").filter((l) => l.trim() !== "").map((l) => JSON.parse(l)); }
+      catch { return []; }
+    };
+    const marcas = () => { try { return JSON.parse(readFileSync(c.marcas, "utf8")); } catch { return null; } };
+    return { saida, registro, ledger: lerLedger(), marcas, carga: (i: number) => JSON.parse(saida[i] ?? "{}")?.carga ?? {}, dir, erros };
+  };
+
+  const cmd = (id: string, verbo: string, extra: Record<string, unknown> = {}) =>
+    comando(id, { verbo, autor: "dono", pedido_id: id, ...extra });
+
+  // 1 e 2. A PAUSA: o par de controlo. Abrir nao abre; fechar FECHA.
+  const p1 = await correr("pause-abrir", [cmd("a1", "start"), cmd("a2", "pause")], 2, { operacao: operacao(abre, true), espera: 900 });
+  const cicloPausado = p1.ledger.filter((l: any) => l.tipo === "ciclo").at(-1);
+  conferir("pause/RN-V2.1: com a mesa pausada a ABERTURA e suspensa",
+    cicloPausado?.motivo === "mesa_pausada_nao_abre" && cicloPausado?.acao !== "abrir",
+    `acao=${cicloPausado?.acao} motivo=${cicloPausado?.motivo}`);
+
+  const p2 = await correr("pause-fechar", [cmd("b1", "start"), cmd("b2", "pause")], 2, { operacao: operacao(fecha, true), espera: 900 });
+  const cicloDefende = p2.ledger.filter((l: any) => l.tipo === "ciclo" && l.acao === "fechar");
+  conferir("pause/FR-010: a pausa NAO suspende defender - o CB e a liquidacao correm",
+    cicloDefende.length > 0, `voltas com fechar=${cicloDefende.length} · estado=${p2.carga(1).transicao?.para}`);
+
+  // 3. O RESET: nao limpa a inibicao, e di-lo.
+  const r1 = await correr("reset", [cmd("c1", "reset"), cmd("c2", "start")], 2, { inibida: true });
+  const reinicio = r1.carga(0);
+  conferir("reset/FR-005: o reset diz o que NAO tocou", reinicio.efeito === "reset_nao_toca_em_nada",
+    `efeito=${reinicio.efeito}`);
+  conferir("reset: as marcas continuam com a inibicao do CB",
+    r1.marcas()?.inibicao_cb?.motivo === "perda de 5% na sessao", `inibicao=${JSON.stringify(r1.marcas()?.inibicao_cb)?.slice(0, 60)}`);
+  conferir("reset: o `start` seguinte continua a recusar (a inibicao nao foi limpa)",
+    r1.carga(1).motivo === "sessao_inibida", `motivo=${r1.carga(1).motivo}`);
+
+  // 4. NOVA SESSAO sem motivo: o motivo e do dono e sem ele o registo nao explica a sessao.
+  const n1 = await correr("sem-motivo", [cmd("d1", "nova_sessao")], 1,
+    { config: (() => { const c = config(); return c; })(), operacao: operacao(abre, true) });
+  conferir("nova_sessao/RN-V10: sem motivo e RECUSADA", n1.carga(0).motivo === "comando_incompleto",
+    `motivo=${n1.carga(0).motivo}`);
+
+  // 5 e 6. O PONTO DE PARTIDA: sem o equity, e sem a unidade, recusa - e diz qual faltou.
+  const n2 = await correr("sem-equity", [cmd("e1", "nova_sessao", { motivo: "trocar de ficha" })], 1,
+    { operacao: operacao(abre, false) });
+  conferir("nova_sessao/T042-RN-M3: sem o equity da corretora RECUSA (nao se grava base vazia)",
+    n2.carga(0).motivo === "equity_de_partida_nao_lido", `motivo=${n2.carga(0).motivo}`);
+
+  const n3 = await correr("sem-unidade", [cmd("f1", "nova_sessao", { motivo: "trocar de ficha" })], 1,
+    { config: config(true), operacao: operacao(abre, true) });
+  conferir("nova_sessao/T042-FR-034: sem a versao do mandato RECUSA (a unidade e do dono)",
+    n3.carga(0).motivo === "unidade_de_comparacao_nao_declarada", `motivo=${n3.carga(0).motivo}`);
+
+  // 7. NOVA SESSAO completa: grava a sessao E levanta a inibicao - e o `start` seguinte passa.
+  const n4 = await correr("completa", [cmd("g1", "nova_sessao", { motivo: "sessao nova depois do CB" }), cmd("g2", "start")], 2,
+    { inibida: true, operacao: operacao(abre, true) });
+  const sessao = n4.marcas()?.sessao;
+  conferir("nova_sessao/T042: grava autor, motivo, instante, equity de partida e a unidade",
+    n4.carga(0).efeito === "sessao_nova_gravada" && sessao?.autor === "dono" &&
+      sessao?.motivo === "sessao nova depois do CB" && sessao?.equity_de_partida === "1000.00" &&
+      sessao?.configuracao_em_vigor?.ficha === "ema_cruz" &&
+      sessao?.configuracao_em_vigor?.versao_do_setup === "1.0.0" &&
+      sessao?.configuracao_em_vigor?.versao_do_mandato === "risco-v3" &&
+      Number.isInteger(sessao?.instante_ms),
+    `sessao=${JSON.stringify(sessao)?.slice(0, 150)}`);
+  conferir("nova_sessao/FR-038: e o UNICO caminho fora da inibicao (o `start` seguinte arranca)",
+    n4.marcas()?.inibicao_cb === null && n4.carga(1).transicao?.para === "em_operacao",
+    `inibicao=${String(n4.marcas()?.inibicao_cb)} para=${n4.carga(1).transicao?.para}`);
+
+  // 8 e 9. Os dois limites do verbo: posicao viva, e um campo que a mensagem nao tem.
+  const n5 = await correr("posicao-viva", [cmd("h1", "nova_sessao", { motivo: "trocar de ficha" })], 1,
+    { operacao: operacao(abre, true), posicaoViva: true });
+  conferir("nova_sessao: com posicao viva RECUSA (a sessao nova nao serve para limpar posicao)",
+    n5.carga(0).motivo === "sessao_nova_com_posicao_viva", `motivo=${n5.carga(0).motivo}`);
+
+  const n6 = await correr("campo-a-mais", [cmd("i1", "nova_sessao", { motivo: "trocar de ficha", conta: "conta-2" })], 1,
+    { operacao: operacao(abre, true) });
+  conferir("nova_sessao/FR-020: o campo da CONTA ainda nao existe - um campo a mais e RECUSADO",
+    n6.carga(0).motivo === "comando_com_campo_a_mais", `motivo=${n6.carga(0).motivo}`);
+
+  for (const x of [p1, p2, r1, n1, n2, n3, n4, n5, n6]) rmSync(x.dir, { recursive: true, force: true });
+
+  for (const falha of falhas) console.log("FALHA " + falha);
+  console.log("ok    cenario/pausa · abrir suspenso, fechar continua · " + `motivo do ciclo: ${cicloPausado?.motivo}`);
+  console.log(`ok    cenario/reset · efeito ${reinicio.efeito} · inibicao intacta · start ainda recusa`);
+  console.log(`ok    cenario/nova-sessao · equity ${sessao?.equity_de_partida}, unidade ${sessao?.configuracao_em_vigor?.ficha}@${sessao?.configuracao_em_vigor?.versao_do_mandato} · inibicao levantada`);
+  console.log(`ok    cenario/recusas · ${n2.carga(0).motivo} · ${n3.carga(0).motivo} · ${n5.carga(0).motivo} · ${n6.carga(0).motivo}`);
+  console.log(
+    `\nresumo: ${verificacoes} verificacoes · ${divergentes} divergentes · 9 cenarios ` +
+      "(pausa-abrir, pausa-fechar, reset, sem-motivo, sem-equity, sem-unidade, completa, posicao-viva, campo-a-mais)",
+  );
+  process.exit(divergentes === 0 ? 0 : 1);
+}
+
 async function bancadaDoEncerramento() {
   console.log("=== bancada do encerramento: os desfechos do `stop` com posicao viva (T038)\n");
 

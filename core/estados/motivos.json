@@ -2,6 +2,18 @@
   "nota": "Conjunto FECHADO dos motivos de recusa da MESA (R7 do specs/002). Nao se confunde com contracts/vocabulario.json: aquele e a lingua que cruza a fronteira entre processos e linguagens (validade de mensagem); este e a resposta a um COMANDO, que e interface interna. Nenhum destes motivos e escrito em codigo: o interprete le-os daqui. No dia em que o vigia for processo separado (RN-E8), estes motivos passam a cruzar a fronteira e terao de entrar no contrato - e uma mensagem nova volta ao recorte 001.",
   "familia": "recusa_da_mesa",
   "motivos": {
+    "unidade_de_comparacao_nao_declarada": {
+      "cruzam_a_fronteira": true,
+      "quando": "nova_sessao sem a unidade de comparacao completa - falta a versao do mandato (a ficha e a versao do setup vem da proposta do setup)",
+      "regra": "RN-V10, FR-034, FR-039",
+      "porque": "A sessao e a unidade de COMPARACAO: sem ficha, versao do setup e versao do mandato, dois numeros da mesma mesa podem vir de duas estrategias diferentes e comparar um com o outro nao diz nada (FR-034). A versao do mandato e do dono - o mandato e o risco que ele declarou - e nenhuma outra serve: a versao do contrato diz que lingua se fala, nao que risco se corre."
+    },
+    "equity_de_partida_nao_lido": {
+      "cruzam_a_fronteira": true,
+      "quando": "nova_sessao sem equity de partida legivel na operacao - ausente na leitura, ou em desacordo entre instrumentos",
+      "regra": "RN-V10, RN-M3, FR-038",
+      "porque": "O ponto de partida de uma sessao e o equity DA CORRETORA, com nao realizado, e e contra ele que o CB mede a perda da corrida. Sem ele a sessao nasceria com uma base que ninguem teve: o CB mediria contra o nada, e o dono leria uma sessao 'defendida' que nunca foi comparada com coisa nenhuma. Gravar vazio - ou escolher um instrumento quando eles discordam - seria decidir por quem decide: a mesa recusa e diz que nao leu."
+    },
     "prazo_de_resposta_nao_declarado": {
       "cruzam_a_fronteira": true,
       "quando": "stop com posicao viva e a ficha do dono nao declara `setup.prazo_de_resposta_ms`",
@@ -278,7 +290,7 @@
   ],
   "fronteira": {
     "de_onde_vem": "`cruzam_a_fronteira` e o ambito da conferencia das duas direcoes (recorte 003, T017): `true` = este motivo pode sair numa resposta ao vigia; `false` = nasce e morre dentro de um ciclo. Os nomes marcados `true` tem de existir no conjunto fechado `conjuntos_do_vigia` de contracts/vocabulario.json, e o inverso tambem: o conjunto nao pode ter nome que o livro nao conheca (as duas excecoes - versao_do_contrato_divergente e posicao_desconhecida - vem da porta e estao declaradas la).",
-    "cruzam": 20,
+    "cruzam": 25,
     "nao_cruzam": 22
   }
 }

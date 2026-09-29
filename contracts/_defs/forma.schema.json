@@ -6,7 +6,13 @@
   "$defs": {
     "verbo_do_vigia": {
       "type": "string",
-      "enum": ["start", "pause", "stop", "reset", "nova_sessao"],
+      "enum": [
+        "start",
+        "pause",
+        "stop",
+        "reset",
+        "nova_sessao"
+      ],
       "description": "Os CINCO verbos do vigia (RN-V1). Um sexto nao entra por omissao nem por extensao - e por isso a decisao do encerramento NAO e um verbo, e sim resposta a uma pergunta."
     },
     "autor": {
@@ -17,7 +23,12 @@
     },
     "estado_da_mesa": {
       "type": "string",
-      "enum": ["parada", "em_operacao", "pausada", "encerrando"],
+      "enum": [
+        "parada",
+        "em_operacao",
+        "pausada",
+        "encerrando"
+      ],
       "description": "O eixo da mesa (docs/maquina-de-estados.md): so estes quatro. A condicao do instrumento e outra coisa e nao entra aqui."
     },
     "instante_da_mesa_ms": {
@@ -27,17 +38,50 @@
     },
     "motivo_de_comando": {
       "type": "string",
-      "enum": ["mesa_ja_em_operacao", "mesa_parada_nada_a_pausar", "mesa_ja_pausada", "mesa_ja_parada", "mesa_em_encerramento", "pedido_repetido", "sessao_inibida", "porta_do_arranque_falhou", "liquidacao_em_curso", "sessao_nova_com_posicao_viva", "mesa_precisa_parar_para_sessao_nova", "verbo_desconhecido", "comando_com_campo_a_mais", "comando_incompleto", "comando_com_tipo_invalido", "versao_do_contrato_divergente", "posicao_desconhecida", "prazo_de_resposta_nao_declarado", "numeros_da_corretora_ausentes", "decisao_sem_pergunta"],
-      "description": "Motivo de RECUSA da mesa em resposta a um comando - espelho de vocabulario.json (a fonte e la). Sao 18 dos 45 motivos da mesa: os que o interpretador de comando produz. Os outros 27 sao os 5 efeitos (que tambem cruzam) e os 22 que nascem dentro de um ciclo e ficam onde nascem (research R7)."
+      "enum": [
+        "mesa_ja_em_operacao",
+        "mesa_parada_nada_a_pausar",
+        "mesa_ja_pausada",
+        "mesa_ja_parada",
+        "mesa_em_encerramento",
+        "pedido_repetido",
+        "sessao_inibida",
+        "porta_do_arranque_falhou",
+        "liquidacao_em_curso",
+        "sessao_nova_com_posicao_viva",
+        "mesa_precisa_parar_para_sessao_nova",
+        "verbo_desconhecido",
+        "comando_com_campo_a_mais",
+        "comando_incompleto",
+        "comando_com_tipo_invalido",
+        "versao_do_contrato_divergente",
+        "posicao_desconhecida",
+        "prazo_de_resposta_nao_declarado",
+        "numeros_da_corretora_ausentes",
+        "decisao_sem_pergunta",
+        "equity_de_partida_nao_lido",
+        "unidade_de_comparacao_nao_declarada"
+      ],
+      "description": "Motivo de RECUSA da mesa em resposta a um comando - espelho de vocabulario.json (a fonte e la). Sao 20 dos 47 motivos da mesa: os que o interpretador de comando produz. Os outros 27 sao os 5 efeitos (que tambem cruzam) e os 22 que nascem dentro de um ciclo e ficam onde nascem (research R7)."
     },
     "efeito_de_comando": {
       "type": "string",
-      "enum": ["sessao_nova_gravada", "reset_nao_toca_em_nada", "resumo_do_encerramento_apresentado", "stop_pendente_por_prazo", "parada_com_posicao_viva", "liquidacao_em_curso"],
+      "enum": [
+        "sessao_nova_gravada",
+        "reset_nao_toca_em_nada",
+        "resumo_do_encerramento_apresentado",
+        "stop_pendente_por_prazo",
+        "parada_com_posicao_viva",
+        "liquidacao_em_curso"
+      ],
       "description": "Motivo de EFEITO de um comando aceito - o que aconteceu, para o vigia poder registrar uma transicao com sentido (RN-V4). Espelho de vocabulario.json."
     },
     "resposta_do_encerramento": {
       "type": "string",
-      "enum": ["fechar_a_mercado", "manter"],
+      "enum": [
+        "fechar_a_mercado",
+        "manter"
+      ],
       "description": "As duas respostas possiveis a pergunta do encerramento (RN-V7)."
     },
     "decimal": {
@@ -120,7 +164,12 @@
     },
     "lado": {
       "type": "string",
-      "enum": ["buy", "sell", "hold", "caixa"],
+      "enum": [
+        "buy",
+        "sell",
+        "hold",
+        "caixa"
+      ],
       "description": "Os EXACTAMENTE quatro valores que a mesa aceita (RN-T4). Qualquer outro é inválido, e um pedido inválido é registado como inválido — nunca corrigido."
     }
   }

@@ -21,7 +21,7 @@ import { RAIZ_DO_REPO } from "../../core/livro-de-motivos.ts";
 import { validar } from "../../contracts/esqueleto/framing.ts";
 import { TRADUCAO } from "../../core/servidor.ts";
 
-const VERSAO = "1.2.0";
+const VERSAO = "1.3.0";
 const envelope = (tipo: string, id: string, carga: unknown) =>
   JSON.stringify({ contrato: VERSAO, tipo, id, carga });
 

@@ -218,12 +218,36 @@ O que a implementação teve de decidir e não estava aqui:
 
 **Independent Test**: `bash tools/verificar-maquina/vigia.sh --verbos` — com a mesa pausada e posição aberta, o CB **fecha**; com a inibição presente, o `reset` **não limpa**; `nova_sessao` sem motivo é recusada.
 
-- [ ] T040 [US4] `pause` suspende **abertura** e não suspende reconciliação nem CB (RN-V2.1)
-- [ ] T041 [US4] `reset` reinicia sem alterar nada — e **di-lo** (o efeito `reset_nao_toca_em_nada`), sem limpar inibição nem desconhecido
-- [ ] T042 [US4] `nova_sessao` exige **autor e motivo**, grava instante e equity de partida, e é o **único** caminho fora da inibição
-- [ ] T043 [US4] O alcance dos verbos (RN-E22): `start`/`stop`/`pause`/`reset` da **mesa**; `nova_sessao` **por conta** — com o campo da conta **ainda ausente** e a razão registada (FR-020)
-- [ ] T044 [P] [US4] `tools/verificar-maquina/vigia.ts --verbos`
-- [ ] T045 [US4] `relatorios/us4.txt`
+- [x] T040 [US4] `pause` suspende **abertura** e não suspende reconciliação nem CB (RN-V2.1)
+- [x] T041 [US4] `reset` reinicia sem alterar nada — e **di-lo** (o efeito `reset_nao_toca_em_nada`), sem limpar inibição nem desconhecido
+- [x] T042 [US4] `nova_sessao` exige **autor e motivo**, grava instante e equity de partida, e é o **único** caminho fora da inibição
+- [x] T043 [US4] O alcance dos verbos (RN-E22): `start`/`stop`/`pause`/`reset` da **mesa**; `nova_sessao` **por conta** — com o campo da conta **ainda ausente** e a razão registada (FR-020)
+- [x] T044 [P] [US4] `tools/verificar-maquina/vigia.ts --verbos`
+- [x] T045 [US4] `relatorios/us4.txt`
+
+**Checkpoint (medido)**: `provar` **22 de 22**; `vigia --verbos` **12 · 0 · 9 cenários**; tabela **35 casos**
+(13 aceites · 22 recusados); números crus em `relatorios/us4.txt`.
+
+O que a implementação teve de decidir e não estava aqui:
+
+- **A sessão nova tinha duas implementações, e a do portão era a errada.** O `core/mesa.ts` escrevia a sessão à
+  mão (`equity_de_partida: ""` quando o portão não o lia) — em silêncio — e o `estado/sessao.ts::novaSessao`,
+  que existe exactamente para isso, nunca era chamado pelo produto. O CB compara a perda da sessão com esse
+  equity: **uma base vazia não é uma base pequena**. A sessão passa a ter uma só implementação, e a ausência de
+  qualquer dos dois números é recusa nomeada, não um valor por omissão.
+- **Discordar é não ter lido.** O equity de partida vem da leitura do venue por instrumento; quando os
+  instrumentos discordam, a mesa **recusa** em vez de escolher um — escolher seria decidir por quem decide. O
+  mesmo para a unidade (uma sessão tem uma unidade; duas não se comparam).
+- **A versão do mandato é do dono, e não tinha chave.** A unidade de comparação (`ficha`, `versao_do_setup`,
+  `versao_do_mandato`) fechava-se com três campos que ninguém declarava. A chave entrou no inventário
+  (`fichas/<i>.risco.versao_do_mandato`, dono declarado: o dono) e o portão lê-a da configuração. Nenhuma
+  outra versão serve: a do contrato diz que língua se fala, não que risco se corre.
+- **O campo da conta não entra antes de haver uma segunda conta** (FR-020) — e isso é medido, não prometido: um
+  `nova_sessao` com o campo `conta` é recusado. O dia em que a mesa servir duas contas fica declarado como o
+  dia em que o campo entra **com quem o leia**.
+- **No manifesto, `versao` é a versão do contrato** (RN-E18, igualdade exacta) e migra com ela; dentro de
+  `conector` é do plugin e não se toca. A migração da 1.3.0 só tinha tocado em `contrato` e as sete portas
+  recusaram — **7 divergências medidas, 0 depois**.
 
 ---
 

@@ -17,7 +17,7 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$RAIZ/contracts/mocks/conector"
 
 MARCA=1694498816          # ficha 3232, ciclo 0 — composta pelo layout declarado no vocabulario
-BOLETA='{"contrato":"1.2.0","tipo":"boleta","id":"reinicio-b1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"r-reinicio-1","marca_de_posse":1694498816}}'
+BOLETA='{"contrato":"1.3.0","tipo":"boleta","id":"reinicio-b1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"r-reinicio-1","marca_de_posse":1694498816}}'
 
 falhas=0
 conferir() { # nome, condicao, detalhe

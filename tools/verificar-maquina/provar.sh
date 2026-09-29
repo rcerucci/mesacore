@@ -30,7 +30,7 @@ declarar() {
   fi
 }
 
-echo "=== a maquina do recorte 002, do principio ao fim ==="
+echo "=== a maquina dos recortes 001-003, do principio ao fim ==="
 echo
 
 declarar "tabela de transicoes"          bun run tools/verificar-maquina/tabela.ts
@@ -49,7 +49,13 @@ declarar "porteiro do estado (script)"   bash tools/verificar-maquina/porteiro-d
 declarar "marcas sobrevivem ao reinicio" bash tools/verificar-maquina/reiniciar.sh
 declarar "porta da mesa (T014-T016)"      bun run tools/verificar-maquina/servidor.ts
 
+# As bancadas da camada de OPERACAO (003): correm processos a serio (vigia + mesa), por isso ficam na porta
+# completa - a `--rapido` e a que se corre a cada passo.
 if [ "$RAPIDO" -eq 0 ]; then
+  declarar "vigia + mesa (--arranque)"     bash tools/verificar-maquina/vigia.sh --arranque
+  declarar "vigia: orfandade (--orfandade)" bash tools/verificar-maquina/vigia.sh --orfandade
+  declarar "encerramento (--encerramento)" bash tools/verificar-maquina/vigia.sh --encerramento
+  declarar "verbos (--verbos, T044)"       bash tools/verificar-maquina/vigia.sh --verbos
   declarar "contrato neutro (recorte 001)" bash tools/verificar-contrato/ponta-a-ponta.sh
   declarar "frescura do contrato"          bash tools/verificar-contrato/frescura.sh
   declarar "inventario de chaves (SC-012)" bash tools/verificar-contrato/inventario.sh

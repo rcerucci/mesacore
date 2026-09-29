@@ -66,6 +66,8 @@ class MotivoDeComando(StrEnum):
     prazo_de_resposta_nao_declarado = 'prazo_de_resposta_nao_declarado'
     numeros_da_corretora_ausentes = 'numeros_da_corretora_ausentes'
     decisao_sem_pergunta = 'decisao_sem_pergunta'
+    equity_de_partida_nao_lido = 'equity_de_partida_nao_lido'
+    unidade_de_comparacao_nao_declarada = 'unidade_de_comparacao_nao_declarada'
 
 
 class EfeitoDeComando(StrEnum):

@@ -54,6 +54,7 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 | `bandas.stop_pct` | `[min, max]` | **`[falta]`** | mesa e validação (RN-S11, RN-M4.12) |
 | `bandas.tp_pct` | `[min, max]` | **`[falta]`** | idem |
 | `bandas.tempo_maximo_em_posicao` | duração | **`[falta]`** | mesa (RN-S11) |
+| `versao_do_mandato` | texto não vazio | — | **o dono versona o seu mandato**; a mesa lê-a para fechar a **unidade de comparação** da sessão (`ficha`, `versao_do_setup`, `versao_do_mandato` — FR-034). Sem ela o `nova_sessao` **recusa** (`unidade_de_comparacao_nao_declarada`): dois números da mesma mesa sem unidade não se comparam entre si |
 
 ## 3. `fichas/<instrumento>.setup.*` — a estratégia (forma publicada pelo setup)
 

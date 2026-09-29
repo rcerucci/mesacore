@@ -1,7 +1,18 @@
 {
   "nota": "As transicoes da mesa. DADO, nao codigo (R1 do specs/002). A regra de leitura do documento de estados - 'um estado sem saida declarada e lacuna; um evento que nao muda nada e ruido; um evento sem estado onde caiba e lacuna' - so e conferivel por PROGRAMA se as transicoes forem dado. A ORDEM importa: vale a primeira linha que casa (de, verbo, guarda).",
-  "estados": ["parada", "em_operacao", "pausada", "encerrando"],
-  "verbos": ["start", "pause", "stop", "reset", "nova_sessao"],
+  "estados": [
+    "parada",
+    "em_operacao",
+    "pausada",
+    "encerrando"
+  ],
+  "verbos": [
+    "start",
+    "pause",
+    "stop",
+    "reset",
+    "nova_sessao"
+  ],
   "guardas": {
     "sempre": "Verdadeira. Tem de existir como ULTIMA linha de cada par (de, verbo) - e o que garante que nenhum par cai num vazio nao declarado.",
     "com_inibicao": "A marca inibicao_cb esta presente.",
@@ -9,9 +20,11 @@
     "portas_do_arranque_falham": "Pelo menos uma das sete portas do arranque recusa (conectores, manifesto, mandato, contenda, inventario, versao, sessao).",
     "com_liquidacao_em_curso": "A liquidacao a mercado do encerramento ja comecou.",
     "sem_posicao_viva": "Nenhum instrumento esta em abrindo, aberta ou fechando, e nenhuma marca desconhecido bloqueia.",
-  "prazo_de_resposta_nao_declarado": "A posicao esta viva e a ficha do dono NAO declara `setup.prazo_de_resposta_ms` (ou as fichas discordam entre si). Polaridade: ao contrario das guardas de PERMISSAO, esta RECUSA enquanto o contexto nao disser que o prazo existe (`!== false`) - um contexto vazio nao pode deixar passar um resumo que promete um tempo que ninguem declarou.",
-  "numeros_da_corretora_ausentes": "A posicao esta viva e o relato da corretora nao traz os cinco numeros que o resumo exige. Mesma polaridade: recusa enquanto o contexto nao disser que os numeros vieram.",
-    "com_posicao_viva": "Algum instrumento esta em abrindo, aberta ou fechando."
+    "prazo_de_resposta_nao_declarado": "A posicao esta viva e a ficha do dono NAO declara `setup.prazo_de_resposta_ms` (ou as fichas discordam entre si). Polaridade: ao contrario das guardas de PERMISSAO, esta RECUSA enquanto o contexto nao disser que o prazo existe (`!== false`) - um contexto vazio nao pode deixar passar um resumo que promete um tempo que ninguem declarou.",
+    "numeros_da_corretora_ausentes": "A posicao esta viva e o relato da corretora nao traz os cinco numeros que o resumo exige. Mesma polaridade: recusa enquanto o contexto nao disser que os numeros vieram.",
+    "com_posicao_viva": "Algum instrumento esta em abrindo, aberta ou fechando.",
+    "equity_de_partida_nao_lido": "Chega um `nova_sessao` e o equity de partida nao se leu na operacao (ausente, ou em desacordo entre instrumentos). Mesma polaridade das outras duas guardas de RECUSA: recusa enquanto o contexto nao disser que o equity veio (`!== false`) - uma sessao que nasce com base vazia e uma sessao que o CB nao consegue medir.",
+    "unidade_de_comparacao_nao_declarada": "Chega um `nova_sessao` e a unidade de comparacao esta incompleta (falta a versao do mandato, ou a ficha, ou a versao do setup). Mesma polaridade das guardas de RECUSA: recusa enquanto o contexto nao disser que a unidade veio (`!== false`) - uma sessao sem unidade e uma sessao que nao se compara com nenhuma outra, e o CB ficaria a medir contra uma base que nao se identifica."
   },
   "linhas": [
     {
@@ -35,7 +48,6 @@
       "para": "em_operacao",
       "nota": "US1 cenario 1, RN-V1 - registra o instante de arranque."
     },
-
     {
       "de": "em_operacao",
       "verbo": "start",
@@ -43,7 +55,6 @@
       "recusa": "mesa_ja_em_operacao",
       "nota": "US1 cenario 7 - nao reinicia contadores nem esquece marcas."
     },
-
     {
       "de": "pausada",
       "verbo": "start",
@@ -58,7 +69,6 @@
       "para": "em_operacao",
       "nota": "US6 cenario 4 - retomar nao e comecar de novo."
     },
-
     {
       "de": "encerrando",
       "verbo": "start",
@@ -73,7 +83,6 @@
       "para": "em_operacao",
       "nota": "Achado da implementacao: o dono responde 'nao feche' com start. Recusar obrigaria a esperar o prazo declarado para a mesa voltar ao normal, que e o oposto do que US7 quer."
     },
-
     {
       "de": "parada",
       "verbo": "pause",
@@ -102,7 +111,6 @@
       "recusa": "mesa_em_encerramento",
       "nota": "FR-011 - durante o encerramento ha uma pergunta a espera de resposta."
     },
-
     {
       "de": "parada",
       "verbo": "stop",
@@ -173,7 +181,6 @@
       "recusa": "pedido_repetido",
       "nota": "Edge case de FR-014 - nao reabre a pergunta nem muda o estado; fica como repeticao."
     },
-
     {
       "de": "parada",
       "verbo": "reset",
@@ -202,13 +209,26 @@
       "para": "encerrando",
       "nota": "FR-005 - nao apaga a inibicao nem interrompe a liquidacao."
     },
-
     {
       "de": "parada",
       "verbo": "nova_sessao",
       "guarda": "com_posicao_viva",
       "recusa": "sessao_nova_com_posicao_viva",
       "nota": "Edge case de FR-034 - a sessao nova nao serve para limpar posicao."
+    },
+    {
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "guarda": "equity_de_partida_nao_lido",
+      "recusa": "equity_de_partida_nao_lido",
+      "nota": "T042/RN-V10 - o ponto de partida e um numero DA CORRETORA e tem de ter sido LIDO. Vem depois da posicao viva (que e mais especifica) e antes do `sempre`."
+    },
+    {
+      "de": "parada",
+      "verbo": "nova_sessao",
+      "guarda": "unidade_de_comparacao_nao_declarada",
+      "recusa": "unidade_de_comparacao_nao_declarada",
+      "nota": "T042/FR-034 - a unidade e o que a sessao tem de ter para os numeros dela serem comparaveis entre si."
     },
     {
       "de": "parada",

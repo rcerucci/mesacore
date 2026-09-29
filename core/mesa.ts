@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { aplicar, type Contexto, type Estado, type Resposta } from "./estados/maquina.ts";
 import { validarComando } from "./estados/comando.ts";
 import * as marcas_mod from "./estado/marcas.ts";
+import * as sessao_mod from "./estado/sessao.ts";
 import { instanteDaUltimaTransicaoPara, registarRecusa, registarTransicao } from "./estado/registo.ts";
 import { correrPedidoDeParada, type PedidoDeParada, type ResultadoDoEncerramento } from "./ciclo/encerramento.ts";
 
@@ -251,18 +252,28 @@ export class Mesa {
       }
 
       if (comando.verbo === "nova_sessao") {
-        const sessao: marcas_mod.Sessao = {
+        // A SESSAO TEM UMA SO IMPLEMENTACAO (`estado/sessao.ts`, `novaSessao`): ela confere o ponto de
+        // partida e a unidade, e LEVANTA a inibicao no mesmo passo.
+        //
+        // Escrever a sessao aqui a mao foi o defeito que a T042 apanhou: com o portao a nao ler o equity, a
+        // mesa gravava `equity_de_partida: ""` - em SILENCIO - e o CB passava a medir a perda contra o nada
+        // (o `cb.ts` compara com o equity de partida da sessao). Uma base vazia nao e uma base pequena.
+        const partida = contexto.sessao_nova;
+        if (partida === undefined) {
+          throw new Error(
+            "nova_sessao sem ponto de partida: faltam o equity da corretora ou a unidade de comparacao, e " +
+              "nenhum dos dois se inventa aqui. Quem os le e a porta (as duas verdades que a mesa nao tira de " +
+              "si); sem eles a sessao nasceria com uma base que ninguem teve.",
+          );
+        }
+        const resultado = sessao_mod.novaSessao(m, {
           instante_ms: contexto.instante_ms,
-          equity_de_partida: contexto.sessao_nova?.equity_de_partida ?? "",
+          equity_de_partida: partida.equity_de_partida,
           autor: comando.autor,
           motivo: comando.motivo ?? "",
-          configuracao_em_vigor: contexto.sessao_nova?.configuracao_em_vigor ?? {
-            ficha: "",
-            versao_do_setup: "",
-            versao_do_mandato: "",
-          },
-        };
-        marcas_mod.gravarMarcas(marcas_mod.gravarSessao(m, sessao), this.caminhoDasMarcas);
+          configuracao_em_vigor: partida.configuracao_em_vigor,
+        });
+        marcas_mod.gravarMarcas(resultado.marcas, this.caminhoDasMarcas);
       }
 
       registarTransicao(

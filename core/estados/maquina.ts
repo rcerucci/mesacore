@@ -42,6 +42,10 @@ export interface Contexto {
   posicao_viva?: boolean;
   /** Faltam os numeros da corretora no resumo (o relato do venue nao os trouxe). */
   numeros_da_corretora_ausentes?: boolean;
+  /** O equity de partida nao se leu na operacao (ausente, ou em desacordo entre instrumentos). */
+  equity_de_partida_nao_lido?: boolean;
+  /** A unidade de comparacao da sessao esta incompleta (ficha, versao do setup, versao do mandato). */
+  unidade_de_comparacao_nao_declarada?: boolean;
   /** A ficha do dono nao declara o prazo de resposta do encerramento. */
   prazo_de_resposta_nao_declarado?: boolean;
 }
@@ -103,6 +107,10 @@ export function guardaCasa(guarda: string, contexto: Contexto): boolean {
       return contexto.prazo_de_resposta_nao_declarado !== false;
     case "numeros_da_corretora_ausentes":
       return contexto.numeros_da_corretora_ausentes !== false;
+    case "equity_de_partida_nao_lido":
+      return contexto.equity_de_partida_nao_lido !== false;
+    case "unidade_de_comparacao_nao_declarada":
+      return contexto.unidade_de_comparacao_nao_declarada !== false;
     default:
       throw new Error(
         `guarda desconhecida: ${guarda}. Uma guarda que o interprete nao sabe ler nao pode ` +
