@@ -32,6 +32,7 @@ CREDENCIAIS="${HOME}/.config/mesacore/credenciais"
 CONTA=""
 RESPOSTAS=""
 SEM_PERGUNTAS=0
+ESCOLHER_CONTA=0
 MANIFESTO="${MANIFESTO:-}"
 
 while [ $# -gt 0 ]; do
@@ -39,7 +40,10 @@ while [ $# -gt 0 ]; do
     --raiz) RAIZ="$2"; shift 2 ;;
     --config-dir) CONFIG_DIR="$2"; shift 2 ;;
     --credenciais) CREDENCIAIS="$2"; shift 2 ;;
-    --conta) CONTA="$2"; shift 2 ;;
+    --conta)
+      # com valor: edita essa conta. Sem valor (ou seguido de outra opcao): LISTA as que existem e deixa escolher.
+      if [ $# -ge 2 ] && [ "${2#--}" = "$2" ]; then CONTA="$2"; shift 2; else ESCOLHER_CONTA=1; shift; fi
+      ;;
     --respostas) RESPOSTAS="$2"; SEM_PERGUNTAS=1; shift 2 ;;
     --manifesto) MANIFESTO="$2"; shift 2 ;;
     --sem-perguntas) SEM_PERGUNTAS=1; shift ;;
@@ -49,6 +53,31 @@ while [ $# -gt 0 ]; do
 done
 
 dizer() { printf '%s\n' "$*"; }
+nomes_das_contas() { for f in $1; do printf '%s ' "$(basename "$f" .json)"; done; }
+
+# Lista as contas que existem e devolve a escolhida em CONTA/NOME_CONTA. Nao adivinha: sem contas, recusa;
+# sem perguntas, recusa DIZENDO quais existem (para um guiao saber as opcoes).
+escolher_conta() {
+  _cs=$(ls "$CONFIG_DIR"/*.json 2>/dev/null || true)
+  [ -n "$_cs" ] || recusar "nenhuma conta configurada em $CONFIG_DIR — corra primeiro o questionario do conector (e la que uma conta nasce)"
+  if [ "$SEM_PERGUNTAS" = "1" ]; then
+    recusar "diga qual das contas existentes: $(nomes_das_contas "$_cs")"
+  fi
+  dizer "Contas configuradas:"
+  _i=0; for _f in $_cs; do _i=$((_i+1)); dizer "  $_i) $(basename "$_f" .json)"; done
+  printf 'Qual delas? (numero ou nome) '
+  read -r _e
+  _nome=""
+  case "$_e" in
+    ''|*[!0-9]*) _nome="$_e" ;;
+    *) _i=0; for _f in $_cs; do _i=$((_i+1)); [ "$_e" = "$_i" ] && _nome=$(basename "$_f" .json); done ;;
+  esac
+  [ -n "$_nome" ] || recusar "escolha invalida"
+  CONTA=""
+  for _f in $_cs; do [ "$(basename "$_f" .json)" = "$_nome" ] && CONTA="$_f"; done
+  [ -n "$CONTA" ] || recusar "conta desconhecida: $_nome (existentes: $(nomes_das_contas "$_cs"))"
+  NOME_CONTA="$_nome"
+}
 recusar() { printf 'preparar-contas: RECUSADO — %s\n' "$*" >&2; exit 1; }
 
 command -v jq >/dev/null 2>&1 || recusar "o jq e necessario para escrever o JSON (e ele que garante escaping e atomicidade)"
@@ -93,6 +122,8 @@ MAU=$(jq -r '[.perguntas[], (.ficha_do_instrumento.perguntas // [])[]]
 [ "$MAU" = "0" ] || recusar "o questionario $ESCOLHIDO tem $MAU campo(s) de segredo sem destino 'ficheiro_de_credencial' — um segredo so pode ir para o ficheiro de credencial protegido"
 
 # ── 2b. qual dos dois fluxos e este: a CONTA (conector) ou a FICHA de um instrumento (setup) ──
+[ "$ESCOLHER_CONTA" = "1" ] && escolher_conta
+
 ESCREVE_EM=$(jq -r '.escreve_em // "conta"' "$ESCOLHIDO")
 case "$ESCREVE_EM" in conta|ficha) ;; *) recusar "escreve_em invalido no questionario: $ESCREVE_EM (conta ou ficha)" ;; esac
 
@@ -278,11 +309,22 @@ elif [ -n "$RESPOSTAS" ]; then
   [ -n "$NOME_CONTA" ] || NOME_CONTA=$(jq -r '.conta_de_exemplo // empty' "$ESCOLHIDO")
 else
   NOME_CONTA=$(jq -r '.conta_de_exemplo // "conta"' "$ESCOLHIDO")
+  _cs=$(ls "$CONFIG_DIR"/*.json 2>/dev/null || true)
+  if [ -n "$_cs" ]; then
+    dizer ""
+    dizer "Contas que ja existem — escolha pelo numero para EDITAR, ou escreva um nome novo para criar:"
+    _i=0; for _f in $_cs; do _i=$((_i+1)); dizer "  $_i) $(basename "$_f" .json)"; done
+  fi
   dizer ""
   dizer "── Que nome quer dar a esta conta? (vira config/contas/<nome>.json e a chave em $CREDENCIAIS/<nome>.key)"
   printf '   nome [%s]: ' "$NOME_CONTA"
   read -r _n
-  [ -n "$_n" ] && NOME_CONTA="$_n"
+  case "$_n" in
+    '') : ;;                                    # Enter: mantem o que esta sugerido
+    *[!0-9]*) NOME_CONTA="$_n" ;;               # texto: e um nome
+    *) _i=0; for _f in $_cs; do _i=$((_i+1)); [ "$_n" = "$_i" ] && NOME_CONTA=$(basename "$_f" .json); done ;;  # numero: escolhe uma existente
+  esac
+  [ -n "$NOME_CONTA" ] || recusar "escolha invalida"
 fi
 [ -n "$NOME_CONTA" ] || recusar "a conta ficou sem nome"
 case "$NOME_CONTA" in */*|.*) recusar "nome de conta invalido: $NOME_CONTA" ;; esac

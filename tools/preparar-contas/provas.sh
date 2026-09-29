@@ -230,5 +230,23 @@ else
   falhou "a chave foi tocada, ou a margem nao mudou (margem=$MM)"
 fi
 
+prova "11. --conta sem valor lista as contas existentes (ou RECUSA dizendo-as)"
+SAIDA_L=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-editar.json" --conta --config-dir "$CFG" 2>&1)
+if printf '%s' "$SAIDA_L" | grep -q "diga qual das contas existentes: conta-de-prova"; then
+  ok "$(printf '%s' "$SAIDA_L" | grep RECUSADO | cut -c1-78)"
+else
+  falhou "nao listou as contas: $(printf '%s' "$SAIDA_L" | tail -1 | cut -c1-70)"
+fi
+
+prova "12. escolher a conta pelo numero, e Enter em tudo o resto, mantem o ficheiro"
+H_ANTES=$(jq -S . "$CFG/conta-de-prova.json" | sha256sum | cut -d" " -f1)
+SAIDA_M=$( { printf '1\n'; for i in $(seq 1 25); do printf '\n'; done; } | sh "$AQUI/preparar-contas.sh" --conta --config-dir "$CFG" 2>&1 )
+H_DEPOIS=$(jq -S . "$CFG/conta-de-prova.json" | sha256sum | cut -d" " -f1)
+if [ "$H_ANTES" = "$H_DEPOIS" ] && printf '%s' "$SAIDA_M" | grep -q "Contas configuradas:"; then
+  ok "listou e escolheu pelo numero; todos os valores mantidos (Enter)"
+else
+  falhou "ficheiro mudou=$( [ "$H_ANTES" = "$H_DEPOIS" ] && echo nao || echo sim ); listou=$(printf '%s' "$SAIDA_M" | grep -c 'Contas configuradas:')"
+fi
+
 printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"
 [ "$FALHAS" -eq 0 ] || exit 1

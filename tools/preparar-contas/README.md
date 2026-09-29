@@ -163,6 +163,14 @@ sh tools/preparar-contas/preparar-contas.sh --sem-perguntas --respostas r.json \
 Três caminhos, do mais guiado ao mais directo. **Nenhum deles apaga o resto do ficheiro**: a gravação
 parte sempre do que já lá está (uma conta nova é a única que começa de zero).
 
+**0. Não sabe o nome?** Sem valor, `--conta` **lista as contas que existem** e deixa escolher pelo número; a
+pergunta do nome, no fluxo normal, também já mostra a lista. Sem perguntas (`--respostas`), ele não adivinha:
+**recusa** e diz os nomes existentes, para um guião saber as opções.
+
+```sh
+sh tools/preparar-contas/preparar-contas.sh --conta     # lista, e pergunta qual
+```
+
 **1. Entrevista sobre a conta existente** — mostra os valores actuais como omissão; `Enter` mantém, escrever
 substitui:
 
