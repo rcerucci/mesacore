@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/comando.schema.json",
+  "title": "Comando do vigia",
+  "description": "Um dos CINCO verbos (RN-V1), com autor e correlacao. A forma e a que o recorte 002 ja validava por dentro (R1): este tipo re-aloja-a, nao a redesenha. Campo a mais e RECUSA - aceitar um campo a mais seria a porta dos verbos a alargar-se sozinha, e por aqui a mesa seria comandada em nome de uma estrategia.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "verbo",
+    "autor",
+    "pedido_id"
+  ],
+  "properties": {
+    "verbo": {
+      "$ref": "_defs/forma.schema.json#/$defs/verbo_do_vigia"
+    },
+    "autor": {
+      "$ref": "_defs/forma.schema.json#/$defs/autor"
+    },
+    "pedido_id": {
+      "$ref": "_defs/forma.schema.json#/$defs/correlacao"
+    },
+    "motivo": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "So no `nova_sessao`: a razao de abrir sessao nova e do dono e fica registrada (RN-V10)."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "verbo"
+        ],
+        "properties": {
+          "verbo": {
+            "const": "nova_sessao"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "motivo"
+        ],
+        "description": "`nova_sessao` sem motivo e recusado: sem a razao, o registro nao explica a sessao.",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  ]
+}

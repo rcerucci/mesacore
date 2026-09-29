@@ -17,6 +17,65 @@ class FormaPartilhadaDoContratoNeutro(RootModel[Any]):
     )
 
 
+class VerboDoVigia(StrEnum):
+    start = 'start'
+    pause = 'pause'
+    stop = 'stop'
+    reset = 'reset'
+    nova_sessao = 'nova_sessao'
+
+
+class Autor(RootModel[constr(min_length=1, max_length=64)]):
+    root: constr(min_length=1, max_length=64) = Field(
+        ..., description='Quem mandou. Um verbo sem autor nao se pode auditar (RN-V4).'
+    )
+
+
+class EstadoDaMesa(StrEnum):
+    parada = 'parada'
+    em_operacao = 'em_operacao'
+    pausada = 'pausada'
+    encerrando = 'encerrando'
+
+
+class InstanteDaMesaMs(RootModel[conint(ge=0)]):
+    root: conint(ge=0) = Field(
+        ...,
+        description='Instante em milissegundos, do relogio da MESA - nao do venue (RN-M4.9: quem recebe e que carimba; instante de fora nao se usa, senao quem chama escolhe o lugar na fila).',
+    )
+
+
+class MotivoDeComando(StrEnum):
+    mesa_ja_em_operacao = 'mesa_ja_em_operacao'
+    mesa_parada_nada_a_pausar = 'mesa_parada_nada_a_pausar'
+    mesa_ja_pausada = 'mesa_ja_pausada'
+    mesa_ja_parada = 'mesa_ja_parada'
+    mesa_em_encerramento = 'mesa_em_encerramento'
+    pedido_repetido = 'pedido_repetido'
+    sessao_inibida = 'sessao_inibida'
+    porta_do_arranque_falhou = 'porta_do_arranque_falhou'
+    liquidacao_em_curso = 'liquidacao_em_curso'
+    sessao_nova_com_posicao_viva = 'sessao_nova_com_posicao_viva'
+    mesa_precisa_parar_para_sessao_nova = 'mesa_precisa_parar_para_sessao_nova'
+    verbo_desconhecido = 'verbo_desconhecido'
+    comando_com_campo_a_mais = 'comando_com_campo_a_mais'
+    comando_incompleto = 'comando_incompleto'
+    comando_com_tipo_invalido = 'comando_com_tipo_invalido'
+
+
+class EfeitoDeComando(StrEnum):
+    sessao_nova_gravada = 'sessao_nova_gravada'
+    reset_nao_toca_em_nada = 'reset_nao_toca_em_nada'
+    resumo_do_encerramento_apresentado = 'resumo_do_encerramento_apresentado'
+    stop_pendente_por_prazo = 'stop_pendente_por_prazo'
+    parada_com_posicao_viva = 'parada_com_posicao_viva'
+
+
+class RespostaDoEncerramento(StrEnum):
+    fechar_a_mercado = 'fechar_a_mercado'
+    manter = 'manter'
+
+
 class Decimal(RootModel[constr(pattern=r'^-?(0|[1-9][0-9]*)(\.[0-9]+)?$')]):
     root: constr(pattern=r'^-?(0|[1-9][0-9]*)(\.[0-9]+)?$') = Field(
         ...,

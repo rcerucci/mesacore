@@ -1,0 +1,57 @@
+MIGRACAO DA VERSAO DO CONTRATO, 1.0.0 -> 1.1.0
+Recorte 003, tarefa T010. Data: 28 set 2026.
+
+A MEDIDA QUE PUBLIQUEI ANTES ESTAVA ERRADA
+------------------------------------------
+A linha de base (T001) contou `1.0.0` em `contracts/` e deu 354 ocorrencias em 91 ficheiros. Estava errado:
+aquela contagem varria `node_modules/` e `.venv/`, e o que ali aparece nao e a versao do contrato - sao as
+versoes das DEPENDENCIAS (ajv 8.20.0, json-schema-traverse 1.0.0, e as centenas de pacotes do lock). O
+plano, o research e o contrato da fronteira repetiram o numero sem o conferir; a medicao de hoje derrubou-o.
+A contagem honesta, excluindo `node_modules/`, `.venv/`, `.git/`, `bun.lock` e `uv.lock`:
+
+  ANTES   1.0.0 em `contracts/` + `core/` + `tools/` ............ 168 ocorrencias
+          das quais, referencias a VERSAO DO CONTRATO ........... 116 em 19 ficheiros
+             105 mensagens (campo `contrato`) ................... 17 ficheiros de codigo/caso + 1 README
+              11 manifestos (campo `versao` no topo da carga) ..... 3 ficheiros
+          das quais, versoes de PLUGIN/PACOTE (nao migram) ....... 38
+              23 `versao` de conector/setup/proposta_setup, 8 `versao_do_mandato`, 4 `versao_do_setup`,
+              2 `version` de package.json/pyproject, 1 carga do mock de setup
+  DEPOIS  0 referencias de contrato em 1.0.0
+          116 em 1.1.0 (105 + 11), medidas por grep -o
+          38 em 1.0.0, todas de plugin/pacote - e ficar e o CERTO
+
+DUAS CASAS PARA A MESMA COISA, E SO UMA DELAS E A VERSAO DO CONTRATO
+--------------------------------------------------------------------
+A versao do contrato viaja com DOIS nomes:
+  - `contrato` no envelope de cada mensagem (o que os runners conferem por igualdade exacta, RN-E18/D7);
+  - `versao` no TOPO da carga do manifesto - e a ponta que DECLARA com que contrato fala.
+E o `versao` que esta por baixo de `conector`/`setup`/`proposta_setup` (e `versao_do_setup`/`versao_do_mandato`)
+e a versao DAQUELE plugin, nao do contrato. Um `sed` cego apagava a distincao e punha o mock a declarar 1.1.0
+onde ele legitimamente e 1.0.0. A migracao foi feita por ESTRUTURA, nao por texto.
+
+O QUE A MAQUINA ME CORRIGIU NESTA FASE (tudo medido, nao suposto)
+------------------------------------------------------------------
+1. `$id` != nome do ficheiro. Os tres schemas novos nasceram com `$id` em underscores e ficheiro em hifens;
+   o registry do contrato indexa por `$id` e resolve por URI - resultado: `Unresolvable:
+   resposta-de-comando.schema.json` e paridade quebrada. Nome de schema agora casa com o `tipo` e com o
+   ficheiro (`resposta_de_comando.schema.json`), que e tambem o que o `gerar.sh` espera.
+2. O `then`/`else` tem de declarar a propriedade que exige. O ajv em `strict` recusou
+   `then: {required: ["motivo"]}` - `strictRequired`; os ramos passaram a trazer `properties` tambem. Nao se
+   enfraqueceu o conferidor para o esquema passar.
+3. Todo o caso tem `motivo_esperado`, mesmo quando e `null` (`casos.py` le a chave sempre). O meu ficheiro
+   nasceu sem ela nos aceites e a bateria rebentou em KeyError - que e a bateria a defender a convencao.
+4. Grandeza nova sem ORIGEM declarada e recusada: seis `FALHOU sem origem declarada` para os cinco numeros da
+   corretora e para o prazo de resposta. Os cinco numeros entraram como `venue` (RN-V8: o resumo mostra os
+   numeros DA CORRETORA) e o prazo como `setup`/`fichas/<i>.setup.prazo_de_resposta_ms` (RN-A3/RN-V9.1) - o
+   que fecha, com a chave de T002, o ciclo que o proprio conferidor exige. `inventario: 0 falhas`.
+5. A porta `versao_do_contrato` do arranque acusou o `versao` do manifesto que a minha primeira passagem nao
+   tocara: foi assim que o segundo nome da versao apareceu. Sem esta bateria, a migracao teria ficado a meio
+   e o defeito so apareceria meses depois, na ponta.
+
+O QUE FICOU PROVADO NO FIM
+--------------------------
+- contrato em 1.1.0, com 12 esquemas (9 + 4 novos - o envelope nao conta) e 30 ficheiros gerados frescos;
+- os quatro tipos novos decidem IGUAL nas duas linguagens: 16 casos, 6 aceites, 10 recusados, 0 divergentes,
+  0 erros (somando aos 81 anteriores, sem retirar nenhum);
+- nenhum `1.0.0` de contrato sobra fora do historico (docs e relatorios antigos, que sao registo e nao se
+  reescrevem).

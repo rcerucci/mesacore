@@ -1,0 +1,300 @@
+{
+  "mensagem": "vigia",
+  "nota": "A fronteira vigia<->mesa (recorte 003): os quatro tipos novos, com o mesmo criterio dos outros ficheiros de caso. O que se prova aqui NAO e comportamento da mesa - e a FORMA da mensagem: campo a mais recusado (a porta dos verbos nao se alarga), verbo fora dos cinco, motivo fora do conjunto fechado, e o `nova_sessao` sem motivo.",
+  "casos": [
+    {
+      "nome": "comando/start-valido",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "comando",
+        "id": "c-1",
+        "carga": {
+          "verbo": "start",
+          "autor": "dono",
+          "pedido_id": "c-1"
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "comando/nova-sessao-com-motivo",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "comando",
+        "id": "c-2",
+        "carga": {
+          "verbo": "nova_sessao",
+          "autor": "dono",
+          "pedido_id": "c-2",
+          "motivo": "limite batido em dia de noticia"
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "comando/nova-sessao-sem-motivo",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "comando",
+        "id": "c-3",
+        "carga": {
+          "verbo": "nova_sessao",
+          "autor": "dono",
+          "pedido_id": "c-3"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "nome": "comando/verbo-sexto",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "comando",
+        "id": "c-4",
+        "carga": {
+          "verbo": "cancelar",
+          "autor": "dono",
+          "pedido_id": "c-4"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
+    },
+    {
+      "nome": "comando/campo-a-mais",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "comando",
+        "id": "c-5",
+        "carga": {
+          "verbo": "start",
+          "autor": "dono",
+          "pedido_id": "c-5",
+          "lado": "buy"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido"
+    },
+    {
+      "nome": "comando/sem-autor",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "comando",
+        "id": "c-6",
+        "carga": {
+          "verbo": "start",
+          "pedido_id": "c-6"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "nome": "comando/autor-nulo",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "comando",
+        "id": "c-7",
+        "carga": {
+          "verbo": "start",
+          "autor": null,
+          "pedido_id": "c-7"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_nulo_nao_permitido"
+    },
+    {
+      "nome": "resposta/recusa-com-motivo",
+      "mensagem": "resposta_de_comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "resposta_de_comando",
+        "id": "rc-1",
+        "carga": {
+          "pedido_id": "c-1",
+          "aceito": false,
+          "motivo": "mesa_ja_em_operacao",
+          "transicao": {
+            "de": "em_operacao",
+            "para": "em_operacao"
+          },
+          "instante_ms": 1790628000000
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "resposta/aceite-com-efeito",
+      "mensagem": "resposta_de_comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "resposta_de_comando",
+        "id": "rc-2",
+        "carga": {
+          "pedido_id": "c-2",
+          "aceito": true,
+          "efeito": "sessao_nova_gravada",
+          "transicao": {
+            "de": "parada",
+            "para": "em_operacao"
+          },
+          "instante_ms": 1790628001000
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "resposta/motivo-inventado",
+      "mensagem": "resposta_de_comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "resposta_de_comando",
+        "id": "rc-3",
+        "carga": {
+          "pedido_id": "c-3",
+          "aceito": false,
+          "motivo": "deu_ruim",
+          "transicao": {
+            "de": "parada",
+            "para": "parada"
+          },
+          "instante_ms": 1790628002000
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
+    },
+    {
+      "nome": "resposta/aceite-sem-efeito",
+      "mensagem": "resposta_de_comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "resposta_de_comando",
+        "id": "rc-4",
+        "carga": {
+          "pedido_id": "c-4",
+          "aceito": true,
+          "transicao": {
+            "de": "parada",
+            "para": "em_operacao"
+          },
+          "instante_ms": 1790628003000
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "nome": "resposta/estado-fora-do-eixo",
+      "mensagem": "resposta_de_comando",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "resposta_de_comando",
+        "id": "rc-5",
+        "carga": {
+          "pedido_id": "c-5",
+          "aceito": false,
+          "motivo": "mesa_ja_parada",
+          "transicao": {
+            "de": "parada",
+            "para": "desconhecido"
+          },
+          "instante_ms": 1790628004000
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
+    },
+    {
+      "nome": "decisao/fechar-a-mercado",
+      "mensagem": "decisao_do_encerramento",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "decisao_do_encerramento",
+        "id": "d-1",
+        "carga": {
+          "pedido_id": "p-1",
+          "resposta": "fechar_a_mercado"
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "decisao/resposta-fora-do-conjunto",
+      "mensagem": "decisao_do_encerramento",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "decisao_do_encerramento",
+        "id": "d-2",
+        "carga": {
+          "pedido_id": "p-1",
+          "resposta": "talvez"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
+    },
+    {
+      "nome": "pergunta/valida",
+      "mensagem": "pergunta_do_encerramento",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "pergunta_do_encerramento",
+        "id": "p-1",
+        "carga": {
+          "pedido_id": "p-1",
+          "opcoes": [
+            "fechar_a_mercado",
+            "manter"
+          ],
+          "prazo_de_resposta_ms": 120000,
+          "aviso_de_manter": "Manter deixa a posicao viva numa mesa parada: a unica defesa que resta e a ordem de stop que estiver na corretora.",
+          "numeros": {
+            "posicao": "10000",
+            "nocional": "10854.20",
+            "margem": "1085.42",
+            "distancia_de_liquidacao": "0.95",
+            "resultado_nao_realizado": "-12.30"
+          }
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null
+    },
+    {
+      "nome": "pergunta/sem-numeros",
+      "mensagem": "pergunta_do_encerramento",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "pergunta_do_encerramento",
+        "id": "p-2",
+        "carga": {
+          "pedido_id": "p-2",
+          "opcoes": [
+            "fechar_a_mercado",
+            "manter"
+          ],
+          "prazo_de_resposta_ms": 120000,
+          "aviso_de_manter": "Manter deixa a posicao sem defesa."
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    }
+  ]
+}

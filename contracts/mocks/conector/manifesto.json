@@ -1,11 +1,14 @@
 {
-  "contrato": "1.0.0",
+  "contrato": "1.1.0",
   "nota": "Manifesto SIMULADO deste mock. Fixture, nao fonte: o manifesto a serio e sondado do venue no arranque (RN-C1).",
   "tipo": "manifesto",
   "id": "manifesto/mock_conector",
   "carga": {
-    "conector": {"nome": "mock_conector", "versao": "1.0.0"},
-    "versao": "1.0.0",
+    "conector": {
+      "nome": "mock_conector",
+      "versao": "1.0.0"
+    },
+    "versao": "1.1.0",
     "instrumentos": [
       {
         "simbolo": "EURUSD",
@@ -14,8 +17,14 @@
         "tick": "0.00001",
         "alavancagem_maxima": "30",
         "alavancagem_por_escalao": [
-          {"ate": "50000", "maxima": "30"},
-          {"ate": "200000", "maxima": "20"}
+          {
+            "ate": "50000",
+            "maxima": "30"
+          },
+          {
+            "ate": "200000",
+            "maxima": "20"
+          }
         ]
       },
       {
@@ -27,11 +36,22 @@
       }
     ],
     "sabe_ajustar_alavancagem": true,
-    "modos_de_margem": ["cruzado", "isolado"],
+    "modos_de_margem": [
+      "cruzado",
+      "isolado"
+    ],
     "teto_de_valor_por_ordem": "50000.00",
     "modelo_de_posicao": "netting",
-    "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite"],
-    "parcial_suportada": ["o_que_der", "tudo_ou_nada"],
+    "tipos_de_ordem": [
+      "mercado",
+      "limite",
+      "stop",
+      "stop_limite"
+    ],
+    "parcial_suportada": [
+      "o_que_der",
+      "tudo_ou_nada"
+    ],
     "desvio_maximo": "0.5",
     "reduce_only_suportado": false,
     "stop_anexo": false,

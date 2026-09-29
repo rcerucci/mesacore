@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/decisao_do_encerramento.schema.json",
+  "title": "A decisao do dono sobre o encerramento",
+  "description": "Nao e um verbo: os verbos do vigia sao CINCO (RN-V1) e a propria recusa `verbo_desconhecido` diz que um sexto nao entra por omissao nem por extensao. A decisao e a RESPOSTA a uma pergunta, e viaja identificada pela pergunta - sem `pedido_id` nao se sabe a que resumo ela responde.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pedido_id",
+    "resposta"
+  ],
+  "properties": {
+    "pedido_id": {
+      "$ref": "_defs/forma.schema.json#/$defs/correlacao"
+    },
+    "resposta": {
+      "$ref": "_defs/forma.schema.json#/$defs/resposta_do_encerramento"
+    }
+  }
+}

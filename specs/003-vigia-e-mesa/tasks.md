@@ -11,11 +11,12 @@ dado, um por regra, e a contagem no fim.
 **Formato**: `[ID] [P?] [História] Descrição` — `[P]` = ficheiros diferentes, sem dependência. Caminhos
 concretos em todas as tarefas.
 
-**Estado da execução**: **fase 1 fechada** (T001–T004) e a **fase 2 por começar**. A linha de base medida está
+**Estado da execução**: **fase 1 fechada** (T001–T004) e **fase 2 a meio** — o contrato já está em 1.1.0 com os
+quatro tipos provados nas duas linguagens (T005–T013); falta a porta de processo da mesa (T014–T018). A linha de base medida está
 em `relatorios/linha-de-base.txt` (porta única **16 de 16**, `chaves.ts` 3 verificações · 0 divergentes · 7
-chaves, **354** ocorrências de `1.0.0` em **91** ficheiros). O recorte 002 está fechado (67 de 67) e a porta única em
+chaves, **116** sítios da versão `1.0.0` em **19** ficheiros de contrato). O recorte 002 está fechado (67 de 67) e a porta única em
 **16 de 16**; o contrato está em **1.0.0**. Os números que estas tarefas usam foram medidos, não estimados:
-a versão `1.0.0` aparece **354 vezes em 45 ficheiros**; os motivos da mesa são **42**, dos quais **20** cruzam
+a versão `1.0.0` aparece em **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`); os motivos da mesa são **42**, dos quais **20** cruzam
 a fronteira (R7); a mesa **não** tem porta de processo.
 
 ---
@@ -40,17 +41,25 @@ mensagem não há fronteira, e sem a porta o vigia não tem o que arrancar.
 
 ### O contrato sobe para 1.1.0
 
-- [ ] T005 [P] `contracts/comando.schema.json` — envelope de sempre + carga `{verbo, autor, pedido_id, motivo?}`; `verbo` do conjunto **fechado de 5**; `motivo` obrigatório **só** no `nova_sessao`; `additionalProperties: false`
-- [ ] T006 [P] `contracts/resposta-de-comando.schema.json` — `aceito` booleano; `motivo` quando recusado, `efeito` quando aceito (conjuntos fechados, R7); `transicao {de, para}`; `instante_ms`
-- [ ] T007 [P] `contracts/pergunta-do-encerramento.schema.json` — `resumo` (os números da corretora, RN-V8), `opcoes` fechadas (`fechar_a_mercado`, `manter`), `prazo_de_resposta_ms` (**a chave de T002**), `aviso_de_manter`
-- [ ] T008 [P] `contracts/decisao-do-encerramento.schema.json` — `{pedido_id, resposta}` com `resposta` fechada; **sem** campo de verbo (a decisão não é um verbo, R5)
-- [ ] T009 [P] `contracts/vocabulario.json` ganha a família `motivos_de_comando` com os **20** de R7, e cada motivo declara **de que conjunto fechado vem** (a lição da `fail-closed-validation`)
-- [ ] T010 `contracts/versao.json` → **1.1.0** e a migração dos casos: **354 ocorrências em 45 ficheiros**, com a medida antes e depois; nenhum `1.0.0` fora do histórico no fim
-- [ ] T011 [P] `contracts/casos/comando.casos.json` — aceites e recusados pelo mesmo critério dos outros ficheiros de caso (um campo a mais, tipo errado, verbo desconhecido, `nova_sessao` sem motivo)
-- [ ] T012 Regenerar `contracts/gerado/ts`, `contracts/gerado/py` e `contracts/esqueleto/*` nas duas linguagens, e conferir a **frescura** (`bash tools/verificar-contrato/frescura.sh`)
-- [ ] T013 `bash tools/verificar-contrato/ponta-a-ponta.sh` e `inventario.sh` passam a 1.1.0 e ganham os casos novos, **somando** aos que já contavam
+**FEITO (T005–T013).** O relato medido está em `relatorios/migracao-da-versao.txt` — incluindo os pontos em
+que a máquina me corrigiu (o `$id` contra o nome do ficheiro, o `strictRequired` do ajv, a origem das
+grandezas novas, e o segundo nome da versão no topo do manifesto). Duas notas de fidelidade ao que foi feito:
+(a) o `resumo` de T007 nasceu partido em `numeros` (os cinco da corretora) e `aviso_de_manter` (nosso) porque
+assim o mapa de origem consegue dizer de quem é cada um — a pergunta é da mesa, os números são do venue;
+(b) os quatro tipos vivem num só ficheiro de casos (`casos/vigia.casos.json`, 16 casos), porque a fronteira é
+uma só.
 
-### A mesa ganha porta de processo
+- [x] T005 [P] `contracts/comando.schema.json` — envelope de sempre + carga `{verbo, autor, pedido_id, motivo?}`; `verbo` do conjunto **fechado de 5**; `motivo` obrigatório **só** no `nova_sessao`; `additionalProperties: false`
+- [x] T006 [P] `contracts/resposta-de-comando.schema.json` — `aceito` booleano; `motivo` quando recusado, `efeito` quando aceito (conjuntos fechados, R7); `transicao {de, para}`; `instante_ms`
+- [x] T007 [P] `contracts/pergunta-do-encerramento.schema.json` — `resumo` (os números da corretora, RN-V8), `opcoes` fechadas (`fechar_a_mercado`, `manter`), `prazo_de_resposta_ms` (**a chave de T002**), `aviso_de_manter`
+- [x] T008 [P] `contracts/decisao-do-encerramento.schema.json` — `{pedido_id, resposta}` com `resposta` fechada; **sem** campo de verbo (a decisão não é um verbo, R5)
+- [x] T009 [P] `contracts/vocabulario.json` ganha a família `motivos_de_comando` com os **20** de R7, e cada motivo declara **de que conjunto fechado vem** (a lição da `fail-closed-validation`)
+- [x] T010 `contracts/versao.json` → **1.1.0** e a migração: **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`), com a medida em `relatorios/migracao-da-versao.txt`; nenhum `1.0.0` **de contrato** sobra — os 38 que ficam são versões de plugin/pacote, e ficar é o certo
+- [x] T011 [P] `contracts/casos/comando.casos.json` — aceites e recusados pelo mesmo critério dos outros ficheiros de caso (um campo a mais, tipo errado, verbo desconhecido, `nova_sessao` sem motivo)
+- [x] T012 Regenerar `contracts/gerado/ts`, `contracts/gerado/py` e `contracts/esqueleto/*` nas duas linguagens, e conferir a **frescura** (`bash tools/verificar-contrato/frescura.sh`)
+- [x] T013 `bash tools/verificar-contrato/ponta-a-ponta.sh` e `inventario.sh` passam a 1.1.0 e ganham os casos novos, **somando** aos que já contavam
+
+### A mesa ganha porta de processo (T014–T018 — por fazer)
 
 - [ ] T014 `core/servidor.ts` — a porta: lê **uma linha** JSON, entrega ao intérprete da mesa, escreve **uma** linha. Não decide, não tem log próprio, não lê configuração que a mesa já lê
 - [ ] T015 `core/estados/comando.ts` — a validação re-alojada na **mensagem do contrato** (não numa forma própria ao lado): os mesmos três motivos, agora com versão conferida

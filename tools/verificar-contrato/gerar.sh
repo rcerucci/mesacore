@@ -10,7 +10,7 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$RAIZ/contracts"
 
-SCHEMAS=(mercado proposta boleta resolucao desfecho manifesto historico envelope)
+SCHEMAS=(mercado proposta boleta resolucao desfecho manifesto historico envelope comando resposta_de_comando pergunta_do_encerramento decisao_do_encerramento)
 
 for schema in "${SCHEMAS[@]}"; do
   bun x json-schema-to-typescript --input "$schema.schema.json" --output "gerado/ts/$schema.d.ts"

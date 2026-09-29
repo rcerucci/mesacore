@@ -9,7 +9,7 @@
   "properties": {
     "contrato": {"$ref": "_defs/forma.schema.json#/$defs/versao"},
     "tipo": {
-      "enum": ["mercado", "proposta", "boleta", "resolucao", "desfecho", "manifesto", "historico"],
+      "enum": ["mercado", "proposta", "boleta", "resolucao", "desfecho", "manifesto", "historico", "comando", "resposta_de_comando", "pergunta_do_encerramento", "decisao_do_encerramento"],
       "description": "O tipo decide qual e o corpo. Nao ha tipo sem schema."
     },
     "id": {"$ref": "_defs/forma.schema.json#/$defs/correlacao"},
@@ -43,6 +43,22 @@
     {
       "if": {"required": ["tipo"], "properties": {"tipo": {"const": "historico"}}},
       "then": {"properties": {"carga": {"$ref": "historico.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "comando"}}},
+      "then": {"properties": {"carga": {"$ref": "comando.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "resposta_de_comando"}}},
+      "then": {"properties": {"carga": {"$ref": "resposta_de_comando.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "pergunta_do_encerramento"}}},
+      "then": {"properties": {"carga": {"$ref": "pergunta_do_encerramento.schema.json"}}}
+    },
+    {
+      "if": {"required": ["tipo"], "properties": {"tipo": {"const": "decisao_do_encerramento"}}},
+      "then": {"properties": {"carga": {"$ref": "decisao_do_encerramento.schema.json"}}}
     }
   ]
 }

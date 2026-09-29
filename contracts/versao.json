@@ -1,4 +1,4 @@
 {
-  "contrato": "1.0.0",
-  "nota": "A versao do contrato vive AQUI e num so sitio. Os dois runners leem-na daqui: a conferencia e por igualdade exacta (D7) e nenhuma das linguagens tem a versao escrita no codigo."
+  "contrato": "1.1.0",
+  "nota": "A versao do contrato vive AQUI e num so sitio — e NAO no `package.json` nem no `pyproject.toml`, cujas versoes sao do pacote de ferramentas e seguem a vida dele. Duas casas para o mesmo numero e a forma mais rapida de ter duas verdades. Os dois runners leem-na daqui: a conferencia e por igualdade exacta (D7) e nenhuma das linguagens tem a versao escrita no codigo."
 }

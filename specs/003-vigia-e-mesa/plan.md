@@ -23,7 +23,7 @@ para que os plugins se construam sem a mesa real (RN-E24).
 
 **Medições que este plano usa** (todas desta sessão, não digitadas):
 
-- o **contrato tem 9 esquemas** hoje e **354 ocorrências da versão `1.0.0` em 91 ficheiros** (o `45` que este plano trazia era um filtro mais estreito, só por extensões `.json/.ts/.py/.sh`) — é este o custo
+- o **contrato tem 9 esquemas** hoje e a versão `1.0.0` aparece em **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`). *(O `354 em 91` que uma contagem anterior publicou era **falso**: contava `node_modules/` e `.venv/` — versões de dependências, não do contrato. Medição derruba texto, inclusive o meu.)* — é este o custo
   da subida de versão, e é contável;
 - a **mesa não tem porta de processo**: nenhum ficheiro de `core/` lê `stdin` (só os tipos do Node);
 - os **dublês de setup e de conector já são processos** que leem uma linha JSON e respondem por linha;
@@ -66,7 +66,7 @@ comportamento declarado, e não um comportamento novo. E o envelope já leva a v
 **detectada**, que é o que se quer (RN-C7: mudança detectada, não sofrida).
 
 **A migração é um acto com contagem:** a versão é comparada por igualdade exacta, logo **todos** os casos
-existentes passam a `1.1.0` — **354 ocorrências em 91 ficheiros**. A tarefa mede: antes, depois, **zero**
+existentes passam a `1.1.0` — **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`), medidos em `relatorios/migracao-da-versao.txt`. A tarefa mede: antes, depois, **zero**
 ocorrências de `1.0.0` fora do histórico.
 
 ### D2 — A mesa ganha **porta de processo** (hoje não tem)
@@ -158,7 +158,7 @@ o ledger (escreve-se nele como sempre; não se redesenha).
 |---|---|---|
 | **um processo a mais** (vigia) | é o que permite a mesa operar sem ele (RN-V6) e o que torna a superfície possível depois | vigia dentro da mesa: mataria a RN-V6 e juntaria numa morte o vigia e as mesas que ele vigia |
 | **dois tipos de mensagem novos** | a fronteira existe e tem de ser língua, não acordo | comando por CLI: não teria versão, nem vocabulário, nem recusa com motivo |
-| **subir a versão do contrato** (354 ocorrências) | a versão é comparada por igualdade exacta; deixar mensagens em duas versões é ter duas verdades | aceitar a versão antiga «por compatibilidade»: é exactamente a adaptação em silêncio que a constituição proíbe |
+| **subir a versão do contrato** (116 sítios) | a versão é comparada por igualdade exacta; deixar mensagens em duas versões é ter duas verdades | aceitar a versão antiga «por compatibilidade»: é exactamente a adaptação em silêncio que a constituição proíbe |
 | **um dublê de mesa em Python** | provar a fronteira fora da nossa linguagem | dublê em TS: provaria a lógica, não a fronteira (RN-E17) |
 
 ## Progress

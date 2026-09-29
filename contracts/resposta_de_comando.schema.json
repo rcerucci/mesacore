@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/resposta_de_comando.schema.json",
+  "title": "Resposta da mesa ao comando",
+  "description": "Recusa NAO e erro de protocolo: e resposta. Quando recusado vem `motivo`; quando aceito vem `efeito` - os dois de conjuntos fechados declarados no vocabulario. A transicao traz estado anterior e posterior, e o instante e do relogio da MESA (RN-M4.9: quem recebe e que carimba).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pedido_id",
+    "aceito",
+    "transicao",
+    "instante_ms"
+  ],
+  "properties": {
+    "pedido_id": {
+      "$ref": "_defs/forma.schema.json#/$defs/correlacao"
+    },
+    "aceito": {
+      "type": "boolean"
+    },
+    "motivo": {
+      "$ref": "_defs/forma.schema.json#/$defs/motivo_de_comando"
+    },
+    "efeito": {
+      "$ref": "_defs/forma.schema.json#/$defs/efeito_de_comando"
+    },
+    "transicao": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "de",
+        "para"
+      ],
+      "properties": {
+        "de": {
+          "$ref": "_defs/forma.schema.json#/$defs/estado_da_mesa"
+        },
+        "para": {
+          "$ref": "_defs/forma.schema.json#/$defs/estado_da_mesa"
+        }
+      }
+    },
+    "instante_ms": {
+      "$ref": "_defs/forma.schema.json#/$defs/instante_da_mesa_ms"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "aceito"
+        ],
+        "properties": {
+          "aceito": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "efeito"
+        ],
+        "properties": {
+          "efeito": {
+            "$ref": "_defs/forma.schema.json#/$defs/efeito_de_comando"
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "motivo"
+        ],
+        "properties": {
+          "motivo": {
+            "$ref": "_defs/forma.schema.json#/$defs/motivo_de_comando"
+          }
+        }
+      }
+    }
+  ]
+}

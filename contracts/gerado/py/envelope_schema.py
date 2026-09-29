@@ -19,6 +19,10 @@ class Tipo(Enum):
     desfecho = 'desfecho'
     manifesto = 'manifesto'
     historico = 'historico'
+    comando = 'comando'
+    resposta_de_comando = 'resposta_de_comando'
+    pergunta_do_encerramento = 'pergunta_do_encerramento'
+    decisao_do_encerramento = 'decisao_do_encerramento'
 
 
 class EnvelopeDaMensagem(BaseModel):

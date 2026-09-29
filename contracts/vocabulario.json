@@ -1,7 +1,16 @@
 {
-  "contrato": "1.0.0",
+  "contrato": "1.1.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": ["buy", "sell", "hold", "caixa"],
+  "conjuntos_do_vigia": {
+    "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 20 dos 42, research R7; as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa.",
+    "verbos": ["start", "pause", "stop", "reset", "nova_sessao"],
+    "estados_da_mesa": ["parada", "em_operacao", "pausada", "encerrando"],
+    "respostas_do_encerramento": ["fechar_a_mercado", "manter"],
+    "motivos_de_comando": ["mesa_ja_em_operacao", "mesa_parada_nada_a_pausar", "mesa_ja_pausada", "mesa_ja_parada", "mesa_em_encerramento", "pedido_repetido", "sessao_inibida", "porta_do_arranque_falhou", "liquidacao_em_curso", "sessao_nova_com_posicao_viva", "mesa_precisa_parar_para_sessao_nova", "verbo_desconhecido", "comando_com_campo_a_mais", "comando_incompleto", "comando_com_tipo_invalido"],
+    "efeitos_de_comando": ["sessao_nova_gravada", "reset_nao_toca_em_nada", "resumo_do_encerramento_apresentado", "stop_pendente_por_prazo", "parada_com_posicao_viva"],
+    "nota_dos_que_ficam_de_fora": "Os outros 22 motivos de core/estados/motivos.json (ciclo, posicao, reconciliacao) NAO atravessam esta fronteira: nao sao resposta a comando nenhum. Leva-los seria levar os que ninguem produz deste lado - o defeito espelhado dos falsos botoes."
+  },
   "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite", "mercado_por_faixa"],
   "politicas_de_parcial": ["tudo_ou_nada", "o_que_der"],
   "destinos_do_resto": ["agressivo", "cancelar"],

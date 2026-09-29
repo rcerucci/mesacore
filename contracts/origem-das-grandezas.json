@@ -28,6 +28,14 @@
     "resolucao.alavancagem_efectiva": {"origem": "venue", "regra": "RN-M4.5"},
     "resolucao.preco_de_liquidacao": {"origem": "venue", "regra": "RN-M4.13"},
 
+    "pergunta_do_encerramento.prazo_de_resposta_ms": {"origem": "setup", "chave": "fichas/<i>.setup.prazo_de_resposta_ms", "regra": "RN-V9.1/RN-A3: a CHAVE e inventada pela spec 003 e o VALOR e do dono - a ficha que nao a traz recusa, nao adivinha"},
+
+    "pergunta_do_encerramento.numeros.posicao": {"origem": "venue", "regra": "RN-V8: o resumo mostra os numeros DA CORRETORA, e nenhum deles se recalcula por aqui"},
+    "pergunta_do_encerramento.numeros.nocional": {"origem": "venue", "regra": "RN-V8"},
+    "pergunta_do_encerramento.numeros.margem": {"origem": "venue", "regra": "RN-V8"},
+    "pergunta_do_encerramento.numeros.distancia_de_liquidacao": {"origem": "venue", "regra": "RN-V8"},
+    "pergunta_do_encerramento.numeros.resultado_nao_realizado": {"origem": "venue", "regra": "RN-V8"},
+
     "mercado.bid": {"origem": "venue", "regra": "RN-D1"},
     "mercado.ask": {"origem": "venue", "regra": "RN-D1"},
     "mercado.ultimo": {"origem": "venue", "regra": "RN-D1"},

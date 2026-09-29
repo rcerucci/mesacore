@@ -5,35 +5,35 @@
     {
       "nome": "historico/com-taxas-e-funding-em-campos-proprios",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.0.0", "tipo": "historico", "id": "h-1", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01"}, {"referencia_do_cliente": "r-2", "marca_de_posse": 1694498817, "instante_ms": 1758999600000, "lado": "sell", "quantidade": "0.18", "preco": "1.08521", "taxa": "0.05", "funding": "-0.01"}]}},
+      "entrada": {"contrato": "1.1.0", "tipo": "historico", "id": "h-1", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01"}, {"referencia_do_cliente": "r-2", "marca_de_posse": 1694498817, "instante_ms": 1758999600000, "lado": "sell", "quantidade": "0.18", "preco": "1.08521", "taxa": "0.05", "funding": "-0.01"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "historico/sem-funding-declarado",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.0.0", "tipo": "historico", "id": "h-2", "carga": {"instrumento": "XAUUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "12.60", "execucoes": [{"referencia_do_cliente": "r-3", "marca_de_posse": 1694498818, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.02", "preco": "2650.25", "taxa": "0.02"}]}},
+      "entrada": {"contrato": "1.1.0", "tipo": "historico", "id": "h-2", "carga": {"instrumento": "XAUUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "12.60", "execucoes": [{"referencia_do_cliente": "r-3", "marca_de_posse": 1694498818, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.02", "preco": "2650.25", "taxa": "0.02"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "historico/resultado-recalculado-por-execucao",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.0.0", "tipo": "historico", "id": "h-3", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01", "resultado_liquido": "-2.34"}]}},
+      "entrada": {"contrato": "1.1.0", "tipo": "historico", "id": "h-3", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01", "resultado_liquido": "-2.34"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_desconhecido"
     },
     {
       "nome": "historico/preco-como-numero-de-virgula-flutuante",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.0.0", "tipo": "historico", "id": "h-4", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": 1.08542, "taxa": "0.05"}]}},
+      "entrada": {"contrato": "1.1.0", "tipo": "historico", "id": "h-4", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": 1.08542, "taxa": "0.05"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "tipo_invalido"
     },
     {
       "nome": "historico/execucoes-como-objecto",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.0.0", "tipo": "historico", "id": "h-5", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": {"r-1": {"preco": "1.08542"}}}},
+      "entrada": {"contrato": "1.1.0", "tipo": "historico", "id": "h-5", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": {"r-1": {"preco": "1.08542"}}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "tipo_invalido"
     }

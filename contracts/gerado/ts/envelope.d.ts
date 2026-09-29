@@ -16,7 +16,18 @@ export type EnvelopeDaMensagem = {
   /**
    * O tipo decide qual e o corpo. Nao ha tipo sem schema.
    */
-  tipo: "mercado" | "proposta" | "boleta" | "resolucao" | "desfecho" | "manifesto" | "historico";
+  tipo:
+    | "mercado"
+    | "proposta"
+    | "boleta"
+    | "resolucao"
+    | "desfecho"
+    | "manifesto"
+    | "historico"
+    | "comando"
+    | "resposta_de_comando"
+    | "pergunta_do_encerramento"
+    | "decisao_do_encerramento";
   /**
    * Identificador de correlacao do ciclo (RN-T3). E OPACO: compara-se por igualdade, nunca se interpreta. Admite '/' porque a forma natural de correlacionar uma linha com o seu ciclo e 'ciclo/linha' — proibir um caracter inofensivo so cria atrito.
    */

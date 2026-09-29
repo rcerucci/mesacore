@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mesacore.local/contracts/pergunta_do_encerramento.schema.json",
+  "title": "A pergunta do encerramento",
+  "description": "Em `encerrando` a mesa apresenta o resumo e PERGUNTA se fecha a mercado (RN-V7). Os numeros sao DA CORRETORA (RN-V8), nunca estimados por nos - e o resumo existe para que quem escolhe `manter` leia, ANTES, que a posicao fica sem defesa. Por isso o aviso e campo, e nao nota de rodape.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pedido_id",
+    "opcoes",
+    "prazo_de_resposta_ms",
+    "aviso_de_manter",
+    "numeros"
+  ],
+  "properties": {
+    "pedido_id": {
+      "$ref": "_defs/forma.schema.json#/$defs/correlacao"
+    },
+    "opcoes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "_defs/forma.schema.json#/$defs/resposta_do_encerramento"
+      }
+    },
+    "prazo_de_resposta_ms": {
+      "$ref": "_defs/forma.schema.json#/$defs/duracao_ms",
+      "description": "A chave do dono (setup.prazo_de_resposta_ms, RN-A3): quanto a mesa espera antes de voltar a operar com o `stop` pendente (RN-V9.1)."
+    },
+    "aviso_de_manter": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400,
+      "description": "Obrigatorio: a pergunta so existe quando ha o que decidir, e um aviso vazio seria um aviso que nao avisa. `null` nao existe neste contrato (D4)."
+    },
+    "numeros": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "posicao",
+        "nocional",
+        "margem",
+        "distancia_de_liquidacao",
+        "resultado_nao_realizado"
+      ],
+      "properties": {
+        "posicao": {
+          "$ref": "_defs/forma.schema.json#/$defs/decimal"
+        },
+        "nocional": {
+          "$ref": "_defs/forma.schema.json#/$defs/decimal_nao_negativo"
+        },
+        "margem": {
+          "$ref": "_defs/forma.schema.json#/$defs/decimal_nao_negativo"
+        },
+        "distancia_de_liquidacao": {
+          "$ref": "_defs/forma.schema.json#/$defs/decimal_nao_negativo"
+        },
+        "resultado_nao_realizado": {
+          "$ref": "_defs/forma.schema.json#/$defs/decimal"
+        }
+      },
+      "description": "Cinco numeros do venue. Um venue que nao saiba um deles e materia da bateria de conformidade (RN-C6) e de um DEFEITO declarado - nao de um `null` silencioso."
+    }
+  }
+}
