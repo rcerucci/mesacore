@@ -66,7 +66,14 @@ function compilar(): (dados: unknown) => boolean {
   if (validador) return validador;
   if (erroDeCompilacao) throw erroDeCompilacao;
   try {
-    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    // `allowUnionTypes`: o contrato tem UM campo com duas formas declaradas — a marca de posse
+    // que o VENUE publica (`_defs/forma.schema.json#/$defs/marca_de_posse_do_venue`, aditivo na
+    // 1.5.0: o inteiro de 31 bits OU o `cloid` 0x + 32 hexadecimais, disjuntos pelo tipo). Sem
+    // esta opcao o ajv RECUSA compor o contrato, e a bateria inteira caia em `erro_de_execucao`.
+    // Nao afrouxa medicao nenhuma: as duas formas e a recusa da terceira sao medidas por caso,
+    // em ambas as linguagens (`historico/marca-de-posse-*`). Todos os outros campos continuam
+    // a ter UM tipo so.
+    const ajv = new Ajv2020({ allErrors: true, strict: true, allowUnionTypes: true });
     for (const ficheiro of ficheirosDeSchema()) {
       ajv.addSchema(lerJson(join(RAIZ, ficheiro)));
     }

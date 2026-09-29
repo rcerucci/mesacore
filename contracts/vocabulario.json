@@ -1,5 +1,5 @@
 {
-  "contrato": "1.4.0",
+  "contrato": "1.5.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",
@@ -102,6 +102,11 @@
     "comment",
     "nenhuma"
   ],
+  "formas_da_marca_do_venue": [
+    "inteiro_31_bits",
+    "cloid"
+  ],
+  "nota_das_formas_da_marca_do_venue": "O conjunto FECHADO das formas que a marca de posse do VENUE pode ter num historico (aditivo na 1.5.0, e medido): (1) `inteiro_31_bits` — a forma que a mesa ja compunha, e que o campo do contrato so exprimia; (2) `cloid` — 0x + 32 hexadecimais minusculos, a forma que a Hyperliquid usa e o manifesto dela DECLARA (`marca_de_posse: cloid`). A FORMA de cada uma vive no esquema (`_defs/forma.schema.json#/$defs/marca_de_posse_do_venue`) e nao aqui: aqui vive o NOME do conjunto, para o conferidor poder exigir que nao apareca uma terceira — e o manifesto continua a ser a fonte de qual delas este venue usa (`formas_de_marca`). A marca que a MESA compoe (na boleta) continua a ser SO o inteiro de 31 bits (`$defs/marca_de_posse`), e o `cloid` NAO cabe la.",
   "marca_de_posse_layout": {
     "bits_totais": 31,
     "bits_ficha": 12,

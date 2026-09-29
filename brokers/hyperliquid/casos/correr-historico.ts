@@ -116,9 +116,11 @@ type Checagem = {
   nao_soma_o_resultado?: boolean;
   nao_tem_null?: boolean;
   carga?: {
+    /** A carga TEM de levar estes caminhos com estes valores — a prova positiva do que foi LIDO. */
+    leva?: Record<string, unknown>;
     nao_leva?: string[];
     contrato_veredicto?: string;
-    contrato_motivo?: string;
+    contrato_motivo?: string | null;
   };
   contrato_recusa_o_pedido?: boolean;
 };
@@ -235,6 +237,14 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
   // A CARGA DO CONTRATO: monta-se e entrega-se AO CONTRATO. O veredicto dele e o veredicto que se confere.
   if (caso.carga !== undefined && r.ok) {
     const carga = cargaDoHistorico(r.leitura);
+    for (const [caminhoCarga, esperado] of Object.entries(caso.carga.leva ?? {})) {
+      const veio = lerCaminho(carga, caminhoCarga);
+      if (JSON.stringify(veio) !== JSON.stringify(esperado)) {
+        erros.push(
+          `a carga devia levar ${caminhoCarga}=${JSON.stringify(esperado)}, e veio ${JSON.stringify(veio)}`,
+        );
+      }
+    }
     for (const chave of caso.carga.nao_leva ?? []) {
       if (chave in carga) erros.push(`a carga leva \`${chave}\`, que o venue nao deu (nem o contrato tem para o historico)`);
       const execucoes = (carga.execucoes ?? []) as Record<string, unknown>[];

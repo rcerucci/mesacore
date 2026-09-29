@@ -6,35 +6,38 @@
  */
 
 /**
- * O trilho do dinheiro, como o venue o conta (RN-C11, RN-D6). Taxas e funding em campos PROPRIOS: somar e do venue, nunca da mesa. Nao ha campo de resultado por execucao — recalculado pela mesa seria a mesa a reescrever a conta da corretora.
+ * O trilho do dinheiro, como o venue o conta (RN-C11, RN-D6). Taxas e funding em campos PROPRIOS: somar e do venue, nunca da mesa. Nada aqui obriga a mesa a RECONSTRUIR o que o venue nao publica: o que o venue nao da fica AUSENTE (a chave nao esta la), nunca zero. EMENDA 1.5.0, aditiva e obrigada por MEDICAO contra a Hyperliquid (specs/004-conector-hyperliquid/relatorios/emenda-1.5.0.txt): (a) a moeda passa a admitir de tres a cinco letras maiusculas (o venue escreve `USDC`); (b) `resultado_realizado` passa a OPCIONAL — o venue publica o resultado POR EXECUCAO (`closedPnl`) e somar as parcelas seria a reconstrucao que FR-018/RN-H14 proibem; (c) a marca de posse por execucao passa a admitir as DUAS formas que o manifesto pode declarar (o inteiro de 31 bits e o `cloid`); (d) a referencia de cliente por execucao passa a OPCIONAL — o venue NAO a guardou em 415 de 415 ordens desta conta, e ausencia nunca vira valor; (e) o funding por execucao continua OPCIONAL, porque este venue nao o publica por execucao.
  */
 export interface HistoricoDoVenue {
   /**
    * Símbolo do instrumento, como o venue o escreve.
    */
   instrumento: string;
+  /**
+   * A moeda em que o venue cobra a taxa, como ele a ESCREVE. A forma vive num so sitio (`_defs/forma.schema.json#/$defs/moeda`) e admite de tres a cinco letras maiusculas desde a 1.5.0 — medido: `USDC`, com quatro.
+   */
   moeda: string;
   /**
    * Instante em milissegundos UTC, do relógio do VENUE — não do processo (RN-D2).
    */
   instante_ms: number;
   /**
-   * Como o venue o reporta. A mesa mostra, nao reconstroi.
+   * O resultado realizado DO INSTRUMENTO, como o venue o reporta. A mesa mostra, nao reconstroi. OPCIONAL desde a 1.5.0, e a razao e MEDIDA: a fonte deste numero e POR EXECUCAO — a Hyperliquid publica `closedPnl` em `userFills` (cada execucao com o seu, em campo PROPRIO da leitura) e NAO um numero por instrumento. Somar as parcelas para preencher este campo seria RECONSTRUIR o resultado, o defeito que FR-018/RN-H14 proibem: por isso o campo fica AUSENTE quando o venue nao o publica, e nunca zero.
    */
-  resultado_realizado: string;
+  resultado_realizado?: string;
   /**
    * @minItems 1
    */
   execucoes: [
     {
       /**
-       * Identificador de correlacao do ciclo (RN-T3). E OPACO: compara-se por igualdade, nunca se interpreta. Admite '/' porque a forma natural de correlacionar uma linha com o seu ciclo e 'ciclo/linha' — proibir um caracter inofensivo so cria atrito.
+       * A referencia que o VENUE guardou para esta execucao. OPCIONAL desde a 1.5.0, e a razao e MEDIDA: a Hyperliquid nao guardou `cloid` nenhum nas 415 de 415 ordens desta conta (o `cloid` que a mesa usa e DERIVADO da referencia, de mao unica — nunca se le de volta). Ausente = o venue nao a guardou; a chave NAO se escreve, e ausencia NUNCA vira valor nenhum (nem zero, nem cadeia vazia).
        */
-      referencia_do_cliente: string;
+      referencia_do_cliente?: string;
       /**
-       * Marca de posse: inteiro sem sinal de 31 bits, desenhado para a forma MAIS RESTRITA (o POSITION_MAGIC do MT5). Cabe em cloid, clientOrderId, magic e comment.
+       * A marca de posse que o venue guardou, na forma que o MANIFESTO dele declara. Duas formas, e so duas (1.5.0): o inteiro de 31 bits e o `cloid` (0x + 32 hexadecimais). OPCIONAL desde a 1.5.0: medido nesta conta, o venue NAO guardou marca nenhuma (as 415 de 415 ordens vieram com `cloid` nulo), e exigi-la obrigaria a mesa a inventar uma — ausente e o que se escreve, nunca zero.
        */
-      marca_de_posse: number;
+      marca_de_posse?: number | string;
       /**
        * Instante em milissegundos UTC, do relógio do VENUE — não do processo (RN-D2).
        */
@@ -53,19 +56,19 @@ export interface HistoricoDoVenue {
        */
       taxa: string;
       /**
-       * Funding da execucao, em campo PROPRIO. Ausente quando o venue nao o reporta por execucao.
+       * Funding da execucao, em campo PROPRIO. OPCIONAL por execucao: ausente quando o venue nao o reporta por execucao — e a Hyperliquid NAO o reporta por execucao (medido), pelo que ausente NAO e zero. Um zero aqui seria um custo medido, e nao ha nenhum a medir.
        */
       funding?: string;
     },
     ...{
       /**
-       * Identificador de correlacao do ciclo (RN-T3). E OPACO: compara-se por igualdade, nunca se interpreta. Admite '/' porque a forma natural de correlacionar uma linha com o seu ciclo e 'ciclo/linha' — proibir um caracter inofensivo so cria atrito.
+       * A referencia que o VENUE guardou para esta execucao. OPCIONAL desde a 1.5.0, e a razao e MEDIDA: a Hyperliquid nao guardou `cloid` nenhum nas 415 de 415 ordens desta conta (o `cloid` que a mesa usa e DERIVADO da referencia, de mao unica — nunca se le de volta). Ausente = o venue nao a guardou; a chave NAO se escreve, e ausencia NUNCA vira valor nenhum (nem zero, nem cadeia vazia).
        */
-      referencia_do_cliente: string;
+      referencia_do_cliente?: string;
       /**
-       * Marca de posse: inteiro sem sinal de 31 bits, desenhado para a forma MAIS RESTRITA (o POSITION_MAGIC do MT5). Cabe em cloid, clientOrderId, magic e comment.
+       * A marca de posse que o venue guardou, na forma que o MANIFESTO dele declara. Duas formas, e so duas (1.5.0): o inteiro de 31 bits e o `cloid` (0x + 32 hexadecimais). OPCIONAL desde a 1.5.0: medido nesta conta, o venue NAO guardou marca nenhuma (as 415 de 415 ordens vieram com `cloid` nulo), e exigi-la obrigaria a mesa a inventar uma — ausente e o que se escreve, nunca zero.
        */
-      marca_de_posse: number;
+      marca_de_posse?: number | string;
       /**
        * Instante em milissegundos UTC, do relógio do VENUE — não do processo (RN-D2).
        */
@@ -84,7 +87,7 @@ export interface HistoricoDoVenue {
        */
       taxa: string;
       /**
-       * Funding da execucao, em campo PROPRIO. Ausente quando o venue nao o reporta por execucao.
+       * Funding da execucao, em campo PROPRIO. OPCIONAL por execucao: ausente quando o venue nao o reporta por execucao — e a Hyperliquid NAO o reporta por execucao (medido), pelo que ausente NAO e zero. Um zero aqui seria um custo medido, e nao ha nenhum a medir.
        */
       funding?: string;
     }[]

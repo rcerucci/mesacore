@@ -6,7 +6,7 @@
       "nome": "comando/start-valido",
       "mensagem": "comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "comando",
         "id": "c-1",
         "carga": {
@@ -22,7 +22,7 @@
       "nome": "comando/nova-sessao-com-motivo",
       "mensagem": "comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "comando",
         "id": "c-2",
         "carga": {
@@ -39,7 +39,7 @@
       "nome": "comando/nova-sessao-sem-motivo",
       "mensagem": "comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "comando",
         "id": "c-3",
         "carga": {
@@ -55,7 +55,7 @@
       "nome": "comando/verbo-sexto",
       "mensagem": "comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "comando",
         "id": "c-4",
         "carga": {
@@ -71,7 +71,7 @@
       "nome": "comando/campo-a-mais",
       "mensagem": "comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "comando",
         "id": "c-5",
         "carga": {
@@ -88,7 +88,7 @@
       "nome": "comando/sem-autor",
       "mensagem": "comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "comando",
         "id": "c-6",
         "carga": {
@@ -103,7 +103,7 @@
       "nome": "comando/autor-nulo",
       "mensagem": "comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "comando",
         "id": "c-7",
         "carga": {
@@ -119,7 +119,7 @@
       "nome": "resposta/recusa-com-motivo",
       "mensagem": "resposta_de_comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "resposta_de_comando",
         "id": "rc-1",
         "carga": {
@@ -140,7 +140,7 @@
       "nome": "resposta/aceite-com-efeito",
       "mensagem": "resposta_de_comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "resposta_de_comando",
         "id": "rc-2",
         "carga": {
@@ -161,7 +161,7 @@
       "nome": "resposta/motivo-inventado",
       "mensagem": "resposta_de_comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "resposta_de_comando",
         "id": "rc-3",
         "carga": {
@@ -182,7 +182,7 @@
       "nome": "resposta/aceite-sem-efeito-e-aceite",
       "mensagem": "resposta_de_comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "resposta_de_comando",
         "id": "rc-4",
         "carga": {
@@ -203,7 +203,7 @@
       "nome": "resposta/estado-fora-do-eixo",
       "mensagem": "resposta_de_comando",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "resposta_de_comando",
         "id": "rc-5",
         "carga": {
@@ -224,7 +224,7 @@
       "nome": "decisao/fechar-a-mercado",
       "mensagem": "decisao_do_encerramento",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "decisao_do_encerramento",
         "id": "d-1",
         "carga": {
@@ -239,7 +239,7 @@
       "nome": "decisao/resposta-fora-do-conjunto",
       "mensagem": "decisao_do_encerramento",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "decisao_do_encerramento",
         "id": "d-2",
         "carga": {
@@ -254,7 +254,7 @@
       "nome": "pergunta/valida",
       "mensagem": "pergunta_do_encerramento",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "pergunta_do_encerramento",
         "id": "p-1",
         "carga": {
@@ -281,7 +281,7 @@
       "nome": "pergunta/sem-numeros",
       "mensagem": "pergunta_do_encerramento",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "pergunta_do_encerramento",
         "id": "p-2",
         "carga": {
@@ -302,7 +302,7 @@
       "mensagem": "resposta_de_comando",
       "nota": "O efeito e conjunto FECHADO: um nome de fora nao passa, mesmo com a mensagem bem formada.",
       "entrada": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "resposta_de_comando",
         "id": "rc-6",
         "carga": {
@@ -334,7 +334,7 @@
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "versao_do_contrato_divergente",
-      "detalhe_esperado": "declarada 1.0.0, vigente 1.4.0",
+      "detalhe_esperado": "declarada 1.0.0, vigente $CONTRATO",
       "historico": "T047/RN-E18, D7 - a versao e conferida por igualdade exacta ANTES de qualquer envio, e a recusa diz as DUAS versoes: quem le o registo ve qual das pontas estava atrasada"
     },
     {
@@ -351,7 +351,7 @@
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "versao_do_contrato_divergente",
-      "detalhe_esperado": "declarada (ausente), vigente 1.4.0",
+      "detalhe_esperado": "declarada (ausente), vigente $CONTRATO",
       "historico": "T047 - sem a versao declarada, a recusa di-lo em vez de dizer 'schema invalido': a versao confere-se primeiro, e o diagnostico tem de ser o verdadeiro"
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "contrato": "1.4.0",
+  "contrato": "1.5.0",
   "nota": "Manifesto SIMULADO deste mock. Fixture, nao fonte: o manifesto a serio e sondado do venue no arranque (RN-C1).",
   "tipo": "manifesto",
   "id": "manifesto/mock_conector",
@@ -8,7 +8,7 @@
       "nome": "mock_conector",
       "versao": "1.0.0"
     },
-    "versao": "1.4.0",
+    "versao": "1.5.0",
     "instrumentos": [
       {
         "simbolo": "EURUSD",

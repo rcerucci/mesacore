@@ -1,11 +1,14 @@
 #!/usr/bin/env bun
-// A PORTA DO CONTRATO, do lado do conector: a emenda 1.4.0 ATRAVESSA os dois motores, e prova-se.
+// A PORTA DO CONTRATO, do lado do conector: as emendas ATRAVESSAM os dois motores, e provam-se.
 //
 //   bun tools/verificar-conector/porta-do-contrato.ts [--prova-negativa]
 //
 // Porque existe: a emenda 1.4.0 mudou o nome de uma grandeza, a forma de um escalao, e acrescentou duas
-// declaracoes por instrumento (a cadencia do funding e o deslistado). Uma emenda dessas pode ficar a meio
-// caminho de tres maneiras, e nenhuma delas se ve a olho:
+// declaracoes por instrumento (a cadencia do funding e o deslistado); a emenda 1.5.0 alargou a forma da
+// moeda, tornou dois campos do historico OPCIONAIS (o resultado por instrumento e a referencia de cliente
+// por execucao), admitiu as DUAS formas da marca de posse que o manifesto pode declarar e declarou a
+// ausencia do funding por execucao — as cinco razoes pelas quais o historico da Hyperliquid era RECUSADO
+// pelo contrato. Uma emenda dessas pode ficar a meio caminho de tres maneiras, e nenhuma delas se ve a olho:
 //
 //   1. o vocabulario do contrato e um CONJUNTO FECHADO, e um motivo novo que entre num lado e nao no outro
 //      deixa as duas linguagens a recusar com nomes diferentes (ou uma delas a aceitar um nome que a outra
@@ -382,6 +385,160 @@ for (const banda of bandas) {
 }
 
 // ---------------------------------------------------------------------------------------------------
+// PROVA 7 — a emenda 1.5.0: as cinco razoes MEDIDAS contra o venue REAL, cada uma com a sua prova negativa
+// ---------------------------------------------------------------------------------------------------
+//
+// Porque existe: o HISTORICO da Hyperliquid era RECUSADO pelo contrato por cinco razoes medidas contra o
+// venue a serio (specs/004-conector-hyperliquid/relatorios/emenda-1.5.0.txt). A 1.5.0 alargou a forma da
+// moeda (o venue escreve `USDC`), tornou o resultado por instrumento opcional (a fonte e' POR EXECUCAO), 
+// admitiu as DUAS formas da marca de posse do venue (o inteiro de 31 bits e o `cloid`), tornou a referencia
+// de cliente opcional e declarou a ausencia do funding por execucao. Uma emenda dessas fica a meio caminho
+// se o alargamento passar do que foi medido — por isso cada alargamento traz, AQUI e nos DOIS motores, a
+// prova do que PASSA e a prova do que continua a REPROVAR. E o que NAO podia ser tocado fica medido tambem:
+// a marca que a MESA compoe (a boleta) continua a recusar o `cloid`.
+
+const historicoSchema = lerJson(join(CONTRATOS, "historico.schema.json"));
+const casoBaseDoHistorico: any = (() => {
+  const casos = lerJson(join(CONTRATOS, "casos", "historico.casos.json"));
+  return casos.casos.find((c: any) => c.nome === "historico/com-taxas-e-funding-em-campos-proprios").entrada;
+})();
+
+/** Uma execucao da base, clonada, sem os campos que o alargamento tornou opcionais. */
+function execucaoSem(...campos: string[]): any {
+  const execucao = clonar(casoBaseDoHistorico.carga.execucoes[0]);
+  for (const campo of campos) delete execucao[campo];
+  return execucao;
+}
+/** A carga do historico com a PRIMEIRA execucao trocada pela que a sonda construir. */
+function historicoComExecucao(execucao: any): any {
+  const mensagem = clonar(casoBaseDoHistorico);
+  mensagem.carga.execucoes = [execucao, ...mensagem.carga.execucoes.slice(1)];
+  return mensagem;
+}
+const CLOID_DO_VENUE = "0x00000000000000000000000000000001"; // a forma do venue: 0x + 32 hexadecimais minusculos
+
+const provasDaEmenda: { nome: string; mensagem: unknown; veredicto: string; motivo: string | null }[] = [
+  // (a) A MOEDA DA TAXA -------------------------------------------------------------------------------
+  { nome: "(a) a moeda do venue (`USDC`, QUATRO letras) CABE na forma alargada",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "USDC"; return m; })(),
+    veredicto: "aceite", motivo: null },
+  { nome: "(a) a moeda antiga (`USD`, TRES letras) NAO deixou de caber",
+    mensagem: clonar(casoBaseDoHistorico), veredicto: "aceite", motivo: null },
+  { nome: "(a) PROVA NEGATIVA: a moeda com SEIS letras (`USDCXX`) RECUSA — nao se alargou mais do que o medido",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "USDCXX"; return m; })(),
+    veredicto: "recusado", motivo: "formato_invalido" },
+  { nome: "(a) PROVA NEGATIVA: a moeda em minusculas (`usdc`) RECUSA — a forma continua a ser de MAIUSCULAS",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "usdc"; return m; })(),
+    veredicto: "recusado", motivo: "formato_invalido" },
+
+  // (b) O RESULTADO REALIZADO -------------------------------------------------------------------------
+  { nome: "(b) o historico SEM o resultado por instrumento PASSA — a fonte e' POR EXECUCAO, e o campo e' opcional",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); delete m.carga.resultado_realizado; return m; })(),
+    veredicto: "aceite", motivo: null },
+  { nome: "(b) o resultado por instrumento, QUANDO o venue o da, continua a caber",
+    mensagem: clonar(casoBaseDoHistorico), veredicto: "aceite", motivo: null },
+  { nome: "(b) PROVA NEGATIVA (FR-018): um resultado POR EXECUCAO na carga RECUSA — somar as parcelas e' a reconstrucao proibida",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.execucoes[0].resultado_liquido = "0.11"; return m; })(),
+    veredicto: "recusado", motivo: "campo_desconhecido" },
+
+  // (c) A MARCA DE POSSE ------------------------------------------------------------------------------
+  { nome: "(c) a marca do VENUE na forma `cloid` (0x + 32 hexadecimais) CABE na 1.5.0",
+    mensagem: historicoComExecucao({ ...execucaoSem(), marca_de_posse: CLOID_DO_VENUE }),
+    veredicto: "aceite", motivo: null },
+  { nome: "(c) a marca no INTEIRO de 31 bits que a mesa compoe continua a caber",
+    mensagem: clonar(casoBaseDoHistorico), veredicto: "aceite", motivo: null },
+  { nome: "(c) PROVA NEGATIVA: uma marca com forma de TERCEIRO tipo (`nao-e-marca`) RECUSA",
+    mensagem: historicoComExecucao({ ...execucaoSem(), marca_de_posse: "nao-e-marca" }),
+    veredicto: "recusado", motivo: "formato_invalido" },
+  { nome: "(c) PROVA NEGATIVA: um inteiro acima dos 31 bits (2147483648) RECUSA",
+    mensagem: historicoComExecucao({ ...execucaoSem(), marca_de_posse: 2147483648 }),
+    veredicto: "recusado", motivo: "valor_fora_da_banda" },
+  { nome: "(c) PROVA NEGATIVA: um `cloid` com hexadecimais MAIUSCULOS RECUSA — a forma e' a do venue, nao uma parecida",
+    mensagem: historicoComExecucao({ ...execucaoSem(), marca_de_posse: "0X00000000000000000000000000000001" }),
+    veredicto: "recusado", motivo: "formato_invalido" },
+  { nome: "(c) PROVA CRUZADA: a marca que a MESA compoe (na boleta) continua a RECUSAR o `cloid` — o alargamento nao chegou la'",
+    mensagem: (() => { const b = clonar(boleta); b.carga.marca_de_posse = CLOID_DO_VENUE; return b; })(),
+    veredicto: "recusado", motivo: "tipo_invalido" },
+
+  // (d) A REFERENCIA DE CLIENTE ------------------------------------------------------------------------
+  { nome: "(d) a execucao SEM a referencia de cliente PASSA — o venue nao a guardou em 415 de 415 ordens",
+    mensagem: historicoComExecucao(execucaoSem("referencia_do_cliente")),
+    veredicto: "aceite", motivo: null },
+  { nome: "(d) PROVA NEGATIVA: a referencia de cliente a `null` RECUSA — ausencia nao se escreve com null (D4)",
+    mensagem: historicoComExecucao({ ...execucaoSem(), referencia_do_cliente: null }),
+    veredicto: "recusado", motivo: "valor_nulo_nao_permitido" },
+  { nome: "(d) PROVA NEGATIVA: a referencia de cliente VAZIA (`\"\"`) RECUSA — ausencia nao se escreve com vazio",
+    mensagem: historicoComExecucao({ ...execucaoSem(), referencia_do_cliente: "" }),
+    veredicto: "recusado", motivo: "formato_invalido" },
+
+  // (e) O FUNDING POR EXECUCAO -------------------------------------------------------------------------
+  { nome: "(e) o funding por execucao declarado pelo venue continua a caber",
+    mensagem: clonar(casoBaseDoHistorico), veredicto: "aceite", motivo: null },
+  { nome: "(e) o funding AUSENTE numa execucao PASSA — ausente nunca vira zero",
+    mensagem: historicoComExecucao(execucaoSem("funding")),
+    veredicto: "aceite", motivo: null },
+  { nome: "(e) PROVA NEGATIVA: o funding como NUMERO do JSON RECUSA — o contrato escreve decimal textual",
+    mensagem: historicoComExecucao({ ...execucaoSem(), funding: 0.01 }),
+    veredicto: "recusado", motivo: "tipo_invalido" },
+];
+
+declarar(`emenda 1.5.0: ${provasDaEmenda.length} sondas do historico REAL (o que passa e o que reprova), nos dois motores`);
+for (const prova of provasDaEmenda) {
+  const { ts, py } = nosDoisMotores(prova.mensagem);
+  exigir(
+    ts.veredicto === prova.veredicto && ts.motivo === prova.motivo,
+    `TS: ${prova.nome} deu ${ts.veredicto}/${ts.motivo}, esperado ${prova.veredicto}/${prova.motivo}`,
+  );
+  exigir(
+    py.veredicto === prova.veredicto && py.motivo === prova.motivo,
+    `PY: ${prova.nome} deu ${py.veredicto}/${py.motivo}, esperado ${prova.veredicto}/${prova.motivo}`,
+  );
+  exigir(
+    ts.veredicto === py.veredicto && ts.motivo === py.motivo,
+    `${prova.nome}: TS decide ${ts.veredicto}/${ts.motivo} e Python decide ${py.veredicto}/${py.motivo}`,
+  );
+  console.log(`  ${prova.veredicto}/${prova.motivo ?? "-"} nos dois motores — ${prova.nome}`);
+}
+
+// A emenda no ESQUEMA: a forma num SO sitio, a fonte declarada, e a marca da mesa intacta. Uma sonda de
+// comportamento nao ve um campo que ficou declarado duas vezes — esta conferencia ve'.
+declarar("a emenda 1.5.0, no ESQUEMA: a forma da moeda num so sitio, a fonte por execucao declarada, a marca da mesa intacta");
+const formaMoeda = forma.$defs?.moeda ?? {};
+exigir(
+  String(historicoSchema.properties?.moeda?.$ref ?? "").endsWith("_defs/forma.schema.json#/$defs/moeda"),
+  "historico.moeda NAO aponta para _defs/forma.schema.json#/$defs/moeda: a forma da moeda teria duas casas",
+);
+exigir(formaMoeda.pattern === "^[A-Z]{3,5}$", `a forma da moeda em _defs e' ${formaMoeda.pattern}, e a 1.5.0 mediu de TRES a CINCO letras`);
+exigir(
+  (historicoSchema.required as string[]).includes("resultado_realizado") === false,
+  "historico.resultado_realizado continua OBRIGATORIO: o venue so o publica POR EXECUCAO, e exigi-lo obrigaria a somar",
+);
+exigir(
+  String(historicoSchema.properties?.resultado_realizado?.description ?? "").includes("closedPnl"),
+  "a descricao de historico.resultado_realizado nao declara a fonte POR EXECUCAO (`closedPnl`)",
+);
+const exigidasDaExecucao: string[] = historicoSchema.properties?.execucoes?.items?.required ?? [];
+for (const campo of ["referencia_do_cliente", "marca_de_posse"]) {
+  exigir(
+    exigidasDaExecucao.includes(campo) === false,
+    `historico.execucoes[].${campo} continua OBRIGATORIO, e o venue nao o publica nesta conta (415 de 415 com \`cloid\` nulo)`,
+  );
+}
+exigir(
+  String(historicoSchema.properties?.execucoes?.items?.properties?.marca_de_posse?.$ref ?? "").endsWith("marca_de_posse_do_venue"),
+  "a marca de posse do historico NAO aponta para a forma do VENUE (`marca_de_posse_do_venue`)",
+);
+exigir(
+  forma.$defs?.marca_de_posse?.type === "integer" && forma.$defs?.marca_de_posse?.maximum === 2147483647,
+  "a marca que a MESA compoe (`$defs/marca_de_posse`) deixou de ser o inteiro de 31 bits: isso mudaria o que a boleta significa",
+);
+const formasDeclaradas: string[] = vocabulario.formas_da_marca_do_venue ?? [];
+exigir(
+  formasDeclaradas.length === 2 && formasDeclaradas.includes("inteiro_31_bits") && formasDeclaradas.includes("cloid"),
+  `o vocabulario declara ${JSON.stringify(formasDeclaradas)} como formas da marca do venue, e sao DUAS (a do contrato e a do cloid)`,
+);
+
+// ---------------------------------------------------------------------------------------------------
 // A VACINA: as provas desta porta tem de saber REPROVAR (--prova-negativa)
 // ---------------------------------------------------------------------------------------------------
 
@@ -426,10 +583,19 @@ if (provaNegativa) {
   silencioso = false;
   exigir(detectada5, "vacina: um duble com o veredicto trocado PASSOU como paridade entre os dois lados");
 
+  // (e) a mensagem de referencia da prova 7 tem de ser ACEITE nos dois motores — senao a prova nao mede a mutacao
+  const sondaDaEmenda = provasDaEmenda.find((p) => p.veredicto === "aceite" && p.nome.includes("cloid"));
+  const { ts: tsDaEmenda, py: pyDaEmenda } = nosDoisMotores(sondaDaEmenda?.mensagem);
+  exigir(
+    tsDaEmenda.veredicto === "aceite" && pyDaEmenda.veredicto === "aceite",
+    "vacina: a mensagem de referencia da prova 7 (a marca do venue na forma `cloid`) nao e' aceite nos dois motores — a prova nao mede a mutacao",
+  );
+
   if (falhas === 0) {
     console.log(
       "  (a) vocabulario furado REPROVA · (b) divergencia entre motores REPROVA · " +
-        "(c) a mensagem de referencia e' aceite · (d) duble a mentir REPROVA",
+        "(c) a mensagem de referencia e' aceite · (d) duble a mentir REPROVA · " +
+        "(e) a carga com a marca do venue e' aceite nos dois motores",
     );
   }
 }
@@ -446,6 +612,7 @@ console.log(
     `${esquerda.leituras.length} casos lidos nos dois motores` +
     ` · ${casosDeBoleta.length} casos de conformidade nas duas linguagens` +
     ` · ${bandas.length} bandas no duble` +
-    (provaNegativa ? " · 4 vacinas" : ""),
+    ` · ${provasDaEmenda.length} sondas da emenda 1.5.0 no historico` +
+    (provaNegativa ? " · 5 vacinas" : ""),
 );
 process.exit(falhas === 0 ? 0 : 1);

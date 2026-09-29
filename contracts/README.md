@@ -31,11 +31,11 @@ verifica o contrato e por isso tem de o ler.
 | `envelope.schema.json` | versão, tipo, correlação e carga — o que atravessa a fronteira |
 | `mercado` · `proposta` · `boleta` · `resolucao` · `desfecho` · `manifesto` `.schema.json` | as seis mensagens que as duas pontas trocam |
 | `historico.schema.json` | o trilho do dinheiro, como o venue o conta (taxas e funding em campos próprios) |
-| `_defs/forma.schema.json` | o que **todas** as mensagens partilham: decimal textual, instante, versão, correlação, motivo, marca de posse, os quatro lados |
-| `vocabulario.json` | os conjuntos fechados, os **motivos normalizados** de recusa com a prioridade entre eles, e o **layout do campo da marca** (bits de ficha, bits de ciclo). Os runners leem daqui: não há esta lista escrita em código em lado nenhum |
+| `_defs/forma.schema.json` | o que **todas** as mensagens partilham: decimal textual, instante, versão, correlação, motivo, **a moeda**, a marca de posse **que a mesa compõe** e a marca de posse **que o venue publica** (as duas formas que o manifesto pode declarar: o inteiro de 31 bits e o `cloid`), os quatro lados |
+| `vocabulario.json` | os conjuntos fechados, os **motivos normalizados** de recusa com a prioridade entre eles, o **layout do campo da marca** (bits de ficha, bits de ciclo) e as **formas da marca do venue** (aditivo na 1.5.0: o inteiro de 31 bits e o `cloid` — a forma vive no esquema, o nome do conjunto vive aqui). Os runners leem daqui: não há esta lista escrita em código em lado nenhum |
 | `versao.json` | a versão vigente do contrato, num só sítio |
 | `origem-das-grandezas.json` | **de onde vem o valor de cada grandeza** (dono · setup · mesa · venue), com a chave de `/config` quando é do dono ou do setup. É o que torna o RN-A1 conferível: `tools/verificar-contrato/inventario.sh` reprova grandeza sem origem e chave fora do inventário |
-| `casos/*.casos.json` | **111 casos de mensagem** — válidos e **inválidos de propósito**. Um conjunto que só sabe aceitar prova metade |
+| `casos/*.casos.json` | **123 casos de mensagem** — válidos e **inválidos de propósito**. Um conjunto que só sabe aceitar prova metade |
 | `casos/referencia.decisoes.json` | **9 decisões da mesa** (reenviar, esperar, reconciliar, não enviar). Família separada de propósito: os casos de mensagem correm nas **duas** linguagens; as decisões correm só na implementação da mesa |
 | `casos/conferencia.conformidade.json` | **17 casos de conformidade** contra manifestos-fixture, cada um com o número de mensagens que seriam enviadas (`enviadas=0` em toda a recusa) — é o que mede o SC-003 |
 | `esqueleto/` | o enquadramento, os runners e as peças partilhadas, nas duas linguagens: `framing.{ts,py}`, `casos.{ts,py}`, `marca.ts` (a marca e os seus seis invariantes), `conferir.ts` (conferência contra o manifesto), `referencia.ts` (não-duplicação), `validar_linha.{ts,py}` (validar uma mensagem à mão) |

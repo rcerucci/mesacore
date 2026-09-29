@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, constr
+from pydantic import BaseModel, ConfigDict, Field
 
 from ._defs import forma_schema
 
@@ -19,8 +19,14 @@ class Execuco(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    referencia_do_cliente: forma_schema.Correlacao
-    marca_de_posse: forma_schema.MarcaDePosse
+    referencia_do_cliente: forma_schema.Correlacao | None = Field(
+        None,
+        description='A referencia que o VENUE guardou para esta execucao. OPCIONAL desde a 1.5.0, e a razao e MEDIDA: a Hyperliquid nao guardou `cloid` nenhum nas 415 de 415 ordens desta conta (o `cloid` que a mesa usa e DERIVADO da referencia, de mao unica — nunca se le de volta). Ausente = o venue nao a guardou; a chave NAO se escreve, e ausencia NUNCA vira valor nenhum (nem zero, nem cadeia vazia).',
+    )
+    marca_de_posse: forma_schema.MarcaDePosseDoVenue | None = Field(
+        None,
+        description='A marca de posse que o venue guardou, na forma que o MANIFESTO dele declara. Duas formas, e so duas (1.5.0): o inteiro de 31 bits e o `cloid` (0x + 32 hexadecimais). OPCIONAL desde a 1.5.0: medido nesta conta, o venue NAO guardou marca nenhuma (as 415 de 415 ordens vieram com `cloid` nulo), e exigi-la obrigaria a mesa a inventar uma — ausente e o que se escreve, nunca zero.',
+    )
     instante_ms: forma_schema.InstanteMs
     lado: Lado
     quantidade: forma_schema.DecimalPositivo
@@ -30,7 +36,7 @@ class Execuco(BaseModel):
     )
     funding: forma_schema.Decimal | None = Field(
         None,
-        description='Funding da execucao, em campo PROPRIO. Ausente quando o venue nao o reporta por execucao.',
+        description='Funding da execucao, em campo PROPRIO. OPCIONAL por execucao: ausente quando o venue nao o reporta por execucao — e a Hyperliquid NAO o reporta por execucao (medido), pelo que ausente NAO e zero. Um zero aqui seria um custo medido, e nao ha nenhum a medir.',
     )
 
 
@@ -39,9 +45,13 @@ class HistoricoDoVenue(BaseModel):
         extra='forbid',
     )
     instrumento: forma_schema.Instrumento
-    moeda: constr(pattern=r'^[A-Z]{3}$')
+    moeda: forma_schema.Moeda = Field(
+        ...,
+        description='A moeda em que o venue cobra a taxa, como ele a ESCREVE. A forma vive num so sitio (`_defs/forma.schema.json#/$defs/moeda`) e admite de tres a cinco letras maiusculas desde a 1.5.0 — medido: `USDC`, com quatro.',
+    )
     instante_ms: forma_schema.InstanteMs
-    resultado_realizado: forma_schema.Decimal = Field(
-        ..., description='Como o venue o reporta. A mesa mostra, nao reconstroi.'
+    resultado_realizado: forma_schema.Decimal | None = Field(
+        None,
+        description='O resultado realizado DO INSTRUMENTO, como o venue o reporta. A mesa mostra, nao reconstroi. OPCIONAL desde a 1.5.0, e a razao e MEDIDA: a fonte deste numero e POR EXECUCAO — a Hyperliquid publica `closedPnl` em `userFills` (cada execucao com o seu, em campo PROPRIO da leitura) e NAO um numero por instrumento. Somar as parcelas para preencher este campo seria RECONSTRUIR o resultado, o defeito que FR-018/RN-H14 proibem: por isso o campo fica AUSENTE quando o venue nao o publica, e nunca zero.',
     )
     execucoes: list[Execuco] = Field(..., min_length=1)

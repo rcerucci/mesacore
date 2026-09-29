@@ -38,6 +38,10 @@ GRANDEZAS = {
     "instante_ms",
     "duracao_ms",
     "marca_de_posse",
+    # 1.5.0: a marca que o VENUE publica no historico. E uma grandeza — um valor que o venue
+    # REPORTA — e tem duas formas (o inteiro de 31 bits e o `cloid`), por isso nao podia continuar
+    # a chamar-se `marca_de_posse`: essa e a que a MESA compoe, e continuar a ser so o inteiro.
+    "marca_de_posse_do_venue",
 }
 # Um inteiro tambem e grandeza: prazo, contagem, profundidade. Nao confundir com `minItems`/`maxItems`
 # do proprio schema (esses sao restricoes da forma, nao valores).

@@ -2,31 +2,43 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mesacore.local/contracts/historico.schema.json",
   "title": "Historico do venue",
-  "description": "O trilho do dinheiro, como o venue o conta (RN-C11, RN-D6). Taxas e funding em campos PROPRIOS: somar e do venue, nunca da mesa. Nao ha campo de resultado por execucao — recalculado pela mesa seria a mesa a reescrever a conta da corretora.",
+  "description": "O trilho do dinheiro, como o venue o conta (RN-C11, RN-D6). Taxas e funding em campos PROPRIOS: somar e do venue, nunca da mesa. Nada aqui obriga a mesa a RECONSTRUIR o que o venue nao publica: o que o venue nao da fica AUSENTE (a chave nao esta la), nunca zero. EMENDA 1.5.0, aditiva e obrigada por MEDICAO contra a Hyperliquid (specs/004-conector-hyperliquid/relatorios/emenda-1.5.0.txt): (a) a moeda passa a admitir de tres a cinco letras maiusculas (o venue escreve `USDC`); (b) `resultado_realizado` passa a OPCIONAL — o venue publica o resultado POR EXECUCAO (`closedPnl`) e somar as parcelas seria a reconstrucao que FR-018/RN-H14 proibem; (c) a marca de posse por execucao passa a admitir as DUAS formas que o manifesto pode declarar (o inteiro de 31 bits e o `cloid`); (d) a referencia de cliente por execucao passa a OPCIONAL — o venue NAO a guardou em 415 de 415 ordens desta conta, e ausencia nunca vira valor; (e) o funding por execucao continua OPCIONAL, porque este venue nao o publica por execucao.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["instrumento", "moeda", "instante_ms", "resultado_realizado", "execucoes"],
+  "required": ["instrumento", "moeda", "instante_ms", "execucoes"],
   "properties": {
     "instrumento": {"$ref": "_defs/forma.schema.json#/$defs/instrumento"},
-    "moeda": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "moeda": {
+      "$ref": "_defs/forma.schema.json#/$defs/moeda",
+      "description": "A moeda em que o venue cobra a taxa, como ele a ESCREVE. A forma vive num so sitio (`_defs/forma.schema.json#/$defs/moeda`) e admite de tres a cinco letras maiusculas desde a 1.5.0 — medido: `USDC`, com quatro."
+    },
     "instante_ms": {"$ref": "_defs/forma.schema.json#/$defs/instante_ms"},
-    "resultado_realizado": {"$ref": "_defs/forma.schema.json#/$defs/decimal", "description": "Como o venue o reporta. A mesa mostra, nao reconstroi."},
+    "resultado_realizado": {
+      "$ref": "_defs/forma.schema.json#/$defs/decimal",
+      "description": "O resultado realizado DO INSTRUMENTO, como o venue o reporta. A mesa mostra, nao reconstroi. OPCIONAL desde a 1.5.0, e a razao e MEDIDA: a fonte deste numero e POR EXECUCAO — a Hyperliquid publica `closedPnl` em `userFills` (cada execucao com o seu, em campo PROPRIO da leitura) e NAO um numero por instrumento. Somar as parcelas para preencher este campo seria RECONSTRUIR o resultado, o defeito que FR-018/RN-H14 proibem: por isso o campo fica AUSENTE quando o venue nao o publica, e nunca zero."
+    },
     "execucoes": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["referencia_do_cliente", "marca_de_posse", "instante_ms", "lado", "quantidade", "preco", "taxa"],
+        "required": ["instante_ms", "lado", "quantidade", "preco", "taxa"],
         "properties": {
-          "referencia_do_cliente": {"$ref": "_defs/forma.schema.json#/$defs/correlacao"},
-          "marca_de_posse": {"$ref": "_defs/forma.schema.json#/$defs/marca_de_posse"},
+          "referencia_do_cliente": {
+            "$ref": "_defs/forma.schema.json#/$defs/correlacao",
+            "description": "A referencia que o VENUE guardou para esta execucao. OPCIONAL desde a 1.5.0, e a razao e MEDIDA: a Hyperliquid nao guardou `cloid` nenhum nas 415 de 415 ordens desta conta (o `cloid` que a mesa usa e DERIVADO da referencia, de mao unica — nunca se le de volta). Ausente = o venue nao a guardou; a chave NAO se escreve, e ausencia NUNCA vira valor nenhum (nem zero, nem cadeia vazia)."
+          },
+          "marca_de_posse": {
+            "$ref": "_defs/forma.schema.json#/$defs/marca_de_posse_do_venue",
+            "description": "A marca de posse que o venue guardou, na forma que o MANIFESTO dele declara. Duas formas, e so duas (1.5.0): o inteiro de 31 bits e o `cloid` (0x + 32 hexadecimais). OPCIONAL desde a 1.5.0: medido nesta conta, o venue NAO guardou marca nenhuma (as 415 de 415 ordens vieram com `cloid` nulo), e exigi-la obrigaria a mesa a inventar uma — ausente e o que se escreve, nunca zero."
+          },
           "instante_ms": {"$ref": "_defs/forma.schema.json#/$defs/instante_ms"},
           "lado": {"enum": ["buy", "sell"]},
           "quantidade": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
           "preco": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
           "taxa": {"$ref": "_defs/forma.schema.json#/$defs/decimal_nao_negativo", "description": "Custo da execucao, como o venue o cobra."},
-          "funding": {"$ref": "_defs/forma.schema.json#/$defs/decimal", "description": "Funding da execucao, em campo PROPRIO. Ausente quando o venue nao o reporta por execucao."}
+          "funding": {"$ref": "_defs/forma.schema.json#/$defs/decimal", "description": "Funding da execucao, em campo PROPRIO. OPCIONAL por execucao: ausente quando o venue nao o reporta por execucao — e a Hyperliquid NAO o reporta por execucao (medido), pelo que ausente NAO e zero. Um zero aqui seria um custo medido, e nao ha nenhum a medir."}
         }
       }
     }

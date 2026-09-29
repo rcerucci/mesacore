@@ -3726,16 +3726,40 @@
       }
     },
     {
-      "caso": "historico/a-moeda-do-venue-nao-cabe-na-forma-do-contrato",
+      "caso": "historico/a-moeda-de-quatro-letras-do-venue-le-se-depois-da-emenda",
       "base": "real",
-      "nota": "MEDIDO: o venue escreve a moeda da taxa como `USDC` (quatro letras) e o contrato declara o campo com a forma de tres (`^[A-Z]{3}$`). Normalizar `USDC` para `USD` seria a mesa a corrigir a corretora: fica DESCONHECIDO, e a divergencia vai dita.",
+      "nota": "MEDIDO: o venue escreve a moeda da taxa como `USDC` (quatro letras) e a forma do contrato era de tres (`^[A-Z]{3}$`). A divergencia era do CONTRATO com o venue e foi DITA, nao remendada (ate a 1.4.0 a moeda ficava desconhecida). A emenda 1.5.0 alargou a forma a TRES a CINCO letras — o caso do contrato `historico/moeda-de-quatro-letras-cabe-na-forma` prova-o nos dois motores — e a moeda passou a ser LIDA: `USDC` e o que o venue escreveu, e nada se normaliza.",
+      "esperadoOk": true,
+      "conferir": {
+        "moeda.estado": "lido",
+        "moeda.valor": "USDC"
+      },
+      "contem": {
+        "origens.moeda": "feeToken"
+      }
+    },
+    {
+      "caso": "historico/a-moeda-que-nao-cabe-nem-na-forma-alargada-nao-se-le-e-o-contrato-recusa",
+      "base": "duble_declarado",
+      "nota": "PROVA NEGATIVA do alargamento (a): a forma passou a admitir de TRES a CINCO letras maiusculas, e nao mais do que isso. Com a moeda do venue em seis letras, a leitura NAO a serve (nao converte, nao corta, nao normaliza) e a carga segue SEM a chave `moeda` — e e o CONTRATO que a recusa, com o motivo dele. O alargamento medido nao vira tolerancia.",
+      "mudar": {
+        "execucoes[0].feeToken": "USDCXX",
+        "execucoes[1].feeToken": "USDCXX",
+        "execucoes[2].feeToken": "USDCXX"
+      },
       "esperadoOk": true,
       "conferir": {
         "moeda.estado": "nao_publicado"
       },
       "contem": {
-        "moeda.porque": "TRES letras",
-        "origens.moeda": "feeToken"
+        "moeda.porque": "de TRES a CINCO letras maiusculas"
+      },
+      "carga": {
+        "nao_leva": [
+          "moeda"
+        ],
+        "contrato_veredicto": "recusado",
+        "contrato_motivo": "campo_obrigatorio_ausente"
       }
     },
     {
@@ -3807,18 +3831,24 @@
     {
       "caso": "historico/a-carga-do-contrato-nao-leva-o-que-o-venue-nao-deu",
       "base": "real",
-      "nota": "A carga do contrato e montada SO com o que foi lido, e quem a julga e o ESQUEMA DO CONTRATO: aqui ele recusa (e o motivo e dele), porque o venue nao publica a moeda na forma, nem o resultado por instrumento, nem a marca. Nada disso se preenche por nossa conta.",
+      "nota": "A carga do contrato e montada SO com o que foi lido, e quem a julga e o ESQUEMA DO CONTRATO: depois da emenda 1.5.0 ele ACEITA esta carga do historico REAL — a moeda do venue (`USDC`) entra, e o que o venue nao publica fica AUSENTE: o resultado por instrumento, a marca de posse, a referencia de cliente (que esta conta nao tem: 415 de 415 ordens com `cloid` nulo) e o funding por execucao. Nada disso se preenche por nossa conta, nada vira zero, e nao ha um `null` a fazer de ausencia (conferido: `nao_tem_null`).",
       "esperadoOk": true,
       "carga": {
+        "leva": {
+          "instrumento": "BTC",
+          "moeda": "USDC"
+        },
         "nao_leva": [
           "resultado_realizado",
           "resultado_do_venue",
           "marca_de_posse",
+          "referencia_do_cliente",
           "funding"
         ],
-        "contrato_veredicto": "recusado",
-        "contrato_motivo": "campo_obrigatorio_ausente"
-      }
+        "contrato_veredicto": "aceite",
+        "contrato_motivo": null
+      },
+      "nao_tem_null": true
     },
     {
       "caso": "historico/o-contrato-nao-tem-tipo-de-mensagem-para-PEDIR-o-historico",

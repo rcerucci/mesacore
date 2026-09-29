@@ -19,6 +19,17 @@ from framing import RAIZ, validar, versao_vigente
 FALTANTE = re.compile(r"'([^']+)' is a required property")
 
 
+def com_versao(texto: str) -> str:
+    """A versao do contrato NAO se escreve nos dados: escreve-se o TOKEN `$CONTRATO`, lido de
+    `versao.json`. Um `detalhe_esperado` com a versao escrita a mao envelhece em SILENCIO na emenda
+    seguinte — foi o que aconteceu a `comando/versao-diferente-recusa` e `comando/sem-versao-recusa`
+    quando a vigente passou de 1.4.0 a 1.5.0: as duas divergiram sem que nada tivesse mudado nelas.
+    O TOKEN so vale para o valor ESPERADO: o `entrada` continua a declarar a versao por escrito, como
+    ela tem de viajar na mensagem (declarar a vigente — e declarar uma divergente — e o que mede).
+    """
+    return texto.replace("$CONTRATO", versao_vigente())
+
+
 def argumento(nome: str) -> str | None:
     if nome in sys.argv:
         indice = sys.argv.index(nome)
@@ -59,7 +70,10 @@ def main() -> int:
                 and decisao["motivo"] == caso["motivo_esperado"]
                 # O detalhe so se confere quando o caso o DECLARA: um caso que nao o declare nao afirma nada
                 # sobre ele (e o detalhe nao e contrato entre as pontas - e o que a ponta sabe dizer da recusa).
-                and ("detalhe_esperado" not in caso or decisao.get("detalhe") == caso["detalhe_esperado"])
+                and (
+                    "detalhe_esperado" not in caso
+                    or decisao.get("detalhe") == com_versao(caso["detalhe_esperado"])
+                )
             )
             if not esperado_ok:
                 if decisao["veredicto"] == "erro_de_execucao":

@@ -82,7 +82,7 @@ export interface ObjectoDeMercado {
      */
     preco_medio: string;
     /**
-     * Marca de posse: inteiro sem sinal de 31 bits, desenhado para a forma MAIS RESTRITA (o POSITION_MAGIC do MT5). Cabe em cloid, clientOrderId, magic e comment.
+     * Marca de posse que a MESA compoe (RN-B10): inteiro sem sinal de 31 bits, desenhado para a forma MAIS RESTRITA (o POSITION_MAGIC do MT5). Cabe em cloid, clientOrderId, magic e comment. O `cloid` NAO cabe aqui (0x + 32 hexadecimais, 128 bits) — e o caso `marca/em-hexadecimal-do-cloid` prova-o de proposito. A marca que o VENUE PUBLICA no historico tem a sua propria forma, em `marca_de_posse_do_venue`.
      */
     marca_de_posse?: number;
   };

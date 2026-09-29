@@ -1,6 +1,6 @@
 {
   "mensagem": "processo",
-  "contrato_vigente": "1.4.0",
+  "contrato_vigente": "1.5.0",
   "nota_do_contrato": "A versao do contrato que este ficheiro declara. A bancada confere-a contra contracts/versao.json e CAI se o contrato subir sem este ficheiro subir: uma versao escrita a mao num ficheiro de dados envelhece em silencio, e passaria a medir outra coisa sem o dizer.",
   "nota": "Casos da PORTA DE PROCESSO do conector hyperliquid (FR-019/T010). Este ficheiro serve DOIS leitores, e di-lo: (1) o duble da mesa (contracts/mocks/mesa/main.py --papel conector --casos <este>), que arranca o processo como PLUGIN e confere a ultima linha contra o envelope; (2) a bancada da propria porta (bun run brokers/hyperliquid/processo.ts --bancada), que arranca UM processo por caso, confere as linhas, a ORDEM das portas do arranque e o diagnostico. Os casos de `arranque.casos` so a bancada os corre: o duble da mesa arranca o processo com UMA ficha e UM duble do venue (o comando do plugin e fixo), e estes casos precisam de variantes.",
   "dono": "os casos e o duble do venue sao DADO desta bancada. Nenhum numero do venue foi medido AQUI: os valores sao o que o duble responde, com a mesma FORMA do venue real. O que se mede e o processo: a ordem das portas, as recusas, a resolucao e o desfecho.",
@@ -21,7 +21,7 @@
     "base": {
       "nota": "A ficha do processo, para o duble: UMA conta, UMA credencial por referencia, os instrumentos que o mandato nomeia. O endereco e um endereco de TESTE do duble — nao e a conta do dono.",
       "conector": "hyperliquid",
-      "contrato": "1.4.0",
+      "contrato": "1.5.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -54,7 +54,7 @@
     "sem_conta": {
       "nota": "A ficha nao declara com que conta se fala: sem conta nao ha um processo por (corretora, conta).",
       "conector": "hyperliquid",
-      "contrato": "1.4.0",
+      "contrato": "1.5.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -87,7 +87,7 @@
     "duas_contas": {
       "nota": "A ficha traz `contas` (uma lista): o contrato desta ponta e UMA conta por processo — uma ligacao, uma chave (FR-019).",
       "conector": "hyperliquid",
-      "contrato": "1.4.0",
+      "contrato": "1.5.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -107,7 +107,7 @@
     "producao": {
       "nota": "Ambiente de producao, com o endereco de producao: o recorte corre em TESTE (RN-H17), e a passagem a producao e decisao do dono.",
       "conector": "hyperliquid",
-      "contrato": "1.4.0",
+      "contrato": "1.5.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -124,7 +124,7 @@
     "endereco_trocado": {
       "nota": "Ambiente declarado de teste e endereco de producao: a rede nao bate com o ambiente, e nao se corrige em silencio.",
       "conector": "hyperliquid",
-      "contrato": "1.4.0",
+      "contrato": "1.5.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -141,7 +141,7 @@
     "chave_sem_referencia": {
       "nota": "A credencial nao diz de onde vem: falta de credencial e uma recusa NOMEADA (FR-023).",
       "conector": "hyperliquid",
-      "contrato": "1.4.0",
+      "contrato": "1.5.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -158,7 +158,7 @@
     "instrumento_inexistente": {
       "nota": "O mandato nomeia SOL e o venue nao o oferece: a sonda e o manifesto RECUSAM, dizendo QUAL (FR-003/US1.3).",
       "conector": "hyperliquid",
-      "contrato": "1.4.0",
+      "contrato": "1.5.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -682,7 +682,7 @@
         "ficha": "base",
         "venue": "preco_fora_da_regra",
         "boleta": {
-          "contrato": "1.4.0",
+          "contrato": "1.5.0",
           "tipo": "boleta",
           "id": "b-preco",
           "carga": {
@@ -709,7 +709,7 @@
         "ficha": "base",
         "venue": "conta_nao_lida_antes_do_envio",
         "boleta": {
-          "contrato": "1.4.0",
+          "contrato": "1.5.0",
           "tipo": "boleta",
           "id": "b-sem-leitura",
           "carga": {
@@ -736,7 +736,7 @@
         "ficha": "base",
         "venue": "duplicado",
         "boleta": {
-          "contrato": "1.4.0",
+          "contrato": "1.5.0",
           "tipo": "boleta",
           "id": "b-1001",
           "carga": {
@@ -765,7 +765,7 @@
         "ficha": "base",
         "venue": "base",
         "boleta": {
-          "contrato": "1.4.0",
+          "contrato": "1.5.0",
           "tipo": "boleta",
           "id": "b-1100",
           "carga": {
@@ -817,7 +817,7 @@
         "origem_dos_numeros": "posicao_lida_depois_do_envio"
       },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0001",
         "carga": {
@@ -838,7 +838,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0001",
         "carga": {
@@ -888,7 +888,7 @@
         "origem_dos_numeros": "posicao_lida_depois_do_envio"
       },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0101",
         "carga": {
@@ -909,7 +909,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0101",
         "carga": {
@@ -946,7 +946,7 @@
         "palavra_do_venue": "Order value below $10 minimum"
       },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0200",
         "carga": {
@@ -967,7 +967,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0200",
         "carga": {
@@ -995,7 +995,7 @@
         "origem_dos_numeros": "calculo_antes_do_envio"
       },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0300",
         "carga": {
@@ -1016,7 +1016,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0300",
         "carga": {
@@ -1047,7 +1047,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "instrumento_desconhecido_no_manifesto" },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0400",
         "carga": {
@@ -1068,7 +1068,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0400",
         "carga": {
@@ -1088,7 +1088,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "capacidade_nao_declarada" },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0500",
         "carga": {
@@ -1110,7 +1110,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0500",
         "carga": {
@@ -1130,7 +1130,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "minimo_do_instrumento_acima_da_banda" },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0600",
         "carga": {
@@ -1151,7 +1151,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0600",
         "carga": {
@@ -1192,7 +1192,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0700",
         "carga": {
@@ -1212,7 +1212,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "parcial_nao_declarada" },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0800",
         "carga": {
@@ -1232,7 +1232,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0800",
         "carga": {
@@ -1252,7 +1252,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "campo_em_unidade_de_corretora" },
       "boleta": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "boleta",
         "id": "b-0900",
         "carga": {
@@ -1274,7 +1274,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "b-0900",
         "carga": {
@@ -1291,7 +1291,7 @@
       {
         "nome": "provocacao/classificacao-fora-do-conjunto",
         "entrada": {
-          "contrato": "1.4.0",
+          "contrato": "1.5.0",
           "tipo": "desfecho",
           "id": "prov-1",
           "carga": {
@@ -1312,7 +1312,7 @@
       {
         "nome": "provocacao/recusado-sem-motivo",
         "entrada": {
-          "contrato": "1.4.0",
+          "contrato": "1.5.0",
           "tipo": "desfecho",
           "id": "prov-2",
           "carga": { "classificacao": "recusado", "resposta_do_venue": {} }
@@ -1323,7 +1323,7 @@
       {
         "nome": "provocacao/numero-em-virgula-flutuante",
         "entrada": {
-          "contrato": "1.4.0",
+          "contrato": "1.5.0",
           "tipo": "desfecho",
           "id": "prov-3",
           "carga": {

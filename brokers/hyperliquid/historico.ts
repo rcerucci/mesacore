@@ -25,20 +25,24 @@
 // O QUE O VENUE (Hyperliquid) NAO PUBLICA, medido a 30 set 2026 contra a conta publica de teste
 // 0xF87138D298E338962E1a2e0ff23267Dc32c15621 — e que por isso nao se inventa:
 //
-//   * a MARCA DE POSSE no inteiro de 31 bits que o contrato declara (`marca_de_posse: {
-//     ficha << bits_ciclo | ciclo }`, em `contracts/vocabulario.json`). Este venue guarda a marca na
-//     forma `cloid` — 0x + 32 hexadecimais, 128 bits (`cloid.ts`) — e a nossa derivacao e um HASH da
-//     referencia: o inteiro da marca NAO esta la dentro. Medido: 415 de 415 ordens da conta com
-//     `cloid` nulo, e nenhuma execucao com `cloid`. Uma coisa nao da a outra;
+//   * a MARCA DE POSSE no inteiro de 31 bits que a mesa compoe (`marca_de_posse: { ficha << bits_ciclo |
+//     ciclo }`, em `contracts/vocabulario.json`). Este venue guarda a marca na forma `cloid` — 0x + 32
+//     hexadecimais, 128 bits (`cloid.ts`) — e a nossa derivacao e um HASH da referencia: o inteiro da
+//     marca NAO esta la dentro. Medido: 415 de 415 ordens da conta com `cloid` nulo, e nenhuma execucao
+//     com `cloid`. Uma coisa nao da a outra — e como nao ha nenhuma, nao ha o que escrever: a marca por
+//     execucao fica AUSENTE na carga (nunca zero), que e o que a emenda 1.5.0 passou a permitir;
 //   * a REFERENCIA DE CLIENTE de cada execucao, quando o venue nao guardou `cloid` nenhum (nesta conta,
 //     nenhuma: a ordem veio do motor antigo, que nao usava marca). O `cloid` e um hash de mao unica: da
-//     referencia para o `cloid` vai-se; de volta, nao;
-//   * um RESULTADO REALIZADO POR INSTRUMENTO (o venue so o publica por execucao — ver acima);
-//   * a MOEDA da taxa NA FORMA QUE O CONTRATO PEDE. O venue escreve-a (`feeToken`) como `USDC`, com QUATRO
-//     letras (medido: nas 56 execucoes desta conta, pelo HTTP cru e pelo SDK oficial), e o contrato declara
-//     este campo com a forma de TRES (`^[A-Z]{3}$`, em `contracts/historico.schema.json`). `USDC` nao e `USD`:
-//     normalizar o nome do venue para caber seria a mesa a corrigi-lo, e por isso a moeda fica DESCONHECIDA,
-//     com a divergencia dita. Quem a pode resolver e o CONTRATO (uma emenda aditiva), nao este leitor.
+//     referencia para o `cloid` vai-se; de volta, nao. Ausente na carga, nunca `null` nem vazio;
+//   * um RESULTADO REALIZADO POR INSTRUMENTO (o venue so o publica por execucao — ver acima). OPCIONAL
+//     no contrato desde a 1.5.0: o campo de cima fica AUSENTE, e o `closedPnl` de cada execucao fica no
+//     campo proprio da leitura. Somar as parcelas continua proibido;
+//   * a MOEDA da taxa NA FORMA QUE O CONTRATO PEDIA — e que a emenda 1.5.0 ALARGOU por causa desta
+//     medicao: o venue escreve-a (`feeToken`) como `USDC`, com QUATRO letras (medido: nas 56 execucoes
+//     desta conta, pelo HTTP cru e pelo SDK oficial), e o contrato declarava este campo com a forma de
+//     TRES (`^[A-Z]{3}$`). `USDC` nao e `USD`: normalizar o nome do venue para caber seria a mesa a
+//     corrigi-lo. Quem o podia resolver era o CONTRATO, e a 1.5.0 resolveu-o (de TRES a CINCO letras) —
+//     por isso a moeda passou a ser LIDA, e nao ha nada a declarar em falta aqui.
 //
 // NADA DISSO SE PREENCHE AQUI. A leitura diz o nome de cada campo em falta (`nao_publicados`), e quem
 // responde ao pedido e o processo (`conector.ts`), que so serve a mensagem se o CONTRATO a aceitar.
@@ -234,7 +238,7 @@ export type ResultadoDeHistorico = { ok: true; leitura: LeituraDoHistorico } | {
 const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 const DECIMAL_NAO_NEGATIVO = /^(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 const DECIMAL_POSITIVO = /^(0*\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\.[0-9]+)?)$/;
-const MOEDA = /^[A-Z]{3}$/; // a forma do CONTRATO (medido: o venue escreve `USDC`, quatro letras)
+const MOEDA = /^[A-Z]{3,5}$/; // a forma do CONTRATO depois da emenda 1.5.0 (medido: o venue escreve `USDC`, quatro letras)
 const PADRAO_CORRELACAO = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$/;
 /** A forma do `cloid` deste venue (`cloid.ts`): 0x + 32 hexadecimais minusculos. */
 const FORMA_DO_CLOID = /^0x[0-9a-f]{32}$/;
@@ -471,9 +475,10 @@ export function lerHistorico(respostas: RespostasDoHistorico, pedido: PedidoDeHi
 
   // ---- a moeda, o resultado por instrumento e a marca ----------------------------------------------------
   // MEDIDO nesta conta (30 set 2026, so leitura): o venue escreve a moeda da taxa como `USDC` — QUATRO
-  // letras, no `feeToken` das execucoes (cru e pelo SDK oficial), enquanto a forma do contrato para este
-  // campo e `^[A-Z]{3}$` (tres). O nome do venue NAO se normaliza para caber: `USDC` nao e `USD`, e escrever
-  // um pelo outro seria a mesa a corrigir a corretora. Fica DESCONHECIDO, e a razao di-lo pelo nome.
+  // letras, no `feeToken` das execucoes (cru e pelo SDK oficial). Ate a 1.4.0 a forma do contrato para
+  // este campo era `^[A-Z]{3}$` (tres) e esta leitura ficava sem a poder ler; a emenda 1.5.0 alargou-a
+  // a de TRES a CINCO letras — a moeda passou a ser LIDA, e o resto da fronteira (seis letras,
+  // minusculas) continua a nao caber. O nome do venue continua a NAO se normalizar: `USDC` nao e `USD`.
   const moedas = [...moedasVistas];
   const cabemNaForma = moedas.filter((m) => MOEDA.test(m));
   let moeda: Grandeza<string>;
@@ -493,9 +498,10 @@ export function lerHistorico(respostas: RespostasDoHistorico, pedido: PedidoDeHi
       origem: ORIGENS_DO_HISTORICO.moeda,
       porque:
         `as execucoes do venue declaram a moeda da taxa como ${JSON.stringify(moedas[0])}, e a forma do contrato ` +
-        "para este campo e de TRES letras maiusculas (`^[A-Z]{3}$`): a grandeza fica DESCONHECIDA e o nome do " +
-        "venue NAO se normaliza para caber (escrever uma moeda que o venue nao escreveu seria a mesa a " +
-        "corrigi-lo). A divergencia e do CONTRATO com o venue, e vai dita — nao se remenda por aqui",
+        "para este campo e de TRES a CINCO letras maiusculas (`^[A-Z]{3,5}$`, desde a emenda 1.5.0): a grandeza " +
+        "fica DESCONHECIDA e o nome do venue NAO se normaliza para caber (escrever uma moeda que o venue nao " +
+        "escreveu seria a mesa a corrigi-lo). O que a emenda alargou foi o que o venue deu; o resto continua a " +
+        "recusar, e o motivo e dito pelo nome",
     };
   } else {
     moeda = {
@@ -741,12 +747,16 @@ export function cargaDoHistorico(leitura: LeituraDoHistorico): Record<string, un
       preco: e.preco,
       taxa: e.taxa,
     };
-    // `marca_de_posse` NAO entra: o venue nao a publica no inteiro de 31 bits que o contrato declara, e
-    // nao se escreve zero (zero pareceria uma marca medida).
+    // `marca_de_posse` NAO entra, e a razao mudou de forma na 1.5.0 sem mudar de sentido: o contrato
+    // passou a admitir as DUAS formas que o manifesto pode declarar (o inteiro de 31 bits e o `cloid`),
+    // mas este venue nao guardou marca NENHUMA nesta conta (415 de 415 ordens com `cloid` nulo, medido).
+    // Como nao ha, nao se escreve — e nao se escreve zero (zero pareceria uma marca medida).
     if (e.referencia_do_cliente !== undefined) linha.referencia_do_cliente = e.referencia_do_cliente;
     // `funding` por execucao NAO entra: este venue nao o reporta por execucao, e o contrato declara-o
-    // como opcional — ausente e o que ele chama «o venue nao o reporta».
-    // `resultado_do_venue` NAO entra: o contrato nao tem campo de resultado por execucao (de proposito).
+    // OPCIONAL por execucao (1.5.0, com a ausencia declarada) — ausente e o que ele chama «o venue nao
+    // o reporta». Zero seria um custo medido, e nao ha nenhum a medir.
+    // `resultado_do_venue` NAO entra: o contrato nao tem campo de resultado por execucao (de proposito),
+    // e a fonte declarada do resultado por instrumento e POR EXECUCAO (`closedPnl`) — somar e proibido.
     return linha;
   });
   return carga;

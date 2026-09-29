@@ -158,11 +158,23 @@
       ],
       "description": "Motivo NORMALIZADO de recusa. Espelho de vocabulario.json — a fonte é lá."
     },
+    "moeda": {
+      "type": "string",
+      "pattern": "^[A-Z]{3,5}$",
+      "description": "A MOEDA, como o VENUE a escreve. ADITIVO na 1.5.0, e obrigado por MEDICAO: a forma era de TRES letras maiusculas (`^[A-Z]{3}$`) e a Hyperliquid escreve a moeda da taxa como `USDC`, com QUATRO — medido no `feeToken` das 56 execucoes de `userFills` da conta de teste, pelo HTTP cru e pelo SDK oficial. `USDC` nao e `USD`, e normalizar o nome do venue para caber seria a mesa a corrigi-lo. A forma passa a admitir de TRES a CINCO letras maiusculas: o bastante para as moedas que os venues escrevem, e nao mais do que isso — seis letras, minusculas, digitos ou espaco continuam a RECUSAR (`formato_invalido`)."
+    },
     "marca_de_posse": {
       "type": "integer",
       "minimum": 0,
       "maximum": 2147483647,
-      "description": "Marca de posse: inteiro sem sinal de 31 bits, desenhado para a forma MAIS RESTRITA (o POSITION_MAGIC do MT5). Cabe em cloid, clientOrderId, magic e comment."
+      "description": "Marca de posse que a MESA compoe (RN-B10): inteiro sem sinal de 31 bits, desenhado para a forma MAIS RESTRITA (o POSITION_MAGIC do MT5). Cabe em cloid, clientOrderId, magic e comment. O `cloid` NAO cabe aqui (0x + 32 hexadecimais, 128 bits) — e o caso `marca/em-hexadecimal-do-cloid` prova-o de proposito. A marca que o VENUE PUBLICA no historico tem a sua propria forma, em `marca_de_posse_do_venue`."
+    },
+    "marca_de_posse_do_venue": {
+      "type": ["integer", "string"],
+      "minimum": 0,
+      "maximum": 2147483647,
+      "pattern": "^0x[0-9a-f]{32}$",
+      "description": "A marca de posse que o VENUE PUBLICA (no historico, por execucao), na forma que o MANIFESTO dele declara (`manifesto.marca_de_posse`). ADITIVO na 1.5.0, e obrigado por MEDICAO: a Hyperliquid declara `marca_de_posse: \"cloid\"` no manifesto e guarda a marca como `0x` + 32 hexadecimais minusculos — que o inteiro de 31 bits da mesa NAO consegue representar (a derivacao do `cloid` e um hash da referencia de cliente, e o inteiro nao esta la dentro). Duas formas, e SO duas: (1) o inteiro de 31 bits (a forma do contrato que ja existia — `marca_de_posse`); (2) o `cloid` pela forma EXACTA. As duas sao disjuntas pelo tipo e nenhuma afrouxa a outra: um inteiro tem de caber nos 31 bits (2147483648 RECUSA, `valor_fora_da_banda`) e um texto tem de ser um `cloid` bem formado ('nao-e-marca' RECUSA, `formato_invalido`). Um TERCEIRO tipo de marca nao entra por tolerancia."
     },
     "lado": {
       "type": "string",

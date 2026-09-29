@@ -31,6 +31,18 @@ interface Linha {
   esperado_ok: boolean;
 }
 
+/**
+ * A versao do contrato NAO se escreve nos dados: escreve-se o TOKEN `$CONTRATO`, lido de
+ * `versao.json`. Um `detalhe_esperado` com a versao escrita a mao envelhece em SILENCIO na emenda
+ * seguinte — foi o que aconteceu a `comando/versao-diferente-recusa` e `comando/sem-versao-recusa`
+ * quando a vigente passou de 1.4.0 a 1.5.0: as duas divergiram sem que nada tivesse mudado nelas.
+ * O TOKEN so vale para o valor ESPERADO: o `entrada` continua a declarar a versao por escrito, como
+ * ela tem de viajar na mensagem (declarar a vigente — e declarar uma divergente — e o que mede).
+ */
+function comVersao(texto: string): string {
+  return texto.replaceAll("$CONTRATO", versaoVigente());
+}
+
 function argumento(nome: string): string | null {
   const i = process.argv.indexOf(nome);
   return i >= 0 && i + 1 < process.argv.length ? (process.argv[i + 1] ?? null) : null;
@@ -62,8 +74,9 @@ for (const ficheiro of ficheiros) {
     const esperadoOk =
       decisao.veredicto === caso.veredicto_esperado &&
         decisao.motivo === caso.motivo_esperado &&
-        // O detalhe so se confere quando o caso o DECLARA (ver o gemeo em Python).
-        (caso.detalhe_esperado === undefined || decisao.detalhe === caso.detalhe_esperado);
+        // O detalhe so se confere quando o caso o DECLARA (ver o gemeo em Python). A versao do
+        // contrato entra pela TOKEN `$CONTRATO` (lida de versao.json), nunca a mao.
+        (caso.detalhe_esperado === undefined || decisao.detalhe === comVersao(caso.detalhe_esperado));
     if (!esperadoOk) {
       if (decisao.veredicto === "erro_de_execucao") erros += 1;
       else divergentes += 1;
