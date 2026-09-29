@@ -24,3 +24,36 @@ não é erro de nenhuma ficha — é decisão de conta:
   lista, a ordem é **alfabética pelo símbolo**, e o registro diz qual critério decidiu — com o nome
   `alfabetica_sem_criterio` quando o dono não declarou nenhum. A ordem só decide quem fica de fora:
   havendo lugar para todos, entram todos (RN-M4.10).
+
+## A credencial: onde o valor pode, e onde não pode
+
+**Neste repositório, nunca.** O que viaja aqui é a **referência** (`conta.credencial` = um nome, e no
+conector `credencial.referencia` + `credencial.valor_em`) — nunca o valor (RN-E14, RN-C20). Quem editar um
+`.json` deste repositório com a chave lá dentro está a escrevê-la no git, no histórico e possivelmente nos
+logs: é o defeito que estas duas linhas existem para impedir (e o `.gitignore` tem agora a rede `*.key`,
+`*credencia*`, `*wallet*`, com os exemplos isentos).
+
+### E fora do repositório? Aí o ficheiro é texto simples — e há duas defesas
+
+**1. A chave que o conector carrega deve ser uma *API wallet* (agent wallet), não a carteira principal.**
+Está na documentação oficial do venue: «A master account can approve API wallets to sign on behalf of the
+master account», e «API wallets are **only used to sign**». Ou seja: a máquina fica com uma chave que assina
+ordens em seu nome, **não** com a chave que pode retirar fundos. Ela pode ser **desregistada** (basta mandar
+um `ApproveAgent` novo), **expira**, e é podada quando a conta deixa de ter fundos — e a documentação é
+explícita num ponto: **não reutilize o endereço do agent**; uma vez desregistado, o estado de nonces pode ser
+podado e acções assinadas antes podem ser repetidas. Consequência prática para nós: agent novo a cada vez que
+o antigo for desregistado, e o manifesto declara **duas identidades** — o **agent** que assina e o **endereço
+da conta** que se consulta (a documentação avisa que consultar com o endereço do agent devolve vazio — é a
+armadilha mais comum).
+
+**2. Onde o valor fica, com o custo de cada sítio:**
+
+| Onde | Custo real | Quando faz sentido |
+|---|---|---|
+| **variável de ambiente** (`env:HL_TESTNET_PRIVATE_KEY`) | legível pelo mesmo utilizador via `/proc/<pid>/environ`, e herda-se pelos processos filhos | teste, e produção em máquina só sua |
+| **ficheiro fora do repo**, modo `0600` (`ficheiro:~/.mesacore/x.key`) | texto simples no disco; o perigo é a cópia de segurança e a sincronização (Drive/Dropbox) levarem-no | produção, se a pasta não for sincronizada |
+| **ficheiro cifrado** (`gpg`, que é o único gestor instalado neste host) | uma frase-passe ou um agente a mais para gerir | quando o valor tiver de estar em disco e durar |
+
+Recomendação para agora (teste): **variável de ambiente** + agent wallet, e o valor nunca escrito no
+repositório. Quando passar a produção, decidimos entre o ficheiro `0600` fora de pasta sincronizada e o
+cifrado — é decisão sua, e fica declarada.
