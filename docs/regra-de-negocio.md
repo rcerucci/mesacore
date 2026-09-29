@@ -952,3 +952,42 @@ uma lista só: um conector = uma conta. Um plugin que carrega constantes de vár
 **por conta** (cada conta com os seus instrumentos, escalões e mínimo), senão a porta do manifesto aprova
 uma mesa que não sabe o que está a aprovar. Fica registado em `specs/002-maquina-de-estados/relatorios/DEFEITOS.md`
 (D-002 ampliado).
+
+## Emenda do dono — os plugins são sob demanda, e esta fase corre contra dublês (28 set 2026)
+
+> «Plugins de corretora e setup são necessários a esta fase? Não pode ser mock? Como são plugins não há risco
+> de ficar perdidos como lixo no código. Garantir o vigia e a mesa sem erro é primordial; um teste ponta a
+> ponta com plugins reais pode ser exaustivo se falhar e é necessário correr atrás das falhas em mais de um
+> projeto, e a construção e especificações deles pode ser sob demanda.»
+
+**Decidido: sim.** Esta fase — **o vigia e a mesa** — corre contra **dublês** (mocks), e a construção dos
+plugins reais é **sob demanda**, cada um na sua altura. Não é desvio do desenho: é o **RN-E17** em vigor
+(«mocks de setup e de conector para prova de contrato, com pelo menos um escrito noutra linguagem»). Já
+existem (`contracts/mocks/setup/main.ts` em TypeScript, `contracts/mocks/conector/*.py` em Python) e já
+correm sem corretora e sem chave por `tools/verificar-contrato/ponta-a-ponta.sh`.
+
+**Por que isto é o caminho, e não uma economia.** Com dublês, uma falha tem **um só pai possível**: o core.
+Com plugins reais, a mesma falha tem três (mesa, plugin, venue) e o tempo vai-se no diagnóstico em vez de na
+correcção — «correr atrás das falhas em mais de um projeto». E o risco de lixo que o dono levanta **não
+existe aqui por construção**: um plugin não é resto de código, é uma **ponta de contrato** — e o contrato está
+fechado desde o recorte 001 (9 schemas, vocabulário, envelope). É por isso que a spec de um plugin pode
+esperar: **a fronteira já não se move quando ele chegar**.
+
+**O que o dublê prova — e o que ele não prova.** Prova tudo o que é **da mesa e do vigia**: o mandato, as
+portas do arranque, a contenda, o CB, a pausa, o encerramento gracioso, o ledger, os motivos e as acções. Não
+prova **a conformidade da corretora** (RN-C6): a passiva no toque que assenta sem cruzar, o prazo esgotado a
+virar resto agressivo, fechar-é-fechar, as recusas, a reconexão, o relógio de barra, a marcação. Isso só o
+venue responde — e fica **declarado como pendência por venue**, não como surpresa. Adiar isto é legítimo;
+esquecer não era.
+
+**A condição que mantém o dublê honesto** (o risco real desta decisão): o dublê tem de ser **adversário** —
+recusa, atrasa, cala-se, devolve números **fora da banda**, perde a ligação e volta. E os casos são **dado**
+(`*.casos.json`, `*.decisoes.json`, `*.conformidade.json`), nunca `if` dentro do dublê. Um dublê que diz
+sempre sim prova a fiação, não o comportamento. O `ponta-a-ponta.sh` já aprendeu isto à sua custa: o venue
+simulado tem de começar **limpo**, senão a idempotência responde pela corrida anterior e o caso da recusa
+passa **sem recusar** — o verde era do estado, não do código (está escrito no cabeçalho do script).
+
+**O que isto faz ao recorte seguinte.** O recorte 003 deixa de ser «o conector» e passa a ser **o vigia e a
+mesa, ponta-a-ponta, contra dublês**. O primeiro conector real (cTrader) passa a recorte próprio, com a
+bateria de conformidade (RN-C6) a correr no ambiente de teste do venue. E, ao pôr o vigia no ar, abre-se a
+**única fronteira que ainda não tem mensagem contratada** — ver `DEFEITOS.md`, D-005.

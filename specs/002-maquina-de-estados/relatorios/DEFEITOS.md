@@ -145,3 +145,44 @@ boleta: a linha do registo ganha a conta; a boleta não muda.
 **Como se saberá que está fechado.** Com o par de controle na bateria do ledger: (a) duas contas na mesma
 mesa, e a reconstrução do dia a fechar **por conta**; (b) a mesma operação com a conta trocada, e a linha a
 mudar de conta. Sem a metade (b), "atribuiu certo" podia ser coincidência de haver uma conta só.
+
+---
+
+## D-005 — A fronteira vigia ↔ mesa não tem mensagem no contrato
+
+**O que devia acontecer.** O vigia é um **processo separado** que só obedece a cinco verbos (RN-V1 a RN-V10),
+e uma mesa em operação **nunca depende de ele estar vivo** (RN-V6) — as duas coisas só são verdade se houver
+uma fronteira real entre eles. Pela decisão de contrato (D2: a costura é um processo com JSON texto, uma
+mensagem por linha), o que cruza essa fronteira é **contrato**, e o que é contrato está fechado e versionado
+(D5, D7).
+
+**O que há, medido em 28 set 2026.** O *comando* existe, e está bem feito — mas é **interface interna**:
+
+```
+$ grep -rn "Verbo" core/estados/maquina.ts
+17: export type Verbo = "start" | "pause" | "stop" | "reset" | "nova_sessao";
+$ ls contracts/*.schema.json | tr '\n' ' '
+boleta.json desfecho.json envelope.json manifesto.json mercado.json origem.json proposta.json ...
+```
+
+Não há tipo de mensagem para o comando. E o próprio repositório já o tinha escrito, antes desta conversa —
+`core/estados/motivos.json`, na nota do conjunto fechado:
+
+> «No dia em que o vigia for processo separado (RN-E8), estes motivos passam a cruzar a fronteira e terão de
+> entrar no contrato — e uma mensagem nova volta ao recorte 001.»
+
+**A consequência.** Pôr o vigia no ar (e é isso que o recorte 003 faz) obriga a: (a) contratar a mensagem do
+comando — tipo novo, com verbo, autor, motivo e o envelope de sempre; (b) trazer para o contrato os motivos
+de recusa da mesa, que hoje vivem em `core/estados/motivos.json` porque ainda não cruzam nada; e (c) **subir a
+versão do contrato**, que é acto declarado e não efeito colateral. Isso não é um obstáculo: é o desenho a
+funcionar — a fronteira nova pede contrato antes de pedir código.
+
+**O que NÃO se faz para fugir a isto.** Meter o vigia dentro do processo da mesa para não ter de contratar
+nada. Isso destruiria a RN-V6 (o vigia passa a ser caminho crítico), juntaria numa só morte o vigia e todas as
+mesas que ele vigia, e deixaria a superfície (a web, RN-E8) a falar com um processo que também opera. O
+contrato sobe de versão; o desenho não se dobra.
+
+**Como se saberá que está fechado.** Com os casos declarados: (a) um comando do vigia aceito e a mesa a
+transitar, com o motivo no registro; (b) um comando recusado e o **motivo da mesa** a voltar como mensagem do
+contrato (é a metade que prova que a fronteira existe); (c) o vigia morto a meio e a mesa a continuar a
+reconciliar (RN-V6), com a transição registrada.
