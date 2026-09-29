@@ -259,6 +259,11 @@ correr_perguntas() {  # $1=ficheiro de perguntas dentro do questionario, $2=pref
 # o nome da conta define o ficheiro e a chave — so no fluxo da CONTA; no da ficha, a conta ja foi escolhida
 if [ "$ESCREVE_EM" = "ficha" ]; then
   :
+elif [ -n "$CONTA" ] && [ -f "$CONTA" ]; then
+  # EDITAR uma conta que ja existe: o nome e o do ficheiro. Usar o exemplo do questionario aqui
+  # mudaria a credencial ({{conta}}) e o ficheiro da chave — defeito medido, corrigido.
+  NOME_CONTA=$(basename "$CONTA" .json)
+  dizer "A editar a conta existente: $CONTA (nome: $NOME_CONTA)"
 elif [ -n "$RESPOSTAS" ]; then
   NOME_CONTA=$(jq -r '.nome_da_conta // empty' "$RESPOSTAS")
   # sem nome nas respostas, vale o exemplo declarado pelo questionario (o mesmo que o modo
@@ -304,7 +309,9 @@ fi
 # ── 5. escrever a configuracao (atomica) e julgar ───────────────────────────────────────────
 mkdir -p "$CONFIG_DIR" || recusar "nao consegui criar $CONFIG_DIR"
 TMP=$(mktemp "${TMPDIR:-/tmp}/preparar-contas.XXXXXX") || recusar "mktemp falhou"
-if [ "$ESCREVE_EM" = "ficha" ]; then BASE=$(cat "$CONTA"); else BASE='{}'; fi
+# Se o ficheiro ja existe, a gravacao parte DELE: editar um valor nao pode apagar os outros (nem a
+# referencia da credencial). So uma conta nova e que comeca de zero.
+if [ -f "$CONTA" ]; then BASE=$(cat "$CONTA"); else BASE='{}'; fi
 # na ficha, a montagem parte da conta que ja existe: uma ficha NOVA nao pode apagar as outras, nem a conta.
 (umask 077; printf '%s' "$PARES" | jq --argjson base "$BASE" 'reduce .[] as $p ($base; setpath($p[0]; $p[1]))' > "$TMP") || recusar "jq falhou a montar a configuracao"
 mv "$TMP" "$CONTA" || recusar "nao consegui escrever $CONTA"

@@ -196,5 +196,25 @@ prova "8. sem manifesto e sem restricao, o setup RECUSA (nao inventa instrumento
 SAIDA_I=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-setup.json" --config-dir "$CFG" --credenciais "$CRED" --manifesto "$CASA/nao-existe.json" 2>&1)
 if printf '%s' "$SAIDA_I" | grep -q "nao sei que instrumentos"; then ok "$(printf '%s' "$SAIDA_I" | grep RECUSADO | cut -c1-72)"; else falhou "inventou instrumentos"; fi
 
+prova "9. editar UM valor sem perguntas preserva o resto do ficheiro"
+cat > "$CASA/respostas-editar.json" <<EOF
+{ "_questionario": "$ESPERADO", "perda_maxima_pct": "7" }
+EOF
+SAIDA_D=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-editar.json" --conta "$CFG/conta-de-prova.json" 2>&1)
+CODIGO_D=$?
+if [ "$CODIGO_D" -eq 0 ] && printf '%s' "$SAIDA_D" | grep -q "conferidor: aprovado"; then
+  P7=$(jq -r '.conta.perda_maxima_pct' "$CFG/conta-de-prova.json")
+  ID=$(jq -r '.conta.identificador' "$CFG/conta-de-prova.json")
+  RF=$(jq -r '.conexao.credencial.valor_em' "$CFG/conta-de-prova.json")
+  FM=$(jq -r '.conta.retencao_ledger.depois' "$CFG/conta-de-prova.json")
+  if [ "$P7" = "7" ] && [ -n "$ID" ] && [ -n "$RF" ] && [ "$FM" = "resumo_diario" ]; then
+    ok "perda=7, e o resto intacto (identificador, referencia da chave, retencao)"
+  else
+    falhou "perda=$P7 ident=$ID ref=$RF retencao=$FM"
+  fi
+else
+  falhou "exit=$CODIGO_D"; printf '%s\n' "$SAIDA_D" | tail -4
+fi
+
 printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"
 [ "$FALHAS" -eq 0 ] || exit 1

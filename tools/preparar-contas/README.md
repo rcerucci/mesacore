@@ -158,6 +158,46 @@ sh tools/preparar-contas/preparar-contas.sh --sem-perguntas --respostas r.json \
 
 `r.json` é um mapa `id → valor` (mais `_questionario` e, com mais de um instrumento, `id@BTC`).
 
+## Editar uma configuração que já existe
+
+Três caminhos, do mais guiado ao mais directo. **Nenhum deles apaga o resto do ficheiro**: a gravação
+parte sempre do que já lá está (uma conta nova é a única que começa de zero).
+
+**1. Entrevista sobre a conta existente** — mostra os valores actuais como omissão; `Enter` mantém, escrever
+substitui:
+
+```sh
+sh tools/preparar-contas/preparar-contas.sh --conta config/contas/hl-teste-plugin.json
+```
+
+**2. Sem perguntas, mudando só o que quer** — um ficheiro de respostas com as chaves a mudar e mais nada.
+**Não precisa da chave**: a referência (`conexao.credencial.valor_em`) é preservada, e o valor continua onde
+estava:
+
+```sh
+cat > /tmp/editar.json <<'EOF'
+{ "_questionario": "brokers/hyperliquid/questionario.json", "perda_maxima_pct": "10" }
+EOF
+sh tools/preparar-contas/preparar-contas.sh --sem-perguntas --respostas /tmp/editar.json \
+  --conta config/contas/hl-teste-plugin.json
+```
+
+**3. Um `jq` à mão** (o ficheiro é JSON simples e **não tem nenhum valor de chave**), com o conferidor a
+julgar logo a seguir:
+
+```sh
+tmp=$(mktemp) && jq '.conta.perda_maxima_pct = "10"' config/contas/hl-teste-plugin.json > "$tmp" \
+  && mv "$tmp" config/contas/hl-teste-plugin.json
+bun tools/verificar-config/conferir-config.ts config/contas/hl-teste-plugin.json
+```
+
+E para **acrescentar um instrumento** (uma ficha só daquele instrumento), é o fluxo do setup:
+
+```sh
+sh tools/preparar-contas/preparar-contas.sh --respostas /tmp/ficha.json --sem-perguntas
+# _questionario: setups/<setup>/questionario.json · conta_alvo: hl-teste-plugin · instrumento: ETH
+```
+
 ## Opções
 
 ```
