@@ -13,5 +13,13 @@ core/estado/.marcas.json
 core/estado/.marcas.json.tmp
 core/estado/.registo.jsonl
 
+# O estado do runtime do vigia: o registro da operacao e o desfecho do arranque que ele entrega a mesa.
+# O registro do vigia NAO e o ledger da mesa (o ledger e da conta e do dinheiro); este e da operacao.
+# O que se versiona e a FORMA deles (vigia/registro.ts), nunca o conteudo.
+vigia/.vigia.json
+vigia/.vigia.json.tmp
+vigia/.arranque.json
+vigia/.arranque.json.tmp
+
 # Os lockfiles SÃO versionados: fixam o que correu, e sem eles o "regenera e não dá diff"
 # não prova nada.

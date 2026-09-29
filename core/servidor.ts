@@ -33,7 +33,8 @@ import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { validar, versaoVigente } from "../contracts/esqueleto/framing.ts";
 import { Mesa, type ContextoDaMesa } from "./mesa.ts";
-import { verbosDeclarados } from "./estados/maquina.ts";
+import { aplicar, verbosDeclarados } from "./estados/maquina.ts";
+import { haInibicao, lerMarcas } from "./estado/marcas.ts";
 import { motivoConhecido } from "./livro-de-motivos.ts";
 
 /** O contrato recusa a MENSAGEM; a mesa fala dos seus motivos. Nada atravessa sem nome de um dos dois. */
@@ -59,7 +60,10 @@ export const TRADUCAO: Record<string, string> = {
 export interface Opcoes {
   caminhoDasMarcas?: string;
   caminhoDoRegisto?: string;
-  portas?: { passam: boolean; porta?: string; motivo?: string };
+  /** O CAMINHO do desfecho das seis portas, escrito por quem as corre (o vigia). Le-se a cada `start`:
+   *  fixado no arranque do processo, um segundo `start` usaria as portas de uma corrida antiga - e o
+   *  vigia teria de reiniciar a mesa para cada arranque, perdendo o estado dela. */
+  caminhoDasPortas?: string;
   posicaoViva?: boolean;
 }
 
@@ -69,10 +73,23 @@ function lerArgumentos(argv: string[]): Opcoes {
     const a = argv[i];
     if (a === "--marcas") o.caminhoDasMarcas = argv[++i];
     else if (a === "--registo") o.caminhoDoRegisto = argv[++i];
-    else if (a === "--portas") o.portas = JSON.parse(readFileSync(argv[++i], "utf8"));
+    else if (a === "--portas") o.caminhoDasPortas = argv[++i];
     else if (a === "--posicao-viva") o.posicaoViva = argv[++i] === "true";
   }
   return o;
+}
+
+/** O desfecho das seis portas, como quem as correu o escreveu. Nao se le: RECUSA - e a unica leitura
+ *  honesta, porque a tabela trata "nao sei" como "as portas passaram". */
+function lerPortas(caminho: string | undefined): { passam: boolean; porta?: string; motivo?: string } | null {
+  if (caminho === undefined) return null;
+  try {
+    const lido = JSON.parse(readFileSync(caminho, "utf8"));
+    if (typeof lido?.passam !== "boolean") return null;
+    return lido;
+  } catch {
+    return { passam: false, porta: "(nao se leu o desfecho)", motivo: `${caminho} nao se leu` };
+  }
 }
 
 /** A resposta do contrato, montada a partir do que a mesa decidiu. */
@@ -103,6 +120,11 @@ function resposta(
 }
 
 /** Uma linha entra, uma linha sai. Devolve SEMPRE uma linha. */
+function marcasPresentes(m: ReturnType<typeof lerMarcas>): string[] {
+  return [...(m.sessao ? ["sessao"] : []), ...(m.inibicao_cb ? ["inibicao_cb"] : []),
+          ...m.desconhecido.map((d) => `desconhecido:${d.instrumento}`), ...m.pedidos.map((p) => `pedido:${p.verbo}`)];
+}
+
 export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
   const instante = Date.now();
   const estado = mesa.estado;
@@ -138,23 +160,27 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
 
   // 3. as duas verdades que a mesa nao tira de si
   const verbo = carga?.verbo;
-  const faltas: string[] = [];
-  if (verbo === "start" && opcoes.portas === undefined) faltas.push("as portas do arranque (--portas)");
-  if (verbo === "stop" && opcoes.posicaoViva !== false) faltas.push("a posicao viva (--posicao-viva)");
-  if (faltas.length > 0) {
-    const motivo = verbo === "stop" ? "posicao_desconhecida" : "porta_do_arranque_falhou";
-    return resposta(envelope.id, pedidoId, estado, estado, instante, { motivo });
+  const portas = verbo === "start" ? lerPortas(opcoes.caminhoDasPortas) : null;
+  if (verbo === "start" && portas === null) {
+    return resposta(envelope.id, pedidoId, estado, estado, instante, { motivo: "porta_do_arranque_falhou" });
+  }
+  // A POSICAO VIVA: nao se recusa por nao a saber - recusa-se se o que nao se sabe MUDAR a resposta.
+  // A pergunta faz-se a TABELA (funcao pura), e nao a mesa: `Mesa.receber` grava marcas e registo, e
+  // uma sonda que gravasse seria uma operacao que nunca aconteceu. Se a resposta e a mesma com e sem
+  // posicao, a mesa decidiu sem precisar dela - e um `stop` numa mesa ja parada da `mesa_ja_parada`.
+  if (verbo === "stop" && opcoes.posicaoViva === undefined) {
+    const m = lerMarcas(opcoes.caminhoDasMarcas);
+    const base = { inibicao_cb: haInibicao(m) };
+    const semPosicao = aplicar(estado, "stop", { ...base, posicao_viva: false }, marcasPresentes(m));
+    const comPosicao = aplicar(estado, "stop", { ...base, posicao_viva: true }, marcasPresentes(m));
+    if (semPosicao.estado_novo !== comPosicao.estado_novo || semPosicao.resultado !== comPosicao.resultado) {
+      return resposta(envelope.id, pedidoId, estado, estado, instante, { motivo: "posicao_desconhecida" });
+    }
   }
 
   // 4. o comando, pelo interprete da mesa. A mesa decide - a porta nao.
   const contexto: ContextoDaMesa = { instante_ms: instante };
-  if (opcoes.portas !== undefined) {
-    contexto.portas_do_arranque = {
-      passam: opcoes.portas.passam,
-      porta: opcoes.portas.porta,
-      motivo: opcoes.portas.motivo,
-    };
-  }
+  if (portas !== null) contexto.portas_do_arranque = portas;
   if (opcoes.posicaoViva !== undefined) contexto.posicao_viva = opcoes.posicaoViva;
 
   const r = mesa.receber(carga, contexto);

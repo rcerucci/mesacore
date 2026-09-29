@@ -29,75 +29,107 @@ const comando = (id: string, carga: Record<string, unknown>) => envelope("comand
 
 interface Caso {
   nome: string;
-  linha: string;
+  /** As linhas, em ordem. As expectativas sao da ULTIMA resposta - ha perguntas que so existem depois
+   *  de um estado anterior (`stop` com a mesa parada nao e a mesma pergunta de `stop` em operacao). */
+  linhas: string[];
   portas?: { passam: boolean; porta?: string; motivo?: string };
   posicaoViva?: boolean;
   aceito: boolean;
   efeito?: string;
   motivo?: string;
-  /** O estado em que a mesa fica depois desta linha - a prova de que a recusa NAO mexeu. */
-  estado: string;
-  /** A SEGUNDA linha identica, no MESMO processo: e a unica prova de estado que existe (R3: a mesa nao
-   *  persiste estado - ao arrancar esta sempre `parada`). */
-  depois: { de: string; aceito: boolean; motivo: string };
-  extra?: string[];
+  /** A transicao da ultima resposta. E ela que prova onde a mesa ficou - e onde NAO se mexeu. */
+  de: string;
+  para: string;
 }
 
 const CASOS: Caso[] = [
   {
-    nome: "start/com-as-portas-conferidas",
-    linha: comando("p-1", { verbo: "start", autor: "dono", pedido_id: "p-1" }),
+    nome: "start/portas-conferidas-e-start-repetido",
+    linhas: [
+      comando("p-1", { verbo: "start", autor: "dono", pedido_id: "p-1" }),
+      comando("p-2", { verbo: "start", autor: "dono", pedido_id: "p-2" }),
+    ],
     portas: { passam: true },
-    aceito: true,
-    estado: "em_operacao",
-    depois: { de: "em_operacao", aceito: false, motivo: "mesa_ja_em_operacao" },
-    extra: ["transicao parada->em_operacao"],
+    aceito: false,
+    motivo: "mesa_ja_em_operacao",
+    de: "em_operacao",
+    para: "em_operacao",
   },
   {
     nome: "start/sem-as-portas-recusa",
-    linha: comando("p-2", { verbo: "start", autor: "dono", pedido_id: "p-2" }),
+    linhas: [comando("p-3", { verbo: "start", autor: "dono", pedido_id: "p-3" })],
     aceito: false,
     motivo: "porta_do_arranque_falhou",
-    estado: "parada",
-    depois: { de: "parada", aceito: false, motivo: "porta_do_arranque_falhou" },
-    extra: ["o que a porta nao sabe nao vira 'sim': a mesa fica parada"],
+    de: "parada",
+    para: "parada",
+  },
+  {
+    nome: "start/portas-com-a-porta-nomeada",
+    linhas: [comando("p-4", { verbo: "start", autor: "dono", pedido_id: "p-4" })],
+    portas: { passam: false, porta: "inventario", motivo: "porta_do_arranque_falhou" },
+    aceito: false,
+    motivo: "porta_do_arranque_falhou",
+    de: "parada",
+    para: "parada",
   },
   {
     nome: "start/campo-a-mais",
-    linha: comando("p-3", { verbo: "start", autor: "dono", pedido_id: "p-3", lado: "buy" }),
+    linhas: [comando("p-5", { verbo: "start", autor: "dono", pedido_id: "p-5", lado: "buy" })],
     portas: { passam: true },
     aceito: false,
     motivo: "comando_com_campo_a_mais",
-    estado: "parada",
-    depois: { de: "parada", aceito: false, motivo: "comando_com_campo_a_mais" },
+    de: "parada",
+    para: "parada",
   },
   {
     nome: "start/sem-autor",
-    linha: comando("p-4", { verbo: "start", pedido_id: "p-4" }),
+    linhas: [comando("p-6", { verbo: "start", pedido_id: "p-6" })],
     portas: { passam: true },
     aceito: false,
     motivo: "comando_incompleto",
-    estado: "parada",
-    depois: { de: "parada", aceito: false, motivo: "comando_incompleto" },
+    de: "parada",
+    para: "parada",
   },
   {
     nome: "verbo-fora-dos-cinco",
-    linha: comando("p-5", { verbo: "cancelar", autor: "dono", pedido_id: "p-5" }),
+    linhas: [comando("p-7", { verbo: "cancelar", autor: "dono", pedido_id: "p-7" })],
     portas: { passam: true },
     aceito: false,
     motivo: "verbo_desconhecido",
-    estado: "parada",
-    depois: { de: "parada", aceito: false, motivo: "verbo_desconhecido" },
-    extra: ["o verbo tem nome proprio: nao se afoga num generico"],
+    de: "parada",
+    para: "parada",
   },
   {
-    nome: "stop/sem-a-posicao-recusa",
-    linha: comando("p-6", { verbo: "stop", autor: "dono", pedido_id: "p-6" }),
+    nome: "stop/em-parada-a-posicao-nao-muda-a-resposta",
+    linhas: [comando("p-8", { verbo: "stop", autor: "dono", pedido_id: "p-8" })],
+    aceito: false,
+    motivo: "mesa_ja_parada",
+    de: "parada",
+    para: "parada",
+  },
+  {
+    nome: "stop/em-operacao-e-a-posicao-desconhecida-recusa",
+    linhas: [
+      comando("p-9", { verbo: "start", autor: "dono", pedido_id: "p-9" }),
+      comando("p-10", { verbo: "stop", autor: "dono", pedido_id: "p-10" }),
+    ],
+    portas: { passam: true },
     aceito: false,
     motivo: "posicao_desconhecida",
-    estado: "parada",
-    depois: { de: "parada", aceito: false, motivo: "posicao_desconhecida" },
-    extra: ["parar sem saber se ha posicao seria o oposto de perguntar"],
+    de: "em_operacao",
+    para: "em_operacao",
+  },
+  {
+    nome: "stop/em-operacao-com-a-posicao-declarada-para",
+    linhas: [
+      comando("p-11", { verbo: "start", autor: "dono", pedido_id: "p-11" }),
+      comando("p-12", { verbo: "stop", autor: "dono", pedido_id: "p-12" }),
+    ],
+    portas: { passam: true },
+    posicaoViva: false,
+    aceito: true,
+    de: "em_operacao",
+    para: "parada",
   },
 ];
 
@@ -135,22 +167,22 @@ function correr(linhas: string[], portas?: Caso["portas"], posicaoViva?: boolean
 // justamente o que se quer ver (a recusa nao mexer no estado).
 for (const caso of CASOS) {
   rmSync(join(dir, "marcas.json"), { force: true });
-  // DUAS linhas identicas no MESMO processo: a primeira diz o que a porta decide, a segunda prova
-  // onde a mesa ficou (a mesa nao persiste estado - R3 -, e um processo novo recomecaria sempre `parada`).
-  const saida = correr([caso.linha, caso.linha], caso.portas, caso.posicaoViva);
+  // As linhas vao todas no MESMO processo: um processo novo recomecaria sempre `parada` (a mesa nao
+  // persiste estado, R3), e a sequencia perderia o sentido.
+  const saida = correr(caso.linhas, caso.portas, caso.posicaoViva);
 
-  conferir(`${caso.nome}: duas linhas entram, duas saem`, saida.length === 2, `saidas: ${saida.length}`);
-  if (saida.length !== 2) continue;
+  conferir(`${caso.nome}: uma linha entra, uma linha sai`,
+    saida.length === caso.linhas.length, `entradas: ${caso.linhas.length}, saidas: ${saida.length}`);
+  if (saida.length !== caso.linhas.length) continue;
 
-  const decisao = validar(saida[0]);
-  conferir(
-    `${caso.nome}: a resposta e mensagem VALIDA do contrato`,
-    decisao.veredicto === "aceite",
-    `veredicto=${decisao.veredicto} motivo=${decisao.motivo}`,
-  );
+  for (const [i, linha] of saida.entries()) {
+    const d = validar(linha);
+    conferir(`${caso.nome} [linha ${i + 1}]: a resposta e mensagem VALIDA do contrato`,
+      d.veredicto === "aceite", `veredicto=${d.veredicto} motivo=${d.motivo}`);
+  }
 
   let o: any = {};
-  try { o = JSON.parse(saida[0]); } catch { /* ja reprovado acima */ }
+  try { o = JSON.parse(saida[saida.length - 1]); } catch { /* ja reprovado acima */ }
   const c = o?.carga ?? {};
   conferir(`${caso.nome}: tipo da resposta`, o?.tipo === "resposta_de_comando", `tipo=${o?.tipo}`);
   conferir(`${caso.nome}: aceito`, c.aceito === caso.aceito, `aceito=${c.aceito}`);
@@ -163,20 +195,10 @@ for (const caso of CASOS) {
     conferir(`${caso.nome}: o motivo e o certo`, c.motivo === caso.motivo, `motivo=${c.motivo} esperado=${caso.motivo}`);
     conferir(`${caso.nome}: a recusa nao traz efeito`, c.efeito === undefined, `efeito=${c.efeito}`);
   }
-  conferir(`${caso.nome}: a transicao vem sempre`, c.transicao?.de !== undefined && c.transicao?.para !== undefined);
   conferir(`${caso.nome}: o instante e da mesa`, Number.isInteger(c.instante_ms) && c.instante_ms > 0);
-  if (caso.extra?.includes("transicao parada->em_operacao")) {
-    conferir(`${caso.nome}: transicao parada->em_operacao`, c.transicao?.de === "parada" && c.transicao?.para === "em_operacao",
-      `${c.transicao?.de}->${c.transicao?.para}`);
-  }
-
-  // A SEGUNDA linha: a recusa NAO mexe na mesa (FR-004) e o aceite mexe (R3 dentro do processo).
-  const segunda = JSON.parse(saida[1] ?? "{}")?.carga ?? {};
-  conferir(`${caso.nome}: a mesa fica ${caso.depois.de}`, segunda.transicao?.de === caso.depois.de,
-    `de=${segunda.transicao?.de} esperado=${caso.depois.de}`);
-  conferir(`${caso.nome}: a segunda linha -> ${caso.depois.motivo}`,
-    segunda.aceito === caso.depois.aceito && segunda.motivo === caso.depois.motivo,
-    `aceito=${segunda.aceito} motivo=${segunda.motivo}`);
+  conferir(`${caso.nome}: transicao ${caso.de}->${caso.para}`,
+    c.transicao?.de === caso.de && c.transicao?.para === caso.para,
+    `${c.transicao?.de}->${c.transicao?.para}`);
 }
 
 // A tabela de traducao tem de cobrir TUDO o que o contrato sabe recusar: um motivo sem traducao cairia
@@ -190,7 +212,7 @@ for (const motivo of Object.keys(livroDoContrato)) {
 
 // A PROVA NEGATIVA: uma versao diferente tem de ser recusada ANTES de tudo (D7), e nao "aceite por engano".
 {
-  const velha = JSON.stringify({ contrato: "0.9.9", tipo: "comando", id: "p-9", carga: { verbo: "start", autor: "dono", pedido_id: "p-9" } });
+  const velha = JSON.stringify({ contrato: "0.9.9", tipo: "comando", id: "p-99", carga: { verbo: "start", autor: "dono", pedido_id: "p-99" } });
   const saida = correr([velha], { passam: true });
   const c = JSON.parse(saida[0] ?? "{}")?.carga ?? {};
   conferir("versao diferente: recusado antes de tudo", c.aceito === false && c.motivo === "versao_do_contrato_divergente",

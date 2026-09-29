@@ -94,16 +94,29 @@ uma só.
 
 **Independent Test**: `bash tools/verificar-maquina/vigia.sh --arranque` — com uma ficha que falha uma porta, a resposta nomeia aquela porta; com tudo válido, a mesa fica `em_operacao` e a transição fica no `.vigia.json`.
 
-- [ ] T019 [US1] `vigia/vigia.ts` — o processo: cinco verbos, uma linha por comando, uma por resposta
-- [ ] T020 [US1] `vigia/registro.ts` — `.vigia.json` com escrita **atómica** (tmp + rename), uma linha por transição
-- [ ] T021 [US1] `start` submete a mesa às **seis portas** e devolve a recusa com o motivo **daquela** porta (`porta_do_arranque_falhou` traz o nome dela no detalhe)
-- [ ] T022 [US1] `start` numa mesa em operação → `mesa_ja_em_operacao`; `stop` numa mesa parada → `mesa_ja_parada`; ambos com transição `{de, para}`
-- [ ] T023 [US1] A resposta de comando: aceito traz **efeito**, recusado traz **motivo**, e o `instante_ms` é do **relógio da mesa** (RN-M4.9)
-- [ ] T024 [P] [US1] `tools/verificar-maquina/vigia.ts --arranque` — casos: porta falhada por porta (cada uma das seis), `start` repetido, `stop` em parada, comando com campo a mais
-- [ ] T025 [US1] Ligar `--arranque` à porta única (`tools/verificar-maquina/vigia.sh`) e medir
-- [ ] T026 [US1] `specs/003-vigia-e-mesa/relatorios/us1.txt` — o comando e a saída, sem paráfrase
+- [x] T019 [US1] `vigia/vigia.ts` — o processo: cinco verbos, uma linha por comando, uma por resposta
+- [x] T020 [US1] `vigia/registro.ts` — `.vigia.json` com escrita **atómica** (tmp + rename), uma linha por transição
+- [x] T021 [US1] `start` submete a mesa às **seis portas** e devolve a recusa com o motivo **daquela** porta (`porta_do_arranque_falhou` traz o nome dela no detalhe)
+- [x] T022 [US1] `start` numa mesa em operação → `mesa_ja_em_operacao`; `stop` numa mesa parada → `mesa_ja_parada`; ambos com transição `{de, para}`
+- [x] T023 [US1] A resposta de comando: aceito traz **efeito**, recusado traz **motivo**, e o `instante_ms` é do **relógio da mesa** (RN-M4.9)
+- [x] T024 [P] [US1] `tools/verificar-maquina/vigia.ts --arranque` — casos: porta falhada por porta (cada uma das seis), `start` repetido, `stop` em parada, comando com campo a mais
+- [x] T025 [US1] Ligar `--arranque` à porta única (`tools/verificar-maquina/vigia.sh`) e medir
+- [x] T026 [US1] `specs/003-vigia-e-mesa/relatorios/us1.txt` — o comando e a saída, sem paráfrase
 
-**Checkpoint**: US1 é o MVP — o vigia governa a mesa e sabe dizer não com o motivo certo.
+**Checkpoint (medido)**: US1 é o MVP — **61 de 61** as tarefas T019–T026 estão feitas e a bancada do vigia
+mede **46 verificações · 0 divergentes · 10 cenários**, com o vigia E a mesa como processos
+(`bash tools/verificar-maquina/vigia.sh --arranque`; saída crua em `relatorios/us1.txt`).
+
+Duas coisas que a implementação mudou em relação ao que estava escrito aqui:
+
+- **T021 — o nome da porta vive no registro do vigia, e não na mensagem.** A resposta de comando é fechada
+  (`additionalProperties: false`) e não tem campo `detalhe`; acrescentar-lhe um seria mexer no contrato para
+  caber um diagnóstico. O vigia sabe qual porta recusou (foi ele que as correu) e escreve-o em
+  `vigia/.vigia.json`, com a lista do que se chegou a conferir. Fica dito para não se procurar no sítio errado.
+- **T022 — a porta não recusa por não saber a posição: recusa se o que não sabe MUDAR a resposta.** A regra
+  antiga (pré-verificar e recusar) escondia a verdade da mesa: um `stop` numa mesa já parada respondia
+  `posicao_desconhecida` em vez de `mesa_ja_parada`. Agora a porta pergunta à **tabela** (função pura, sem
+  gravar nada) com a posição a `false` e a `true`: se a resposta é a mesma, a mesa decide; se muda, recusa.
 
 ---
 

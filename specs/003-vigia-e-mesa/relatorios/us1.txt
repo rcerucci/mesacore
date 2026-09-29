@@ -1,0 +1,45 @@
+US1 — O VIGIA GOVERNA A MESA (T019-T026)
+
+O que se mediu, e com que comando. A saida esta crua: nao ha parafrase dela em sitio nenhum.
+
+  $ bash tools/verificar-maquina/vigia.sh --arranque
+=== bancada do vigia: as seis portas, uma de cada vez, e o que ele acrescenta
+
+ok    arranque/todas-as-portas-passam · 6 portas conferidas · parada->em_operacao · aceite
+ok    arranque/manifesto-recusa · resposta="porta_do_arranque_falhou" · registro nomeia a porta "manifesto" · conferidas ate a falha: ["manifesto"] · mesa parada->parada
+ok    arranque/mandato-recusa · resposta="porta_do_arranque_falhou" · registro nomeia a porta "mandato" · conferidas ate a falha: ["manifesto","mandato"] · mesa parada->parada
+ok    arranque/contenda-recusa · resposta="porta_do_arranque_falhou" · registro nomeia a porta "contenda" · conferidas ate a falha: ["manifesto","mandato","contenda"] · mesa parada->parada
+ok    arranque/inventario-recusa · resposta="porta_do_arranque_falhou" · registro nomeia a porta "inventario" · conferidas ate a falha: ["manifesto","mandato","contenda","inventario"] · mesa parada->parada
+ok    arranque/versao_do_contrato-recusa · resposta="porta_do_arranque_falhou" · registro nomeia a porta "versao_do_contrato" · conferidas ate a falha: ["manifesto","mandato","contenda","inventario","versao_do_contrato"] · mesa parada->parada
+ok    arranque/sessao-recusa · resposta="sessao_inibida" · registro nomeia a porta "sessao" · conferidas ate a falha: ["manifesto","mandato","contenda","inventario","versao_do_contrato","sessao"] · mesa parada->parada
+ok    verbos/start-start-stop · start repetido="mesa_ja_em_operacao" · stop="posicao_desconhecida" · 3 linhas no registro
+ok    verbos/stop-em-parada · resposta="mesa_ja_parada" · parada->parada · sem conferir portas (portas conferidas: [])
+ok    porta/campo-a-mais · resposta="comando_com_campo_a_mais" (o vigia recusa sem incomodar a mesa)
+
+resumo: 46 verificacoes · 0 divergentes · 10 cenarios · vigia + mesa como processos
+  $ bash tools/verificar-maquina/provar.sh
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 17 de 17 passaram — a maquina decide o que devia, e explica o que nao fez
+
+O QUE ESTES NUMEROS DIZEM, e o que nao dizem:
+
+  - o vigia corre como PROCESSO e arranca a mesa como processo FILHO: e ele que a liga, e a resposta que
+    sai e a resposta que a mesa deu (o vigia nao a reescreve);
+  - as seis portas sao corridas PELO VIGIA, pela ordem declarada, e o desfecho vai no ficheiro que a mesa
+    le a cada `start`. As `conferidas` de cada linha mostram ate onde se chegou: a primeira porta que falha
+    e a ultima que se olha (manifesto, mandato, contenda, inventario, versao_do_contrato, sessao);
+  - quando as portas recusam, a resposta traz `porta_do_arranque_falhou` e o REGISTRO nomeia a porta. Numa
+    delas (sessao, com o CB inibido) quem responde e a propria mesa, com um motivo MAIS especifico
+    (`sessao_inibida`) - e isso nao e um generico: e a mesa a saber mais do que a porta;
+  - o caso `stop` mostra a regra da porta: a mesa NAO recusa por nao saber a posicao - recusa se o que nao
+    se sabe MUDAR a resposta. Numa mesa ja parada a resposta nao muda (mesa_ja_parada, T022); numa mesa em
+    operacao muda, e ai recusa (`posicao_desconhecida`);
+  - `instante_ms` e o da MESA: o registro do vigia copia-o, e uma linha da bancada prova que os dois
+    numeros sao o mesmo (o vigia nao carimba o seu proprio relogio ao lado do da mesa);
+  - o que NAO se prova aqui: o comportamento da mesa (tem as bancadas dela) e a conformidade da corretora
+    (RN-C6, nao se prova contra duble). Aqui mede-se a fronteira: quem arranca, quem decide, quem registra.
+
+Nota de metodo: as mutacoes de config/manifesto/marcas nao se inventaram nesta bancada - leem-se de
+`core/ciclo/arranque.casos.json`, onde ja estao declaradas uma por porta. Duas baterias a declarar as
+mesmas mutacoes divergiriam, e a que ficasse por actualizar seria a que mente.

@@ -14,6 +14,7 @@ import { arrancar, type ResultadoDoArranque } from "../../core/ciclo/arranque.ts
 import type { ConfiguracaoDaConta } from "../../core/config/configuracao.ts";
 import type { Marcas } from "../../core/estado/marcas.ts";
 import { inventarioASerio, RAIZ_DO_REPO } from "./inventario-do-arranque.ts";
+import { fundir } from "./fundir.ts";
 
 const args = process.argv.slice(2);
 const caminho = join(RAIZ_DO_REPO, "core", "ciclo", "arranque.casos.json");
@@ -41,17 +42,6 @@ function exigir(condicao: boolean, texto: string, contexto: string[] = []): void
  * seguintes (os dois apontavam para o mesmo objecto), e a bateria passava a medir outra coisa a partir
  * dali. Foi o proprio FR-032 - "nada e ajustado" - a apanhar o defeito na bancada de prova.
  */
-function fundir(base: any, mudanca: any): any {
-  const saida: any = { ...(base ?? {}) };
-  if (mudanca === undefined || mudanca === null) return saida;
-  for (const [k, v] of Object.entries(mudanca)) {
-    saida[k] = v !== null && typeof v === "object" && !Array.isArray(v) && typeof saida[k] === "object"
-      ? fundir(saida[k] ?? {}, v)
-      : v;
-  }
-  return saida;
-}
-
 const manifestoDoFixture = JSON.parse(
   readFileSync(join(RAIZ_DO_REPO, bateria.manifesto_fixture), "utf8"),
 ).carga as any;
