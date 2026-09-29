@@ -1,0 +1,105 @@
+# US2 — a traducao e as recusas: as saidas cruas (T021, T022)
+
+contrato: **1.4.0** (lido de `contracts/versao.json`, nunca escrito a mao) · medido em: 2026-09-29T15:44:27-03:00 · quem mediu: esta vaga, na hora
+
+Regra da casa: **nenhum numero deste relatorio foi digitado** — todos saem crus dos comandos que
+aparecem por cima de cada bloco. Onde um numero nao foi medido, diz-se que nao foi.
+
+---
+
+## T021 — casos + bancada, medidos
+
+**Comando 1** (a bancada das ordens e da referencia de cliente, 32 casos em dado):
+
+```
+$ bun brokers/hyperliquid/casos/correr-ordens.ts
+{"caso":"ordens/mercado-aceite-com-numeros-calculados","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/limite-post-only-aceite-e-preco-exacto","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/preco-inteiro-de-6-algarismos-aceite","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/preco-com-6-algarismos-significativos-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/preco-com-casas-a-mais-do-que-o-tick-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/preco-com-expoente-nao-e-decimal-do-contrato","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/alavancagem-1-aceite","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/alavancagem-2-aceite","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/alavancagem-17-aceite-nao-e-degrau-nenhum","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/alavancagem-no-maximo-do-instrumento-aceite","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/alavancagem-acima-do-maximo-recusa-e-nomeia-o-maximo","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/alavancagem-nao-inteira-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/alavancagem-zero-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/ordem-abaixo-do-minimo-de-10-usd-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/quantidade-abaixo-do-passo-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/reduce-only-pedido-e-honrado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"ordens/reduce-only-nao-declarado-no-manifesto-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/tipo-de-ordem-nao-declarado-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/parcial-nao-suportada-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/instrumento-fora-do-manifesto-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/lado-fora-de-buy-sell-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/saldo-nulo-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/preco-ausente-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/referencia-fora-da-forma-do-contrato-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/marca-de-posse-que-nao-e-cloid-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"ordens/venue-sem-verbo-de-alavancagem-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"cloid/mesma-referencia-da-sempre-o-mesmo-cloid","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"cloid/referencia-com-barras-e-dois-pontos-nao-vai-crua","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"cloid/instrumento-diferente-da-cloid-diferente","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"cloid/referencia-com-espaco-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"cloid/instrumento-fora-da-forma-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"cloid/conta-nula-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+ordens: 32 casos · 32 ok · 0 divergentes · 26 traducoes declaradas
+```
+
+**Comando 2** (a porta do conector, que inclui esta bancada e recusa se ela divergir):
+
+```
+$ bash tools/verificar-conector/provas-offline.sh
+casos da credencial (hyperliquid)                   OK   credencial: 9 casos · 9 ok · 0 divergentes
+casos do manifesto (hyperliquid)                    OK   manifesto: 21 casos · 21 ok · 0 divergentes · 21 declarados
+casos das ordens e do cloid (hyperliquid)           OK   ordens: 32 casos · 32 ok · 0 divergentes · 26 traducoes declaradas
+casos da leitura da conta (hyperliquid)             OK   leitura: 14 casos · 14 ok · 0 divergentes · 14 declarados
+porta: imports do conector declarados na raiz       OK   {"porta":"dependencias","manifesto":"package.json","ficheiros_lidos":12,"imports_nus":2,"declaradas":["@nktkas/hyperliquid","ajv","viem"],"nao_declaradas":[],"veredicto":"aprovado"}
+porta: importa contracts, nunca o core (RN-E1)      OK   0 importacoes do core em brokers/hyperliquid
+conformidade do conector (duble de mesa)            OK   conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+
+provas offline do conector: 0 falhas
+```
+
+Os 32 casos cobrem o que a US2 promete: 26 da traducao (passo, minimo, preco/tick, alavancagem, post-only,
+reduce-only, tipo de ordem, parcial, lado, saldo, preco ausente, referencia fora da forma, marca de posse,
+verbo de alavancagem) e 6 da referencia de cliente. Os nomes estao no bloco acima, um a um.
+
+## T021 — a recusa acontece ANTES do envio (medido a mao, um caso)
+
+**Comando** (a boleta do caso `arranque/preco-do-venue-fora-da-regra`, contra o duble do venue que publica a
+marca com casas a mais): `echo '<boleta b-preco>' | bun run brokers/hyperliquid/processo.ts --casos
+brokers/hyperliquid/casos/processo.casos.json --ficha base --venue preco_fora_da_regra`
+
+Linhas da costura (STDOUT):
+
+```
+{"contrato":"1.4.0","tipo":"desfecho","id":"b-preco","carga":{"classificacao":"recusado","motivo":"valor_fora_da_banda","resposta_do_venue":{}}}
+```
+
+O diagnostico do mesmo caso, com o passo da traducao e o passo do envio — **o envio nao aparece**:
+
+```
+{"etapa": "ficha", "de": "variante `base` do ficheiro de casos", "conector": "hyperliquid", "ambiente": "teste", "url": "https://api.hyperliquid-testnet.xyz", "instrumentos": ["BTC"], "contrato_da_ficha": "1.4.0", "nota": "o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)"}
+{"etapa": "manifesto_publicado", "id": "hyperliquid/manifesto", "versao": "1.4.0", "instrumentos": 1, "tipos_de_ordem": ["mercado", "limite"], "idempotencia": true, "marca_de_posse": "cloid", "estado_da_ligacao": "ligada", "carteiras_nao_lidas": [], "credencial_de": "env:MESACORE_DUBLE_CREDENCIAL"}
+{"etapa": "boleta", "referencia_do_cliente": "hl-2000", "instrumento": "BTC"}
+{"etapa": "conta", "equity": "1000", "marca": "60000.1234", "origem_marca": "info.activeAssetData({user,coin}).markPx — [V]"}
+{"etapa": "desfecho", "veredicto": "recusado", "motivo": "valor_fora_da_banda", "porque": "o preco 60000.1234 nao cabe na regra do venue: o venue aceita no maximo 1 casa(s) decimal(is) neste instrumento (tick 0.1) e o preco 60000.1234 tem 4 — recusa, nao arredonda — e nao se arredonda para caber (RN-C9)"}
+{"etapa": "fim", "atendidas": 1, "nota": "o cano fechou: nenhuma operacao fica nas maos deste processo"}
+```
+
+Leitura: a marca do venue (60000.1234) nao cabe no tick do instrumento (0.1) e o conector **recusa**
+(`valor_fora_da_banda`) **sem enviar** — nao arredonda para caber (FR-007/FR-009, RN-C9).
+
+## T022 — commit
+
+Ver o commit desta vaga cujo assunto comeca por `specs/004: T021/T022 (US2)`. O `git log --oneline` que o
+acompanha esta no `RESULTADO.md` (§ commit).
+
+## O que este relatorio NAO prova, e di-lo
+
+- **Nada disto foi medido no venue.** O duble responde com a forma do venue, nao com o venue.
+- O **SC-002 no venue** ("0 ordens enviadas, medido pela contagem no venue") exige **enviar** boletas a serio:
+  e a bateria no ambiente de TESTE (**T057**), que depende de assinatura e de decisao do dono.
