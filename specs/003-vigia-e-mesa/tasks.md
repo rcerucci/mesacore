@@ -335,7 +335,7 @@ O que a implementação teve de decidir e não estava aqui:
 - [x] T060 [P] `docs/inventario-de-chaves.md` §8.5 (o que este recorte escreveu) e a actualização da §7 (a chave nova com o seu valor por omissão)
 - [x] T061 [P] `docs/diagrama-de-blocos.html` — o vigia entra no desenho, e o dublê de mesa também
 - [x] T062 A revisão final: nenhum campo sem leitor nas quatro mensagens novas; nenhum número ajustável no código (RN-A1); nenhuma credencial em `/config`, ledger ou log (RN-E14) — os três conferidos por comando
-- [ ] T063 O resumo ao dono: o que ficou feito, o que ficou declarado (conformidade por venue, campo da conta, hospedagem do setup) e o que é decisão dele
+- [x] T063 O resumo ao dono: o que ficou feito, o que ficou declarado (conformidade por venue, campo da conta, hospedagem do setup) e o que é decisão dele
 
 ---
 
