@@ -51,14 +51,6 @@
       "omissao": "https://api.hyperliquid-testnet.xyz"
     },
     {
-      "id": "instrumentos",
-      "chave": "conta.instrumentos",
-      "tipo": "lista",
-      "obrigatorio": true,
-      "pergunta": "Que instrumentos esta CONTA pode operar? (ex.: BTC ou BTC,ETH)",
-      "explicacao": "A lista de instrumentos que a conta ACEITA operar — o que a conta permite, nao o que vai operar. Cada instrumento que venha a operar ganha a sua ficha no fluxo do plugin de setup, com os parametros SO daquele instrumento. O conector sobe sem nenhuma ficha."
-    },
-    {
       "id": "credencial",
       "chave": "conta.credencial",
       "tipo": "texto",
@@ -161,5 +153,6 @@
   "escreve_em": "conta",
   "nota_de_fronteira": "Este questionario configura a CONTA no venue e mais nada. A ficha do instrumento (saldo %, alavancagem, stop, tp, desvio, prazo da passiva, versao do mandato) NAO se pergunta aqui: ela e por instrumento — BTC com stop de 5% e ETH com 8% sao duas fichas — e quem as cria e o fluxo do plugin de SETUP, um instrumento de cada vez, escolhendo a conta daquele instrumento. O conector sobe sem ficha nenhuma.",
   "conta_de_exemplo": "hl-teste-a",
-  "fichas": "vazio — o conector sobe com a conta; as fichas entram pelo fluxo do setup"
+  "fichas": "vazio — o conector sobe com a conta; as fichas entram pelo fluxo do setup",
+  "instrumentos": "NAO se perguntam: o venue responde por pedido (a sonda le meta.universe e publica o manifesto). Nada disto e preciso para a ligacao subir."
 }

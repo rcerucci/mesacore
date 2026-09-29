@@ -15,6 +15,12 @@ sh tools/preparar-contas/preparar-contas.sh
 | **Conta** (`escreve_em: conta`) | o questionário do **conector** | a conta no venue: endereço master, ambiente, URL, credencial, a chave (segredo) + a macro da conta | `config/contas/<nome>.json` |
 | **Ficha** (`escreve_em: ficha`) | o questionário do **setup**, um instrumento de cada vez | em que conta, que instrumento, e **só** os parâmetros **daquele** instrumento | a `fichas.<instrumento>` dessa conta, **preservando o resto** |
 
+**Nada que o venue responda por pedido se pergunta ao dono.** A lista de instrumentos não está em questionário
+nenhum: a sonda lê `meta.universe` no venue e publica-a no **manifesto** (`brokers/<corretora>/.manifesto.json`,
+de runtime). O fluxo da ficha vai buscá-la lá; sem manifesto, cai para uma **restrição** declarada na conta
+(`conta.instrumentos`, opcional — o que a conta *aceita* operar, nunca o que vai operar); e sem nenhum dos dois,
+**recusa** em vez de inventar. `--manifesto <ficheiro>` aponta a outro manifesto (é o que a bateria usa).
+
 **O conector sobe sem ficha nenhuma.** Ele configura a conta; o stop de 5% no BTC e o de 8% no ETH são
 **fichas de instrumento**, e entram pelo fluxo do setup, uma a uma. Conta sem ficha é um estado legítimo —
 o conferidor dá-o como **aviso**, nunca como recusa.

@@ -28,7 +28,10 @@ type Campo = {
 const CAMPOS: Campo[] = [
   { chave: "conta.corretora", tipo: "texto", obrigatorio: true },
   { chave: "conta.identificador", tipo: "texto", obrigatorio: true, nota: "o que distingue duas contas do mesmo venue" },
-  { chave: "conta.instrumentos", tipo: "lista", obrigatorio: true, minimo: 1 },
+  // A lista de instrumentos NAO se declara aqui: o venue responde por pedido (a sonda le
+  // meta.universe e publica-a no manifesto). Se estiver declarada, funciona como RESTRICAO — as
+  // fichas tem de caber nela. Ausente e o normal.
+  { chave: "conta.instrumentos", tipo: "lista", opcional: true, minimo: 1 },
   { chave: "conta.perda_maxima_pct", tipo: "decimal", obrigatorio: true, banda: [0, 100] },
   { chave: "conta.perda_maxima_janela", tipo: "enum", obrigatorio: true, conjunto: ["corrida_da_mesa", "dia_de_calendario"] },
   { chave: "conta.margem_total_maxima_pct", tipo: "decimal", obrigatorio: true, banda: [0, 100] },
@@ -169,9 +172,9 @@ export function conferir(caminho: string): { ficheiro: string; achados: Achado[]
       for (const campo of CAMPOS_DO_RISCO) julgar(campo, ficha, achados);
       for (const campo of CAMPOS_DO_SETUP) julgar(campo, ficha, achados);
       julgarBandas(ficha, achados);
-      // os instrumentos da ficha tem de estar declarados na conta
+      // se a conta declara uma RESTRICAO de instrumentos, as fichas tem de caber nela
       const instrumentos = ler(bruto, "conta.instrumentos").valor;
-      if (Array.isArray(instrumentos) && !instrumentos.includes(nome)) achados.push({ chave: `fichas.${nome}`, motivo: "valor_fora_do_conjunto", porque: `o instrumento nao esta em conta.instrumentos: [${instrumentos.join(", ")}]` });
+      if (Array.isArray(instrumentos) && !instrumentos.includes(nome)) achados.push({ chave: `fichas.${nome}`, motivo: "valor_fora_do_conjunto", porque: `o instrumento nao esta na restricao conta.instrumentos: [${instrumentos.join(", ")}]` });
     }
     // chaves desconhecidas: aviso, nunca recusa (a mesa ignora-as; mas o aviso apanha a deriva)
     for (const k of Object.keys(bruto)) if (!CONHECIDOS.has(k)) achados.push({ chave: k, motivo: "campo_desconhecido", porque: "chave de topo nao reconhecida (aviso — a mesa ignora-a)" });

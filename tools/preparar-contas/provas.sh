@@ -167,7 +167,11 @@ cat > "$CASA/respostas-setup.json" <<EOF
   "prazo_de_resposta_ms": "600000"
 }
 EOF
-SAIDA_S=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-setup.json" --config-dir "$CFG" --credenciais "$CRED" 2>&1)
+# o manifesto do venue e o que diz quais instrumentos existem (a API responde por pedido)
+cat > "$CASA/manifesto.json" <<'EOF'
+{ "conector": "hyperliquid", "instrumentos": ["BTC", "ETH"] }
+EOF
+SAIDA_S=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-setup.json" --config-dir "$CFG" --credenciais "$CRED" --manifesto "$CASA/manifesto.json" 2>&1)
 CODIGO_S=$?
 ALVO_S="$CFG/conta-de-prova.json"
 if [ "$CODIGO_S" -eq 0 ] && printf '%s' "$SAIDA_S" | grep -q "conferidor: aprovado"; then
@@ -187,6 +191,10 @@ fi
 prova "7. o setup RECUSA se a conta nao existir (o setup nao cria contas)"
 SAIDA_N=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-setup.json" --config-dir "$CASA/vazio" --credenciais "$CRED" 2>&1)
 if printf '%s' "$SAIDA_N" | grep -q "nenhuma conta configurada"; then ok "$(printf '%s' "$SAIDA_N" | grep RECUSADO | cut -c1-70)"; else falhou "o setup criou conta"; fi
+
+prova "8. sem manifesto e sem restricao, o setup RECUSA (nao inventa instrumentos)"
+SAIDA_I=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-setup.json" --config-dir "$CFG" --credenciais "$CRED" --manifesto "$CASA/nao-existe.json" 2>&1)
+if printf '%s' "$SAIDA_I" | grep -q "nao sei que instrumentos"; then ok "$(printf '%s' "$SAIDA_I" | grep RECUSADO | cut -c1-72)"; else falhou "inventou instrumentos"; fi
 
 printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"
 [ "$FALHAS" -eq 0 ] || exit 1

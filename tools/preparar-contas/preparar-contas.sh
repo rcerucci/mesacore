@@ -32,6 +32,7 @@ CREDENCIAIS="${HOME}/.config/mesacore/credenciais"
 CONTA=""
 RESPOSTAS=""
 SEM_PERGUNTAS=0
+MANIFESTO="${MANIFESTO:-}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -40,6 +41,7 @@ while [ $# -gt 0 ]; do
     --credenciais) CREDENCIAIS="$2"; shift 2 ;;
     --conta) CONTA="$2"; shift 2 ;;
     --respostas) RESPOSTAS="$2"; SEM_PERGUNTAS=1; shift 2 ;;
+    --manifesto) MANIFESTO="$2"; shift 2 ;;
     --sem-perguntas) SEM_PERGUNTAS=1; shift ;;
     -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
     *) echo "opcao desconhecida: $1" >&2; exit 2 ;;
@@ -131,8 +133,19 @@ if [ "$ESCREVE_EM" = "ficha" ]; then
   NOME_CONTA="$ALVO"
   # o instrumento escolhe-se AQUI, antes do preenche_sempre: as chaves desse bloco podem trazer
   # <instrumento> (ex.: as bandas do setup) e precisam dele ja resolvido
-  PERMITIDOS=$(jq -r '.conta.instrumentos[]?' "$CONTA" 2>/dev/null | tr '\n' ' ')
-  [ -n "$PERMITIDOS" ] || recusar "a conta $NOME_CONTA nao declara conta.instrumentos — configure-a primeiro"
+  # De onde vem a lista de instrumentos? Do VENUE, por pedido: a sonda le meta.universe e publica o
+  # manifesto. So se ele nao existir e que se olha para uma restricao declarada na conta.
+  CORRETORA=$(jq -r '.conta.corretora // empty' "$CONTA")
+  [ -n "$MANIFESTO" ] || MANIFESTO="brokers/$CORRETORA/.manifesto.json"
+  if [ -f "$MANIFESTO" ]; then
+    PERMITIDOS=$(jq -r '.instrumentos[]? | if type == "object" then .nome else . end' "$MANIFESTO" 2>/dev/null | tr '\n' ' ')
+    ORIGEM="do manifesto do venue ($MANIFESTO)"
+  else
+    PERMITIDOS=$(jq -r '.conta.instrumentos[]?' "$CONTA" 2>/dev/null | tr '\n' ' ')
+    ORIGEM="de uma restricao declarada na conta"
+  fi
+  [ -n "$PERMITIDOS" ] || recusar "nao sei que instrumentos o venue $CORRETORA oferece: corra a sonda do conector (que publica $MANIFESTO) ou passe --manifesto <ficheiro>"
+  dizer "Instrumentos $ORIGEM: $PERMITIDOS"
   if [ -n "$RESPOSTAS" ]; then
     INSTRUMENTO_FICHA=$(jq -r '.instrumento // empty' "$RESPOSTAS")
   else
@@ -141,7 +154,7 @@ if [ "$ESCREVE_EM" = "ficha" ]; then
     read -r INSTRUMENTO_FICHA
   fi
   [ -n "$INSTRUMENTO_FICHA" ] || recusar "esta ficha nao tem instrumento"
-  case " $PERMITIDOS " in *" $INSTRUMENTO_FICHA "*) ;; *) recusar "o instrumento $INSTRUMENTO_FICHA nao esta em conta.instrumentos da conta $NOME_CONTA (declarados: $PERMITIDOS)" ;; esac
+  case " $PERMITIDOS " in *" $INSTRUMENTO_FICHA "*) ;; *) recusar "o instrumento $INSTRUMENTO_FICHA nao consta em $ORIGEM: $PERMITIDOS" ;; esac
 fi
 
 # ── 3. a entrevista ─────────────────────────────────────────────────────────────────────────
@@ -269,23 +282,10 @@ if [ "$ESCREVE_EM" = "ficha" ]; then
   dizer "── Ficha de $INSTRUMENTO_FICHA na conta $NOME_CONTA (os valores sao SO deste instrumento)"
   correr_perguntas '.perguntas' "$INSTRUMENTO_FICHA"
 else
-# o nome_da_conta ja foi respondido acima; a lista de instrumentos vem antes das fichas
-correr_perguntas '.perguntas | map(select(.id != "nome_da_conta" and .id != "instrumentos"))'
-# a lista de instrumentos, que manda nas fichas
-_id="instrumentos"; _chave=$(jq -r '.perguntas[] | select(.id=="instrumentos") | .chave' "$ESCOLHIDO")
-_pergunta=$(jq -r '.perguntas[] | select(.id=="instrumentos") | .pergunta' "$ESCOLHIDO")
-_explicacao=$(jq -r '.perguntas[] | select(.id=="instrumentos") | .explicacao // ""' "$ESCOLHIDO")
-if [ -n "$RESPOSTAS" ]; then _resp=$(jq -r '.instrumentos // empty' "$RESPOSTAS"); else
-  dizer ""; dizer "── $_pergunta"; dizer "   $_explicacao"; printf '   resposta: '; read -r _resp
-fi
-[ -n "$_resp" ] || recusar "sem instrumentos nao ha ficha nenhuma para preencher"
-guardar "$_id" "$_chave" "lista" "$_resp" "null"
-LISTA_INSTRUMENTOS=$(printf '%s' "$PARES" | jq -r '.[] | select(.[0] == ["conta","instrumentos"]) | .[1] | join(" ")')
-
-# a ficha, uma vez por instrumento
-for _instr in $LISTA_INSTRUMENTOS; do
-  correr_perguntas '.ficha_do_instrumento.perguntas' "$_instr"
-done
+# o nome_da_conta ja foi respondido acima. NAO se pergunta a lista de instrumentos: o venue
+# responde por pedido (a sonda le meta.universe e publica o manifesto). Nada disto e preciso para
+# a ligacao subir — e o fluxo da ficha vai buscar o instrumento ao manifesto, nao ao dono.
+correr_perguntas '.perguntas | map(select(.id != "nome_da_conta"))'
 fi
 
 # ── 4. o segredo: para o ficheiro protegido; na configuracao fica a REFERENCIA ──────────────
