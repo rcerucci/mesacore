@@ -18,6 +18,8 @@ interface Caso {
   entrada_texto?: string;
   veredicto_esperado: "aceite" | "recusado";
   motivo_esperado: string | null;
+  /** Opcional: confere o DETALHE da recusa, e nao so o motivo (T047 - as duas versoes na recusa por versao). */
+  detalhe_esperado?: string;
 }
 
 interface Linha {
@@ -58,7 +60,10 @@ for (const ficheiro of ficheiros) {
     const texto = caso.entrada_texto ?? JSON.stringify(caso.entrada ?? {});
     const decisao = validar(texto);
     const esperadoOk =
-      decisao.veredicto === caso.veredicto_esperado && decisao.motivo === caso.motivo_esperado;
+      decisao.veredicto === caso.veredicto_esperado &&
+        decisao.motivo === caso.motivo_esperado &&
+        // O detalhe so se confere quando o caso o DECLARA (ver o gemeo em Python).
+        (caso.detalhe_esperado === undefined || decisao.detalhe === caso.detalhe_esperado);
     if (!esperadoOk) {
       if (decisao.veredicto === "erro_de_execucao") erros += 1;
       else divergentes += 1;

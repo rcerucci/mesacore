@@ -318,6 +318,41 @@
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_do_conjunto"
+    },
+    {
+      "nome": "comando/versao-diferente-recusa",
+      "mensagem": "comando",
+      "entrada": {
+        "contrato": "1.0.0",
+        "tipo": "comando",
+        "id": "c-v1",
+        "carga": {
+          "verbo": "stop",
+          "autor": "dono",
+          "pedido_id": "c-v1"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "versao_do_contrato_divergente",
+      "detalhe_esperado": "declarada 1.0.0, vigente 1.3.0",
+      "historico": "T047/RN-E18, D7 - a versao e conferida por igualdade exacta ANTES de qualquer envio, e a recusa diz as DUAS versoes: quem le o registo ve qual das pontas estava atrasada"
+    },
+    {
+      "nome": "comando/sem-versao-recusa",
+      "mensagem": "comando",
+      "entrada": {
+        "tipo": "comando",
+        "id": "c-v2",
+        "carga": {
+          "verbo": "stop",
+          "autor": "dono",
+          "pedido_id": "c-v2"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "versao_do_contrato_divergente",
+      "detalhe_esperado": "declarada (ausente), vigente 1.3.0",
+      "historico": "T047 - sem a versao declarada, a recusa di-lo em vez de dizer 'schema invalido': a versao confere-se primeiro, e o diagnostico tem de ser o verdadeiro"
     }
   ]
 }

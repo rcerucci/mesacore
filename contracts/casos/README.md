@@ -1,5 +1,12 @@
 # Os casos do contrato
 
+**`detalhe_esperado` (opcional)**: quando o caso o declara, o detalhe que a recusa devolve é conferido — e
+não só o motivo. Serve para o que o NOME do motivo não diz: na recusa por versão divergente, o detalhe leva as
+**duas** versões (`declarada 1.0.0, vigente 1.3.0`), porque quem lê o registo tem de poder ver qual das pontas
+estava atrasada. As duas linguagens escrevem-no **igual** (por isso um valor não textual sai `(nao textual)`:
+`1.0` como número é `1` numa linguagem e `1.0` na outra). Um caso que não o declare não afirma nada sobre o
+detalhe — o detalhe não é contrato entre as pontas, é o que a ponta sabe dizer da recusa.
+
 Um caso é **dado**: escreve-se uma vez, corre nas duas linguagens, e tem de dar o **mesmo** veredicto e o
 **mesmo** motivo. É isto que transforma "o contrato é neutro" de intenção em medição.
 

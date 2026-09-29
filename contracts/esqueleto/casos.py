@@ -57,6 +57,9 @@ def main() -> int:
             esperado_ok = (
                 decisao["veredicto"] == caso["veredicto_esperado"]
                 and decisao["motivo"] == caso["motivo_esperado"]
+                # O detalhe so se confere quando o caso o DECLARA: um caso que nao o declare nao afirma nada
+                # sobre ele (e o detalhe nao e contrato entre as pontas - e o que a ponta sabe dizer da recusa).
+                and ("detalhe_esperado" not in caso or decisao.get("detalhe") == caso["detalhe_esperado"])
             )
             if not esperado_ok:
                 if decisao["veredicto"] == "erro_de_execucao":

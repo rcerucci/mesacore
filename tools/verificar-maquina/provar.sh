@@ -58,6 +58,7 @@ if [ "$RAPIDO" -eq 0 ]; then
   declarar "verbos (--verbos, T044)"       bash tools/verificar-maquina/vigia.sh --verbos
   declarar "contrato neutro (recorte 001)" bash tools/verificar-contrato/ponta-a-ponta.sh
   declarar "frescura do contrato"          bash tools/verificar-contrato/frescura.sh
+  declarar "fronteira (SC-003, T046-T049)" bash tools/verificar-contrato/fronteira.sh
   declarar "inventario de chaves (SC-012)" bash tools/verificar-contrato/inventario.sh
 fi
 

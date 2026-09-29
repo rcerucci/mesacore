@@ -1,0 +1,147 @@
+US5 — A FRONTEIRA E CONTRATO (T046-T050)
+
+As saidas estao cruas. Nao ha parafrase delas em sitio nenhum.
+
+  $ bash tools/verificar-contrato/fronteira.sh
+os motivos que CRUZAM a fronteira, nas duas direcoes
+    livro: 47 motivos · 25 cruzam · 22 ficam · conjunto fechado: 27 nomes · da porta (declarados): 2
+ok    direcao A: todo o motivo que cruza existe no conjunto fechado (nenhum em falta)
+ok    direcao B: todo o nome do conjunto tem quem o produza (nenhum orfao)
+ok    a excecao da porta esta no conjunto (posicao_desconhecida, versao_do_contrato_divergente)
+ok    fronteira.cruzam declarado (25) e a verdade (25)
+ok    fronteira.nao_cruzam declarado (22) e a verdade (22)
+
+os campos da mensagem do `comando`, contra quem os le
+    a mensagem do `comando` declara verbo, autor, pedido_id, motivo
+    o produto declara ler verbo, autor, pedido_id, motivo (CAMPOS_DO_COMANDO, core/estados/comando.ts)
+ok    os campos da mensagem e os que o produto le sao OS MESMOS
+ok    campo 'verbo' e LIDO do comando cru (core/estados/comando.ts: c.verbo)
+ok    campo 'autor' e LIDO do comando cru (core/estados/comando.ts: c.autor)
+ok    campo 'pedido_id' e LIDO do comando cru (core/estados/comando.ts: c.pedido_id)
+ok    campo 'motivo' e LIDO do comando cru (core/estados/comando.ts: c.motivo)
+
+os casos do contrato, somando
+    10 ficheiros de caso · 100 casos somados: _arnes.casos.json=10, boleta.casos.json=13, desfecho.casos.json=10, historico.casos.json=5, manifesto.casos.json=7, marca.casos.json=6, mercado.casos.json=13, proposta.casos.json=11, resolucao.casos.json=6, vigia.casos.json=19
+ok    runner py: total (100) e a soma dos ficheiros (100)
+ok    runner py: aceites+recusados (34+66) e o total
+    runner py: 100 casos · 34 aceites · 66 recusados
+ok    runner ts: total (100) e a soma dos ficheiros (100)
+ok    runner ts: aceites+recusados (34+66) e o total
+    runner ts: 100 casos · 34 aceites · 66 recusados
+ok    as duas linguagens correm os mesmos casos (100 = 100)
+ok    com um caso a mais nas duas linguagens o total sobe um (100 -> 101/101)
+ok    e volta ao total de antes quando o caso sai (100)
+
+fronteira: 0 falhas — os motivos fecham nas duas direcoes, todo o campo tem leitor, e os casos somam
+
+ok    o livro e o vocabulario reais passam
+ok    os campos reais do `comando` passam
+ok    direcao A: um motivo marcado que nao existe no conjunto fechado REPROVA
+ok    direcao B: um nome no conjunto sem quem o produza REPROVA
+ok    uma contagem declarada que nao bate com a verdade REPROVA
+ok    um campo declarado na mensagem do `comando` que o produto nao le REPROVA
+ok    um campo que o produto le e o contrato nao declara REPROVA
+
+prova negativa da fronteira: 0 falhas — o conferidor reprova as cinco doencas que existe para apanhar
+
+fronteira: 0 falhas — os motivos fecham nas duas direcoes, todo o campo tem leitor, e os casos somam
+
+  $ uv run python tools/verificar-contrato/py/prova-negativa-fronteira.py
+     (dentro do `fronteira.sh` acima; corre tambem sozinho)
+
+  $ (contracts/) uv run python esqueleto/casos.py  &&  bun run esqueleto/casos.ts
+{"caso":"comando/versao-diferente-recusa","mensagem":"comando","veredicto":"recusado","motivo":"versao_do_contrato_divergente","implementacao":"py","esperado_ok":true}
+{"caso":"comando/sem-versao-recusa","mensagem":"comando","veredicto":"recusado","motivo":"versao_do_contrato_divergente","implementacao":"py","esperado_ok":true}
+{"caso":"comando/sem-versao-recusa","mensagem":"comando","veredicto":"recusado","motivo":"versao_do_contrato_divergente","implementacao":"ts","esperado_ok":true}
+ts · contrato 1.3.0 · 100 casos · 34 aceites · 66 recusados · 0 divergentes · 0 erros
+
+  $ bash tools/verificar-maquina/tipos.sh
+core: 0 erros de tipo
+  vigia: 0 erros de tipo
+  tools: 0 erros de tipo
+  contracts: 0 erros de tipo
+tipos: 0 erros em 4 directorios (o tsc confere o produto e as bancadas)
+
+  $ bash tools/verificar-maquina/provar.sh
+provar: 23 de 23 passaram — a maquina decide o que devia, e explica o que nao fez
+
+T046 - OS MOTIVOS QUE CRUZAM, NAS DUAS DIRECOES (SC-003).
+
+O conferidor novo (`tools/verificar-contrato/py/fronteira.py`, corrido por `fronteira.sh`) fecha as duas
+direcoes contra o dado, e nao contra a prosa:
+
+  - direcao A: todo o motivo que o livro marca `cruzam_a_fronteira` existe no conjunto fechado do contrato;
+  - direcao B: todo o nome do conjunto fechado tem quem o produza no livro - a excecao e o que estiver
+    DECLARADO como vindo da porta;
+  - as contagens escritas no proprio livro (`fronteira.cruzam` / `nao_cruzam`) conferem-se contra a verdade.
+    Foi essa terceira que apanhou o contador da fronteira que estava em 20 desde a 1.2.0 quando a verdade ja
+    era 23 (US4): um numero escrito a mao que envelheceu e a forma mais barata de um conferidor mentir.
+
+O AMBITO passou a estar em DADO. As duas excecoes da porta estavam so na prosa do `de_onde_vem`
+("a versao do contrato e o estado da posicao nao vem do conjunto: vem da porta"), e um conferidor que leia
+prosa nao consegue reprovar sem inventar. Passaram a `conjuntos_do_vigia.excecoes_da_porta`
+(`versao_do_contrato_divergente`, `posicao_desconhecida`) - mudanca aditiva, e o conjunto fechado nao se tocou.
+
+T047 - A RECUSA POR VERSAO DIFERENTE, COMO CASO DECLARADO.
+
+Dois casos novos em `contracts/casos/vigia.casos.json` (19 casos no ficheiro, era 17):
+
+  - `comando/versao-diferente-recusa` - `contrato: "1.0.0"` -> recusado, `versao_do_contrato_divergente`,
+    com o detalhe `declarada 1.0.0, vigente 1.3.0`;
+  - `comando/sem-versao-recusa` - sem a chave `contrato` -> o MESMO motivo, com o detalhe
+    `declarada (ausente), vigente 1.3.0`. A versao confere-se ANTES da forma (D7), e sem ela o diagnostico
+    nao pode virar "schema invalido": o motivo tem de ser o verdadeiro.
+
+Para o detalhe se poder DECLARAR, os dois runners passaram a conferir `detalhe_esperado` quando o caso o
+traz (as duas linguagens, e a mesma regra: um caso que nao o declare nao afirma nada sobre ele). O `tsc`
+apanhou o tipo em falta logo a seguir - `Property 'detalhe_esperado' does not exist on type 'Caso'` - e a
+interface ganhou-o. E na recusa por versao as duas linguagens escrevem o detalhe IGUAL: um valor nao textual
+sai `(nao textual)` em ambas, porque `1.0` como numero e `1` numa e `1.0` na outra, e um caso que corre nas
+duas nao pode aceitar duas respostas.
+
+O QUE FICOU DE FORA, e e uma decisao que nao e minha: a RESPOSTA da mesa nao leva este detalhe. O
+`resposta_de_comando.schema.json` nao tem campo para ele, e a mesa responde com o NOME do motivo
+(`versao_do_contrato_divergente`, medido: um comando `1.0.0` pela porta devolve `aceito:false` com esse
+motivo e a resposta em 1.3.0). As duas versoes estao do lado do CONTRATO - que e onde a versao se confere - e
+nao do lado da mesa. A porta ja tinha o caso (`servidor.ts`: "versao diferente: recusado antes de tudo").
+Se o dono quiser as duas versoes tambem na resposta da mesa, e contrato novo (aditivo) e decide-se.
+
+T048 - OS CAMPOS DA MENSAGEM CONTRA QUEM OS LE.
+
+A primeira versao deste conferidor procurava o NOME do campo no codigo, e deu FALSO POSITIVO na propria prova
+negativa: o campo de prova era `conta`, e um grep por `conta` encontra o macro da CONTA (`cb.ts`:
+`conta.equity_de_abertura_do_dia`) - que nao tem nada a ver com um campo da mensagem. A prova negativa existe
+exactamente para apanhar isto: um conferidor que nunca reprovou nao mediu nada ainda, e um que reprova a coisa
+errada tambem nao.
+
+A medida passou a ser a declaracao do PRODUTO, lida ao CORRER o modulo (e nao por grep):
+`core/estados/comando.ts` publica `CAMPOS_DO_COMANDO`, e e por essa lista que ele recusa um campo a mais
+(`comando_com_campo_a_mais`, FR-020). O conferidor importa o modulo, le a lista, e:
+
+  - as duas direcoes: os campos da mensagem e os campos que o produto le sao OS MESMOS - um campo na mensagem
+    que ninguem le e um campo a mais, e um campo que o produto le que o contrato nao declara e a mesa a aceitar
+    o que ninguem escreveu;
+  - e cada campo tem de ser LIDO, e nao so listado: procura-se `c.<campo>` no modulo que valida o comando cru;
+  - os comentarios sao retirados antes da procura: o cabecalho de um ficheiro explica porque razao um campo
+    NAO e lido ali, e um conferidor que leia comentarios acusa a propria explicacao.
+
+O `conta` e o campo real que isto poupa: e o campo do dia da segunda conta (FR-020), e no dia em que alguem
+o escrever na mensagem sem quem o leia, o conferidor fica vermelho.
+
+T049 - OS CASOS ENTRAM NA CONTAGEM SOMANDO.
+
+O total que as duas linguagens imprimem tem de ser a SOMA dos casos de todos os ficheiros de caso, igual nas
+duas, e crescer exactamente um quando um caso entra. A prova nao e aritmetica de papel: entra um caso a mais,
+corre-se, e sai outra vez.
+
+A primeira versao desta prova escrevia o FICHEIRO INTEIRO sob outro nome e esperava +1 - e o total subiu 20.
+A contagem estava certa; a prova e que nao media o que dizia medir. Corrigida: entra UM caso, o total vai de
+100 para 101 nas duas linguagens, e volta a 100 quando ele sai.
+
+Os 100 casos de hoje: 34 aceites · 66 recusados · 0 divergentes (eram 98 · 34 · 64 antes da US5).
+
+T050 - O QUE NAO SE PROVA AQUI.
+
+Nao se prova comportamento da mesa: prova-se a FORMA da fronteira. Um motivo que atravessa e um nome, e o que
+a mesa FAZ com ele prova-se nas bancadas do vigia e da mesa (provar 23 de 23, acima). E a corretora continua
+fora: nenhum caso aqui toca num venue real, nem pede chave (RN-E24).

@@ -50,6 +50,10 @@
       "equity_de_partida_nao_lido",
       "unidade_de_comparacao_nao_declarada"
     ],
+    "excecoes_da_porta": [
+      "versao_do_contrato_divergente",
+      "posicao_desconhecida"
+    ],
     "efeitos_de_comando": [
       "sessao_nova_gravada",
       "reset_nao_toca_em_nada",

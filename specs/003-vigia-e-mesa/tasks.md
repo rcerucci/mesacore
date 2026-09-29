@@ -257,11 +257,32 @@ O que a implementação teve de decidir e não estava aqui:
 
 **Independent Test**: `bash tools/verificar-contrato/ponta-a-ponta.sh` — as quatro mensagens passam nas duas linguagens; um comando `1.0.0` é recusado; as duas direcções dos motivos fecham.
 
-- [ ] T046 [US5] Conferência dos motivos nas **duas direcções** com âmbito declarado (SC-003): produzido e ausente do vocabulário é falha; no vocabulário sem quem o produza também
-- [ ] T047 [US5] A recusa por **versão diferente** como caso declarado, com as duas versões no detalhe
-- [ ] T048 [P] [US5] O conferidor de **campos sem leitor** na mensagem do comando (a outra metade do SC-003): um campo que ninguém lê é falha, não reserva
-- [ ] T049 [P] [US5] Os casos novos do contrato entram na contagem de aceites e recusas **somando**
-- [ ] T050 [US5] `relatorios/us5.txt`
+- [x] T046 [US5] Conferência dos motivos nas **duas direcções** com âmbito declarado (SC-003): produzido e ausente do vocabulário é falha; no vocabulário sem quem o produza também
+- [x] T047 [US5] A recusa por **versão diferente** como caso declarado, com as duas versões no detalhe
+- [x] T048 [P] [US5] O conferidor de **campos sem leitor** na mensagem do comando (a outra metade do SC-003): um campo que ninguém lê é falha, não reserva
+- [x] T049 [P] [US5] Os casos novos do contrato entram na contagem de aceites e recusas **somando**
+- [x] T050 [US5] `relatorios/us5.txt`
+
+**Checkpoint (medido)**: `provar` **23 de 23** (entrou a bancada `fronteira.sh`); casos do contrato **100**
+(34 aceites · 66 recusados · 0 divergentes) **nas duas linguagens**; `fronteira` **0 falhas** e a prova
+negativa dela **0 falhas** (reprova as cinco doenças); `tsc` 0 erros. Números crus em `relatorios/us5.txt`.
+
+O que a implementação teve de decidir e não estava aqui:
+
+- **O âmbito da conferência passou a estar em dado.** As duas exceções da porta (`versao_do_contrato_divergente`,
+  `posicao_desconhecida`) estavam só na prosa do `de_onde_vem` — e um conferidor que leia prosa não consegue
+  reprovar sem inventar. Passaram a `conjuntos_do_vigia.excecoes_da_porta`.
+- **As contagens declaradas no livro conferem-se contra a verdade.** Foi isto que apanhou o contador da
+  fronteira parado em 20 desde a 1.2.0 quando a verdade já era 23.
+- **A medida dos campos é a declaração lida do produto, ao correr o módulo** (`CAMPOS_DO_COMANDO`), não um grep
+  pelo nome: um grep por `conta` encontra o macro da conta no `cb.ts`. A primeira versão deu falso positivo na
+  própria prova negativa — que é para isso que a prova negativa existe.
+- **O detalhe da recusa por versão leva as duas versões e escreve-se igual nas duas linguagens** (um valor não
+  textual sai `(nao textual)`): `1.0` como número é `1` numa e `1.0` na outra. Os runners passaram a conferir
+  `detalhe_esperado` quando o caso o declara.
+- **A resposta da mesa NÃO leva esse detalhe** — o `resposta_de_comando` não tem campo para ele. Não é um
+  esquecimento: é uma decisão que não é minha e fica declarada (as duas versões vivem do lado do contrato, que
+  é onde a versão se confere).
 
 ---
 

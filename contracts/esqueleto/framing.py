@@ -134,7 +134,21 @@ def validar(texto: str) -> dict[str, Any]:
 
     # 2. a versao do contrato, por igualdade exacta, ANTES de qualquer envio (D7)
     if dados.get("contrato") != versao_vigente():
-        return {"veredicto": "recusado", "motivo": "versao_do_contrato_divergente"}
+        # As DUAS versoes no detalhe (T047), escritas IGUAL nas duas linguagens: quem le o registo tem de
+        # poder ver qual das pontas estava atrasada. Um valor que nao seja texto nao se imprime - `1.0` como
+        # numero sai `1` numa linguagem e `1.0` na outra, e o caso confere o detalhe em ambas.
+        bruto = dados.get("contrato")
+        if "contrato" not in dados:
+            como_texto = "(ausente)"
+        elif isinstance(bruto, str):
+            como_texto = bruto
+        else:
+            como_texto = "(nao textual)"
+        return {
+            "veredicto": "recusado",
+            "motivo": "versao_do_contrato_divergente",
+            "detalhe": f"declarada {como_texto}, vigente {versao_vigente()}",
+        }
 
     # 3. o envelope contra o schema
     try:

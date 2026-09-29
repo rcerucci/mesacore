@@ -21,6 +21,15 @@ export type Veredicto = "aceite" | "recusado" | "erro_de_execucao";
 export interface Decisao {
   veredicto: Veredicto;
   motivo: string | null;
+  /**
+   * O que se sabe sobre a recusa, quando ha algo a dizer que o nome do motivo nao diz (T047).
+   *
+   * Na recusa por versao leva as DUAS versoes - a declarada e a vigente: quem le o registo tem de poder ver
+   * qual das pontas estava atrasada, sem ter de ir procurar a versao vigente noutro sitio. As duas linguagens
+   * escrevem-no IGUAL (o caso confere-o em ambas) e por isso um valor que nao seja texto nao se imprime:
+   * `1.0` como numero sai `1` numa linguagem e `1.0` na outra.
+   */
+  detalhe?: string;
 }
 
 function lerJson(caminho: string): any {
@@ -163,7 +172,12 @@ export function validar(texto: string): Decisao {
   // 2. versao do contrato, por igualdade exacta, ANTES de qualquer envio (D7)
   const declarada = (dados as Record<string, unknown>)["contrato"];
   if (declarada !== versaoVigente()) {
-    return { veredicto: "recusado", motivo: "versao_do_contrato_divergente" };
+    const comoTexto = declarada === undefined ? "(ausente)" : typeof declarada === "string" ? declarada : "(nao textual)";
+    return {
+      veredicto: "recusado",
+      motivo: "versao_do_contrato_divergente",
+      detalhe: `declarada ${comoTexto}, vigente ${versaoVigente()}`,
+    };
   }
 
   // 3. o envelope contra o schema
