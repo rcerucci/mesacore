@@ -14,6 +14,12 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 
 ## 1. `conta.*` — o macro (dono, `/config`)
 
+> **Por conta (28 set 2026).** Com mais de uma conta na mesma mesa, o macro passa a ser uma **tabela de
+> contas**: `contas.<constante>.*`, onde a constante é o alias da (corretora, conta). O **tecto de margem**
+> e a **perda máxima (CB)** são **da conta** — a soma das fichas compara-se com o tecto daquela conta, e o CB
+> mede-se sobre o equity dela. As linhas abaixo mantêm os nomes por serem os que o código lê hoje; a migração
+> para a tabela é trabalho do recorte que abrir a segunda conta.
+
 | Chave | Tipo / unidade | Exemplo de omissão | Quem lê |
 |---|---|---|---|
 | `conta.corretora` | nome do conector | — | mesa no arranque (RN-M1) |

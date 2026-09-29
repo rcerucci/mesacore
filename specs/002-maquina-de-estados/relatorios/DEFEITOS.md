@@ -122,36 +122,26 @@ trocadas, e o lugar vai para o outro.
 
 ---
 
-## D-004 — A constante de destino não cabe no contrato de hoje
+## D-004 — **RETRATADO** (o destino resolve-se no encaminhamento; o contrato fica como está)
 
-**O que devia acontecer.** A ordem diz **para que conta** vai: o plugin serve várias, carrega as constantes
-de todas no arranque, e a escolha tem de vir nomeada — um alias que ele resolve na tabela que carregou.
+**A primeira versão deste defeito dizia:** «a constante de destino não cabe no contrato de hoje», e propunha
+um campo novo na boleta (com subida de versão) para o destino viajar na mensagem.
 
-**O que há.** Medido em 28 set 2026, e a medição é o defeito:
+**Estava errado, e a decisão do dono mostrou por quê:** a multiplicidade é do **conector** (um processo por
+corretora+conta, RN-E3/RN-E5) e a **mesa encaminha** cada ficha ao conector da conta dela. Se é a mesa que
+encaminha, ela já sabe para onde encaminha — o destino resolve-se no **encaminhamento**, não num campo. Logo:
+**nenhum campo novo na boleta, nenhuma subida de versão**. A medição que eu usei (14 campos na boleta, 3 na
+proposta) continua verdadeira; o que ela não sustentava era a conclusão.
 
-```
-$ python3 -c "import json;print(list(json.load(open('contracts/boleta.schema.json'))['properties']))"
-14 campos — nenhum nomeia conta, corretora ou constante
-$ python3 -c "import json;p=json.load(open('contracts/proposta.schema.json'));print(p['required'],list(p['properties']))"
-['setup', 'lado'] ['setup', 'lado', 'relogio']
-```
+**Nota que fica, porque não era eu quem tinha razão:** a minha proposta de uma instância única a carregar as
+constantes de várias contas era «um processo com várias corretoras» — proibido pela **RN-E5** desde o recorte
+001. A regra já estava escrita e a proposta é que estava mal.
 
-O **setup** não pode escolher a conta: a proposta tem três campos e é fechada — uma constante vinda dele
-seria recusada com `campo_desconhecido`. (Isto é a fronteira a funcionar, não um defeito.) E a **boleta**,
-que é onde a constante teria de viajar, não tem campo para ela — o esquema é fechado, logo acrescentar campo
-é **subir a versão do contrato**.
+**O que sobra deste defeito, e é outra coisa:** a **atribuição por conta no registo**. A mesa precisa de
+saber — e de escrever na linha — de que conta fala, senão a perda máxima (CB), a sessão e a reconciliação não
+são atribuíveis quando houver mais de uma conta. Isso é matéria do **registo/ledger** (R8, aberto), não da
+boleta: a linha do registo ganha a conta; a boleta não muda.
 
-**A consequência.** Hoje o destino só pode ser **implícito**: ou o processo serve uma conta (o que a mesa
-declara em `conta.corretora`/`conta.identificador`), ou o plugin adivinha. Um plugin multi-conta sem
-constante nomeada teria de escolher a conta por conta própria — e escolher a conta é decidir risco, que é
-exactamente o que o plugin não faz.
-
-**Onde se conserta.** No recorte do **conector**, e a decisão é do dono (`docs/regra-de-negocio.md`,
-«Emenda do dono — o plugin da corretora e a constante do destino»): **(A)** a constante viaja na boleta
-(campo novo, versão nova, e a mensagem diz para que conta foi) ou **(B)** a ligação é a conta (nada muda no
-contrato, e a atribuição por conta fica presa ao processo que escreveu a linha).
-
-**Como se saberá que está fechado.** Com o par de controle: (a) uma boleta com a constante de uma conta e o
-plugin a executar **naquela** conta (e não noutra que também tem o instrumento); (b) a mesma ordem com a
-constante de outra conta, e o resultado a ir para a outra. Sem a metade (b), "foi para a conta certa" podia
-ser coincidência de haver só uma conta ligada.
+**Como se saberá que está fechado.** Com o par de controle na bateria do ledger: (a) duas contas na mesma
+mesa, e a reconstrução do dia a fechar **por conta**; (b) a mesma operação com a conta trocada, e a linha a
+mudar de conta. Sem a metade (b), "atribuiu certo" podia ser coincidência de haver uma conta só.

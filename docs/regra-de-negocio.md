@@ -454,6 +454,9 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 
 - **RN-E3.** A unidade de execução é **uma conta**: uma corretora, uma conta, `n` instrumentos. Uma
   ligação e uma chave por processo; um escritor por ledger; falha isolada por conta.
+  **Precisão (28 set 2026):** o processo que segura a ligação e a chave é o **conector** — um por conta. A
+  **mesa** pode servir várias contas sem segurar chave nenhuma: ela **encaminha** cada ficha ao conector da
+  conta dela (o destino resolve-se no encaminhamento, e não num campo da mensagem).
 - **RN-E4.** NÃO um processo por instrumento: multiplica ligações, chaves e processos sem ganho de
   isolamento que interesse — a correlação entre instrumentos da mesma conta é governada pelo mandato,
   não pelo processo.
@@ -842,24 +845,48 @@ Registado a partir das palavras do dono, sem as corrigir:
   — se tiver de viajar — **não cabe no contrato de hoje**: exige campo novo na boleta e **subida de versão**
   (o esquema é fechado; acrescentar campo é mudar contrato, e mudar contrato é acto declarado).
 
-Os dois caminhos honestos, para decisão do dono:
+**A forma decidida pelo dono (e é a RN-E5 que já a mandava):**
 
-| Caminho | Como fica | Custo | Ganho |
-|---|---|---|---|
-| **(A) A constante viaja no pedido** | a **ficha de risco** nomeia a conta; a mesa escreve a constante na boleta; o plugin resolve e executa | campo novo na boleta + versão nova do contrato (recorte 003) | a **mensagem diz para que conta foi** — e é isso que o ledger e a reconciliação por conta precisam; um processo serve n contas |
-| **(B) A ligação é a conta** | o que há hoje: `conta.corretora` (nome do conector) + `conta.identificador` no macro; cada instância serve uma conta | um processo (e um carregamento de constantes) por conta | nada muda no contrato; a conta é implícita e a atribuição por processo é trivial |
+> «multipar e uma corretora é um processo, e duas corretoras é 2 processos. mas não precisa ser 2 processos
+> na mesa, e sim do plugin: 1 sobe amarrado a uma conta e o segundo à outra. Aí a mesa direciona para a
+> conta certa de acordo com o config do setup.»
 
-**Recomendação:** **(A)**, e por uma razão de auditoria antes de ser de conveniência: com a constante na
-boleta, a atribuição por conta deixa de depender de *qual processo escreveu a linha* — que é o único dado
-que se perde quando alguém reorganiza a implantação. Mas é decisão sua, e a (B) é legítima.
+- **Mesa (core): UM processo**, e indiferente à topologia (RN-E6). Não tem ligação nem chave nenhuma.
+- **Conector: UM processo por (corretora, conta)** — uma ligação, uma chave cada, falha isolada (RN-E3,
+  RN-E5). Vários instrumentos da mesma conta vivem no mesmo processo (RN-E4: nada de um processo por
+  instrumento).
+- **A mesa encaminha**: a ficha diz de que conta é, e a mesa escreve a boleta ao conector **daquela**
+  conta. A conta é resolvida no **encaminhamento**, não viaja na mensagem.
 
-**b) Os três agregados passam a ter dimensão de conta.** Hoje são «da mesa»: o **teto de margem** (a soma
-das fichas é comparada com ele), o **CB** (a perda máxima mede-se sobre o equity daquela conta) e a **fila
-da contenda** (o lugar disputado é margem daquela conta). Numa configuração com várias contas, cada um
-passa a valer **por conta** — e o registo tem de dizer de que conta fala. Sem isso, a soma de duas contas
-compara-se com o tecto de uma.
+**Retratação (era eu que estava a propor contra a RN-E5).** A minha recomendação anterior — *uma* instância
+do plugin a carregar as constantes de várias contas, com a constante na boleta — é precisamente «um processo
+com várias corretoras», que a **RN-E5** proíbe desde o recorte 001: juntaria chaves e ligações de corretoras
+diferentes e faria a falha de uma derrubar as outras. A regra já estava escrita; a proposta é que estava mal.
+Consequência boa: **não é preciso campo novo na boleta nem versão nova do contrato** para o destino — quem
+encaminha já sabe para onde encaminha.
 
-**c) O manifesto passa a ser por conta.** Hoje `manifesto.conector` é `{nome, versao}` e `instrumentos` é
+**A configuração passa a ser por conta**, e é isso que dá à mesa o que encaminhar (as chaves de §1 do
+inventário passam a `contas.<constante>.*`):
+
+```
+contas:
+  <constante>:                     # o alias da (corretora, conta) - nome, nunca credencial
+    identificador: ...             # qual conta na corretora
+    margem_total_maxima_pct: ...   # o TECTO é da conta (a soma das fichas compara-se com ele)
+    perda_maxima_pct: ...          # o CB é da conta (mede-se sobre o equity DELA)
+    fichas: { <instrumento>: { risco: ..., setup: ... } }
+```
+
+Três agregados deixam de ser «da mesa» e passam a ser **da conta**: o **tecto de margem**, o **CB** e a
+**fila da contenda** (o lugar disputado é margem daquela conta). O **manifesto** passa a ser declarado por
+conta (cada conector declara a sua), e a atribuição no registo tem de dizer de que conta fala.
+
+**Uma condição, e não é retórica:** os conectores têm de ser **processos**, não duas ligações dentro do
+processo da mesa. Se as duas corretoras viverem dentro da mesa, o processo passa a segurar duas chaves e a
+falha de uma derruba a outra — e a RN-E3 («uma ligação e uma chave por processo») fica decorativa. Com
+processos, a costura é a que já existe (uma mensagem JSON por linha) e cada conector segura **uma** chave.
+
+**b) O manifesto passa a ser por conta.** Hoje `manifesto.conector` é `{nome, versao}` e `instrumentos` é
 uma lista só: um conector = uma conta. Um plugin que carrega constantes de várias contas tem de o declarar
 **por conta** (cada conta com os seus instrumentos, escalões e mínimo), senão a porta do manifesto aprova
 uma mesa que não sabe o que está a aprovar. Fica registado em `specs/002-maquina-de-estados/relatorios/DEFEITOS.md`
