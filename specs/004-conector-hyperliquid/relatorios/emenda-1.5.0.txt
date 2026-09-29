@@ -1,0 +1,261 @@
+EMENDA 1.5.0 — o HISTORICO REAL da Hyperliquid cabe no contrato
+=============================================================
+
+De: 1.4.0  Para: 1.5.0  (aditiva; nenhum campo mudou de sentido, nenhuma prova
+foi afrouxada para ficar verde)
+
+O QUE A EMENDA RESOLVE, EM UMA LINHA: a leitura do historico contra o venue a
+serio era RECUSADA pelo contrato por cinco razoes MEDIDAS; depois da emenda, a
+mesma leitura e SERVIDA — e o que continua ausente continua ausente, nunca zero.
+
+AS MEDICOES CRUAS DE PARTIDA (o "antes"): `specs/004-conector-hyperliquid/relatorios/us6.txt`
+— 56 execucoes lidas, `instante_do_venue_ms 1790299923887`, e o CONTRATO recusando a
+carga com `campo_obrigatorio_ausente`, com os cinco nomes do que o venue nao deu:
+
+    historico.moeda, historico.resultado_realizado, historico.execucoes[].marca_de_posse,
+    historico.execucoes[].referencia_do_cliente, historico.execucoes[].funding
+
+AS CINCO RAZOES, O QUE SE DECIDIU EM CADA UMA, E A PROVA DE QUE FICOU
+--------------------------------------------------------------------
+
+(a) A MOEDA DA TAXA — ALARGADA (3..5 letras), num so sitio.
+    Medido: o venue escreve `USDC` (QUATRO letras, no `feeToken` das 56 execucoes,
+    pelo HTTP cru e pelo SDK oficial) e a forma do contrato era `^[A-Z]{3}$`.
+    DECISAO: a forma passa a `^[A-Z]{3,5}$` e passa a viver num SO sitio —
+    `contracts/_defs/forma.schema.json#/$defs/moeda` — que o `historico.moeda`
+    passa a referir. `USDC` nao e `USD`: o nome do venue nao se normaliza.
+    PROVA: `historico/moeda-de-quatro-letras-cabe-na-forma` (USDC aceite),
+    `historico/moeda-de-tres-e-de-cinco-letras-cabem-na-forma` (as duas pontas);
+    PROVA NEGATIVA: `historico/moeda-com-seis-letras-recusa` e
+    `historico/moeda-em-minusculas-recusa` (ambos `formato_invalido`) — nos DOIS
+    motores (123 casos, TS e Python, veredicto caso a caso igual).
+    E no leitor: `brokers/hyperliquid/historico.ts` (`MOEDA`) e o caso
+    `historico/a-moeda-de-quatro-letras-do-venue-le-se-depois-da-emenda`
+    (`moeda.estado = lido`, `moeda.valor = USDC`). Ao vivo: `"moeda":{"estado":"lido","valor":"USDC"}`.
+
+(b) O RESULTADO REALIZADO POR INSTRUMENTO — OPCIONAL, com a fonte declarada.
+    Medido: o venue publica o resultado POR EXECUCAO (`closedPnl` em `userFills`)
+    e NAO um numero por instrumento. Somar as parcelas seria RECONSTRUIR — o
+    defeito que FR-018/RN-H14 proibem.
+    DECISAO: `historico.resultado_realizado` sai do `required` (OPCIONAL). A
+    fonte por execucao fica DECLARADA: no proprio esquema (a descricao nomeia
+    `closedPnl`) e no campo PROPRIO da leitura (`resultado_do_venue`, com a
+    origem `info.userFills({user})[].closedPnl — [V], POR EXECUCAO; nao se soma`).
+    O contrato NAO ganhou campo de resultado por execucao, DE PROPOSITO: a prova
+    negativa de FR-018 que ja existia continua de pe e e ela que o impede.
+    PROVA: `historico/sem-o-resultado-por-instrumento-a-carga-serve` (a carga sem
+    o campo PASSA) e o caso h-1 (com o campo, quando o venue o da, continua a
+    passar); PROVA NEGATIVA: `historico/resultado-recalculado-por-execucao`
+    (um resultado POR EXECUCAO na carga = `campo_desconhecido`), nos dois motores.
+    Ao vivo: `resultado_realizado_do_instrumento` fica `nao_publicado`, com a
+    razao, e a carga sai sem a chave — `"nao_publicados":["historico.resultado_realizado",...]`.
+
+(c) A MARCA DE POSSE — as DUAS formas do manifesto, sem alargar mais nada.
+    Medido: o manifesto deste venue declara `marca_de_posse: "cloid"` e a marca
+    que ele guarda e `0x` + 32 hexadecimais (128 bits); o contrato so exprimia o
+    INTEIRO de 31 bits que a mesa compoe.
+    DECISAO: a marca que o VENUE PUBLICA passa a admitir as duas formas, e SO
+    duas — `contracts/_defs/forma.schema.json#/$defs/marca_de_posse_do_venue`
+    (inteiro 0..2147483647 OU `cloid` `^0x[0-9a-f]{32}$`), usado em
+    `historico.execucoes[].marca_de_posse` e declarado, pelo NOME do conjunto, em
+    `contracts/vocabulario.json#formas_da_marca_do_venue` (`inteiro_31_bits`,
+    `cloid`). As duas formas sao DISJUNTAS pelo tipo e nenhuma afrouxa a outra.
+    O QUE NAO SE MEXEU, DE PROPOSITO: `_defs/marca_de_posse` — a marca que a MESA
+    compoe (na boleta) — continua a ser SO o inteiro de 31 bits. Alarga-la
+    apagaria a prova `marca/em-hexadecimal-do-cloid` (o `cloid` NAO cabe na marca
+    da mesa), que e o que impede a mesa de trocar as duas coisas. A porta mede-o
+    de novo: "(c) PROVA CRUZADA: a marca que a MESA compoe (na boleta) continua a
+    RECUSAR o `cloid`" (`tipo_invalido`, nos dois motores).
+    PROVA: `historico/marca-de-posse-na-forma-do-cloid-cabe` (aceite);
+    PROVAS NEGATIVAS: `historico/marca-de-posse-em-terceiro-tipo-recusa`
+    ("nao-e-marca" -> `formato_invalido`), `historico/marca-de-posse-acima-dos-31-bits-recusa`
+    (2147483648 -> `valor_fora_da_banda`) e, na porta, um `cloid` com hexadecimais
+    MAIUSCULOS (`0X...` -> `formato_invalido`) — a forma e a do venue, nao uma parecida.
+    A MARCA POR EXECUCAO tambem passou a OPCIONAL, e pela mesma medicao que a
+    razao (d): o venue NAO guardou marca nenhuma nesta conta (415 de 415 ordens
+    com `cloid` nulo). Exigi-la obrigaria a mesa a inventar uma; ausente e o que
+    se escreve, nunca zero.
+
+(d) A REFERENCIA DE CLIENTE — OPCIONAL, e o ausente NAO vira valor nenhum.
+    Medido: em 415 de 415 ordens desta conta o venue nao guardou `cloid` nenhum.
+    NAO e defeito do contrato: e o que o venue nao guardou.
+    DECISAO: `historico.execucoes[].referencia_do_cliente` passa a OPCIONAL. O
+    que se confirma por caso e exactamente isto: o campo AUSENTE NAO vira valor
+    nenhum — nem zero, nem cadeia vazia, nem `null`.
+    PROVA: `historico/sem-a-referencia-do-cliente-a-execucao-serve` (aceite);
+    PROVAS NEGATIVAS: `historico/referencia-do-cliente-a-null-recusa`
+    (`valor_nulo_nao_permitido`) e, na porta, a referencia VAZIA (`""` ->
+    `formato_invalido`) e o `null` no mesmo sitio — nos dois motores.
+    E no leitor: a execucao sem referencia sai sem a CHAVE (a carga do historico
+    real nao leva `referencia_do_cliente` em execucao nenhuma, conferido pelo caso
+    `historico/a-carga-do-contrato-nao-leva-o-que-o-venue-nao-deu`), com
+    `nao_tem_null` — nenhuma folha `null` em lado nenhum.
+
+(e) O FUNDING POR EXECUCAO — OPCIONAL, com a ausencia declarada.
+    Medido: o venue NAO publica funding por execucao.
+    DECISAO: este campo JA ERA opcional no contrato — nao houve forma a alargar.
+    O que a 1.5.0 acrescenta e a DECLARACAO da ausencia no proprio esquema (a
+    descricao diz porque nao ha valor, e que zero seria um custo medido) e a
+    prova por caso. Diz-se-o assim, em vez de fingir uma mudanca que nao houve.
+    PROVA: `historico/funding-por-execucao-declarado-cabe` (presente, aceite) e o
+    caso h-2 (ausente, aceite); PROVA NEGATIVA:
+    `historico/funding-por-execucao-como-numero-recusa` (`tipo_invalido`) — o
+    caminho facil para «nao ha» tambem passa por aqui, e nao passa.
+
+O QUE A EMENDA *NAO* MEXEU (e por que)
+--------------------------------------
+1. `mercado.posicao.marca_de_posse` e `boleta.marca_de_posse`: NENHUMA medicao os
+   forca, e a marca que a MESA compoe tem de caber no campo mais restrito dos tres
+   venues (31 bits). Alargar a boleta ao `cloid` apagaria a prova negativa que ja
+   existe de proposito (`marca/em-hexadecimal-do-cloid`) — nao se afrouxa uma
+   prova para uma emenda ficar mais larga do que o medido.
+2. O contrato NAO ganhou campo de resultado por execucao. A emenda DECLARA a
+   fonte por execucao (no esquema e na leitura) e torna o campo de cima opcional;
+   carregar o `closedPnl` no contrato seria abrir a porta que a prova negativa de
+   FR-018 fecha.
+3. O LEITOR nao passa a escrever o `cloid` do venue no campo `marca_de_posse` da
+   carga. Razao: nada medido nesta conta tem marca (415 de 415 `cloid` nulos), e o
+   `cloid` que existe ja vive no campo que significa isso mesmo
+   (`referencia_do_cliente`); dar-lhe um segundo domicilio sem uma medicao que o
+   force seria inventar. A forma do venue e' provada no CONTRATO, nos dois motores.
+4. `contracts/mocks/conector/historico.py` (o conector falso do recorte 001) e o
+   mock da mesa: nada medido o obrigava, e ele continua a passar as provas que ja
+   corriam.
+
+OS CASOS QUE MUDARAM DE DESFECHO POR CAUSA DA EMENDA (dito pelo nome)
+--------------------------------------------------------------------
+1. `brokers/.../historico.casos.json`: `historico/a-carga-do-contrato-nao-leva-o-que-o-venue-nao-deu`
+   — `contrato_veredicto` passou de `recusado`/`campo_obrigatorio_ausente` a
+   `aceite`/`null`. E A PROVA CENTRAL DA EMENDA: e' a carga do historico REAL
+   (56 execucoes do venue) a ser aceite pelo CONTRATO. A lista `nao_leva` ficou e
+   cresceu (`moeda` passou a ser LIDA e e' conferida por `leva`), e ganhou
+   `nao_tem_null`.
+2. `brokers/.../historico.casos.json`: `historico/a-moeda-do-venue-nao-cabe-na-forma-do-contrato`
+   -> renomeado `historico/a-moeda-de-quatro-letras-do-venue-le-se-depois-da-emenda`
+   — `moeda.estado` passou de `nao_publicado` a `lido` (`USDC`), porque a razao da
+   recusa era do CONTRATO com o venue e a emenda resolveu-a.
+3. `contracts/casos/vigia.casos.json`: `comando/versao-diferente-recusa` e
+   `comando/sem-versao-recusa` DIVERGIRAM (e voltaram a ficar ok) sem que nada
+   tivesse mudado neles: o `detalhe_esperado` trazia a versao vigente escrita a
+   MAO (`"declarada 1.0.0, vigente 1.4.0"`). Um literal que envelhece em silencio —
+   a mesma doenca que `tools/verificar-conector/casos-duble.json` ja tinha
+   curado com o token `$CONTRATO`. Curada tambem aqui: os dois runners
+   (`contracts/esqueleto/casos.ts` e `casos.py`) substituem `$CONTRATO` pela
+   versao LIDA de `versao.json`, no valor ESPERADO (nunca na `entrada`, que e' a
+   mensagem a medir), e os dois casos passaram a declarar
+   `"vigente $CONTRATO"`.
+4. `contracts/mocks/mesa/conector.casos.json`: `desfecho-de-versao-a-frente` — o
+   adversario usava o literal `"1.5.0"` («a versao a frente, que nao existe em
+   lado nenhum»). Com a emenda, 1.5.0 passou a ser a VIGENTE e o caso deixaria de
+   medir o que diz medir. Passou a usar o token `$CONTRATO_A_FRENTE` — que existe
+   exactamente para isto.
+
+O QUE A EMENDA ACRESCENTOU, EM CONTAGEM
+---------------------------------------
+- contrato: 111 -> 123 casos de mensagem (10 novos do historico + ajustes),
+  17 casos de conformidade (inalterados);
+- leitor do historico: 24 -> 25 casos ok (`bun brokers/hyperliquid/casos/correr-historico.ts`);
+- porta do contrato: uma PROVA 7 nova — 19 sondas do historico REAL (o que passa e
+  o que reprova) medidas nos DOIS motores — e uma VACINA nova (5 no total);
+- `contracts/gerado/**` regenerado (frescura: 0 divergencias, 30 ficheiros).
+
+A SAIDA CRUA DO ACEITE
+----------------------
+
+$ bash tools/verificar-maquina/provar.sh
+...
+conector hyperliquid (offline, US1)        OK   provas offline do conector: 0 falhas
+vigia + mesa (--arranque)                  OK   resumo: 51 verificacoes · 0 divergentes · 11 cenarios
+frescura do contrato                       OK   frescura: 0 divergencias — o gerado corresponde aos schemas (30 ficheiros)
+frescura (prova negativa, T057)            OK   ok    e a arvore ficou limpa (0 ficheiros sujos em contracts/gerado)
+fronteira (SC-003, T046-T049)              OK   fronteira: 0 falhas — os motivos fecham nas duas direcoes, todo o campo tem leitor, e os casos somam
+duble de mesa (US6, SC-004)                OK   duble de mesa: 0 falhas — os casos declarados, contra os mocks do 001 e contra o motor do contrato
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 27 de 27 passaram — a maquina decide o que devia, e explica o que nao fez
+
+$ bash tools/verificar-conector/provas-offline.sh
+conector hyperliquid (offline, US1) ... casos do historico do venue (hyperliquid)
+                                                OK   historico: 25 casos · 25 ok · 0 divergentes · 5 declaracoes · 0 provocacoes divergentes (esperado: 0)
+porta: importa contracts, nunca o core (RN-E1)  OK   0 importacoes do core em brokers/hyperliquid
+conformidade do conector (duble de mesa)        OK   conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+
+provas offline do conector: 0 falhas
+
+$ bun tools/verificar-conector/conformidade.ts
+conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+
+$ bun tools/verificar-conector/porta-do-contrato.ts
+PORTA — paridade: os dois motores, caso a caso
+  ts · contrato 1.5.0 · 123 casos · 42 aceites · 81 recusados · 0 divergentes · 0 erros
+  py · contrato 1.5.0 · 123 casos · 42 aceites · 81 recusados · 0 divergentes · 0 erros
+PORTA — emenda 1.5.0: 19 sondas do historico REAL (o que passa e o que reprova), nos dois motores
+  aceite/- nos dois motores — (a) a moeda do venue (`USDC`, QUATRO letras) CABE na forma alargada
+  aceite/- nos dois motores — (a) a moeda antiga (`USD`, TRES letras) NAO deixou de caber
+  recusado/formato_invalido nos dois motores — (a) PROVA NEGATIVA: a moeda com SEIS letras (`USDCXX`) RECUSA
+  recusado/formato_invalido nos dois motores — (a) PROVA NEGATIVA: a moeda em minusculas (`usdc`) RECUSA
+  aceite/- nos dois motores — (b) o historico SEM o resultado por instrumento PASSA
+  aceite/- nos dois motores — (b) o resultado por instrumento, QUANDO o venue o da, continua a caber
+  recusado/campo_desconhecido nos dois motores — (b) PROVA NEGATIVA (FR-018): um resultado POR EXECUCAO na carga RECUSA
+  aceite/- nos dois motores — (c) a marca do VENUE na forma `cloid` (0x + 32 hexadecimais) CABE na 1.5.0
+  aceite/- nos dois motores — (c) a marca no INTEIRO de 31 bits que a mesa compoe continua a caber
+  recusado/formato_invalido nos dois motores — (c) PROVA NEGATIVA: uma marca com forma de TERCEIRO tipo (`nao-e-marca`) RECUSA
+  recusado/valor_fora_da_banda nos dois motores — (c) PROVA NEGATIVA: um inteiro acima dos 31 bits (2147483648) RECUSA
+  recusado/formato_invalido nos dois motores — (c) PROVA NEGATIVA: um `cloid` com hexadecimais MAIUSCULOS RECUSA
+  recusado/tipo_invalido nos dois motores — (c) PROVA CRUZADA: a marca que a MESA compoe (na boleta) continua a RECUSAR o `cloid`
+  aceite/- nos dois motores — (d) a execucao SEM a referencia de cliente PASSA
+  recusado/valor_nulo_nao_permitido nos dois motores — (d) PROVA NEGATIVA: a referencia de cliente a `null` RECUSA
+  recusado/formato_invalido nos dois motores — (d) PROVA NEGATIVA: a referencia de cliente VAZIA (`""`) RECUSA
+  aceite/- nos dois motores — (e) o funding por execucao declarado pelo venue continua a caber
+  aceite/- nos dois motores — (e) o funding AUSENTE numa execucao PASSA — ausente nunca vira zero
+  recusado/tipo_invalido nos dois motores — (e) PROVA NEGATIVA: o funding como NUMERO do JSON RECUSA
+
+porta-do-contrato: 0 falhas — contrato 1.5.0 · 18 motivos fechados nas duas direcoes · 123 casos lidos nos dois motores · 10 casos de conformidade nas duas linguagens · 4 bandas no duble · 19 sondas da emenda 1.5.0 no historico
+
+$ bun tools/verificar-conector/porta-do-contrato.ts --prova-negativa
+  (a) vocabulario furado REPROVA · (b) divergencia entre motores REPROVA · (c) a mensagem de referencia e' aceite · (d) duble a mentir REPROVA · (e) a carga com a marca do venue e' aceite nos dois motores
+
+porta-do-contrato: 0 falhas — ... · 5 vacinas
+
+$ bun brokers/hyperliquid/casos/correr-historico.ts
+a carga do contrato deste caso foi julgada pelo CONTRATO: recusado/campo_obrigatorio_ausente (execucoes: 2; chaves que o venue nao deu NAO entram)
+a carga do contrato deste caso foi julgada pelo CONTRATO: aceite/- (execucoes: 56; chaves que o venue nao deu NAO entram)
+historico: 25 casos · 25 ok · 0 divergentes · 5 declaracoes · 0 provocacoes divergentes (esperado: 0)
+
+A LEITURA AO VIVO, CONTRA O VENUE REAL (so leitura; nada assinado, ordem nenhuma)
+---------------------------------------------------------------------------------
+
+$ bun run brokers/hyperliquid/processo.ts --casos brokers/hyperliquid/casos/processo.casos.json \
+      --ficha @config/contas/hl-teste-plugin.json --ao-vivo --historico BTC
+
+{"porta":"versao_do_contrato","veredicto":"passou","porque":"a ficha e a versao vigente concordam: contrato 1.5.0 (conferido em contracts/versao.json)"}
+{"porta":"ligacao","veredicto":"passou","porque":"estado da ligacao pelo protocolo do venue: ligada ... Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot"}
+{"etapa":"manifesto_publicado","id":"hyperliquid/manifesto","versao":"1.5.0","instrumentos":1,"tipos_de_ordem":["mercado","limite"],"idempotencia":true,"marca_de_posse":"cloid","estado_da_ligacao":"ligada","carteiras_nao_lidas":[],"credencial_de":"(nao lida neste modo)"}
+{"etapa":"historico","veredicto":"lido","instrumento":"BTC","execucoes":56,"instante_do_venue_ms":1790299923887,
+ "moeda":{"estado":"lido","valor":"USDC","origem":"info.userFills({user})[].feeToken — [V], a moeda em que a taxa e cobrada"},
+ ...
+ "nao_publicados":["historico.resultado_realizado","historico.execucoes[].marca_de_posse","historico.execucoes[].referencia_do_cliente","historico.execucoes[].funding"]}
+{"contrato":"1.5.0","tipo":"historico","id":"hyperliquid/historico/historico","carga":{"instrumento":"BTC","instante_ms":1790299923887,"moeda":"USDC","execucoes":[... as 56 execucoes do venue ...]}}
+{"etapa":"historico","veredicto":"servido","instrumento":"BTC","janela":"sem janela declarada (o que o venue devolver)","nota":"modo de leitura: nada foi assinado e nenhuma ordem foi enviada (FR-018: o historico e do venue, nao se reconstroi)"}
+
+Com a janela declarada (`--desde-ms 1790200000000`), a mesma passagem:
+
+{"etapa":"historico","veredicto":"lido","instrumento":"BTC","execucoes":2,"instante_do_venue_ms":1790299923887,"moeda":{"estado":"lido","valor":"USDC",...}}
+{"etapa":"historico","veredicto":"servido","instrumento":"BTC","janela":"desde 1790200000000 ms (declarada)",...}
+
+ANTES (us6.txt, medido a 30 set 2026): cinco nomes em `nao_publicados`
+(moeda incluida) e o contrato a RECUSAR a carga com `campo_obrigatorio_ausente`.
+DEPOIS: QUATRO nomes (a moeda passou a LIDA), a carga aceite pelo contrato e o
+veredicto `servido`.
+
+O QUE NAO FICOU VERDE POR AFROUXAMENTO
+--------------------------------------
+- Nenhuma prova foi retirada ou enfraquecida: a marca da MESA continua a recusar o
+  `cloid` (`marca/em-hexadecimal-do-cloid`), o resultado por execucao continua a
+  nao caber no contrato (`historico/resultado-recalculado-por-execucao`), o
+  `null` continua a nao ser uma ausencia (D4) em nenhuma das duas linguagens, e a
+  forma alargada da moeda continua a recusar o que nao foi medido.
+- O unico afrouxamento e' o que a medicao obrigou: dois campos passaram de
+  OBRIGATORIOS a OPCIONAIS (o resultado por instrumento e a referencia de
+  cliente) e a marca por execucao, pela mesma razao — o venue nao os publica, e
+  exigi-los seria a mesa a inventar o que a corretora nao deu.
