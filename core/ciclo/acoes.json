@@ -12,6 +12,10 @@
     "parar_e_reconciliar": {
       "exige": "provadamente_nao_feito !== true",
       "porque": "Nao se sabe se saiu. Repetir as cegas abre uma SEGUNDA posicao - e essa e a unica asneira que custa dinheiro a serio. Primeiro pergunta-se a corretora."
+    },
+    "reduzir_e_registar": {
+      "exige": "a posicao JA existe (divergencia medida contra a banda do dono, D-001)",
+      "porque": "O que correu mal ja esta executado: recusar nao desfaz nada. Reduz-se para dentro da banda que o dono declarou, registra-se a divergencia com o numero que a provou, e nao se abre risco novo naquele instrumento ate ela estar explicada. Nunca autoriza repetir - reduzir nao e repetir, e o oposto."
     }
   },
   "regra_da_repeticao": "A ordem so se repete quando provadamente NAO saiu. O que decide isso e a fase: antes de enviar, nada saiu; depois de enviar, o desfecho e desconhecido ate a reconciliacao responder. Quem sabe a fase e o conector - e ele que a declara.",
@@ -137,6 +141,16 @@
       "accao": "repetir_com_atraso",
       "provadamente_nao_feito": true,
       "porque": "A reconciliacao decidiu que NAO existe: agora sabe-se que nada saiu, e repetir deixou de ser as cegas. Este e o unico caminho por que a repeticao fica legal - e passa por perguntar primeiro."
+    },
+    "resolucao_fora_da_banda": {
+      "accao": "reduzir_e_registar",
+      "provadamente_nao_feito": false,
+      "porque": "A corretora executou fora do que o dono autorizou: ha posicao, e ela ja esta la. Reduzir para dentro da banda e registar a divergencia; repetir seria abrir ainda mais risco fora da banda."
+    },
+    "abrir_bloqueado_por_divergencia_de_banda": {
+      "accao": "reduzir_e_registar",
+      "provadamente_nao_feito": false,
+      "porque": "A conferencia da banda do ultimo ciclo deste instrumento nao passou: nao se abre risco novo (nem com divergencia provada, nem com numero nao conferivel), e o que ha a fazer e reduzir o que ja esta aberto ate a divergencia estar explicada."
     }
   }
 }

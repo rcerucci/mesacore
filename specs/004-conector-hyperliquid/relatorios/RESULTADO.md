@@ -9,6 +9,24 @@ medido*, e a razão. As saídas cruas completas estão nos relatórios por caso 
 
 ---
 
+## CORRECÇÃO — 29/09/2026, 19:52 (medida depois da emenda 1.5.0)
+
+**Duas frases deste documento deixaram de ser verdade desde que a emenda 1.5.0 entrou; ficam nomeadas, com o
+texto original por baixo (o registo é auditável).**
+
+1. **O contrato não é 1.4.0.** `contracts/versao.json` lê **1.5.0** — a emenda aditiva que fez o histórico
+   **REAL** deste venue caber no contrato (`relatorios/emenda-1.5.0.txt`, commits `3b730ec` e `dc617f4`). A
+   linha 3 deste documento (`contrato: 1.4.0`) é o retrato do instante em que ele foi escrito, não do agora.
+2. **O FR-018 não é «um caminho que falta».** O leitor do histórico **existe**
+   (`brokers/hyperliquid/historico.ts`, T047/T060) e o contrato **aceita** a carga real de 56 execuções —
+   medido: `historico: 26 casos · 26 ok · 0 divergentes` (`bun brokers/hyperliquid/casos/correr-historico.ts`) e
+   `"veredicto":"servido"` ao vivo. O §«O que não é um critério mas fica dito» (abaixo) fica **superado** por
+   esta correcção.
+
+**O que continua verdade:** os 4 SC provados com número, as metades medidas de SC-003/SC-006, e as **3 tarefas
+bloqueadas pela decisão do dono** (T042, T048, T057) — que exigem **enviar** ordem ao venue. O retrato medido de
+hoje, com o comando de cada número, está em `docs/ONDE_ESTAMOS.md`.
+
 ## SC-001 — «Mudar um limite no venue muda o manifesto seguinte, sem uma linha de código mudar»
 
 **Comando 1**: `bun brokers/hyperliquid/casos/correr.ts` (a bancada do manifesto)

@@ -10,6 +10,7 @@
 // A mesa NAO envia nada (R5): devolve a decisao. Quem envia e o processo que liga o core ao conector.
 
 import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
+import type { ConferenciaDaBanda } from "./banda.ts";
 import { situacaoDoInstrumento, type Falhas, type NomeDeCondicao } from "./condicoes.ts";
 import { montarBoleta, type Decisao, type Mandato, type Template } from "./decisao.ts";
 
@@ -64,6 +65,14 @@ export interface EntradaDoInstrumento {
   falhas?: Falhas;
   /** Divergencia declarada por quem le (ex.: a reconciliacao explicou um numero que nao bate). */
   divergente?: boolean;
+  /**
+   * A conferencia da banda da ultima resolucao deste instrumento (D-001).
+   *
+   * Quando ela NAO passou - uma divergencia provada (a corretora executou fora do que o dono autorizou)
+   * ou um numero que nao se conseguiu conferir - a mesa NAO abre risco novo aqui. Fechar/reduzir continua
+   * permitido: reduzir risco e sempre permitido, mesmo sem leitura e mesmo sem ligacao (RN-M9).
+   */
+  banda?: ConferenciaDaBanda | null;
   restricoes?: { sem_margem?: boolean };
 }
 
@@ -172,6 +181,21 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
       acao: "nada",
       motivo: "abrir_bloqueado_por_desconhecido",
       avisa: false,
+      boleta: null,
+    };
+  }
+
+  // 3.5. A CONFERENCIA DA BANDA (D-001): o que a corretora executou nao passou o que o dono autorizou.
+  // Nao se abre risco novo neste instrumento - nem com uma divergencia provada, nem com um numero que
+  // nao se conseguiu conferir. Fechar/reduzir (o ramo `caixa`, abaixo) continua a passar: reduzir risco
+  // e sempre permitido, e travar o fecho aqui seria a mesa a defender-se do lado errado.
+  if (acao === "abrir" && entrada.banda != null && entrada.banda.accao !== "seguir") {
+    return {
+      ...base,
+      acao: "nada",
+      motivo: "abrir_bloqueado_por_divergencia_de_banda",
+      // A divergencia e um dos eventos que o dono declara: ele escreveu que quer ser avisado dela.
+      avisa: true,
       boleta: null,
     };
   }

@@ -1,0 +1,96 @@
+EMENDA 1.6.0 — a BANDA DA MOEDA passa a ser a medida, e nao a suposta
+======================================================================
+
+De: 1.5.0  Para: 1.6.0  (aditiva; e APAGA uma prova negativa de proposito, trocando-a
+pela prova negativa do que a medicao diz ser lixo)
+
+O QUE A EMENDA RESOLVE, EM UMA LINHA: a 1.5.0 alargou a moeda a TRES..CINCO letras
+maiusculas porque o `feeToken` de UMA conta escrevia `USDC` — isso era a medicao de UMA
+moeda, nao a banda do venue; medida agora, a banda do venue e outra, e a forma passa a
+1..11 caracteres alfanumericos (maiusculas ou minusculas).
+
+A MEDICAO (reproduzida a 29/09/2026, 20:5x, so leitura e sem chave)
+-------------------------------------------------------------------
+
+$ curl -s -X POST https://api.hyperliquid-testnet.xyz/info -H 'Content-Type: application/json' \
+      -d '{"type":"metaAndAssetCtxs"}'   # e o mesmo com {"type":"spotMeta"}
+
+  perpetuos: 212 | tokens de spot: 1665 | nomes partilhados: 14 | DISTINTOS: 1863
+  por comprimento: {1:11, 2:47, 3:258, 4:489, 5:527, 6:504, 7:17, 8:5, 9:1, 10:2, 11:2}
+  fora da banda da 1.5.0 (3..5, so maiusculas): 601 dos 1863
+    — dos quais 589 SO pelo comprimento (as de 1, 2 e de 6 a 11 letras)
+  com digito: 72   exemplos: 0G, 2Z, AA0, AF0, AFFF0, AFFF1, AFFFF0, AI16Z
+  com minuscula: 15   exemplos: TestPascal1, kBONK, kDOGS, kLUNC, kNEIRO, kPEPE, kSHIB, o1528
+  os mais longos: TestPascal1, TSRSFGQQQQQ, LAUNCHCOIN, JELLYJELLY, TSRSFGGGG, GRIFFAIN
+  fora de [A-Za-z0-9] (o unico): 'JPL ' — com um ESPACO no fim
+
+CORRECCAO DE UM NUMERO DESTA EMENDA (medida, e dita)
+----------------------------------------------------
+
+Esta emenda registou em tres sitios (o esquema, a porta do contrato e o `versao.json`) que
+"1400 dos 1863 trazem digito". **Estava errado, e a proveniencia era outra:** 1400 e' o que
+sai quando se contam, junto com os 1863 simbolos, os **1329 nomes de PARES de spot**
+(`@1`, `@2`, `PURR/USDC`) — que nao sao moedas. Sobre os 1863 simbolos de moeda, os que
+trazem digito sao **72**. Os tres sitios passaram a dizer 72 com a nota do que o 1400 contava.
+Os outros numeros desta emenda (1863, a distribuicao, 589 e 15) reproduzem-se tal e qual.
+
+A DECISAO
+---------
+
+- A forma passa a `^[A-Za-z0-9]{1,11}$`, num SO sitio — `contracts/_defs/forma.schema.json#/$defs/moeda` —
+  e os DOIS motores (TS e Python) leem-no de la. `historico.moeda` passa a referi-lo.
+- Alarga-se ao MEDIDO e nao mais: 1862 dos 1863 cabem na forma nova.
+- **O que NAO se fez:** alargar a banda para acomodar `JPL ` (um ESPACO no fim). Um simbolo
+  com espaco e lixo, e e ele a prova negativa que a forma continua a RECUSAR.
+- **A prova negativa da 1.5.0 foi SUBSTITUIDA de proposito:** ela recusava SEIS letras e
+  MINUSCULAS — e a medicao desmentiu as duas (ha `TestPascal1` com onze e minusculas, e ha
+  504 simbolos de seis letras). Manter as provas antigas ao lado da banda nova deixaria o
+  campo sem negativo nenhum. As provas negativas passam a ser: ESPACO (o `JPL `), HIFEN
+  (`EUR-USD`) e 12+ letras (`TSRSFGQQQQQQ`).
+
+O QUE A EMENDA *NAO* MEXEU
+--------------------------
+
+1. O caso `historico/moeda-de-quatro-letras-cabe-na-forma` (o `USDC` da 1.5.0) continua a
+   passar — a banda nova contem a antiga.
+2. O caso `historico/moeda-em-minusculas-recusa` **muda de veredicto de proposito** (passa a
+   aceite, com `TestPascal1`): era a prova negativa que a medicao desmentiu, e a troca esta
+   dita acima em vez de escondida.
+3. `contracts/mocks/conector/historico.py` e os mocks do 001 nao mudaram.
+
+A SAIDA CRUA DO ACEITE
+----------------------
+
+$ bun tools/verificar-conector/porta-do-contrato.ts
+PORTA — versao do contrato: 1.6.0, declarada numa so casa
+PORTA — paridade: os dois motores, caso a caso
+  ts · contrato 1.6.0 · 127 casos · 45 aceites · 82 recusados · 0 divergentes · 0 erros
+  py · contrato 1.6.0 · 127 casos · 45 aceites · 82 recusados · 0 divergentes · 0 erros
+PORTA — emenda 1.5.0: 23 sondas do historico REAL (o que passa e o que reprova), nos dois motores
+  aceite/- nos dois motores — (a) a moeda do venue (`USDC`, QUATRO letras) CABE na banda medida
+  aceite/- nos dois motores — (a) a moeda antiga (`USD`, TRES letras) NAO deixou de caber
+  aceite/- nos dois motores — (a) MEDIDO: a moeda de UMA letra (`W`) CABE — o venue tem 11 simbolos de uma letra
+  aceite/- nos dois motores — (a) MEDIDO: a moeda com DIGITO (`TEST1`) CABE — 72 dos 1863 simbolos trazem digito
+  aceite/- nos dois motores — (a) MEDIDO: a moeda com MINUSCULAS (`TestPascal1`, ONZE letras) CABE — 15 dos 1863 trazem minuscula
+  recusado/formato_invalido nos dois motores — (a) PROVA NEGATIVA: a moeda com DOZE letras (`TSRSFGQQQQQQ`) RECUSA — o medido fecha em ONZE
+  recusado/formato_invalido nos dois motores — (a) PROVA NEGATIVA: a moeda com HIFEN (`EUR-USD`) RECUSA — 0 de 1863 simbolos medidos tem hifen
+  recusado/formato_invalido nos dois motores — (a) PROVA NEGATIVA, e MEDIDA: a moeda `JPL ` (ESPACO no fim) RECUSA — e' o unico dos 1863 que nao cabe
+
+porta-do-contrato: 0 falhas — contrato 1.6.0 · 18 motivos fechados nas duas direcoes · 127 casos lidos nos dois motores · 10 casos de conformidade nas duas linguagens · 4 bandas no duble · 23 sondas da emenda 1.5.0 no historico
+
+$ bash tools/verificar-conector/provas-offline.sh
+casos do historico do venue (hyperliquid)           OK   historico: 26 casos · 26 ok · 0 divergentes · 5 declaracoes · 0 provocacoes divergentes (esperado: 0)
+provas offline do conector: 0 falhas
+
+$ bash tools/verificar-maquina/provar.sh
+provar: 27 de 27 passaram — a maquina decide o que devia, e explica o que nao fez
+
+A MEDICAO CRUA (a resposta do venue, para quem quiser repetir sem confiar nesta prosa)
+--------------------------------------------------------------------------------------
+
+O endpoint `info` e' PUBLICO: nao leva chave, nao assina nada, nao toca em conta nenhuma.
+Os dois pedidos sao `{"type":"metaAndAssetCtxs"}` e `{"type":"spotMeta"}`; o conjunto de
+nomes e' `distinct(universe[].name dos perpetuos ∪ tokens[].name do spotMeta)`; a
+distribuicao por comprimento e a contagem de digitos/minusculas saem de uma passagem por
+esses nomes (a contagem inclui, de proposito, TODOS os nomes de moeda e NAO os nomes de
+pares — que foi onde o `1400` se enganou).

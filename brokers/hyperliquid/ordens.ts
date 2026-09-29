@@ -101,7 +101,13 @@ export type AccaoDoVenue = {
   tipo: "mercado" | "limite";
   tif: Tif;
   quantidade: string;
+  /** O preco QUE VAI PARA O VENUE. No `limite` e', caracter a caracter, o da boleta; no `mercado` e' o mais
+   *  agressivo que o `desvio_maximo` declarado permite, quantizado a regra de preco do venue SEM sair da banda. */
   preco: string;
+  /** O preco de REFERENCIA lido do venue (a marca) — a regua de que o desvio foi medido (RN-B11). */
+  preco_de_referencia: string;
+  /** O desvio declarado na boleta, em percentagem de movimento — [C], nunca um numero nosso. */
+  desvio_maximo: string;
   nocional: string;
   alavancagem: string;
   reduce_only: boolean;
@@ -362,10 +368,63 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
   const cloidR = derivarCloid(conta, instrumento, referencia);
   if (!cloidR.ok) return cloidR;
 
-  // ---- porta 6: o preco cabe na regra do venue? se nao, RECUSA — nunca arredonda -----------------------------
-  const cabimento = cabeNoPreco(preco, unidade.tick);
+  // ---- porta 5-bis: o PRECO A ENVIAR. No `limite` e' o da boleta, EXACTO (o preco de uma ordem de limite
+  //      e' o ponto dela, e a prova FR-009 continua a ser caracter a caracter). No `mercado` o venue nao tem
+  //      ordem de mercado nativa: manda-se um Ioc com um preco que CRUZA, e esse preco sai do DESVIO
+  //      DECLARADO na boleta ([C] — a mesa manda-o; o manifesto diz o que o venue aceita). O preco e' o mais
+  //      agressivo que a banda permite, quantizado a regra de preco do venue POR DENTRO da banda (nunca a
+  //      excede) e sempre do lado agressivo da referencia; se nem isso couber, RECUSA em vez de aproximar.
+  const desvioR = exigirTexto(b.desvio_maximo, "boleta.desvio_maximo (o desvio que a MESA pede)");
+  if (!desvioR.ok) return desvioR;
+  const desvio = desvioR.valor;
+  if (!PADRAO_DECIMAL_POSITIVO.test(desvio)) {
+    return recusa("formato_invalido", `o desvio maximo da boleta (${JSON.stringify(desvio)}) nao e decimal positivo (a grandeza e' ignorada, nunca suposta)`);
+  }
+  const bandaR = exigirTexto(m.desvio_maximo, "manifesto.desvio_maximo (o desvio que o venue aceita)");
+  if (!bandaR.ok) return bandaR;
+  const banda = bandaR.valor;
+  if (!PADRAO_DECIMAL_POSITIVO.test(banda)) {
+    return recusa("formato_invalido", `o desvio que o manifesto declara (${JSON.stringify(banda)}) nao e decimal positivo`);
+  }
+  if (escalado(desvio) * pow10(decimais(banda)) > escalado(banda) * pow10(decimais(desvio))) {
+    return recusa(
+      "valor_fora_da_banda",
+      `a boleta pede desvio de ${desvio}% e o manifesto so declara ${banda}% como aceite pelo venue: recusa, nao se corta o desvio para caber (o desvio nao e' nosso para o baixar)`,
+    );
+  }
+
+  const precoParaEnviar =
+    par.tipo === "limite" ? ({ ok: true as const, valor: preco } as const) : precoAgressivo(preco, desvio, lado, unidade.tick);
+  if (!precoParaEnviar.ok) return precoParaEnviar;
+  const precoDeEnvio = precoParaEnviar.valor;
+
+  // ---- porta 6-a: as CASAS da referencia (a marca) cabem no instrumento? -----------------------------------
+  //
+  // A referencia e' a REGUA de que o desvio e' medido (RN-B11). Se ela traz mais casas decimais do que o
+  // instrumento admite no proprio tick, nao e' uma marca — e' uma leitura estragada (o venue publica a marca
+  // na grelha do proprio instrumento; medido a 29/09/2026 no `metaAndAssetCtxs`: BTC szDecimals=5
+  // `markPx 83835.0` · APT 0.7887 · MATIC 0.37035 — todos dentro da grelha). RECUSA nomeada, e nao se
+  // arredonda a regua para a poder usar.
+  //
+  // PORQUE SO AS CASAS, E NAO A REGRA INTEIRA: os 5 algarismos significativos sao a regra do preco que se
+  // MANDA (porta 6, abaixo), nao a da marca — e a marca real toca nessa contagem (`83835.0` tem 6 digitos e e'
+  // a marca que o venue publicou para o BTC). O caso `ordens/mercado-preco-quantizado-POR-DENTRO-da-banda-do-venue`
+  // prova-o com a marca `83867.0`: como regua tem de ser aceitavel, e quem passa a regra e' o preco quantizado
+  // que sai. A ORDEM DESTA PORTA importa: com ela a correr depois de `precoAgressivo`, o preco derivado (que
+  // sai sempre quantizado, por construcao) passava — e a regua estragada ia ao venue sem ninguem a ler.
+  const casasDaReferencia = decimais(preco);
+  const casasDoInstrumento = decimais(unidade.tick);
+  if (casasDaReferencia > casasDoInstrumento) {
+    return recusa(
+      "valor_fora_da_banda",
+      `a marca que o venue publicou (${preco}) tem ${casasDaReferencia} casa(s) decimal(is) e este instrumento admite ${casasDoInstrumento} (tick ${unidade.tick}) — recusa, nao se arredonda a regua de que o desvio e' medido`,
+    );
+  }
+
+  // ---- porta 6: o preco QUE VAI cabe na regra do venue? se nao, RECUSA — nunca arredonda --------------------
+  const cabimento = cabeNoPreco(precoDeEnvio, unidade.tick);
   if (!cabimento.cabe) {
-    return recusa("valor_fora_da_banda", `o preco ${preco} nao cabe na regra do venue: ${cabimento.porque} — recusa, nao arredonda`);
+    return recusa("valor_fora_da_banda", `o preco ${precoDeEnvio} nao cabe na regra do venue: ${cabimento.porque} — recusa, nao arredonda`);
   }
 
   // ---- porta 7: a quantidade, o minimo do instrumento e o valor minimo por ordem -----------------------------
@@ -403,8 +462,11 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
     );
   }
 
-  const nocionalEscalado = k * escalado(preco);
-  const escalaNocional = casasPasso + q;
+  // O nocional e' o da ordem QUE SE MANDA: quantidade x o preco que vai para o venue (no `mercado` isso e'
+  // o CAP da banda declarada, e nao a referencia — declarar o nocional pela referencia seria declarar menos
+  // exposicao do que a ordem pode empenhar).
+  const nocionalEscalado = k * escalado(precoDeEnvio);
+  const escalaNocional = casasPasso + decimais(precoDeEnvio);
   if (nocionalEscalado * pow10(decimais(minimoDeValor)) < escalado(minimoDeValor) * pow10(escalaNocional)) {
     return recusa(
       "minimo_do_instrumento_acima_da_banda",
@@ -420,12 +482,82 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
       tipo: par.tipo,
       tif: par.tif,
       quantidade: formatar(k, casasPasso),
-      // O preco sai EXACTAMENTE como entrou: prova de que a traducao nao o ajustou em silencio (FR-009).
-      preco,
+      // O preco QUE VAI PARA O VENUE. No `limite` sai EXACTAMENTE como entrou (FR-009, caracter a caracter);
+      // no `mercado` sai o Ioc que cruza, por dentro da banda declarada — e a referencia e o desvio de que
+      // ele saiu vao declarados na accao, para quem envia poder provar de onde veio.
+      preco: precoDeEnvio,
       nocional: formatar(nocionalEscalado, escalaNocional),
       alavancagem,
       reduce_only,
       cloid: cloidR.cloid,
+      // O preco de REFERENCIA e o desvio ficam DECLARADOS na accao: quem envia tem de poder provar que
+      // o preco que saiu esta dentro da banda que a boleta pediu, e de onde ele foi medido.
+      preco_de_referencia: preco,
+      desvio_maximo: desvio,
     },
   };
+}
+
+/**
+ * O preco de um Ioc de MERCADO que CRUZA — o unico jeito de mandar «a mercado» a um venue que nao tem ordem
+ * de mercado nativa (na Hyperliquid uma ordem a mercado e' um Ioc com um preco que cruza).
+ *
+ * DE ONDE VEM O PRECO: do `desvio_maximo` que a boleta DECLARA ([C] — a mesa manda-o), medido sobre o preco
+ * de referencia que o conector RELEU do venue no momento do envio (RN-B11). Nada aqui e' um numero nosso:
+ * o desvio e' o da boleta, a referencia e' a do venue.
+ *
+ * COMO SE QUANTIZA: o valor alvo (`referencia +/- desvio%`) nao cabe, em geral, na regra de preco do venue
+ * (no maximo 5 algarismos significativos e no maximo as casas do `tick`). A quantizacao faz-se SEMPRE POR
+ * DENTRO DA BANDA — para o lado da referencia — e nunca para fora: o preco que sai fica em
+ * `[referencia, referencia*(1+desvio)]` numa compra e em `[referencia*(1-desvio), referencia]` numa venda.
+ * Arredondar para fora da banda seria alargar o desvio declarado por conta propria, e isso nao se faz.
+ *
+ * SE NEM ASSIM DER: se o desvio declarado nao chegar para o preco quantizado ficar do lado AGRESSIVO da
+ * referencia (banda mais estreita que a granularidade do preco do venue), RECUSA. Um Ioc com preco igual a
+ * referencia nao cruza — sai uma ordem que nao negoceia — e fingir que cruza seria decidir no escuro.
+ */
+function precoAgressivo(
+  referencia: string,
+  desvio: string,
+  lado: "buy" | "sell",
+  tick: string,
+): { ok: true; valor: string } | Recusa {
+  if (!PADRAO_DECIMAL_POSITIVO.test(referencia)) {
+    return recusa("formato_invalido", `o preco de referencia lido do venue (${JSON.stringify(referencia)}) nao e decimal positivo`);
+  }
+  const casasRef = decimais(referencia);
+  const casasDoTick = decimais(tick);
+  const e = decimais(desvio);
+
+  // alvo = referencia * (100*10^e +/- desvio) / (100*10^e), em inteiros escalados (sem virgula flutuante)
+  const fator = 100n * pow10(e) + (lado === "buy" ? 1n : -1n) * escalado(desvio);
+  const denominador = 100n * pow10(e) * pow10(casasRef);
+  const numerador = escalado(referencia) * fator; // o alvo, na escala `casasRef`
+
+  // T = alvo na escala do tick, truncado PARA DENTRO da banda (compra: por baixo; venda: por cima)
+  let escala = casasDoTick;
+  const bruto = numerador * pow10(escala);
+  let t = lado === "buy" ? bruto / denominador : (bruto + denominador - 1n) / denominador;
+
+  // A regra de preco do venue: retira-se precisao POR DENTRO da banda ate caberem 5 algarismos significativos.
+  while (escala > 0 && algarismosSignificativos(formatar(t, escala)) > ALGARISMOS_SIGNIFICATIVOS_DO_PRECO) {
+    t = lado === "buy" ? t / 10n : (t + 9n) / 10n;
+    escala -= 1;
+  }
+
+  const preco = formatar(t, escala);
+  if (t <= 0n) {
+    return recusa("valor_fora_da_banda", `o desvio declarado (${desvio}%) leva o preco a zero a partir da referencia ${referencia}: recusa`);
+  }
+  // A comparacao usa a escala do decimal ESCRITO (o `formatar` larga os zeros a direita, e a escala muda com ele)
+  const casasDoPreco = decimais(preco);
+  const comparacao = escalado(preco) * pow10(casasRef) - escalado(referencia) * pow10(casasDoPreco);
+  const agressivo = lado === "buy" ? comparacao > 0n : comparacao < 0n;
+  if (!agressivo) {
+    return recusa(
+      "valor_fora_da_banda",
+      `o desvio declarado de ${desvio}% nao chega para cruzar o preco do venue dentro da regra dele: a referencia ${referencia} com a granularidade ${tick} so deixa preco ${preco}, que nao e' do lado agressivo — recusa, nao se alarga o desvio por conta propria`,
+    );
+  }
+  return { ok: true, valor: preco };
 }

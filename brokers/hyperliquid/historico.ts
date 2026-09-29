@@ -37,12 +37,15 @@
 //   * um RESULTADO REALIZADO POR INSTRUMENTO (o venue so o publica por execucao — ver acima). OPCIONAL
 //     no contrato desde a 1.5.0: o campo de cima fica AUSENTE, e o `closedPnl` de cada execucao fica no
 //     campo proprio da leitura. Somar as parcelas continua proibido;
-//   * a MOEDA da taxa NA FORMA QUE O CONTRATO PEDIA — e que a emenda 1.5.0 ALARGOU por causa desta
-//     medicao: o venue escreve-a (`feeToken`) como `USDC`, com QUATRO letras (medido: nas 56 execucoes
-//     desta conta, pelo HTTP cru e pelo SDK oficial), e o contrato declarava este campo com a forma de
-//     TRES (`^[A-Z]{3}$`). `USDC` nao e `USD`: normalizar o nome do venue para caber seria a mesa a
-//     corrigi-lo. Quem o podia resolver era o CONTRATO, e a 1.5.0 resolveu-o (de TRES a CINCO letras) —
-//     por isso a moeda passou a ser LIDA, e nao ha nada a declarar em falta aqui.
+//   * a MOEDA da taxa NA FORMA QUE O CONTRATO PEDIA — e que a emenda 1.5.0 ALARGOU e a 1.6.0 alargou
+//     outra vez ao MEDIDO. O venue escreve-a (`feeToken`) como `USDC`, com QUATRO letras (medido: nas 56
+//     execucoes desta conta, pelo HTTP cru e pelo SDK oficial), e o contrato declarava este campo com a
+//     forma de TRES (`^[A-Z]{3}$`). `USDC` nao e `USD`: normalizar o nome do venue para caber seria a
+//     mesa a corrigi-lo. Quem podia resolver era o CONTRATO, e resolveu: a 1.5.0 passou a TRES a CINCO
+//     letras maiusculas e a 1.6.0 alargou ao universo MEDIDO do venue — 1863 simbolos distintos, de 1 a
+//     11 caracteres, com digitos (`TEST1`) e minusculas (`TestPascal1`), dos quais 1862 cabem na forma
+//     nova e UM (`JPL `, com espaco) continua a RECUSAR. Por isso a moeda passou a ser LIDA, e nao ha
+//     nada a declarar em falta aqui;
 //
 // NADA DISSO SE PREENCHE AQUI. A leitura diz o nome de cada campo em falta (`nao_publicados`), e quem
 // responde ao pedido e o processo (`conector.ts`), que so serve a mensagem se o CONTRATO a aceitar.
@@ -238,7 +241,7 @@ export type ResultadoDeHistorico = { ok: true; leitura: LeituraDoHistorico } | {
 const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 const DECIMAL_NAO_NEGATIVO = /^(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 const DECIMAL_POSITIVO = /^(0*\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\.[0-9]+)?)$/;
-const MOEDA = /^[A-Z]{3,5}$/; // a forma do CONTRATO depois da emenda 1.5.0 (medido: o venue escreve `USDC`, quatro letras)
+const MOEDA = /^[A-Za-z0-9]{1,11}$/; // a forma do CONTRATO depois da emenda 1.6.0 — a MEDIDA contra o venue: 1863 simbolos, de 1 a 11 caracteres, com digitos e minusculas (1862 cabem; `JPL `, com espaco, NAO)
 const PADRAO_CORRELACAO = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$/;
 /** A forma do `cloid` deste venue (`cloid.ts`): 0x + 32 hexadecimais minusculos. */
 const FORMA_DO_CLOID = /^0x[0-9a-f]{32}$/;
@@ -477,8 +480,10 @@ export function lerHistorico(respostas: RespostasDoHistorico, pedido: PedidoDeHi
   // MEDIDO nesta conta (30 set 2026, so leitura): o venue escreve a moeda da taxa como `USDC` — QUATRO
   // letras, no `feeToken` das execucoes (cru e pelo SDK oficial). Ate a 1.4.0 a forma do contrato para
   // este campo era `^[A-Z]{3}$` (tres) e esta leitura ficava sem a poder ler; a emenda 1.5.0 alargou-a
-  // a de TRES a CINCO letras — a moeda passou a ser LIDA, e o resto da fronteira (seis letras,
-  // minusculas) continua a nao caber. O nome do venue continua a NAO se normalizar: `USDC` nao e `USD`.
+  // a de TRES a CINCO letras, e a 1.6.0 alargou-a ao universo MEDIDO do venue (`^[A-Za-z0-9]{1,11}$`:
+  // 1863 simbolos distintos, de 1 a 11 caracteres, com digitos e minusculas). O nome do venue continua a
+  // NAO se normalizar: `USDC` nao e `USD`, e o unico dos 1863 que a forma nova recusa (`JPL `, com
+  // espaco) continua a recusar — a banda para no alfanumerico de 1 a 11, e nao vai mais longe.
   const moedas = [...moedasVistas];
   const cabemNaForma = moedas.filter((m) => MOEDA.test(m));
   let moeda: Grandeza<string>;
@@ -498,7 +503,8 @@ export function lerHistorico(respostas: RespostasDoHistorico, pedido: PedidoDeHi
       origem: ORIGENS_DO_HISTORICO.moeda,
       porque:
         `as execucoes do venue declaram a moeda da taxa como ${JSON.stringify(moedas[0])}, e a forma do contrato ` +
-        "para este campo e de TRES a CINCO letras maiusculas (`^[A-Z]{3,5}$`, desde a emenda 1.5.0): a grandeza " +
+        "para este campo e de UM a ONZE caracteres alfanumericos, maiusculas ou minusculas (`^[A-Za-z0-9]{1,11}$`, " +
+        "desde a emenda 1.6.0, que a mediu contra os 1863 simbolos do venue): a grandeza " +
         "fica DESCONHECIDA e o nome do venue NAO se normaliza para caber (escrever uma moeda que o venue nao " +
         "escreveu seria a mesa a corrigi-lo). O que a emenda alargou foi o que o venue deu; o resto continua a " +
         "recusar, e o motivo e dito pelo nome",

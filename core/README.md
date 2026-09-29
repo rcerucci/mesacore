@@ -23,6 +23,7 @@ A ordem é sempre a mesma: **posição → condição → lado → decisão**.
 | `ciclo/condicoes.json` + `condicoes.ts` | as condições **somam** impedimentos (não vencem). Dado, não código |
 | `ciclo/ciclo.ts` | a ordem do ciclo e as travas. **Não envia** (R5) |
 | `ciclo/decisao.ts` | monta a boleta do mandato + template, e valida-a contra o contrato antes de sair |
+| `ciclo/banda.ts` | **a conferência da banda (D-001)**: o que a corretora EXECUTOU contra o que o dono autorizou — alavancagem efectiva, exposição e distância à liquidação. Pura, aritmética exacta, e o que não se confere **não vira «cabe»** |
 | `ciclo/desfecho.ts` | classifica o que voltou: aceite, parcial, recusado ou **desconhecido** |
 | `ciclo/reconciliacao.ts` | três veredictos; só os que **decidem** limpam a marca de desconhecido |
 | `ciclo/cb.ts` | o circuit breaker: comparação **exacta**, sem percentagem arredondada |

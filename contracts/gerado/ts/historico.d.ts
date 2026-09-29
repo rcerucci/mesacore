@@ -14,7 +14,7 @@ export interface HistoricoDoVenue {
    */
   instrumento: string;
   /**
-   * A moeda em que o venue cobra a taxa, como ele a ESCREVE. A forma vive num so sitio (`_defs/forma.schema.json#/$defs/moeda`) e admite de tres a cinco letras maiusculas desde a 1.5.0 — medido: `USDC`, com quatro.
+   * A moeda em que o venue cobra a taxa, como ele a ESCREVE. A forma vive num so sitio (`_defs/forma.schema.json#/$defs/moeda`) e admite de UM a ONZE caracteres alfanumericos, maiusculas ou minusculas, desde a 1.6.0 — medido contra o universo real do venue (1863 simbolos distintos, comprimentos de 1 a 11, com digitos e minusculas). `USDC` nao e `USD`: nada se normaliza.
    */
   moeda: string;
   /**

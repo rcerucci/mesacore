@@ -262,5 +262,9 @@ mais), é a bateria que decide — e o resultado entra no manifesto.
 - A **credencial** entra por referência, fora do repositório, e o nome dela vem do inventário de chaves; nenhum valor entra em `/config`, ledger, log ou mensagem.
 - O **prazo** do silêncio (o que separa `espera` de `desconhecido`) é **do dono**, declarado na configuração — não um número do conector.
 - A **mesa** já sabe ler a resolução e o desfecho: o contrato está provado nas duas linguagens desde o recorte 003.
+  *Nota medida (29/09/2026, 20:07): «sabe ler» aqui significa que a **mensagem** existe e tem forma provada — não
+  que o `core` a leia. Medido: `grep -rn 'resolucao' core --include=*.ts | wc -l` → **1**, e essa única ocorrência
+  é texto de uma mensagem (`core/ciclo/arranque.ts:150`), não código que leia números. A conferência da banda
+  (**D-001**) continua aberta, e é do lado da mesa (ver a premissa seguinte).*
 - O **mínimo nocional** do venue, as taxas e o funding são lidos/sondados; os valores da documentação oficial são premissas **datadas**, a confirmar pela bateria.
 - O recorte **não** corrige o **D-001** (a conferência de banda): o conector entrega os números e a mesa confere-os — o defeito fecha-se do lado da mesa.

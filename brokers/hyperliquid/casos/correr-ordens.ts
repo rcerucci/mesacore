@@ -117,9 +117,45 @@ for (const c of casos.casos) {
         problemas.push(`${campo}=${JSON.stringify(a[campo])} nao e decimal textual positivo do contrato`);
       }
     }
-    // NADA se ajusta em silencio: o preco devolvido e, caracter a caracter, o que entrou (FR-009).
-    if (a.preco !== pedido.preco) {
-      problemas.push(`o preco foi ajustado em silencio: entrou ${JSON.stringify(pedido.preco)} e saiu ${JSON.stringify(a.preco)}`);
+    // NADA se ajusta em silencio. No `limite` o preco devolvido e', caracter a caracter, o que entrou
+    // (FR-009 — o preco e' o ponto da ordem). No `mercado` o venue nao tem ordem de mercado nativa: sai um
+    // Ioc com um preco que CRUZA, derivado do `desvio_maximo` DECLARADO na boleta e da referencia RELIDA do
+    // venue — e aqui prova-se que ele ficou POR DENTRO da banda e do lado agressivo, e nunca fora dela.
+    if (a.tipo === "limite") {
+      if (a.preco !== pedido.preco) {
+        problemas.push(`o preco de uma ordem de LIMITE foi ajustado em silencio: entrou ${JSON.stringify(pedido.preco)} e saiu ${JSON.stringify(a.preco)}`);
+      }
+    } else {
+      if (a.preco_de_referencia !== pedido.preco) {
+        problemas.push(`a referencia declarada na accao (${JSON.stringify(a.preco_de_referencia)}) nao e' o preco relido do venue (${JSON.stringify(pedido.preco)})`);
+      }
+      if (a.desvio_maximo !== pedido.boleta?.desvio_maximo) {
+        problemas.push(`o desvio declarado na accao (${JSON.stringify(a.desvio_maximo)}) nao e' o da boleta (${JSON.stringify(pedido.boleta?.desvio_maximo)})`);
+      }
+      const desvio = String(pedido.boleta?.desvio_maximo ?? "");
+      const escala = (s: string) => { const i = s.indexOf("."); return i < 0 ? 0 : s.length - i - 1; };
+      const valor = (s: string) => { const i = s.indexOf("."); return BigInt(i < 0 ? s : s.slice(0, i) + s.slice(i + 1)); };
+      const eP = escala(String(a.preco)), eR = escala(String(a.preco_de_referencia)), eD = escala(desvio);
+      const precoE = valor(String(a.preco)), refE = valor(String(a.preco_de_referencia));
+      // limite superior da banda (compra) / inferior (venda), tambem em inteiros escalados
+      const alvoE = refE * (100n * 10n ** BigInt(eD) + (a.lado === "buy" ? 1n : -1n) * valor(desvio));
+      const alvoDen = 100n * 10n ** BigInt(eD) * 10n ** BigInt(eR);
+      const comparar = (x: bigint, ex: number, y: bigint, ey: number) => {
+        const n = ex > ey ? ex : ey;
+        return (x * 10n ** BigInt(n - ex)) - (y * 10n ** BigInt(n - ey));
+      };
+      const dentroDaBanda = a.lado === "buy"
+        ? precoE * alvoDen <= alvoE * 10n ** BigInt(eP)
+        : precoE * alvoDen >= alvoE * 10n ** BigInt(eP);
+      if (!dentroDaBanda) {
+        problemas.push(`o preco do Ioc de mercado saiu FORA da banda declarada (${desvio}% sobre ${a.preco_de_referencia}): saiu ${a.preco}`);
+      }
+      const agressivo = a.lado === "buy"
+        ? comparar(precoE, eP, refE, eR) > 0n
+        : comparar(precoE, eP, refE, eR) < 0n;
+      if (!agressivo) {
+        problemas.push(`o Ioc de mercado saiu com preco ${a.preco}, que nao e' do lado agressivo da referencia ${a.preco_de_referencia} — nao cruzaria`);
+      }
     }
     // A referencia de cliente NAO vai crua para o venue (FR-011): a accao leva o cloid, nao a referencia.
     if (Object.values(a).includes(pedido.boleta?.referencia_do_cliente)) {

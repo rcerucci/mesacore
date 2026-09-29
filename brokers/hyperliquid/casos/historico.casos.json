@@ -3728,7 +3728,7 @@
     {
       "caso": "historico/a-moeda-de-quatro-letras-do-venue-le-se-depois-da-emenda",
       "base": "real",
-      "nota": "MEDIDO: o venue escreve a moeda da taxa como `USDC` (quatro letras) e a forma do contrato era de tres (`^[A-Z]{3}$`). A divergencia era do CONTRATO com o venue e foi DITA, nao remendada (ate a 1.4.0 a moeda ficava desconhecida). A emenda 1.5.0 alargou a forma a TRES a CINCO letras — o caso do contrato `historico/moeda-de-quatro-letras-cabe-na-forma` prova-o nos dois motores — e a moeda passou a ser LIDA: `USDC` e o que o venue escreveu, e nada se normaliza.",
+      "nota": "MEDIDO: o venue escreve a moeda da taxa como `USDC` (quatro letras) e a forma do contrato era de tres (`^[A-Z]{3}$`). A divergencia era do CONTRATO com o venue e foi DITA, nao remendada (ate a 1.4.0 a moeda ficava desconhecida). A emenda 1.5.0 alargou a forma a TRES a CINCO letras e a 1.6.0 alargou-a ao universo MEDIDO do venue (`^[A-Za-z0-9]{1,11}$`) — o caso do contrato `historico/moeda-de-quatro-letras-cabe-na-forma` prova-o nos dois motores — e a moeda passou a ser LIDA: `USDC` e o que o venue escreveu, e nada se normaliza.",
       "esperadoOk": true,
       "conferir": {
         "moeda.estado": "lido",
@@ -3739,20 +3739,38 @@
       }
     },
     {
-      "caso": "historico/a-moeda-que-nao-cabe-nem-na-forma-alargada-nao-se-le-e-o-contrato-recusa",
+      "caso": "historico/a-moeda-MEDIDA-com-digitos-e-minusculas-le-se-sem-normalizar",
       "base": "duble_declarado",
-      "nota": "PROVA NEGATIVA do alargamento (a): a forma passou a admitir de TRES a CINCO letras maiusculas, e nao mais do que isso. Com a moeda do venue em seis letras, a leitura NAO a serve (nao converte, nao corta, nao normaliza) e a carga segue SEM a chave `moeda` — e e o CONTRATO que a recusa, com o motivo dele. O alargamento medido nao vira tolerancia.",
+      "nota": "MEDIDO (1.6.0): o universo do venue tem 1863 simbolos, de comprimentos 1 a 11, com DIGITOS (`TEST1`, `TUSDC`, `PACOU0`, `TSRSFG0` — 1400 dos 1863) e MINUSCULAS (`kPEPE`, `TestPascal1`, `werfqwer` — 15 dos 1863). A leitura serve o nome COMO O VENUE O ESCREVEU: nao converte caixa, nao corta, nao completa. Era esta a medicao que faltava a 1.5.0.",
       "mudar": {
-        "execucoes[0].feeToken": "USDCXX",
-        "execucoes[1].feeToken": "USDCXX",
-        "execucoes[2].feeToken": "USDCXX"
+        "execucoes[0].feeToken": "TestPascal1",
+        "execucoes[1].feeToken": "TestPascal1",
+        "execucoes[2].feeToken": "TestPascal1"
+      },
+      "esperadoOk": true,
+      "conferir": {
+        "moeda.estado": "lido",
+        "moeda.valor": "TestPascal1"
+      },
+      "contem": {
+        "origens.moeda": "feeToken"
+      }
+    },
+    {
+      "caso": "historico/a-moeda-com-ESPACO-nao-se-le-e-o-contrato-recusa",
+      "base": "duble_declarado",
+      "nota": "PROVA NEGATIVA da banda MEDIDA na 1.6.0: a forma passou a admitir de UM a ONZE caracteres alfanumericos, maiusculas ou minusculas, e nao mais do que isso. Dos 1863 simbolos que o venue escreve, 1862 cabem e UM nao: `JPL `, com um ESPACO no fim (medido). Com essa moeda, a leitura NAO a serve (nao converte, nao corta, nao normaliza) e a carga segue SEM a chave `moeda` — e e o CONTRATO que a recusa, com o motivo dele. A banda medida nao vira tolerancia. O caso antigo (moeda de SEIS letras) mudou de veredicto de proposito: a medicao desmentiu a forma que o recusava.",
+      "mudar": {
+        "execucoes[0].feeToken": "JPL ",
+        "execucoes[1].feeToken": "JPL ",
+        "execucoes[2].feeToken": "JPL "
       },
       "esperadoOk": true,
       "conferir": {
         "moeda.estado": "nao_publicado"
       },
       "contem": {
-        "moeda.porque": "de TRES a CINCO letras maiusculas"
+        "moeda.porque": "de UM a ONZE caracteres alfanumericos"
       },
       "carga": {
         "nao_leva": [

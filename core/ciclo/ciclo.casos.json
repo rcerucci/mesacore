@@ -692,6 +692,127 @@
         "avisa": true
       },
       "ligacao": "ligada"
+    },
+    {
+      "nome": "com-a-banda-reprovada-nao-abre (D-001)",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 40,
+      "banda": {
+        "veredicto": "fora",
+        "accao": "reduzir_e_registar",
+        "conferidas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+        "fora": [
+          {
+            "campo": "alavancagem",
+            "valor": "40",
+            "minimo": "1",
+            "maximo": "20",
+            "porque": "a corretora aplicou alavancagem 40 e o maximo que o dono autorizou e 20"
+          }
+        ],
+        "nao_conferidas": [],
+        "porque": "1 de 3 conferidas cairam FORA da banda declarada: a corretora aplicou alavancagem 40 e o maximo que o dono autorizou e 20."
+      },
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "abrir_bloqueado_por_divergencia_de_banda",
+        "condicao": "normal",
+        "avisa": true
+      },
+      "historico": "D-001 - a ultima resolucao deste instrumento nao cabia no que o dono autorizou: nao se abre risco novo ate a divergencia estar explicada. A proposta e a mesma do caso 'normal-proposta-buy-abre-com-boleta-neutra'.",
+      "ligacao": "ligada"
+    },
+    {
+      "nome": "com-a-banda-reprovada-defender-continua (reduzir e sempre permitido)",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
+      "ficha": "3232",
+      "ciclo": 41,
+      "marcas_nossas_conhecidas": [1694498816],
+      "banda": {
+        "veredicto": "fora",
+        "accao": "reduzir_e_registar",
+        "conferidas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+        "fora": [
+          {
+            "campo": "alavancagem",
+            "valor": "40",
+            "minimo": "1",
+            "maximo": "20",
+            "porque": "a corretora aplicou alavancagem 40 e o maximo que o dono autorizou e 20"
+          }
+        ],
+        "nao_conferidas": [],
+        "porque": "1 de 3 conferidas cairam FORA da banda declarada: a corretora aplicou alavancagem 40 e o maximo que o dono autorizou e 20."
+      },
+      "decisao_esperada": {
+        "acao": "fechar",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "sell",
+          "reduce_only": true
+        }
+      },
+      "historico": "D-001 - travar o FECHO por causa da divergencia seria defender-se do lado errado: reduzir risco e sempre permitido, mesmo sem leitura e mesmo sem ligacao (RN-M9).",
+      "ligacao": "ligada"
+    },
+    {
+      "nome": "com-a-banda-conferida-e-dentro-abre (o controle do D-001)",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 42,
+      "banda": {
+        "veredicto": "dentro",
+        "accao": "seguir",
+        "conferidas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+        "fora": [],
+        "nao_conferidas": [],
+        "porque": "3 de 3 conferidas, e todas dentro da banda declarada (alavancagem, saldo_pct, distancia_de_liquidacao). Nada ficou por conferir."
+      },
+      "decisao_esperada": {
+        "acao": "abrir",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "buy",
+          "reduce_only": false,
+          "referencia_do_cliente": "mesa-3232-000042"
+        }
+      },
+      "historico": "O CONTROLE: com a banda conferida e dentro, a mesa abre como sempre abriu. Sem este lado, 'bloqueou' podia ser o codigo a bloquear tudo.",
+      "ligacao": "ligada"
     }
   ]
 }

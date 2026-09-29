@@ -13,7 +13,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export type NomeDeAccao = "repetir_com_atraso" | "recusar_e_registar" | "parar_e_reconciliar";
+export type NomeDeAccao = "repetir_com_atraso" | "recusar_e_registar" | "parar_e_reconciliar" | "reduzir_e_registar";
 
 export interface RegraDeAccao {
   accao: NomeDeAccao;
@@ -59,6 +59,9 @@ export function accaoPara(motivo: string): RegraDeAccao {
  * 2. Todo o motivo de falha da mesa tem accao - pela mesma razao, do lado de dentro.
  * 3. Nenhum nome e inventado: o motivo tem de existir no vocabulario do contrato ou no livro da mesa.
  * 4. `repetir_com_atraso` so onde se sabe que nada saiu - a regra que impede a segunda posicao.
+ * 5. `reduzir_e_registar` so onde se sabe que a POSICAO EXISTE (D-001): reduzir supõe haver o que
+ *    reduzir, e autorizar uma reducao sobre uma posicao que talvez nao exista seria a mesma asneira da
+ *    repeticao, do lado do fecho.
  */
 export function conferirAccoes(
   tabela: TabelaDeAccoes,
@@ -80,6 +83,9 @@ export function conferirAccoes(
   for (const [nome, regra] of Object.entries(tabela.por_motivo)) {
     if (regra.accao === "repetir_com_atraso" && regra.provadamente_nao_feito !== true) {
       defeitos.push(`repeticao autorizada sem se saber que nada saiu: ${nome}`);
+    }
+    if (regra.accao === "reduzir_e_registar" && regra.provadamente_nao_feito !== false) {
+      defeitos.push(`reducao autorizada sem se saber que a posicao existe: ${nome}`);
     }
   }
   return defeitos;

@@ -133,6 +133,12 @@ lê hoje (`grep` em `core/` e `vigia/`):
 
 **3. Defeitos declarados em aberto** (`relatorios/DEFEITOS.md` do recorte 002):
 
+> **Actualização — 29/09/2026:** o **D-001 está FECHADO** (`core/ciclo/banda.ts`, com o par de controle
+> medido: `fora → reduzir_e_registar` **0 de 6** seguiram · `dentro → seguir` **0 de 8** reduziram ·
+> `nao_conferivel → parar` **0 de 1** seguiu; `bun run core/ciclo/provar.ts` = **90 verificações · 0
+> divergentes**, dentro de `provar.sh` **27 de 27**). O texto abaixo é o retrato de 29/09 antes disso, e
+> fica escrito por ser auditável. Em aberto continuam **D-002**, **D-003** e **D-006**.
+
 - **D-001 — a banda do mandato não é conferida em lado nenhum.** O mais sério para dinheiro real: passar o
   cálculo do risco para o plugin passa também o **limite**, e ninguém verifica a resolução contra a banda. Os
   dois momentos estão desenhados no defeito (antes de enviar, onde o venue deixa perguntar; e depois da

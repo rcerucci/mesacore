@@ -49,6 +49,7 @@ import {
   type Ficha,
   type Porta,
 } from "./conector.ts";
+import { carregarCredencial } from "./credencial.ts";
 import {
   portaDoCliente as portaDeLeituraDoCliente,
   type ClienteDeLeitura,
@@ -329,6 +330,18 @@ function portaDoDuble(dados: any): Porta {
         return r.valor;
       },
     },
+    // A IDENTIDADE: quem ASSINA, segundo o DUBLE. Ao vivo este endereco e' DERIVADO da chave carregada por
+    // referencia (nunca o valor dela); aqui declara-se em dado — e' o unico jeito de a porta de identidade
+    // poder ser medida offline, nos dois sentidos (agente da conta e agente que nao e' da conta). Um duble que
+    // nao o declare deixa a porta `nao_corrida`, e o duble NAO inventa um endereco.
+    ...(typeof dados.identidade?.endereco_do_agente === "string"
+      ? {
+          identidade: {
+            endereco_do_agente: dados.identidade.endereco_do_agente as string,
+            porque: "endereco do agente que assina declarado pelo DUBLE do venue, em dado (`identidade.endereco_do_agente`)",
+          },
+        }
+      : {}),
     envio: {
       enviar: async (_accao: unknown, _conta: string, referencia?: string) => {
         if (referencia === undefined || referencia === null) {
@@ -353,24 +366,126 @@ function portaDoDuble(dados: any): Porta {
   };
 }
 
-/** A porta do venue AO VIVO: o SDK oficial, so LEITURAS. Nao ha envio vivo neste recorte (exige assinar). */
+/**
+ * A porta do venue AO VIVO: o SDK oficial para as LEITURAS e para ASSINAR, e o HTTP cru para submeter.
+ *
+ * O ENVIO AO VIVO, em quatro passos, e nenhum deles engole nada:
+ *   1. A CHAVE, pela porta de REFERENCIA (`credencial.ts`), UMA vez por processo (RN-C16/RN-E3). O VALOR
+ *      nunca entra em log, em ledger, em ficheiro nem em resposta (RN-E14) — sai dela so o ENDERECO publico
+ *      do agente, que e' o que a porta de identidade compara com o que o venue declara.
+ *   2. A ASSINATURA (`signL1Action`): se falhar, LANCA. Nao ha `try` largo a transformar um erro de
+ *      assinatura em silencio do venue — assinar mal nao e' o venue a nao responder.
+ *   3. A SUBMISSAO: aqui, e so aqui, se apanha o erro de REDE — e ele vira `desconhecido` (o venue nao
+ *      respondeu), que e' a classificacao de «nao se sabe», nunca «nao aconteceu».
+ *   4. O QUE O VENUE RESPONDEU entra CRU na conversa: a classificacao e a palavra dele sao lidas pelo
+ *      caminho que ja existe no `atender`.
+ */
 async function portaAoVivo(ficha: Ficha): Promise<Porta> {
   const modulo = await import("@nktkas/hyperliquid");
+  const assinatura = await import("@nktkas/hyperliquid/signing");
+  const troca = await import("@nktkas/hyperliquid/api/exchange");
+  const contas = await import("viem/accounts");
   const isTestnet = ficha.venue.ambiente !== "producao";
   const transporte = new modulo.HttpTransport({ isTestnet });
   const info = new modulo.InfoClient({ transport: transporte });
   const cliente = info as unknown as ClienteDeLeitura & ClienteDeConta & ClienteDeHistorico;
+
+  // ---- a chave, POR REFERENCIA, uma vez por processo ------------------------------------------------------
+  // A credencial resolve-se AQUI para se poder derivar o endereco do agente. O valor NUNCA sai deste escopo:
+  // nem no `diag`, nem no erro, nem no `porque` de porta nenhuma (RN-E14). Se ela nao resolver, a porta
+  // `chave` do arranque cai com o motivo dela — e a porta de identidade fica `nao_corrida`, sem se inventar
+  // um endereco por omissao.
+  const credencial = carregarCredencial(ficha.credencial.referencia, ficha.credencial.valor_em);
+  let carteira: Awaited<ReturnType<typeof contas.privateKeyToAccount>> | undefined;
+  let enderecoDoAgente: string | undefined;
+  let porqueDaIdentidade = "";
+  if (!credencial.ok) {
+    porqueDaIdentidade = `a credencial nao resolveu (${credencial.motivo}), por isso nao ha endereco de agente a comparar`;
+  } else {
+    const bruto = credencial.valor;
+    const hex = /^0x[0-9a-fA-F]{64}$/.test(bruto) ? bruto : /^[0-9a-fA-F]{64}$/.test(bruto) ? `0x${bruto}` : undefined;
+    if (hex === undefined) {
+      // Diz-se a FORMA, nunca o valor: quantos caracteres tem e o que se esperava.
+      porqueDaIdentidade =
+        `o valor resolvido de ${credencial.de} nao tem a forma de uma chave privada (0x + 64 hexadecimais): ` +
+        `tem ${bruto.length} caracteres e nao e' hexadecimal de 32 bytes — nao se deriva agente nenhum, e nao se assina com isto`;
+    } else {
+      carteira = contas.privateKeyToAccount(hex as `0x${string}`);
+      enderecoDoAgente = carteira.address;
+      porqueDaIdentidade = `endereco do agente derivado da chave carregada por REFERENCIA (${credencial.de}); o VALOR da chave nunca sai de credencial.ts (RN-E14)`;
+    }
+  }
+
+  // ---- o indice do instrumento no venue: lido do PROPRIO venue, uma vez, e so quando se envia ------------
+  let indices: Map<string, number> | undefined;
+  async function indiceDe(instrumento: string): Promise<number> {
+    if (indices === undefined) {
+      const meta = (await info.meta()) as { universe?: { name?: unknown }[] };
+      const universo = Array.isArray(meta.universe) ? meta.universe : [];
+      indices = new Map(universo.map((u, i) => [String(u.name), i]));
+    }
+    const i = indices.get(instrumento);
+    if (i === undefined) {
+      throw new Error(
+        `o venue nao lista ${JSON.stringify(instrumento)} nos perpetuos: sem indice nao ha ordem a mandar, e um ` +
+          "indice adivinhado mandaria a ordem para OUTRO instrumento",
+      );
+    }
+    return i;
+  }
+
   return {
     leitura: portaDeLeituraDoCliente(cliente),
     conta: portaDeContaDoCliente(cliente),
     // O historico (FR-018): as cinco leituras que o venue publica. A leitura e so isso — nenhuma assina nada.
     historico: portaDeHistoricoDoCliente(cliente),
+    ...(enderecoDoAgente === undefined ? {} : { identidade: { endereco_do_agente: enderecoDoAgente, porque: porqueDaIdentidade } }),
     envio: {
-      enviar: async () => {
-        throw new Error(
-          "o envio AO VIVO nao esta implementado nesta porta de processo: exige ASSINAR, e assinar sem a bateria " +
-            "de conformidade ter medido o venue seria encomendar as cegas. O envio esta provado contra o duble do venue",
-        );
+      enviar: async (accao, _conta: string, _referencia?: string) => {
+        if (carteira === undefined) {
+          throw new Error(
+            `nao se assina sem chave: ${porqueDaIdentidade}. O processo carrega a credencial por REFERENCIA ` +
+              "(`credencial.ts`) e nao ha caminho nenhum desta porta que assine com outra coisa",
+          );
+        }
+        // 1. A ACCAO DO VENUE, na ordem de chaves que o ESQUEMA dele define (o hash depende da ordem).
+        const ordem = {
+          a: await indiceDe(accao.instrumento),
+          b: accao.lado === "buy",
+          p: accao.preco,
+          s: accao.quantidade,
+          r: accao.reduce_only,
+          t: { limit: { tif: accao.tif } },
+          c: accao.cloid,
+        };
+        const accaoDoVenue = assinatura.canonicalize(troca.OrderRequest.entries.action, {
+          type: "order",
+          orders: [ordem],
+          grouping: "na",
+        });
+        const nonce = Date.now();
+        // 2. ASSINAR. Nao ha `try` a volta disto: um erro de assinatura SOBE, e nada sai.
+        const assinado = await assinatura.signL1Action({ wallet: carteira, action: accaoDoVenue, nonce, isTestnet });
+        // 3. SUBMETER. Aqui apanha-se o erro de REDE, e so ele: vira `desconhecido` no `atender`.
+        let resposta: Response;
+        try {
+          resposta = await fetch(`${ficha.venue.url_da_api}/exchange`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: accaoDoVenue, nonce, signature: assinado }),
+          });
+        } catch (e) {
+          return { ok: false, erro: `o venue nao respondeu ao envio: ${e instanceof Error ? e.message : String(e)}` };
+        }
+        const texto = await resposta.text();
+        if (!resposta.ok) {
+          return { ok: false, erro: `o venue respondeu HTTP ${resposta.status} ao envio: ${texto}` };
+        }
+        try {
+          return { ok: true, valor: JSON.parse(texto) };
+        } catch {
+          return { ok: false, erro: `o venue respondeu ao envio numa forma ilegivel (HTTP ${resposta.status})` };
+        }
       },
     },
   };
@@ -661,9 +776,19 @@ function correrBancada(caminhoDosCasos: string, casos: Casos): number {
         `motivo da porta: ${JSON.stringify(ultima?.motivo)}, esperado ${JSON.stringify(c.motivo_esperado)}`);
       verificar(problemas, saida.codigo === 2, `codigo de saida: ${saida.codigo}, esperado 2 (o processo NAO sobe)`);
       verificar(problemas, saida.linhas.length === 0, `um arranque recusado nao pode escrever na costura: saiu ${saida.linhas.length} linha(s)`);
+    } else if (c.portas_nao_corridas !== undefined) {
+      // O caminho da porta que NAO SE PODE CORRER: o arranque passa, mas a porta que ficou ABERTA vem NOMEADA.
+      // Sem isto, uma porta que nao mediu nada confundir-se-ia com uma porta que mediu tudo — que e' o oposto
+      // do fail-closed.
+      const naoCorridas = saida.portas.filter((p: any) => p.veredicto === "nao_corrida").map((p: any) => String(p.porta));
+      verificar(problemas, JSON.stringify(naoCorridas) === JSON.stringify(c.portas_nao_corridas),
+        `as portas NAO CORRIDAS foram ${JSON.stringify(naoCorridas)}, esperado ${JSON.stringify(c.portas_nao_corridas)}`);
+      verificar(problemas, saida.portas.length === portasDoCodigo.length && saida.portas.every((p: any) => p.veredicto !== "falhou"),
+        `o arranque caiu numa porta: ${JSON.stringify(saida.portas.map((p: any) => `${p.porta}:${p.veredicto}`))}`);
+      verificar(problemas, saida.codigo === 0, `codigo de saida: ${saida.codigo}, esperado 0`);
     } else {
       verificar(problemas, saida.portas.length === portasDoCodigo.length && saida.portas.every((p: any) => p.veredicto === "passou"),
-        `o arranque nao passou as sete portas: ${JSON.stringify(saida.portas.map((p: any) => `${p.porta}:${p.veredicto}`))}`);
+        `o arranque nao passou as ${portasDoCodigo.length} portas: ${JSON.stringify(saida.portas.map((p: any) => `${p.porta}:${p.veredicto}`))}`);
       verificar(problemas, saida.codigo === 0, `codigo de saida: ${saida.codigo}, esperado 0`);
     }
 

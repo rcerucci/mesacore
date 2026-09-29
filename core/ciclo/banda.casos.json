@@ -1,0 +1,185 @@
+{
+  "nota": "A bateria da conferencia da banda (D-001): o que a corretora EXECUTOU contra o que o dono AUTORIZOU. O caso 2 e a metade (a) do defeito (uma resolucao acima da banda tem de REDUZIR e registar); o caso 1 e a metade de CONTROLE (a mesma maquina, com a resolucao dentro, segue e NAO reduz) - sem ele, 'reduziu' podia ser o codigo a reduzir sempre. Os casos 9 a 13 sao o outro lado: o que NAO se le e o que o dono NAO declarou nao vira 'cabe'.",
+  "fonte": "core/ciclo/banda.ts + contracts/resolucao.schema.json + docs/inventario-de-chaves.md (bandas.*, distancia_minima_liquidacao_pct)",
+  "padrao": {
+    "bandas": {
+      "alavancagem": { "minimo": "1", "maximo": "20" },
+      "saldo_pct": { "minimo": "1", "maximo": "50" }
+    },
+    "distancia_minima_liquidacao_pct": "15",
+    "equity": "100000",
+    "marca": "100000",
+    "resolucao": {
+      "quantidade": "0.06",
+      "nocional": "6000",
+      "margem_empenhada": "1200",
+      "alavancagem_efectiva": "5",
+      "preco_de_liquidacao": "80000"
+    }
+  },
+  "casos": [
+    {
+      "nome": "dentro-nos-tres-o-que-se-pediu (o controle: segue e NAO reduz)",
+      "nota": "Metade (b) do par de controle do D-001. A exposicao e 6000 sobre 100000 (6%, entre 1 e 50), a alavancagem efectiva 5 (entre 1 e 20) e a distancia a liquidacao 20000 (20% da marca, acima do piso de 15%). Todas conferidas, todas dentro.",
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "a-corretora-aplicou-alavancagem-40-e-o-maximo-era-20",
+      "nota": "Metade (a) do D-001, com o numero do defeito: uma corretora que aplique outra alavancagem nao pode passar em silencio. Ja esta executado - a resposta e reduzir e registar.",
+      "resolucao": { "quantidade": "0.06", "nocional": "6000", "margem_empenhada": "150", "alavancagem_efectiva": "40", "preco_de_liquidacao": "80000" },
+      "veredicto_esperado": "fora",
+      "accao_esperada": "reduzir_e_registar",
+      "fora_esperados": ["alavancagem"],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "alavancagem-abaixo-do-minimo-tambem-e-fora",
+      "nota": "A banda e uma BANDA, nao um tecto: 1x com o minimo declarado a 5 e uma divergencia tao grande como 40x com o maximo a 20.",
+      "bandas": { "alavancagem": { "minimo": "5", "maximo": "20" }, "saldo_pct": { "minimo": "1", "maximo": "50" } },
+      "resolucao": { "quantidade": "0.06", "nocional": "6000", "margem_empenhada": "1200", "alavancagem_efectiva": "1", "preco_de_liquidacao": "80000" },
+      "veredicto_esperado": "fora",
+      "accao_esperada": "reduzir_e_registar",
+      "fora_esperados": ["alavancagem"],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "a-exposicao-ficou-em-60-por-cento-e-o-maximo-era-50",
+      "nota": "O nocional e conferido contra a banda de `saldo_pct` convertida a nocional absoluto (equity x limite / 100 = 500 sobre 1000 de equity). Sem divisao, e sem uma percentagem que ninguem escreveu.",
+      "equity": "1000",
+      "marca": "1000",
+      "bandas": { "alavancagem": { "minimo": "1", "maximo": "20" }, "saldo_pct": { "minimo": "1", "maximo": "50" } },
+      "resolucao": { "quantidade": "6", "nocional": "600", "margem_empenhada": "120", "alavancagem_efectiva": "5", "preco_de_liquidacao": "800" },
+      "veredicto_esperado": "fora",
+      "accao_esperada": "reduzir_e_registar",
+      "fora_esperados": ["saldo_pct"],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "a-exposicao-ficou-abaixo-do-minimo-declarado",
+      "nota": "0.5% de exposicao com o minimo declarado a 1%: o dono declarou um piso, e um piso que so trava de um lado nao e uma banda.",
+      "equity": "1000",
+      "marca": "1000",
+      "resolucao": { "quantidade": "0.05", "nocional": "5", "margem_empenhada": "1", "alavancagem_efectiva": "5", "preco_de_liquidacao": "800" },
+      "veredicto_esperado": "fora",
+      "accao_esperada": "reduzir_e_registar",
+      "fora_esperados": ["saldo_pct"],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "liquida-mais-perto-do-que-o-mandato-permite",
+      "nota": "A terceira comparacao: a marca 100 e a liquidacao 90 deixam 10 de distancia, e o mandato exige 15% da marca (15). Sem este caso, a corretora podia liquidar mais perto do que o dono autorizou sem ninguem dar por isso.",
+      "marca": "100",
+      "resolucao": { "quantidade": "0.06", "nocional": "6000", "margem_empenhada": "1200", "alavancagem_efectiva": "5", "preco_de_liquidacao": "90" },
+      "veredicto_esperado": "fora",
+      "accao_esperada": "reduzir_e_registar",
+      "fora_esperados": ["distancia_de_liquidacao"],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "exactamente-no-piso-passa (igual nao e 'mais perto')",
+      "nota": "A fronteira: 15 de distancia com o piso em 15% de 100. Igual e dentro - a mesma regra do prazo do desfecho e do dado velho. E o unico caso que prova que o `<` nao e `<=`.",
+      "marca": "100",
+      "resolucao": { "quantidade": "0.06", "nocional": "6000", "margem_empenhada": "1200", "alavancagem_efectiva": "5", "preco_de_liquidacao": "85" },
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "liquidacao-a-zero-e-valor-legitimo (1x nao tem liquidacao a vista)",
+      "nota": "O contrato diz que zero e valor LEGITIMO (a alavancagem 1x nao tem liquidacao a vista). Zero aqui NAO e 'nao sei': o piso nao pode ser violado, e a conferencia conta-se como feita.",
+      "marca": "100",
+      "resolucao": { "quantidade": "0.06", "nocional": "6000", "margem_empenhada": "6000", "alavancagem_efectiva": "1", "preco_de_liquidacao": "0" },
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "dois-campos-fora-de-uma-vez-sao-dois-achados",
+      "nota": "Nao se soma nem se escolhe o primeiro: a resolucao cai fora em dois campos, e os dois ficam nomeados com o numero de cada um.",
+      "equity": "1000",
+      "marca": "100",
+      "resolucao": { "quantidade": "9", "nocional": "900", "margem_empenhada": "22.5", "alavancagem_efectiva": "40", "preco_de_liquidacao": "80" },
+      "veredicto_esperado": "fora",
+      "accao_esperada": "reduzir_e_registar",
+      "fora_esperados": ["alavancagem", "saldo_pct"],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    },
+    {
+      "nome": "um-valor-ilegivel-fica-por-conferir-e-e-DITO",
+      "nota": "A alavancagem vem como numero do JSON (`1e3`), que nao e decimal textual (D4). Nao vira 'cabe' nem vira divergencia: fica por conferir, nomeada - e as outras duas conferem-se na mesma.",
+      "resolucao": { "quantidade": "0.06", "nocional": "6000", "margem_empenhada": "1200", "alavancagem_efectiva": "1e3", "preco_de_liquidacao": "80000" },
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": ["alavancagem"]
+    },
+    {
+      "nome": "sem-banda-declarada-nao-e-dentro (para e explica)",
+      "nota": "A ficha nao declara banda nenhuma. Nada se pode conferir - e 'nada se pode conferir' NAO e 'cabe': a accao e parar e explicar o que falta, nao abrir risco novo as cegas.",
+      "bandas": {},
+      "distancia_minima_liquidacao_pct": null,
+      "veredicto_esperado": "nao_conferivel",
+      "accao_esperada": "parar_e_explicar",
+      "fora_esperados": [],
+      "conferidas_esperadas": [],
+      "nao_conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"]
+    },
+    {
+      "nome": "o-que-falta-no-dado-tambem-nao-se-inventa",
+      "nota": "A resolucao traz o numero do JSON (nao texto) e nao ha marca. As duas comparacoes ficam nomeadas; a da alavancagem confere-se e esta dentro.",
+      "marca": null,
+      "resolucao": { "quantidade": "0.06", "nocional": 6000, "margem_empenhada": "1200", "alavancagem_efectiva": "5", "preco_de_liquidacao": "80000" },
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["alavancagem"],
+      "nao_conferidas_esperadas": ["saldo_pct", "distancia_de_liquidacao"]
+    },
+    {
+      "nome": "equity-ausente-a-exposicao-fica-por-conferir",
+      "nota": "Sem equity nao ha percentagem de saldo: a comparacao da exposicao fica por conferir e diz-se. Nao se presume um equity para a conta fechar.",
+      "equity": null,
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["alavancagem", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": ["saldo_pct"]
+    },
+    {
+      "nome": "equity-a-zero-nao-da-percentagem-nenhuma",
+      "nota": "Equity a zero: a percentagem de saldo nao se calcula, e dividir por zero seria inventar um numero. Fica por conferir.",
+      "equity": "0",
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["alavancagem", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": ["saldo_pct"]
+    },
+    {
+      "nome": "o-minimo-declarado-sem-maximo-nao-inventa-um-tecto",
+      "nota": "A ficha declara so o minimo da alavancagem. O maximo ausente NAO e um tecto de zero: nada ha para violar acima, e o caso diz isso em vez de reprovar por uma banda que ninguem escreveu.",
+      "bandas": { "alavancagem": { "minimo": "1" }, "saldo_pct": { "minimo": "1", "maximo": "50" } },
+      "resolucao": { "quantidade": "0.06", "nocional": "6000", "margem_empenhada": "1200", "alavancagem_efectiva": "20", "preco_de_liquidacao": "80000" },
+      "veredicto_esperado": "dentro",
+      "accao_esperada": "seguir",
+      "fora_esperados": [],
+      "conferidas_esperadas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+      "nao_conferidas_esperadas": []
+    }
+  ]
+}

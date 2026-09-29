@@ -137,9 +137,28 @@ renumerar 65 tarefas — renumerar reescreveria o ficheiro e não muda nada do q
       nomeada, e a bancada prova-o em 14 casos (incluindo «uma carteira falha e a outra lê-se», e as duas a
       falhar a recusar pelo NOME das duas). A sonda leva as duas ao manifesto. Relatório: `relatorios/sonda-real.txt`
 
+- [x] T072 [Fase 5] **O conector SABE ENVIAR** (assinar e submeter), com a chave sempre por REFERÊNCIA e o preço que vai ao venue derivado do desvio DECLARADO — **feito e medido:** `brokers/hyperliquid/processo.ts` ganhou o envio ao vivo em **quatro passos** (a chave pela referencia, uma vez por processo; a assinatura com `signL1Action`, **sem `try` largo** — um erro de assinatura sobe e nada sai; a submissao, onde o erro de REDE vira `desconhecido`, nunca «nao aconteceu»; e a resposta do venue CRUA na conversa). A tradução passou a declarar o preço de envio e a régua: numa ordem a mercado o preço que sai é o **Ioc agressivo** que o desvio declarado permite, quantizado ao tick **por dentro da banda** (`preco_de_referencia` e `desvio_maximo` viajam na acção, para quem envia poder provar de onde saiu). Provas: `bun brokers/hyperliquid/casos/correr-ordens.ts` → **40 casos · 40 ok · 0 divergentes · 34 traducoes declaradas**; `bun run brokers/hyperliquid/processo.ts --bancada` → **36 casos · 36 ok · 0 divergentes · 250 verificacoes · 8 portas**; a varredura de credenciais (prova 8 da conformidade) → **38 ficheiros varridos, 0 valores com forma de credencial, 2 controlos**; e a **prova negativa sobre o artefacto**: renomear a porta `identidade`, tirar a conferência das casas da marca, ou voltar o preço de envio à referência — cada defeito injectado reprova a bancada, nomeando o caso (medido numa cópia, com a reposição conferida por `sha256`). **O defeito que esta vaga tinha, e ficou consertado:** com a régua a ser conferida DEPOIS de o preço ser derivado, o caso `arranque/preco-do-venue-fora-da-regra` ia ao envio (2 linhas, `desconhecido`) em vez de recusar (1 linha, `valor_fora_da_banda`) — a porta das casas passou a correr antes, e a régua estragada não se arredonda: recusa-se
+- [x] T073 [Fase 5] **A porta `identidade`** — a 8ª porta do arranque: o endereço do agente que ASSINA tem de estar entre os que o venue declara para esta conta, e dentro do prazo — **feito e medido:** `brokers/hyperliquid/identidade.ts` (puro: recebe o endereço derivado da chave por referência e a lista que o venue publica; compara sem caixa, exige hexadecimal de 20 bytes, e o **desconhecido nunca vira «sim»**) + os casos `arranque/identidade-o-agente-que-assina-e-DA-CONTA` (passa), `…-agente-de-OUTRA-conta-recusa`, `…-agente-FORA-DE-PRAZO-recusa`, `…-sem-a-lista-de-agentes-recusa` e `…-sem-endereco-declarado-fica-NAO-CORRIDA` — **5 casos, todos ok** dentro dos 36 da bancada. Medido no venue (29 set, só leitura): `extraAgents` da conta devolve `0x7b3a…ca81` com `validUntil` em milissegundos — o endereço em hexadecimal MINÚSCULO com `0x`
+- [x] T074 [Fase 5] **A banda da moeda passa a ser a MEDIDA** — contrato **1.6.0** (emenda aditiva, e que troca uma prova negativa de propósito) — **feito e medido:** `contracts/_defs/forma.schema.json#/$defs/moeda` = `^[A-Za-z0-9]{1,11}$`, num só sítio, lido pelos dois motores; a medição (pública, sem chave) dá **1863 símbolos distintos** (212 perpetuos + 1665 tokens de spot, 14 partilhados), comprimentos **1 a 11** (1:11, 2:47, 3:258, 4:489, 5:527, 6:504, 7:17, 8:5, 9:1, 10:2, 11:2), **72 com dígito**, **15 com minúscula**, e **601 fora** da banda da 1.5.0; os dois motores: **127 casos · 45 aceites · 82 recusados · 0 divergentes** em cada, com **11 sondas** da moeda na porta do contrato (incluindo 3 provas negativas: 12 letras, hífen, e o `JPL ` com espaço). Relatório: `relatorios/emenda-1.6.0.txt`. **Correcção medida nesta vaga:** o número `1400 trazem digito`, escrito no esquema, na porta e no `versao.json`, contava também os **1329 nomes de PARES de spot** (`@1`, `PURR/USDC`), que não são moedas — sobre os 1863 símbolos são **72**, e os três sítios passaram a dizê-lo
+
 ---
 
 ## O que fica aberto, no fecho desta contabilidade (medido, não digitado)
+
+> **CORRECÇÃO — 29/09/2026, 21:05.** **(a)** O parágrafo «o **envio ao vivo** (a porta recusa de propósito:
+> exige assinar)» **deixou de ser verdade**: o envio existe e está provado em bancada (T072/T073). O que
+> continua a faltar é a **medição contra o venue a sério** — um envio de cada vez, com a palavra do dono — e
+> é por isso que as três tarefas abaixo continuam `[ ]`. **(b)** As contagens deste bloco (`processo: 31 casos`,
+> `historico: 24 casos`) são anteriores às emendas: hoje são **36** e **26**. **(c)** O contrato é **1.6.0**, não
+> 1.5.0 (a banda da moeda, T074).
+>
+> **CORRECÇÃO — 29/09/2026, 19:52.** Duas coisas aqui abaixo envelheceram na mesma tarde, e ficam nomeadas em
+> vez de reescritas: **(a)** o parágrafo «T047/T060 — fechado com a recusa nomeada» diz que *«o CONTRATO recusa
+> a carga»* e que *«o que as desbloquearia é uma emenda aditiva ao contrato — decisão do dono, e não se remenda
+> por aqui»*: a emenda **foi feita** na mesma tarde (commit `3b730ec`, contrato **1.5.0**) e o contrato **aceita**
+> a mesma carga real de 56 execuções — medido hoje: `historico: 26 casos · 26 ok · 0 divergentes`; **(b)** a
+> contagem `historico: 24 casos` deste bloco é anterior à emenda — hoje são **26**. O texto original fica por
+> baixo, porque o registo é auditável. O retrato medido de hoje está em `docs/ONDE_ESTAMOS.md`.
 
 Medido em 29/09, com esta vaga: `provar.sh` (**27 de 27**), `provas-offline.sh` (`0 falhas`), a conformidade
 (`conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes`) e a bancada do processo (`processo: 31

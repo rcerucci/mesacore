@@ -172,10 +172,10 @@ class Motivo(StrEnum):
     instrumento_deslistado_no_venue = 'instrumento_deslistado_no_venue'
 
 
-class Moeda(RootModel[constr(pattern=r'^[A-Z]{3,5}$')]):
-    root: constr(pattern=r'^[A-Z]{3,5}$') = Field(
+class Moeda(RootModel[constr(pattern=r'^[A-Za-z0-9]{1,11}$')]):
+    root: constr(pattern=r'^[A-Za-z0-9]{1,11}$') = Field(
         ...,
-        description='A MOEDA, como o VENUE a escreve. ADITIVO na 1.5.0, e obrigado por MEDICAO: a forma era de TRES letras maiusculas (`^[A-Z]{3}$`) e a Hyperliquid escreve a moeda da taxa como `USDC`, com QUATRO — medido no `feeToken` das 56 execucoes de `userFills` da conta de teste, pelo HTTP cru e pelo SDK oficial. `USDC` nao e `USD`, e normalizar o nome do venue para caber seria a mesa a corrigi-lo. A forma passa a admitir de TRES a CINCO letras maiusculas: o bastante para as moedas que os venues escrevem, e nao mais do que isso — seis letras, minusculas, digitos ou espaco continuam a RECUSAR (`formato_invalido`).',
+        description='A MOEDA, como o VENUE a escreve — a banda e a MEDIDA, nao a suposta. ADITIVO na 1.5.0 (tres a cinco letras maiusculas, forcado pelo `USDC` do `feeToken`) e ALARGADO na 1.6.0 ao universo REAL do venue: medido em 29/09/2026 contra `info.meta` + `info.spotMeta` da Hyperliquid (so leitura, sem chave), o venue escreve 1863 moedas/simbolos DISTINTOS (212 perpetuos + 1665 tokens de spot, com 14 nomes partilhados pelos dois), com comprimentos de 1 a 11 — a distribuicao medida por comprimento e 1:11, 2:47, 3:258, 4:489, 5:527, 6:504, 7:17, 8:5, 9:1, 10:2, 11:2. A forma de TRES a CINCO letras maiusculas era FALSA contra esta medicao so pelo comprimento em 589 dos 1863 (as de 1, 2 e de 6 a 11 letras); e, alem do comprimento, 72 dos medidos trazem DIGITO (`TEST1`, `AU0`, `2Z`, `0G`) e 15 trazem MINUSCULA (`kPEPE`, `TestPascal1`, `o1528`). (O numero `1400` que esteve aqui contava tambem os 1329 nomes de PARES de spot — `@1`, `PURR/USDC` — que nao sao moedas; corrigido em 29/09/2026 com a medicao repetida.) Alarga-se ao medido e NAO mais: a banda passa a 1..11 caracteres alfanumericos, maiusculas OU minusculas. Fica dito, porque nao se esconde: dos 1863 medidos, 1862 cabem nesta forma e UM nao — `JPL `, que traz um ESPACO no fim. Nao se alargou a banda para o acomodar: um simbolo com espaco e lixo, e e a prova negativa que o continua a RECUSAR (`formato_invalido`), ao lado do hifen e das 12+ letras. Medicao crua em `specs/004-conector-hyperliquid/relatorios/emenda-1.6.0.txt`.',
     )
 
 

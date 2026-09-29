@@ -14,6 +14,34 @@ e é por isso que fica escrito.
 
 ## D-001 — A banda do mandato não é conferida em lado nenhum
 
+> **FECHADO — 29/09/2026.** A conferência existe, é pura e está medida. O que a fecha:
+> `core/ciclo/banda.ts` (a conferência) + a ligação nos dois sítios onde a resolução e a acção vivem
+> (`core/ciclo/desfecho.ts`, `core/ciclo/ciclo.ts`), com **15 casos** em `core/ciclo/banda.casos.json` e o
+> **par de controle** que o defeito exigia: `fora → reduzir_e_registar` (**0 de 6** seguiram sem reduzir) e
+> `dentro → seguir` (**0 de 8** reduziram). O lado que o defeito não nomeava também ficou medido: o que
+> **não se consegue conferir** (banda não declarada, valor ilegível, equity ou marca ausentes) não vira
+> «cabe» — é `nao_conferivel` e **para e explica** (**0 de 1** seguiu).
+>
+> Comando: `bun run core/ciclo/provar.ts` → **90 verificações · 0 divergentes** (12 de condição · 27 de
+> ciclo · 10 de desfecho · **15 de banda** · 6 de reconciliação), dentro de `bash
+> tools/verificar-maquina/provar.sh` → **27 de 27**. As três comparações são só as que o contrato permite
+> emparelhar — `alavancagem_efectiva` × `bandas.alavancagem`, o nocional sobre o equity × `bandas.saldo_pct`
+> (convertida a nocional absoluto, sem divisão que não feche) e a distância à liquidação ×
+> `distancia_minima_liquidacao_pct` — e toda a aritmética é exacta (inteiros escalados).
+>
+> **Prova negativa sobre o artefacto** (numa cópia do repositório, com a reposição conferida por `sha256`
+> nos 7 ficheiros da vaga): uma conferência que **aceita sempre** reprova **8** verificações; uma que
+> **reduz sempre** reprova **11** (é o controle, e é ele que mostra que «reduziu» não pode ser o código a
+> reduzir tudo); tirar a **trava da abertura** do ciclo reprova **1** (o caso nomeado); e fazer o
+> desconhecido virar `dentro` reprova **3**.
+>
+> O que **continua** verdade do texto abaixo (e por isso ele fica escrito): a conferência **não recusa** o
+> que já está executado (reduz e registra), e o **segundo** momento — a conferência *antes* de enviar, onde
+> o venue deixa perguntar — não se aplica a ordem a mercado, pela razão que o defeito já tinha corrigido.
+> **O que ainda não está ligado:** o `desfecho` e o ciclo da mesa não são chamados pelo servidor
+> (`core/servidor.ts` corre comandos e as sete portas, não voltas de ciclo) — a conferência entra onde a
+> resolução entra, e quem liga o ciclo ao processo é o passo seguinte, não este defeito.
+
 **O que devia acontecer — e são DOIS momentos, que não se podem confundir:**
 
 1. **Antes de enviar**, e só quando o venue deixa perguntar: quando há cotação/estimativa (ou um modo de

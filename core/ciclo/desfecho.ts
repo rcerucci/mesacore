@@ -18,6 +18,7 @@
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import { deveAvisar, type ConfiguracaoDaConta } from "../config/configuracao.ts";
 import type { Desconhecido } from "../estado/marcas.ts";
+import { conferirBanda, type ConferenciaDaBanda, type EntradaDaConferencia } from "./banda.ts";
 
 export type Classificacao = "aceite" | "parcial" | "desconhecido" | "recusado";
 
@@ -45,6 +46,11 @@ export interface ResultadoDoDesfecho {
   estado_da_posicao: "nenhuma" | "abrindo" | "aberta";
   /** Calculado da config do dono (FR-042), nunca escrito aqui. */
   avisa: boolean;
+  /**
+   * A conferencia da banda (D-001), quando o chamador traz o que ela precisa (a banda da ficha, o
+   * equity e a marca). `null` = nao se conferiu - e "nao se conferiu" nao e "esta dentro".
+   */
+  banda: ConferenciaDaBanda | null;
   porque: string;
 }
 
@@ -59,6 +65,11 @@ export function classificarDesfecho(
   chegada: { desfecho: unknown } | null,
   agora_ms: number,
   config: ConfiguracaoDaConta,
+  /**
+   * O que a CONFERENCIA DA BANDA precisa (D-001): a banda da ficha, o equity e a marca. Ausente = nao se
+   * confere - a mesa nao inventa um veredicto sobre uma resolucao que ninguem lhe deu como comparar.
+   */
+  conferencia?: EntradaDaConferencia | null,
 ): ResultadoDoDesfecho {
   // 1. Nao chegou nada.
   if (chegada === null) {
@@ -73,6 +84,7 @@ export function classificarDesfecho(
         marca_a_gravar: null,
         estado_da_posicao: "abrindo",
         avisa: false,
+        banda: null,
         porque: `Passaram ${decorrido}ms de ${envio.prazo_de_resposta_ms}ms declarados: ainda e tempo de resposta, e nao um silencio.`,
       };
     }
@@ -117,22 +129,32 @@ export function classificarDesfecho(
       marca_a_gravar: null,
       estado_da_posicao: "nenhuma",
       avisa: deveAvisar(config, "recusa"),
+      // Nao houve resolucao: nao se confere o que nunca se chegou a resolver (RN-C10).
+      banda: null,
       porque: "A corretora recusou: nao ha posicao. O motivo dela fica registrado para o dono o poder ler.",
     };
   }
 
-  // 4. Aceite e parcial: ha posicao. O resto da parcial segue a politica do template (FR-023).
+  // 4. Aceite e parcial: ha posicao. O resto da parcial segue a politica do template (FR-023). E aqui,
+  // com a resolucao na mao, corre a CONFERENCIA DA BANDA (D-001) - quando o chamador trouxe o que ela
+  // precisa. Uma resolucao fora da banda nao se recusa (ja esta executado): registra-se a divergencia,
+  // reduz-se, e nao se abre risco novo neste instrumento ate ela estar explicada.
+  const banda = conferencia == null ? null : conferirBanda({ ...conferencia, resolucao: desfecho.resolucao });
+  const foraDaBanda = banda !== null && banda.veredicto === "fora";
   return {
     classificacao,
-    motivo: null,
+    motivo: foraDaBanda ? "resolucao_fora_da_banda" : null,
     motivo_do_contrato: null,
     marca_a_gravar: null,
     estado_da_posicao: "aberta",
     // Nem `aceite` nem `parcial` tem evento de alarme: sao o desfecho que se pediu. Alarmar o que corre
-    // bem e o caminho mais curto para o dono deixar de ler os avisos.
-    avisa: false,
-    porque:
-      classificacao === "parcial"
+    // bem e o caminho mais curto para o dono deixar de ler os avisos. Uma divergencia de banda NAO e o
+    // desfecho que se pediu - essa avisa, e quem decide se o dono e avisado e a lista dele (FR-042).
+    avisa: foraDaBanda ? deveAvisar(config, "divergencia") : false,
+    banda,
+    porque: foraDaBanda
+      ? `A posicao existe, e a resolucao NAO cabe na banda declarada: ${banda!.porque}`
+      : classificacao === "parcial"
         ? "Aceite parcial: a posicao existe e o resto segue a politica declarada na boleta. Nao e um desconhecido - sabe-se exactamente o que ficou."
         : "Aceite: a posicao existe, e a mesa sabe o que tem porque a corretora o disse.",
   };
@@ -157,6 +179,7 @@ function desconhecido(
     // Nao se sabe se ha posicao: `abrindo` e o unico estado honesto - a ordem pode estar viva.
     estado_da_posicao: "abrindo",
     avisa: deveAvisar(config, "desconhecido"),
+    banda: null,
     porque,
   };
 }

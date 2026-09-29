@@ -122,6 +122,12 @@ aceite. O comportamento dele é o **oráculo de aceite**: medido, não opinado.
 
 ## O que existe hoje (recorte 002 — a máquina de estados)
 
+> **Nota de estado (29/09/2026).** Esta secção é do recorte 002 e não acompanhou os que se seguiram: a máquina
+> de estados (002) e o **vigia** (003) estão fechados, e o **conector Hyperliquid** (004) está implementado e
+> medido — contrato **1.5.0**, `provar.sh` **27 de 27**, **68 das 71** tarefas do 004 fechadas (as 3 abertas
+> exigem **enviar** ordem ao venue, e não há código que envie). O retrato medido, com o comando de cada número,
+> está em **`docs/ONDE_ESTAMOS.md`** — é esse o documento a abrir primeiro, não esta tabela.
+
 | Pasta | O que é |
 |---|---|
 | `contracts/` | **normativo** (recorte 001, fechado): 9 schemas, vocabulário, mocks das duas pontas, bateria de 81 casos nas duas linguagens |

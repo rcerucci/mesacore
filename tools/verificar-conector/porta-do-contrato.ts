@@ -385,7 +385,7 @@ for (const banda of bandas) {
 }
 
 // ---------------------------------------------------------------------------------------------------
-// PROVA 7 — a emenda 1.5.0: as cinco razoes MEDIDAS contra o venue REAL, cada uma com a sua prova negativa
+// PROVA 7 — as emendas 1.5.0 e 1.6.0: as razoes MEDIDAS contra o venue REAL, cada uma com a sua prova negativa
 // ---------------------------------------------------------------------------------------------------
 //
 // Porque existe: o HISTORICO da Hyperliquid era RECUSADO pelo contrato por cinco razoes medidas contra o
@@ -396,6 +396,13 @@ for (const banda of bandas) {
 // se o alargamento passar do que foi medido — por isso cada alargamento traz, AQUI e nos DOIS motores, a
 // prova do que PASSA e a prova do que continua a REPROVAR. E o que NAO podia ser tocado fica medido tambem:
 // a marca que a MESA compoe (a boleta) continua a recusar o `cloid`.
+//
+// A 1.6.0 alargou a MESMA banda outra vez, e por medicao (emenda-1.6.0.txt): a forma de TRES a CINCO letras
+// maiusculas que a 1.5.0 tinha era a medicao de UMA moeda, e nao a banda do venue — o universo real tem 1863
+// simbolos distintos, de 1 a 11 caracteres, com digitos e minusculas. Um alargamento destes APAGA as provas
+// negativas antigas de proposito, e por isso as (a) aqui de baixo sao as da banda NOVA: as duas que a 1.5.0
+// tinha (seis letras, minusculas) mudaram de veredicto, e o negativo passou a ser o que a medicao diz ser
+// lixo — o ESPACO (`JPL `, o unico dos 1863 que nao cabe), o HIFEN (0 de 1863) e as DOZE letras.
 
 const historicoSchema = lerJson(join(CONTRATOS, "historico.schema.json"));
 const casoBaseDoHistorico: any = (() => {
@@ -418,17 +425,29 @@ function historicoComExecucao(execucao: any): any {
 const CLOID_DO_VENUE = "0x00000000000000000000000000000001"; // a forma do venue: 0x + 32 hexadecimais minusculos
 
 const provasDaEmenda: { nome: string; mensagem: unknown; veredicto: string; motivo: string | null }[] = [
-  // (a) A MOEDA DA TAXA -------------------------------------------------------------------------------
-  { nome: "(a) a moeda do venue (`USDC`, QUATRO letras) CABE na forma alargada",
+  // (a) A MOEDA DA TAXA — a banda e a MEDIDA (1863 simbolos do venue, de 1 a 11 caracteres) -----------------
+  { nome: "(a) a moeda do venue (`USDC`, QUATRO letras) CABE na banda medida",
     mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "USDC"; return m; })(),
     veredicto: "aceite", motivo: null },
   { nome: "(a) a moeda antiga (`USD`, TRES letras) NAO deixou de caber",
     mensagem: clonar(casoBaseDoHistorico), veredicto: "aceite", motivo: null },
-  { nome: "(a) PROVA NEGATIVA: a moeda com SEIS letras (`USDCXX`) RECUSA — nao se alargou mais do que o medido",
-    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "USDCXX"; return m; })(),
+  { nome: "(a) MEDIDO: a moeda de UMA letra (`W`) CABE — o venue tem 11 simbolos de uma letra",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "W"; return m; })(),
+    veredicto: "aceite", motivo: null },
+  { nome: "(a) MEDIDO: a moeda com DIGITO (`TEST1`) CABE — 72 dos 1863 simbolos trazem digito (o `1400` que aqui esteve contava tambem nomes de PARES de spot, que nao sao moedas)",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "TEST1"; return m; })(),
+    veredicto: "aceite", motivo: null },
+  { nome: "(a) MEDIDO: a moeda com MINUSCULAS (`TestPascal1`, ONZE letras) CABE — 15 dos 1863 trazem minuscula",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "TestPascal1"; return m; })(),
+    veredicto: "aceite", motivo: null },
+  { nome: "(a) PROVA NEGATIVA: a moeda com DOZE letras (`TSRSFGQQQQQQ`) RECUSA — o medido fecha em ONZE",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "TSRSFGQQQQQQ"; return m; })(),
     veredicto: "recusado", motivo: "formato_invalido" },
-  { nome: "(a) PROVA NEGATIVA: a moeda em minusculas (`usdc`) RECUSA — a forma continua a ser de MAIUSCULAS",
-    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "usdc"; return m; })(),
+  { nome: "(a) PROVA NEGATIVA: a moeda com HIFEN (`EUR-USD`) RECUSA — 0 de 1863 simbolos medidos tem hifen",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "EUR-USD"; return m; })(),
+    veredicto: "recusado", motivo: "formato_invalido" },
+  { nome: "(a) PROVA NEGATIVA, e MEDIDA: a moeda `JPL ` (ESPACO no fim) RECUSA — e' o unico dos 1863 que nao cabe",
+    mensagem: (() => { const m = clonar(casoBaseDoHistorico); m.carga.moeda = "JPL "; return m; })(),
     veredicto: "recusado", motivo: "formato_invalido" },
 
   // (b) O RESULTADO REALIZADO -------------------------------------------------------------------------
@@ -508,7 +527,11 @@ exigir(
   String(historicoSchema.properties?.moeda?.$ref ?? "").endsWith("_defs/forma.schema.json#/$defs/moeda"),
   "historico.moeda NAO aponta para _defs/forma.schema.json#/$defs/moeda: a forma da moeda teria duas casas",
 );
-exigir(formaMoeda.pattern === "^[A-Z]{3,5}$", `a forma da moeda em _defs e' ${formaMoeda.pattern}, e a 1.5.0 mediu de TRES a CINCO letras`);
+exigir(formaMoeda.pattern === "^[A-Za-z0-9]{1,11}$", `a forma da moeda em _defs e' ${formaMoeda.pattern}, e a 1.6.0 MEDIU-a contra o venue (1863 simbolos, de 1 a 11 caracteres, com digitos e minusculas)`);
+exigir(
+  String(formaMoeda.description ?? "").includes("1863") && String(formaMoeda.description ?? "").includes("JPL"),
+  "a descricao da moeda em _defs NAO carrega a medicao (o numero de simbolos medidos e o unico que nao cabe): uma banda sem a medicao escrita ao lado e' uma banda inventada",
+);
 exigir(
   (historicoSchema.required as string[]).includes("resultado_realizado") === false,
   "historico.resultado_realizado continua OBRIGATORIO: o venue so o publica POR EXECUCAO, e exigi-lo obrigaria a somar",

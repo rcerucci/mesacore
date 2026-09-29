@@ -51,8 +51,10 @@
         "tipo": "mercado",
         "tif": "Ioc",
         "quantidade": "0.00833",
-        "preco": "60000",
-        "nocional": "499.8",
+        "preco": "60300",
+        "preco_de_referencia": "60000",
+        "desvio_maximo": "0.5",
+        "nocional": "502.299",
         "alavancagem": "5",
         "reduce_only": false
       }
@@ -69,6 +71,56 @@
         "quantidade": "0.40502",
         "nocional": "499.99719"
       }
+    },
+    {
+      "caso": "ordens/mercado-VENDA-o-preco-e-o-PISO-da-banda-declarada",
+      "esperadoOk": true,
+      "boleta": { "lado": "sell" },
+      "conferir": { "tipo": "mercado", "tif": "Ioc", "preco": "59700", "preco_de_referencia": "60000", "desvio_maximo": "0.5" }
+    },
+    {
+      "caso": "ordens/mercado-preco-quantizado-POR-DENTRO-da-banda-do-venue",
+      "esperadoOk": true,
+      "preco": "83867.0",
+      "conferir": { "preco": "84286", "preco_de_referencia": "83867.0", "desvio_maximo": "0.5" }
+    },
+    {
+      "caso": "ordens/mercado-desvio-de-1-por-cento-aceite-e-o-preco-segue-o-desvio",
+      "esperadoOk": true,
+      "boleta": { "desvio_maximo": "1" },
+      "manifesto": { "desvio_maximo": "1" },
+      "conferir": { "preco": "60600", "desvio_maximo": "1" }
+    },
+    {
+      "caso": "ordens/limite-NAO-usa-o-desvio-o-preco-sai-exacto",
+      "esperadoOk": true,
+      "boleta": { "tipo": "limite" },
+      "preco": "59000",
+      "conferir": { "tipo": "limite", "tif": "Alo", "preco": "59000", "preco_de_referencia": "59000" }
+    },
+    {
+      "caso": "ordens/mercado-desvio-ACIMA-do-que-o-manifesto-declara-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda",
+      "boleta": { "desvio_maximo": "0.6" }
+    },
+    {
+      "caso": "ordens/mercado-sem-desvio-na-boleta-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sem": ["boleta.desvio_maximo"]
+    },
+    {
+      "caso": "ordens/mercado-desvio-zero-na-boleta-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "boleta": { "desvio_maximo": "0" }
+    },
+    {
+      "caso": "ordens/mercado-desvio-que-nao-chega-para-cruzar-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda",
+      "boleta": { "desvio_maximo": "0.001" }
     },
     {
       "caso": "ordens/preco-inteiro-de-6-algarismos-aceite",
@@ -101,7 +153,7 @@
       "caso": "ordens/alavancagem-1-aceite",
       "esperadoOk": true,
       "boleta": { "alavancagem": "1" },
-      "conferir": { "alavancagem": "1", "quantidade": "0.00166", "nocional": "99.6" }
+      "conferir": { "alavancagem": "1", "quantidade": "0.00166", "nocional": "100.098" }
     },
     {
       "caso": "ordens/alavancagem-2-aceite",
@@ -119,7 +171,7 @@
       "caso": "ordens/alavancagem-no-maximo-do-instrumento-aceite",
       "esperadoOk": true,
       "boleta": { "alavancagem": "40" },
-      "conferir": { "alavancagem": "40", "quantidade": "0.06666", "nocional": "3999.6" }
+      "conferir": { "alavancagem": "40", "quantidade": "0.06666", "nocional": "4019.598" }
     },
     {
       "caso": "ordens/alavancagem-acima-do-maximo-recusa-e-nomeia-o-maximo",

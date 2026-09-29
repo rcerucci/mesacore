@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { deveAvisar, type ConfiguracaoDaConta } from "../config/configuracao.ts";
 import { lerParaOCiclo } from "../leitura/fixtures.ts";
 import { decidirInstrumento } from "./ciclo.ts";
+import { conferirBanda, type ConferenciaDaBanda } from "./banda.ts";
 import { accaoPara, conferirAccoes, tabelaDeAccoes } from "./acoes.ts";
 import { conferirLivro, livroDeCondicoes, situacaoDoInstrumento } from "./condicoes.ts";
 import { classificarDesfecho, type Envio } from "./desfecho.ts";
@@ -167,6 +168,7 @@ for (const caso of bateriaCiclo.casos) {
     desconhecido: caso.desconhecido ?? null,
     falhas: caso.falhas ?? {},
     divergente: caso.divergente === true,
+    banda: caso.banda ?? null,
     restricoes: caso.restricoes,
   });
 
@@ -255,6 +257,7 @@ for (const caso of bateriaDesfecho.casos) {
     caso.chegada ?? null,
     caso.agora_ms,
     config(caso.config ?? bateriaDesfecho.padrao.config),
+    caso.conferencia ?? null,
   );
 
   const contexto = [
@@ -267,6 +270,11 @@ for (const caso of bateriaDesfecho.casos) {
     desencontro(r.estado_da_posicao === caso.estado_da_posicao_esperado, `estado_da_posicao: esperado '${caso.estado_da_posicao_esperado}', obtido '${r.estado_da_posicao}'`),
     desencontro((r.marca_a_gravar !== null) === caso.marca_esperada, `marca: esperada ${caso.marca_esperada}, obtida ${r.marca_a_gravar !== null}`),
     desencontro(r.avisa === caso.avisa_esperado, `avisa: esperado ${caso.avisa_esperado}, obtido ${r.avisa}`),
+    // A conferencia da banda (D-001), quando o caso a declara. Ausente = o caso nao a mede (e diz-se).
+    desencontro(
+      caso.banda_veredicto_esperado === undefined || r.banda?.veredicto === caso.banda_veredicto_esperado,
+      `banda: esperada '${caso.banda_veredicto_esperado}', obtida '${r.banda?.veredicto ?? "(nenhuma)"}'`,
+    ),
   ].filter((x): x is string => x !== null);
   exigir(contexto.length === 0, `desfecho/${caso.nome}`, contexto);
 
@@ -293,6 +301,131 @@ for (const caso of bateriaDesfecho.casos) {
     }),
   );
 }
+
+// ---------------------------------------------------------------- a banda (D-001)
+
+// A conferencia da banda, medida como o defeito a pede: o PAR DE CONTROLE (fora -> reduz e registra;
+// dentro -> segue e NAO reduz) mais o lado que hoje ninguem media (o que nao se confere nao vira "cabe").
+
+console.log("\n=== bateria da banda (o que a corretora executou contra o que o dono autorizou) ===\n");
+const bateriaBanda = ler("banda.casos.json");
+const padraoDaBanda = bateriaBanda.padrao;
+
+/** A escolha do caso: a chave presente no caso (mesmo `null`) vence o padrao. `??` mentiria no `null`. */
+function daBanda(caso: any, campo: string): any {
+  return campo in caso ? caso[campo] : padraoDaBanda[campo];
+}
+
+function conferenciaDoCaso(caso: any): ConferenciaDaBanda {
+  return conferirBanda({
+    resolucao: daBanda(caso, "resolucao"),
+    bandas: daBanda(caso, "bandas"),
+    distancia_minima_liquidacao_pct: daBanda(caso, "distancia_minima_liquidacao_pct"),
+    equity: daBanda(caso, "equity"),
+    marca: daBanda(caso, "marca"),
+  });
+}
+
+/** Os desencontros de um caso contra uma conferencia. Separado para a prova negativa poder reusá-lo. */
+function problemasDaBanda(caso: any, c: ConferenciaDaBanda): string[] {
+  const ordenado = (xs: string[]) => [...xs].sort().join(",");
+  const camposFora = c.fora.map((f) => f.campo);
+  return [
+    desencontro(c.veredicto === caso.veredicto_esperado, `veredicto: esperado '${caso.veredicto_esperado}', obtido '${c.veredicto}'`),
+    desencontro(c.accao === caso.accao_esperada, `accao: esperada '${caso.accao_esperada}', obtida '${c.accao}'`),
+    desencontro(ordenado(camposFora) === ordenado(caso.fora_esperados), `fora: esperado [${caso.fora_esperados.join(", ")}], obtido [${camposFora.join(", ")}]`),
+    desencontro(
+      ordenado(c.conferidas) === ordenado(caso.conferidas_esperadas),
+      `conferidas: esperado [${caso.conferidas_esperadas.join(", ")}], obtido [${c.conferidas.join(", ")}]`,
+    ),
+    desencontro(
+      ordenado(c.nao_conferidas.map((n) => n.campo)) === ordenado(caso.nao_conferidas_esperadas),
+      `nao conferidas: esperado [${caso.nao_conferidas_esperadas.join(", ")}], obtido [${c.nao_conferidas.map((n) => n.campo).join(", ")}]`,
+    ),
+    // Uma conferencia sem frase nao serve o dono: ele tem de poder ler PORQUE e o que fazer.
+    desencontro(c.porque.length > 40, "a conferencia tem de dizer PORQUE numa frase (veio curta ou vazia)"),
+    // Cada achado tem de trazer o numero E o limite - um "fora" sem numeros e uma opiniao.
+    desencontro(
+      c.fora.every((f) => f.valor.length > 0 && (f.minimo !== null || f.maximo !== null) && f.porque.length > 20),
+      "cada achado fora da banda tem de trazer o valor, o limite e o porque",
+    ),
+  ].filter((x): x is string => x !== null);
+}
+
+let foraContados = 0;
+let foraQueSeguiram = 0;
+let dentroContados = 0;
+let dentroQueReduziram = 0;
+let naoConferiveisContados = 0;
+let naoConferiveisQueSeguiram = 0;
+
+for (const caso of bateriaBanda.casos) {
+  const c = conferenciaDoCaso(caso);
+  const contexto = problemasDaBanda(caso, c);
+  exigir(contexto.length === 0, `banda/${caso.nome}`, contexto);
+
+  if (c.veredicto === "fora") {
+    foraContados += 1;
+    if (c.accao !== "reduzir_e_registar") foraQueSeguiram += 1;
+  }
+  if (c.veredicto === "dentro") {
+    dentroContados += 1;
+    if (c.accao !== "seguir") dentroQueReduziram += 1;
+  }
+  if (c.veredicto === "nao_conferivel") {
+    naoConferiveisContados += 1;
+    if (c.accao !== "parar_e_explicar") naoConferiveisQueSeguiram += 1;
+  }
+
+  linhas.push(
+    JSON.stringify({
+      bateria: "banda",
+      caso: caso.nome,
+      veredicto: c.veredicto,
+      accao: c.accao,
+      conferidas: c.conferidas,
+      fora: c.fora,
+      nao_conferidas: c.nao_conferidas,
+      ok: contexto.length === 0,
+    }),
+  );
+}
+
+// Os criterios, contados e nao afirmados.
+exigir(
+  foraQueSeguiram === 0 && foraContados > 0,
+  `D-001 (a): 0 de ${foraContados} resolucoes FORA da banda seguiram sem reduzir (tem de ser 0, e o lado tem de ter casos)`,
+);
+exigir(
+  dentroQueReduziram === 0 && dentroContados > 0,
+  `D-001 (b) CONTROLE: 0 de ${dentroContados} resolucoes DENTRO da banda reduziram (sem este lado, "reduziu" podia ser o codigo a reduzir sempre)`,
+);
+exigir(
+  naoConferiveisQueSeguiram === 0 && naoConferiveisContados > 0,
+  `D-001 (c): 0 de ${naoConferiveisContados} resolucoes nao conferiveis seguiram (o desconhecido nao vira "cabe")`,
+);
+
+// A PROVA NEGATIVA, nas duas direcoes - sem ela, os casos acima podiam estar a passar por acaso:
+// (1) uma conferencia que dissesse sempre "dentro" tem de ser APANHADA pelo caso que exige "fora";
+const casoFora = bateriaBanda.casos.find((c: any) => c.veredicto_esperado === "fora");
+const casoDentro = bateriaBanda.casos.find((c: any) => c.veredicto_esperado === "dentro");
+const sempreDentro: ConferenciaDaBanda = {
+  veredicto: "dentro",
+  accao: "seguir",
+  conferidas: ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+  fora: [],
+  nao_conferidas: [],
+  porque: "uma conferencia que aceita tudo - e e isto que a prova negativa tem de apanhar, com o numero",
+};
+exigir(
+  problemasDaBanda(casoFora, sempreDentro).length > 0,
+  "prova negativa 1: uma conferencia que aceita tudo REPROVA no caso que exige 'fora'",
+);
+// (2) e o caso de controle tem de PASSAR com a conferencia verdadeira - senao o conferidor reprovava tudo.
+exigir(
+  problemasDaBanda(casoDentro, conferenciaDoCaso(casoDentro)).length === 0,
+  "prova negativa 2: a conferencia verdadeira PASSA o caso de controle (o conferidor nao reprova a torto e a direito)",
+);
 
 // ---------------------------------------------------------------- reconciliacao
 
@@ -433,11 +566,28 @@ exigir(
   "a prova negativa: repetir sem se saber que nada saiu e recusado pela conferencia da tabela",
 );
 
+// A mesma prova negativa do lado da REDUCAO (D-001): reduzir sem se saber que a posicao existe tem de ser
+// apanhado. Sem ela, "reduzir" podia ser autorizado onde nao ha nada para reduzir.
+const tabelaTortaDaReducao = {
+  ...tabelaDeAccoes,
+  por_motivo: {
+    ...tabelaDeAccoes.por_motivo,
+    resolucao_fora_da_banda: { ...accaoPara("resolucao_fora_da_banda"), provadamente_nao_feito: null },
+  },
+};
+exigir(
+  conferirAccoes(tabelaTortaDaReducao, Object.keys(vocabularioDoContrato), Object.keys(livroDaMesa)).some((d) =>
+    d.includes("reducao autorizada"),
+  ),
+  "a prova negativa do D-001: reduzir sem se saber que a posicao existe e recusado pela conferencia da tabela",
+);
+
 console.log("");
 console.log(
   `resumo: ${verificacoes} verificacoes · ${divergentes} divergentes · ` +
     `${bateriaCondicoes.casos.length} casos de condicao · ${bateriaCiclo.casos.length} de ciclo · ` +
-    `${bateriaDesfecho.casos.length} de desfecho · ${bateriaReconciliacao.casos.length} de reconciliacao`,
+    `${bateriaDesfecho.casos.length} de desfecho · ${bateriaBanda.casos.length} de banda · ` +
+    `${bateriaReconciliacao.casos.length} de reconciliacao`,
 );
 
 if (args.includes("--jsonl")) {

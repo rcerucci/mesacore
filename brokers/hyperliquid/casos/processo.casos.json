@@ -1,6 +1,6 @@
 {
   "mensagem": "processo",
-  "contrato_vigente": "1.5.0",
+  "contrato_vigente": "1.6.0",
   "nota_do_contrato": "A versao do contrato que este ficheiro declara. A bancada confere-a contra contracts/versao.json e CAI se o contrato subir sem este ficheiro subir: uma versao escrita a mao num ficheiro de dados envelhece em silencio, e passaria a medir outra coisa sem o dizer.",
   "nota": "Casos da PORTA DE PROCESSO do conector hyperliquid (FR-019/T010). Este ficheiro serve DOIS leitores, e di-lo: (1) o duble da mesa (contracts/mocks/mesa/main.py --papel conector --casos <este>), que arranca o processo como PLUGIN e confere a ultima linha contra o envelope; (2) a bancada da propria porta (bun run brokers/hyperliquid/processo.ts --bancada), que arranca UM processo por caso, confere as linhas, a ORDEM das portas do arranque e o diagnostico. Os casos de `arranque.casos` so a bancada os corre: o duble da mesa arranca o processo com UMA ficha e UM duble do venue (o comando do plugin e fixo), e estes casos precisam de variantes.",
   "dono": "os casos e o duble do venue sao DADO desta bancada. Nenhum numero do venue foi medido AQUI: os valores sao o que o duble responde, com a mesma FORMA do venue real. O que se mede e o processo: a ordem das portas, as recusas, a resolucao e o desfecho.",
@@ -21,7 +21,7 @@
     "base": {
       "nota": "A ficha do processo, para o duble: UMA conta, UMA credencial por referencia, os instrumentos que o mandato nomeia. O endereco e um endereco de TESTE do duble — nao e a conta do dono.",
       "conector": "hyperliquid",
-      "contrato": "1.5.0",
+      "contrato": "1.6.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -54,7 +54,7 @@
     "sem_conta": {
       "nota": "A ficha nao declara com que conta se fala: sem conta nao ha um processo por (corretora, conta).",
       "conector": "hyperliquid",
-      "contrato": "1.5.0",
+      "contrato": "1.6.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -87,7 +87,7 @@
     "duas_contas": {
       "nota": "A ficha traz `contas` (uma lista): o contrato desta ponta e UMA conta por processo — uma ligacao, uma chave (FR-019).",
       "conector": "hyperliquid",
-      "contrato": "1.5.0",
+      "contrato": "1.6.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -107,7 +107,7 @@
     "producao": {
       "nota": "Ambiente de producao, com o endereco de producao: o recorte corre em TESTE (RN-H17), e a passagem a producao e decisao do dono.",
       "conector": "hyperliquid",
-      "contrato": "1.5.0",
+      "contrato": "1.6.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -124,7 +124,7 @@
     "endereco_trocado": {
       "nota": "Ambiente declarado de teste e endereco de producao: a rede nao bate com o ambiente, e nao se corrige em silencio.",
       "conector": "hyperliquid",
-      "contrato": "1.5.0",
+      "contrato": "1.6.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -141,7 +141,7 @@
     "chave_sem_referencia": {
       "nota": "A credencial nao diz de onde vem: falta de credencial e uma recusa NOMEADA (FR-023).",
       "conector": "hyperliquid",
-      "contrato": "1.5.0",
+      "contrato": "1.6.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -158,7 +158,7 @@
     "instrumento_inexistente": {
       "nota": "O mandato nomeia SOL e o venue nao o oferece: a sonda e o manifesto RECUSAM, dizendo QUAL (FR-003/US1.3).",
       "conector": "hyperliquid",
-      "contrato": "1.5.0",
+      "contrato": "1.6.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -310,9 +310,13 @@
           {
             "address": "0x1111111111111111111111111111111111111111",
             "name": "duble",
-            "validUntil": 1760000000000
+            "validUntil": 4000000000000
           }
         ]
+      },
+      "identidade": {
+        "endereco_do_agente": "0x1111111111111111111111111111111111111111",
+        "nota": "O agente que ASSINA, segundo o duble. Ao vivo este endereco e' DERIVADO da chave carregada por referencia; aqui declara-se para a porta `identidade` poder ser medida nos dois sentidos. O `validUntil` do agente acima e' 4000000000000 ms (ano 2096) de proposito: um duble com prazo curto EXPIRAVA-SE sozinho com o passar do tempo, e a bancada comecaria a cair sem ninguem mexer no codigo. O caso do prazo PASSADO traz a sua propria variante, com um valor que ja passou e nunca mais passa."
       },
       "apos_o_envio": {
         "hl-0001": {
@@ -545,6 +549,40 @@
         "marca_liga_ordem_a_posicao": false,
         "funding_publicado": true
       }
+    },
+    "agente_de_outra_conta": {
+      "nota": "O endereco do agente que ASSINA e' de OUTRA conta: o venue publica so o 0x1111... para esta. A porta `identidade` recusa — assinar por uma conta que nao registou este agente nao se faz.",
+      "herda": "base",
+      "identidade": {
+        "endereco_do_agente": "0x2222222222222222222222222222222222222222"
+      }
+    },
+    "agente_fora_de_prazo": {
+      "nota": "O agente esta REGISTADO na conta, mas o prazo dele (1760000000000 ms, em 2025) ja passou — e e' um valor que fica no passado para sempre, para o caso nao apodrecer. RECUSA com `prazo_excedido`.",
+      "herda": "base",
+      "conta": {
+        "agentes": [
+          {
+            "address": "0x1111111111111111111111111111111111111111",
+            "name": "duble",
+            "validUntil": 1760000000000
+          }
+        ]
+      }
+    },
+    "agentes_calados": {
+      "nota": "O venue NAO responde a leitura dos agentes da conta (a conta le-se, a lista de agentes nao): sem a lista nao se sabe se o agente que assina esta autorizado, e o desconhecido nao vira «sim».",
+      "herda": "base",
+      "conta": {
+        "agentes": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: sem resposta para os agentes da conta"
+        }
+      }
+    },
+    "sem_identidade_declarada": {
+      "nota": "O duble NAO declara o endereco do agente que assina: a porta `identidade` fica `nao_corrida`. E' a prova de que ela NAO vira «conferida» por omissao — um duble (ou uma porta ao vivo) que nao diga quem assina deixa a pergunta ABERTA, e o caso diz isso em vez de a esconder.",
+      "herda": "base",
+      "identidade": {}
     }
   },
   "arranque": {
@@ -556,7 +594,8 @@
       "ambiente_e_rede",
       "chave",
       "ligacao",
-      "sonda_e_manifesto"
+      "sonda_e_manifesto",
+      "identidade"
     ],
     "casos": [
       {
@@ -682,7 +721,7 @@
         "ficha": "base",
         "venue": "preco_fora_da_regra",
         "boleta": {
-          "contrato": "1.5.0",
+          "contrato": "1.6.0",
           "tipo": "boleta",
           "id": "b-preco",
           "carga": {
@@ -709,7 +748,7 @@
         "ficha": "base",
         "venue": "conta_nao_lida_antes_do_envio",
         "boleta": {
-          "contrato": "1.5.0",
+          "contrato": "1.6.0",
           "tipo": "boleta",
           "id": "b-sem-leitura",
           "carga": {
@@ -736,7 +775,7 @@
         "ficha": "base",
         "venue": "duplicado",
         "boleta": {
-          "contrato": "1.5.0",
+          "contrato": "1.6.0",
           "tipo": "boleta",
           "id": "b-1001",
           "carga": {
@@ -765,7 +804,7 @@
         "ficha": "base",
         "venue": "base",
         "boleta": {
-          "contrato": "1.5.0",
+          "contrato": "1.6.0",
           "tipo": "boleta",
           "id": "b-1100",
           "carga": {
@@ -786,6 +825,48 @@
         "linhas_esperadas": 2,
         "desfecho_esperado": { "classificacao": "desconhecido" },
         "resposta_do_venue_exige": { "estado": "resting", "order_id": "8844" }
+      },
+      {
+        "nome": "arranque/identidade-o-agente-que-assina-e-DA-CONTA",
+        "nota": "A porta `identidade` (FR-023/RN-E13/RN-H15): o endereco do agente que ASSINA tem de estar entre os que o venue publica para a conta (`extraAgents`), e dentro do prazo. Aqui esta: o arranque passa as OITO portas e o processo sobe. E' o caminho feliz da porta nova.",
+        "ficha": "base",
+        "venue": "base",
+        "portas_esperadas": 8
+      },
+      {
+        "nome": "arranque/identidade-agente-de-OUTRA-conta-recusa",
+        "nota": "O duble declara como agente que assina um endereco que a conta NAO registou (o venue publica so o 0x1111... para esta conta): RECUSA na porta `identidade` com `capacidade_nao_declarada`, o processo NAO sobe e nada se assina — assinar por uma conta que nao registou este agente e' exactamente o que nao se faz as cegas.",
+        "ficha": "base",
+        "venue": "agente_de_outra_conta",
+        "porta_que_falha": "identidade",
+        "motivo_esperado": "capacidade_nao_declarada",
+        "portas_esperadas": 8
+      },
+      {
+        "nome": "arranque/identidade-agente-FORA-DE-PRAZO-recusa",
+        "nota": "O agente esta registado na conta mas o prazo dele ja passou: RECUSA com `prazo_excedido`. Uma credencial fora de prazo nao serve para assinar, e o processo nao sobe com ela.",
+        "ficha": "base",
+        "venue": "agente_fora_de_prazo",
+        "porta_que_falha": "identidade",
+        "motivo_esperado": "prazo_excedido",
+        "portas_esperadas": 8
+      },
+      {
+        "nome": "arranque/identidade-sem-a-lista-de-agentes-recusa",
+        "nota": "O venue nao responde a leitura dos agentes da conta: sem a lista NAO SE SABE se o agente que assina esta autorizado, e o desconhecido nao vira «sim». RECUSA com `campo_obrigatorio_ausente` (fail-closed).",
+        "ficha": "base",
+        "venue": "agentes_calados",
+        "porta_que_falha": "identidade",
+        "motivo_esperado": "campo_obrigatorio_ausente",
+        "portas_esperadas": 8
+      },
+      {
+        "nome": "arranque/identidade-sem-endereco-declarado-fica-NAO-CORRIDA",
+        "nota": "O duble NAO declara o endereco do agente que assina: a porta fica `nao_corrida` — e NAO vira «conferida» por omissao. Esta e' a prova do fail-closed da porta: o que nao se pode comparar fica DITO como nao corrido (o arranque passa com essa porta aberta, e o caso exige que ela venha nomeada), em vez de se carimbar um «sim» que ninguem mediu.",
+        "ficha": "base",
+        "venue": "sem_identidade_declarada",
+        "portas_esperadas": 8,
+        "portas_nao_corridas": ["identidade"]
       }
     ]
   },
@@ -794,12 +875,12 @@
       "nome": "processo/aceite-mercado",
       "linha_1_esperada": {
         "quantidade": "0.00166",
-        "nocional": "99.6",
-        "margem_empenhada": "19.92",
+        "nocional": "100.098",
+        "margem_empenhada": "20.01",
         "alavancagem_efectiva": "5",
-        "preco_de_liquidacao": "48000"
+        "preco_de_liquidacao": "48240"
       },
-      "nota": "Boleta a mercado dentro de tudo: duas linhas (a resolucao ANTES do envio, o desfecho depois), com os numeros do venue na resolucao do desfecho.",
+      "nota": "Boleta a mercado dentro de tudo: duas linhas (a resolucao ANTES do envio, o desfecho depois), com os numeros do venue na resolucao do desfecho. A resolucao da LINHA 1 mudou a 29/09/2026, e diz-se por que: numa ordem a mercado o preco que vai ao venue e' o Ioc AGRESSIVO que o desvio declarado permite (60300 = a marca 60000 + 0.5%, quantizado ao tick), e a estimativa de antes do envio e' quantidade x ESSE preco (0.00166 x 60300 = 100.098; margem 100.098/5 = 20.01; liquidacao 60300 x 0.8 = 48240). Antes estava 99.6/48000, medido pela MARCA (60000) — declarar o nocional pela referencia seria declarar menos exposicao do que a ordem pode empenhar. O desfecho nao mudou: o venue declara que preencheu a 60000.",
       "com_plugin": true,
       "ficha": "base",
       "venue": "base",
@@ -817,7 +898,7 @@
         "origem_dos_numeros": "posicao_lida_depois_do_envio"
       },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0001",
         "carga": {
@@ -838,7 +919,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0001",
         "carga": {
@@ -865,12 +946,12 @@
       "nome": "processo/parcial",
       "linha_1_esperada": {
         "quantidade": "0.00083",
-        "nocional": "49.8",
-        "margem_empenhada": "9.96",
+        "nocional": "50.049",
+        "margem_empenhada": "10",
         "alavancagem_efectiva": "5",
-        "preco_de_liquidacao": "48000"
+        "preco_de_liquidacao": "48240"
       },
-      "nota": "O venue serviu parte da ordem: `parcial`, com os numeros da posicao que o venue passou a ter (e nao com a conta que nos fariamos).",
+      "nota": "O venue serviu parte da ordem: `parcial`, com os numeros da posicao que o venue passou a ter (e nao com a conta que nos fariamos). A resolucao da LINHA 1 passou a usar o preco que VAI ao venue (o Ioc agressivo, 60300) em vez da marca (60000), pela mesma razao do caso `processo/aceite-mercado` — 0.00083 x 60300 = 50.049.",
       "com_plugin": true,
       "ficha": "base",
       "venue": "base",
@@ -888,7 +969,7 @@
         "origem_dos_numeros": "posicao_lida_depois_do_envio"
       },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0101",
         "carga": {
@@ -909,7 +990,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0101",
         "carga": {
@@ -946,7 +1027,7 @@
         "palavra_do_venue": "Order value below $10 minimum"
       },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0200",
         "carga": {
@@ -967,7 +1048,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0200",
         "carga": {
@@ -995,7 +1076,7 @@
         "origem_dos_numeros": "calculo_antes_do_envio"
       },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0300",
         "carga": {
@@ -1016,7 +1097,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0300",
         "carga": {
@@ -1047,7 +1128,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "instrumento_desconhecido_no_manifesto" },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0400",
         "carga": {
@@ -1068,7 +1149,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0400",
         "carga": {
@@ -1088,7 +1169,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "capacidade_nao_declarada" },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0500",
         "carga": {
@@ -1110,7 +1191,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0500",
         "carga": {
@@ -1130,7 +1211,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "minimo_do_instrumento_acima_da_banda" },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0600",
         "carga": {
@@ -1151,7 +1232,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0600",
         "carga": {
@@ -1192,7 +1273,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0700",
         "carga": {
@@ -1212,7 +1293,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "parcial_nao_declarada" },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0800",
         "carga": {
@@ -1232,7 +1313,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0800",
         "carga": {
@@ -1252,7 +1333,7 @@
       "linhas_esperadas": 1,
       "desfecho_esperado": { "classificacao": "recusado", "motivo": "campo_em_unidade_de_corretora" },
       "boleta": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "boleta",
         "id": "b-0900",
         "carga": {
@@ -1274,7 +1355,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.5.0",
+        "contrato": "1.6.0",
         "tipo": "desfecho",
         "id": "b-0900",
         "carga": {
@@ -1291,7 +1372,7 @@
       {
         "nome": "provocacao/classificacao-fora-do-conjunto",
         "entrada": {
-          "contrato": "1.5.0",
+          "contrato": "1.6.0",
           "tipo": "desfecho",
           "id": "prov-1",
           "carga": {
@@ -1312,7 +1393,7 @@
       {
         "nome": "provocacao/recusado-sem-motivo",
         "entrada": {
-          "contrato": "1.5.0",
+          "contrato": "1.6.0",
           "tipo": "desfecho",
           "id": "prov-2",
           "carga": { "classificacao": "recusado", "resposta_do_venue": {} }
@@ -1323,7 +1404,7 @@
       {
         "nome": "provocacao/numero-em-virgula-flutuante",
         "entrada": {
-          "contrato": "1.5.0",
+          "contrato": "1.6.0",
           "tipo": "desfecho",
           "id": "prov-3",
           "carga": {

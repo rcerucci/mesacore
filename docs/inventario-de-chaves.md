@@ -45,12 +45,12 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 |---|---|---|---|
 | `saldo_pct` | % do saldo | — | boleta (RN-M4.3) |
 | `alavancagem` | múltiplo | `1` | boleta (RN-M4.3) |
-| `distancia_minima_liquidacao_pct` | % de movimento, **opcional** | ausente = ordem livre | porteiro na abertura (RN-M4.13) |
+| `distancia_minima_liquidacao_pct` | % de movimento, **opcional** | ausente = ordem livre | porteiro na abertura (RN-M4.13) **e** a conferência da resolução (`core/ciclo/banda.ts`, D-001 fechado a 29/09) |
 | `janela` | da posição (do setup) | — | mesa (RN-M5, RN-S3) |
 | `estudo` | referência + data | ausente | validação (RN-E13) |
 | `tolera_posicao_manual` | booleano | **`[novo][falta]`** — RN-T16 exige e a chave não tinha nome | mesa (RN-T16) |
-| `bandas.saldo_pct` | `[min, max]` | **`[falta]`** — RN-M6.2 fala de banda e não a enumera para este item | validação (RN-M6.2) |
-| `bandas.alavancagem` | `[min, max]` | **`[falta]`** | validação (RN-M6.2, RN-M4.4) |
+| `bandas.saldo_pct` | `[min, max]` | **`[falta]`** — RN-M6.2 fala de banda e não a enumera para este item (o **valor** é do dono; o **leitor** existe desde 29/09: `core/ciclo/banda.ts` confere a exposição da posição contra esta banda, D-001) | validação (RN-M6.2) **e** conferência da resolução |
+| `bandas.alavancagem` | `[min, max]` | **`[falta]`** (o **valor**; o **leitor**: `core/ciclo/banda.ts`, que confere a alavancagem EFECTIVA que a corretora aplicou — D-001) | validação (RN-M6.2, RN-M4.4) **e** conferência da resolução |
 | `bandas.stop_pct` | `[min, max]` | **`[falta]`** | mesa e validação (RN-S11, RN-M4.12) |
 | `bandas.tp_pct` | `[min, max]` | **`[falta]`** | idem |
 | `bandas.tempo_maximo_em_posicao` | duração | **`[falta]`** | mesa (RN-S11) |

@@ -9,7 +9,17 @@
       "prazo_de_resposta_ms": 5000
     },
     "config": {
-      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "sem_ligacao"]
+      "eventos_que_avisam": [
+        "desconhecido",
+        "recusa",
+        "divergencia",
+        "falha_de_leitura",
+        "congelamento",
+        "cb",
+        "encerramento",
+        "contenda",
+        "sem_ligacao"
+      ]
     }
   },
   "resolucao_valida": {
@@ -55,7 +65,10 @@
             "alavancagem_efectiva": "100.00",
             "preco_de_liquidacao": "1.08500"
           },
-          "resposta_do_venue": { "estado": "FILLED", "id_da_ordem": "V-9917" }
+          "resposta_do_venue": {
+            "estado": "FILLED",
+            "id_da_ordem": "V-9917"
+          }
         }
       },
       "classificacao_esperada": "aceite",
@@ -78,7 +91,10 @@
             "alavancagem_efectiva": "100.00",
             "preco_de_liquidacao": "1.08500"
           },
-          "resposta_do_venue": { "estado": "PARTIAL", "id_da_ordem": "V-9918" }
+          "resposta_do_venue": {
+            "estado": "PARTIAL",
+            "id_da_ordem": "V-9918"
+          }
         }
       },
       "classificacao_esperada": "parcial",
@@ -95,7 +111,10 @@
         "desfecho": {
           "classificacao": "recusado",
           "motivo": "prazo_excedido",
-          "resposta_do_venue": { "estado": "REJECTED", "id_da_ordem": "V-9919" }
+          "resposta_do_venue": {
+            "estado": "REJECTED",
+            "id_da_ordem": "V-9919"
+          }
         }
       },
       "classificacao_esperada": "recusado",
@@ -112,7 +131,9 @@
       "chegada": {
         "desfecho": {
           "classificacao": "aceite",
-          "resposta_do_venue": { "estado": "FILLED" }
+          "resposta_do_venue": {
+            "estado": "FILLED"
+          }
         }
       },
       "classificacao_esperada": "desconhecido",
@@ -136,7 +157,9 @@
             "alavancagem_efectiva": "100.00",
             "preco_de_liquidacao": "1.08500"
           },
-          "resposta_do_venue": { "estado": "?" }
+          "resposta_do_venue": {
+            "estado": "?"
+          }
         }
       },
       "classificacao_esperada": "desconhecido",
@@ -151,13 +174,91 @@
       "nome": "a-lista-do-dono-manda-no-aviso (o desfecho e o mesmo, o dono e outro)",
       "agora_ms": 1790628005001,
       "chegada": null,
-      "config": { "eventos_que_avisam": ["recusa"] },
+      "config": {
+        "eventos_que_avisam": [
+          "recusa"
+        ]
+      },
       "classificacao_esperada": "desconhecido",
       "motivo_esperado": "sem_confirmacao_dentro_do_prazo",
       "estado_da_posicao_esperado": "abrindo",
       "marca_esperada": true,
       "avisa_esperado": false,
       "nota": "FR-042/SC-012: a classificacao nao muda por causa da lista - a marca fica gravada de qualquer maneira. O que a lista decide e so se o dono e avisado."
+    },
+    {
+      "nome": "a-resolucao-cai-fora-da-banda (registra a divergencia e avisa)",
+      "agora_ms": 1790628001000,
+      "chegada": {
+        "desfecho": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "1000",
+            "nocional": "10000.00",
+            "margem_empenhada": "250.00",
+            "alavancagem_efectiva": "40",
+            "preco_de_liquidacao": "1.0500"
+          },
+          "resposta_do_venue": {
+            "estado": "FILLED",
+            "id_da_ordem": "V-9920"
+          }
+        }
+      },
+      "conferencia": {
+        "bandas": {
+          "alavancagem": {
+            "minimo": "1",
+            "maximo": "20"
+          }
+        },
+        "equity": "100000",
+        "marca": "1.1000"
+      },
+      "classificacao_esperada": "aceite",
+      "motivo_esperado": "resolucao_fora_da_banda",
+      "estado_da_posicao_esperado": "aberta",
+      "marca_esperada": false,
+      "avisa_esperado": true,
+      "banda_veredicto_esperado": "fora",
+      "nota": "D-001 - a corretora aplicou 40x e o dono autorizou no maximo 20x. A posicao existe (nao se recusa): o motivo da mesa nomeia a divergencia, e quem decide se o dono e avisado e a lista dele (FR-042)."
+    },
+    {
+      "nome": "a-resolucao-cabe-na-banda-e-nada-muda (o controle do D-001)",
+      "agora_ms": 1790628001000,
+      "chegada": {
+        "desfecho": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "1000",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "1.0000"
+          },
+          "resposta_do_venue": {
+            "estado": "FILLED",
+            "id_da_ordem": "V-9921"
+          }
+        }
+      },
+      "conferencia": {
+        "bandas": {
+          "alavancagem": {
+            "minimo": "1",
+            "maximo": "20"
+          }
+        },
+        "equity": "100000",
+        "marca": "1.1000"
+      },
+      "classificacao_esperada": "aceite",
+      "motivo_esperado": null,
+      "estado_da_posicao_esperado": "aberta",
+      "marca_esperada": false,
+      "avisa_esperado": false,
+      "banda_veredicto_esperado": "dentro",
+      "nota": "O CONTROLE do D-001: a mesma maquina, com a resolucao dentro da banda, nao muda nada - nem o motivo, nem o aviso. Sem este lado, 'divergiu' podia ser o codigo a divergir sempre."
     }
   ]
 }

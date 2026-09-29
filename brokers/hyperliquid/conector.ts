@@ -52,6 +52,9 @@ import {
   type PortaDeHistorico,
 } from "./historico.ts";
 import { carregarCredencial } from "./credencial.ts";
+// A PORTA DE IDENTIDADE (FR-023/RN-E13): a comparacao pura entre o agente que ASSINA e os agentes que o venue
+// declara registados NA CONTA. Vive num ficheiro proprio para poder ser provada em dado, sem chave e sem rede.
+import { conferirIdentidade } from "./identidade.ts";
 // O contrato e a lingua do conector (FR-024: importa `contracts`, nunca o `core`). O enquadramento, a versao
 // e o vocabulario vem de LA — nao ha aqui uma segunda copia das regras do envelope.
 import { validar, versaoVigente, vocabulario } from "../../contracts/esqueleto/framing.ts";
@@ -100,6 +103,13 @@ export type Porta = {
   conta: PortaDeConta;
   historico: PortaDeHistorico;
   envio: PortaDeEnvio;
+  /**
+   * O ENDERECO DO AGENTE QUE ASSINA — o unico dado que a porta de identidade precisa e que so quem tem a
+   * chave sabe. NAO e' um segredo: e' um endereco publico. A porta AO VIVO deriva-o da chave carregada por
+   * REFERENCIA (o VALOR nunca sai de `credencial.ts`, FR-023); o DUBLE declara-o no seu dado. Sem ele, a
+   * porta de identidade fica `nao_corrida` — nao vira «conferida» por omissao.
+   */
+  identidade?: { endereco_do_agente: string; porque: string };
 };
 
 /** O que a bateria de conformidade MEDIU dos campos que o venue nao publica (FR-027). `null` = nao mediu nada. */
@@ -153,6 +163,14 @@ export const PORTAS_DO_PROCESSO: { porta: string; regra: string }[] = [
     regra:
       "US1/FR-001..FR-005: a sonda le o venue e o manifesto e publicado — e o que o venue nao declarar RECUSA " +
       "(`capacidade_nao_declarada`), em vez de virar `true` por omissao",
+  },
+  {
+    porta: "identidade",
+    regra:
+      "FR-023/RN-E13/RN-H15: a credencial que a porta `chave` provou que se LE tem de ser DESTA conta. Compara-se " +
+      "o endereco do agente que assina com os agentes que o venue publica para a conta (`extraAgents`), e o prazo " +
+      "deles. Divergencia, lista que nao se le ou prazo passado = arranque RECUSADO, e nada sai. E a ULTIMA porta " +
+      "porque e a que exige a leitura mais recente do venue: o que se sabe sem falar com ninguem vem primeiro",
   },
 ];
 
@@ -612,6 +630,30 @@ export async function arrancar(entrada: Entrada, opcoes: { sem_chave?: boolean }
       (juntada.usados.length ? `; a bateria declarou ${juntada.usados.join(", ")}` : "; nada veio da bateria (o venue declarou tudo)"),
   );
 
+  // ---- porta 8: a IDENTIDADE (o agente que assina esta registado NA CONTA?) --------------------------------
+  // A porta `chave` provou que a credencial se LE; esta prova que ela e' DESTA conta. Compara-se o endereco do
+  // agente que assina (derivado da chave, por referencia, na porta ao vivo; declarado no dado, no duble) com os
+  // agentes que o VENUE publica para a conta — `extraAgents`, que ja foi lido na porta `ligacao`. Divergencia,
+  // lista ilegivel ou prazo passado: RECUSA, e o processo nao serve nada (FR-023/RN-E13/RN-H15).
+  const doAgente = entrada.porta.identidade;
+  if (doAgente === undefined) {
+    naoCorrida(
+      "identidade",
+      "esta porta do venue nao declara o endereco do agente que assina: sem ele nao ha o que comparar com os " +
+        "agentes da conta. A porta ao vivo deriva-o da chave carregada por REFERENCIA (`credencial.ts`); o duble " +
+        "declara-o em `identidade.endereco_do_agente` do ficheiro de casos. Nao se inventa: fica `nao_corrida`",
+    );
+  } else {
+    const identidadeDoVenue = conferirIdentidade({
+      agente: doAgente.endereco_do_agente,
+      conta: ficha.conta,
+      agentes: respostasDaConta.agentes?.ok === true ? respostasDaConta.agentes.valor : undefined,
+      instante_ms: entrada.instante_ms,
+    });
+    if (!identidadeDoVenue.ok) return falhou("identidade", identidadeDoVenue.motivo, identidadeDoVenue.porque);
+    passou("identidade", identidadeDoVenue.porque);
+  }
+
   return {
     ok: true,
     estado: {
@@ -1053,6 +1095,21 @@ export async function atender(
 
   // 5. O QUE O VENUE DISSE — classificado nas QUATRO do contrato, com os numeros DELE.
   const bruto = objecto(resposta.valor);
+  // A RECUSA AO NIVEL DA ACCAO: o venue tambem responde `{status:"err", response:"<palavra dele>"}` — sem
+  // `data.statuses`. E' uma recusa DELE, e entra pela MESMA classificacao, com a palavra dele: nao se trata
+  // como forma desconhecida (isso seria perder a recusa) nem como sucesso.
+  if (bruto?.status === "err") {
+    const palavra = typeof bruto.response === "string" ? bruto.response : JSON.stringify(bruto.response);
+    const { motivo, nota } = motivoPelaPalavraDoVenue(palavra);
+    diag.push({ etapa: "envio", veredicto: "recusado_pelo_venue", palavra_do_venue: palavra, motivo, nota });
+    return recusa(
+      id,
+      motivo,
+      `o venue recusou a accao com a palavra DELE: ${palavra} (${nota})`,
+      { erro: palavra, palavra_do_venue: palavra, bruto },
+      linhas,
+    );
+  }
   const dados = objecto(objecto(bruto?.response)?.data);
   const statuses = Array.isArray(dados?.statuses) ? (dados?.statuses as unknown[]) : undefined;
   const primeiro = statuses !== undefined && statuses.length > 0 ? objecto(statuses[0]) : undefined;
