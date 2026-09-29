@@ -11,8 +11,9 @@ dado, um por regra, e a contagem no fim.
 **Formato**: `[ID] [P?] [História] Descrição` — `[P]` = ficheiros diferentes, sem dependência. Caminhos
 concretos em todas as tarefas.
 
-**Estado da execução**: **fase 1 fechada** (T001–T004) e **fase 2 a meio** — o contrato já está em 1.1.0 com os
-quatro tipos provados nas duas linguagens (T005–T013); falta a porta de processo da mesa (T014–T018). A linha de base medida está
+**Estado da execução**: **fases 1 e 2 FECHADAS** (T001–T018). O contrato está em 1.1.0 com os quatro tipos
+provados nas duas linguagens, e a mesa tem porta de processo. A porta única está em **17 de 17**. O próximo é
+a **US1** (T019–T026): o vigia de pé, que é o MVP deste recorte. A linha de base medida está
 em `relatorios/linha-de-base.txt` (porta única **16 de 16**, `chaves.ts` 3 verificações · 0 divergentes · 7
 chaves, **116** sítios da versão `1.0.0` em **19** ficheiros de contrato). O recorte 002 está fechado (67 de 67) e a porta única em
 **16 de 16**; o contrato está em **1.0.0**. Os números que estas tarefas usam foram medidos, não estimados:
@@ -59,13 +60,29 @@ uma só.
 - [x] T012 Regenerar `contracts/gerado/ts`, `contracts/gerado/py` e `contracts/esqueleto/*` nas duas linguagens, e conferir a **frescura** (`bash tools/verificar-contrato/frescura.sh`)
 - [x] T013 `bash tools/verificar-contrato/ponta-a-ponta.sh` e `inventario.sh` passam a 1.1.0 e ganham os casos novos, **somando** aos que já contavam
 
-### A mesa ganha porta de processo (T014–T018 — por fazer)
+### A mesa ganha porta de processo (T014–T018 — FEITO)
 
-- [ ] T014 `core/servidor.ts` — a porta: lê **uma linha** JSON, entrega ao intérprete da mesa, escreve **uma** linha. Não decide, não tem log próprio, não lê configuração que a mesa já lê
-- [ ] T015 `core/estados/comando.ts` — a validação re-alojada na **mensagem do contrato** (não numa forma própria ao lado): os mesmos três motivos, agora com versão conferida
-- [ ] T016 [P] `tools/verificar-maquina/servidor.ts` — bancada da porta: linha entra/linha sai; campo a mais recusado; versão diferente recusada; comando sem autor recusado
-- [ ] T017 `core/estados/motivos.json` — cada um dos 42 motivos ganha `cruzam_a_fronteira: true|false` (20/22), para a conferência das duas direcções ter **âmbito declarado**
-- [ ] T018 Ligar a porta da mesa ao `provar.sh` e medir: as 16 verificações continuam a passar **e** a bancada da porta entra na contagem
+**FEITO.** A porta é `core/servidor.ts` (processo: uma linha entra, uma linha sai), a bancada é
+`tools/verificar-maquina/servidor.ts` (**77 verificações · 0 divergentes · 6 casos · 6 processos**), e a porta
+única passou a **17 de 17**. Três achados, todos medidos, e um deles **contra a minha própria recomendação**:
+
+1. **A mesa não pode correr as seis portas sozinha.** O `arrancar()` precisa de quatro coisas que não nascem
+   na mesa: o *registo de operação retomado* (é do vigia), o *conferidor de inventário* (vive em `tools/`, e
+   o `/core` não pode importá-lo — RN-E2), o manifesto e a posição. Corrigi a recomendação que tinha dado ao
+   dono: quem **produz** o desfecho das portas é o vigia (T021 decide por que canal); à mesa cabe **decidir
+   sobre ele** — e enquanto ele não chegar, o `start` **recusa**, nomeando a porta `(não conferidas)`.
+2. **Duas verdades entram por argumento, não por campo na mensagem**: `--portas` e `--posicao-viva`. O
+   `comando` não tem contexto e não pode ter (campo a mais recusa) — foi essa a razão de o desconhecido
+   ganhar nome próprio (`posicao_desconhecida`, que **vem da porta**, não do livro).
+3. **D-006**: as guardas `sem_posicao_viva` e `portas_do_arranque_falham` tratam «não sei» como «não há» — a
+   mesa arrancaria sem conferir e pararia sem perguntar. A porta fecha-o por fora (recusando); a correcção
+   dentro da tabela é do US3.
+
+- [x] T014 `core/servidor.ts` — a porta: lê **uma linha** JSON, entrega ao intérprete da mesa, escreve **uma** linha. Não decide, não tem log próprio, não lê configuração que a mesa já lê
+- [x] T015 `core/estados/comando.ts` — a validação re-alojada na **mensagem do contrato** (não numa forma própria ao lado): os mesmos três motivos, agora com versão conferida
+- [x] T016 [P] `tools/verificar-maquina/servidor.ts` — bancada da porta: linha entra/linha sai; campo a mais recusado; versão diferente recusada; comando sem autor recusado
+- [x] T017 `core/estados/motivos.json` — cada um dos 42 motivos ganha `cruzam_a_fronteira: true|false` (20/22), para a conferência das duas direcções ter **âmbito declarado**
+- [x] T018 Ligar a porta da mesa ao `provar.sh` e medir: as 16 verificações continuam a passar **e** a bancada da porta entra na contagem
 
 **Checkpoint**: o contrato está em 1.1.0 nas duas linguagens, a mesa fala por porta, e nada do que estava provado caiu.
 

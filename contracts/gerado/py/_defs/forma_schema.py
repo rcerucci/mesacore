@@ -61,6 +61,8 @@ class MotivoDeComando(StrEnum):
     comando_com_campo_a_mais = 'comando_com_campo_a_mais'
     comando_incompleto = 'comando_incompleto'
     comando_com_tipo_invalido = 'comando_com_tipo_invalido'
+    versao_do_contrato_divergente = 'versao_do_contrato_divergente'
+    posicao_desconhecida = 'posicao_desconhecida'
 
 
 class EfeitoDeComando(StrEnum):

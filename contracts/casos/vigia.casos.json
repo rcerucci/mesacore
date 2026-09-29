@@ -179,7 +179,7 @@
       "motivo_esperado": "valor_fora_do_conjunto"
     },
     {
-      "nome": "resposta/aceite-sem-efeito",
+      "nome": "resposta/aceite-sem-efeito-e-aceite",
       "mensagem": "resposta_de_comando",
       "entrada": {
         "contrato": "1.1.0",
@@ -195,8 +195,9 @@
           "instante_ms": 1790628003000
         }
       },
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "campo_obrigatorio_ausente"
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "O efeito so e exigido quando ha mais para dizer alem da transicao. Um `start` comum tem por efeito a propria transicao: inventar-lhe um nome repetiria o `para`."
     },
     {
       "nome": "resposta/estado-fora-do-eixo",
@@ -295,6 +296,28 @@
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "nome": "resposta/efeito-inventado",
+      "mensagem": "resposta_de_comando",
+      "nota": "O efeito e conjunto FECHADO: um nome de fora nao passa, mesmo com a mensagem bem formada.",
+      "entrada": {
+        "contrato": "1.1.0",
+        "tipo": "resposta_de_comando",
+        "id": "rc-6",
+        "carga": {
+          "pedido_id": "c-6",
+          "aceito": true,
+          "efeito": "tudo_certo",
+          "transicao": {
+            "de": "parada",
+            "para": "em_operacao"
+          },
+          "instante_ms": 1790628005000
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto"
     }
   ]
 }

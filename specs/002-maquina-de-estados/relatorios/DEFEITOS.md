@@ -186,3 +186,43 @@ contrato sobe de versão; o desenho não se dobra.
 transitar, com o motivo no registro; (b) um comando recusado e o **motivo da mesa** a voltar como mensagem do
 contrato (é a metade que prova que a fronteira existe); (c) o vigia morto a meio e a mesa a continuar a
 reconciliar (RN-V6), com a transição registrada.
+
+---
+
+## D-006 — A tabela trata «não sei» como «não há»
+
+**Encontrado a construir a porta de processo da mesa** (recorte 003, T014). Não é um defeito novo do código:
+é um **buraco na tabela**, que ninguém tinha exercido porque as bancadas sempre passaram o contexto inteiro.
+
+Duas guardas decidem por ausência:
+
+```ts
+case "sem_posicao_viva":          return contexto.posicao_viva !== true;               // não sei → "não há posição"
+case "portas_do_arranque_falham": return contexto.portas_do_arranque?.passam === false; // não sei → "as portas passaram"
+```
+
+Consequência medida: uma porta (ou qualquer chamador) que passe o contexto vazio **arranca a mesa sem
+conferir as seis portas** (`parada --start--> em_operacao`) e **para a mesa sem perguntar** (`em_operacao
+--stop--> parada`), porque é essa a linha que casa primeiro. O comentário da própria tabela diz o contrário
+do que a guarda faz: «com posição, apresenta o resumo e PERGUNTA».
+
+**Por que ficou assim.** A tabela foi escrita para um chamador que *sabe* — as bancadas do recorte 002
+montam o contexto à mão e sempre com os dois campos. O desconhecido nunca foi testado, e por isso a
+ausência passou a valer como negativa.
+
+**Como está fechado hoje (paliativo declarado).** A porta de processo **recusa** o que não sabe: `start`
+sem as portas devolve `porta_do_arranque_falhou` com a porta `(não conferidas)`, e `stop` sem a posição
+devolve `posicao_desconhecida` — um nome que existe no conjunto fechado e **vem da porta, não do livro**
+(declarado em `contracts/vocabulario.json`). O desconhecido não vira «sim» por omissão, mas a correcção
+vive **na porta**, e quem chamar a tabela directamente continua exposto.
+
+**Como se fecha de verdade.** As duas guardas passam a distinguir os três casos (verdadeiro, falso,
+**desconhecido**), e o desconhecido ganha linha própria de recusa na tabela — em vez de cair na linha
+`sempre`. É trabalho do **US3** (o encerramento), porque é lá que a pergunta «fecho a mercado?» obriga a
+saber se há posição viva: `--posicao-viva` deixa de ser argumento da porta e passa a ser leitura da
+corretora, pela marca de posse (RN-T16.1).
+
+**Como se saberá que está fechado.** (a) um caso de tabela com `posicao_viva` **ausente** que recusa, e o
+mesmo caso com `false` que para — os dois na bateria `tabela.ts`, não só na porta; (b) o `stop` com posição
+declarada a entrar em `encerrando` com o resumo apresentado; (c) a prova negativa: repor a guarda antiga e
+exigir o vermelho.

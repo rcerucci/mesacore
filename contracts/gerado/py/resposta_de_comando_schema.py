@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from ._defs import forma_schema
 
@@ -23,6 +23,9 @@ class RespostaDaMesaAoComando(BaseModel):
     pedido_id: forma_schema.Correlacao
     aceito: bool
     motivo: forma_schema.MotivoDeComando | None = None
-    efeito: forma_schema.EfeitoDeComando | None = None
+    efeito: forma_schema.EfeitoDeComando | None = Field(
+        None,
+        description='So quando ha mais para dizer do que a transicao. Espelho de vocabulario.json.',
+    )
     transicao: Transicao
     instante_ms: forma_schema.InstanteDaMesaMs

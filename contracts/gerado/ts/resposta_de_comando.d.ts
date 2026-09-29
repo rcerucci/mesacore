@@ -9,6 +9,8 @@
  * Recusa NAO e erro de protocolo: e resposta. Quando recusado vem `motivo`; quando aceito vem `efeito` - os dois de conjuntos fechados declarados no vocabulario. A transicao traz estado anterior e posterior, e o instante e do relogio da MESA (RN-M4.9: quem recebe e que carimba).
  */
 export type RespostaDaMesaAoComando = {
+  [k: string]: unknown;
+} & {
   /**
    * Identificador de correlacao do ciclo (RN-T3). E OPACO: compara-se por igualdade, nunca se interpreta. Admite '/' porque a forma natural de correlacionar uma linha com o seu ciclo e 'ciclo/linha' — proibir um caracter inofensivo so cria atrito.
    */
@@ -32,9 +34,11 @@ export type RespostaDaMesaAoComando = {
     | "verbo_desconhecido"
     | "comando_com_campo_a_mais"
     | "comando_incompleto"
-    | "comando_com_tipo_invalido";
+    | "comando_com_tipo_invalido"
+    | "versao_do_contrato_divergente"
+    | "posicao_desconhecida";
   /**
-   * Motivo de EFEITO de um comando aceito - o que aconteceu, para o vigia poder registrar uma transicao com sentido (RN-V4). Espelho de vocabulario.json.
+   * So quando ha mais para dizer do que a transicao. Espelho de vocabulario.json.
    */
   efeito?:
     | "sessao_nova_gravada"

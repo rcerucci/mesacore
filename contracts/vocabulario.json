@@ -1,23 +1,97 @@
 {
   "contrato": "1.1.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
-  "lados": ["buy", "sell", "hold", "caixa"],
+  "lados": [
+    "buy",
+    "sell",
+    "hold",
+    "caixa"
+  ],
   "conjuntos_do_vigia": {
-    "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 20 dos 42, research R7; as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa.",
-    "verbos": ["start", "pause", "stop", "reset", "nova_sessao"],
-    "estados_da_mesa": ["parada", "em_operacao", "pausada", "encerrando"],
-    "respostas_do_encerramento": ["fechar_a_mercado", "manter"],
-    "motivos_de_comando": ["mesa_ja_em_operacao", "mesa_parada_nada_a_pausar", "mesa_ja_pausada", "mesa_ja_parada", "mesa_em_encerramento", "pedido_repetido", "sessao_inibida", "porta_do_arranque_falhou", "liquidacao_em_curso", "sessao_nova_com_posicao_viva", "mesa_precisa_parar_para_sessao_nova", "verbo_desconhecido", "comando_com_campo_a_mais", "comando_incompleto", "comando_com_tipo_invalido"],
-    "efeitos_de_comando": ["sessao_nova_gravada", "reset_nao_toca_em_nada", "resumo_do_encerramento_apresentado", "stop_pendente_por_prazo", "parada_com_posicao_viva"],
+    "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 20 dos 42, research R7; as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa. Duas excecoes, e as duas da PORTA, nao do livro: `versao_do_contrato_divergente` (quem recusa e o CONTRATO, e a porta relata-o tal e qual - traduzi-lo para um motivo da mesa faria o vigia perder a razao certa, que e o que se quer saber quando nada acontece) e `posicao_desconhecida` (a porta nao sabe se ha posicao viva e NAO para por adivinhacao: a tabela trata \"nao sei\" como \"nao ha posicao\", e por isso o desconhecido sai como recusa NOMEADA).",
+    "verbos": [
+      "start",
+      "pause",
+      "stop",
+      "reset",
+      "nova_sessao"
+    ],
+    "estados_da_mesa": [
+      "parada",
+      "em_operacao",
+      "pausada",
+      "encerrando"
+    ],
+    "respostas_do_encerramento": [
+      "fechar_a_mercado",
+      "manter"
+    ],
+    "motivos_de_comando": [
+      "mesa_ja_em_operacao",
+      "mesa_parada_nada_a_pausar",
+      "mesa_ja_pausada",
+      "mesa_ja_parada",
+      "mesa_em_encerramento",
+      "pedido_repetido",
+      "sessao_inibida",
+      "porta_do_arranque_falhou",
+      "liquidacao_em_curso",
+      "sessao_nova_com_posicao_viva",
+      "mesa_precisa_parar_para_sessao_nova",
+      "verbo_desconhecido",
+      "comando_com_campo_a_mais",
+      "comando_incompleto",
+      "comando_com_tipo_invalido",
+      "versao_do_contrato_divergente",
+      "posicao_desconhecida"
+    ],
+    "efeitos_de_comando": [
+      "sessao_nova_gravada",
+      "reset_nao_toca_em_nada",
+      "resumo_do_encerramento_apresentado",
+      "stop_pendente_por_prazo",
+      "parada_com_posicao_viva"
+    ],
     "nota_dos_que_ficam_de_fora": "Os outros 22 motivos de core/estados/motivos.json (ciclo, posicao, reconciliacao) NAO atravessam esta fronteira: nao sao resposta a comando nenhum. Leva-los seria levar os que ninguem produz deste lado - o defeito espelhado dos falsos botoes."
   },
-  "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite", "mercado_por_faixa"],
-  "politicas_de_parcial": ["tudo_ou_nada", "o_que_der"],
-  "destinos_do_resto": ["agressivo", "cancelar"],
-  "classificacoes_de_desfecho": ["aceite", "parcial", "desconhecido", "recusado"],
-  "estados_de_mercado": ["aberto", "fechado"],
-  "tipos_de_linha_do_registo": ["snapshot", "proposta", "boleta", "desfecho"],
-  "formas_de_marca": ["cloid", "clientOrderId", "magic", "comment", "nenhuma"],
+  "tipos_de_ordem": [
+    "mercado",
+    "limite",
+    "stop",
+    "stop_limite",
+    "mercado_por_faixa"
+  ],
+  "politicas_de_parcial": [
+    "tudo_ou_nada",
+    "o_que_der"
+  ],
+  "destinos_do_resto": [
+    "agressivo",
+    "cancelar"
+  ],
+  "classificacoes_de_desfecho": [
+    "aceite",
+    "parcial",
+    "desconhecido",
+    "recusado"
+  ],
+  "estados_de_mercado": [
+    "aberto",
+    "fechado"
+  ],
+  "tipos_de_linha_do_registo": [
+    "snapshot",
+    "proposta",
+    "boleta",
+    "desfecho"
+  ],
+  "formas_de_marca": [
+    "cloid",
+    "clientOrderId",
+    "magic",
+    "comment",
+    "nenhuma"
+  ],
   "marca_de_posse_layout": {
     "bits_totais": 31,
     "bits_ficha": 12,
@@ -27,8 +101,18 @@
     "ciclo_maximo": 524287,
     "nota": "A marca e ficha << bits_ciclo | ciclo. Cabe inteira no POSITION_MAGIC do MT5 (o campo mais restrito dos tres venues), que e o que obriga aos 31 bits. Ficha 0 fica de fora: zero nao identifica ficha nenhuma, e um 0 no venue e indistinguivel de 'sem marca'. Os limites sao conferidos por aritmetica em esqueleto/marca.ts — se os numeros aqui nao derem 2^n-1, o gerador recusa trabalhar."
   },
-  "campos_em_unidade_de_corretora": ["quantidade", "lote", "preco_absoluto", "pontos", "tick", "tamanho_do_contrato"],
-  "unidades_neutras_em": ["boleta.schema.json", "proposta.schema.json"],
+  "campos_em_unidade_de_corretora": [
+    "quantidade",
+    "lote",
+    "preco_absoluto",
+    "pontos",
+    "tick",
+    "tamanho_do_contrato"
+  ],
+  "unidades_neutras_em": [
+    "boleta.schema.json",
+    "proposta.schema.json"
+  ],
   "nota_unidades_neutras": "As mensagens que a mesa ENVIA (boleta, proposta) nao podem trazer unidade de corretora: quantidade, lote, preco absoluto, pontos, tick e tamanho de contrato sao do conector. NAO se aplica a resolucao (e o trabalho dela), ao manifesto (declara as unidades), ao mercado (le o que o venue da) nem ao historico (reporta o que o venue fez). 'tamanho_do_contrato' e nao 'contrato' para nao colidir com o campo 'contrato' do envelope, que e a VERSAO.",
   "motivos": {
     "versao_do_contrato_divergente": {

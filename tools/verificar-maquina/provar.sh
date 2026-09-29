@@ -46,6 +46,7 @@ declarar "contenda (T066)"      bun run tools/verificar-maquina/contenda.ts  "re
 declarar "chaves do core (SC-012)"       bun run tools/verificar-maquina/chaves.ts
 declarar "porteiro do estado (script)"   bash tools/verificar-maquina/porteiro-do-estado.sh
 declarar "marcas sobrevivem ao reinicio" bash tools/verificar-maquina/reiniciar.sh
+declarar "porta da mesa (T014-T016)"      bun run tools/verificar-maquina/servidor.ts
 
 if [ "$RAPIDO" -eq 0 ]; then
   declarar "contrato neutro (recorte 001)" bash tools/verificar-contrato/ponta-a-ponta.sh

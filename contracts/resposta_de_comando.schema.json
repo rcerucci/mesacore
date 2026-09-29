@@ -22,7 +22,8 @@
       "$ref": "_defs/forma.schema.json#/$defs/motivo_de_comando"
     },
     "efeito": {
-      "$ref": "_defs/forma.schema.json#/$defs/efeito_de_comando"
+      "$ref": "_defs/forma.schema.json#/$defs/efeito_de_comando",
+      "description": "So quando ha mais para dizer do que a transicao. Espelho de vocabulario.json."
     },
     "transicao": {
       "type": "object",
@@ -57,9 +58,6 @@
         }
       },
       "then": {
-        "required": [
-          "efeito"
-        ],
         "properties": {
           "efeito": {
             "$ref": "_defs/forma.schema.json#/$defs/efeito_de_comando"
@@ -75,7 +73,8 @@
             "$ref": "_defs/forma.schema.json#/$defs/motivo_de_comando"
           }
         }
-      }
+      },
+      "description": "Aceito exige `efeito` so quando ACONTECEU algo alem da transicao (sessao gravada, nada tocado pelo reset, resumo apresentado, stop pendente, parada com posicao viva). Quando a transicao e toda a historia, ela basta: um efeito de enfeite repetiria o `para` e passaria a haver dois nomes para o mesmo facto."
     }
   ]
 }

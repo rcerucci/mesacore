@@ -3,211 +3,253 @@
   "familia": "recusa_da_mesa",
   "motivos": {
     "mesa_ja_em_operacao": {
+      "cruzam_a_fronteira": true,
       "quando": "start com a mesa ja em em_operacao",
       "regra": "FR-004, RN-V1",
       "porque": "Um start repetido nao reinicia contadores nem esquece marcas: seria uma segunda sessao dentro da mesma sessao."
     },
     "mesa_parada_nada_a_pausar": {
+      "cruzam_a_fronteira": true,
       "quando": "pause com a mesa parada",
       "regra": "US1 cenario 3, RN-V1",
       "porque": "Um evento que nao muda nada e ruido. Recusar com motivo e mais honesto do que aceitar e nao fazer nada."
     },
     "mesa_ja_pausada": {
+      "cruzam_a_fronteira": true,
       "quando": "pause com a mesa ja pausada",
       "regra": "FR-010",
       "porque": "Segunda pausa nao muda nada - e o mesmo motivo do anterior."
     },
     "mesa_ja_parada": {
+      "cruzam_a_fronteira": true,
       "quando": "stop com a mesa ja parada",
       "regra": "FR-012",
       "porque": "Nao ha o que encerrar."
     },
     "mesa_em_encerramento": {
+      "cruzam_a_fronteira": true,
       "quando": "pause ou nova_sessao durante o encerramento",
       "regra": "FR-011, FR-014",
       "porque": "Durante o encerramento a mesa espera UMA resposta: fechar a mercado ou manter. Um segundo verbo a meio da mesma pergunta nao tem resposta definida."
     },
     "pedido_repetido": {
+      "cruzam_a_fronteira": true,
       "quando": "stop recebido outra vez durante o encerramento",
       "regra": "FR-014 (edge case)",
       "porque": "Nao reabre a pergunta nem muda o estado: fica registrado como repeticao, para nao haver duas perguntas sobre a mesma coisa."
     },
     "sessao_inibida": {
+      "cruzam_a_fronteira": true,
       "quando": "start com a marca de inibicao presente",
       "regra": "FR-037, RN-M3.3",
       "porque": "Depois do circuit breaker, voltar a operar exige uma decisao humana (nova_sessao). Se o start passasse, a inibicao nao serviria para nada."
     },
     "porta_do_arranque_falhou": {
+      "cruzam_a_fronteira": true,
       "quando": "start com uma das seis portas a falhar",
       "regra": "FR-031, FR-032",
       "porque": "Manifesto, mandato, contenda, inventario, versao e sessao: a mesa nao arranca pela metade, e nao corrige nada para conseguir entrar. O motivo especifico da porta vai na resposta."
     },
     "liquidacao_em_curso": {
+      "cruzam_a_fronteira": true,
       "quando": "start durante o encerramento com a liquidacao ja a correr",
       "regra": "FR-013",
       "porque": "Uma vez a liquidacao comecada, parar a meio deixa a posicao pior do que estava - nao se interrompe a meio."
     },
     "sessao_nova_com_posicao_viva": {
+      "cruzam_a_fronteira": true,
       "quando": "nova_sessao com posicao que a mesa reconhece como sua",
       "regra": "FR-034 (edge case)",
       "porque": "A sessao nova nao serve para limpar posicao. Fechar primeiro, e com decisao do dono."
     },
     "mesa_precisa_parar_para_sessao_nova": {
+      "cruzam_a_fronteira": true,
       "quando": "nova_sessao com a mesa em operacao ou pausada",
       "regra": "FR-038, FR-039",
       "porque": "Uma sessao tem UMA configuracao em vigor (RN-M3.4). Trocar de configuracao com a mesa a operar misturaria duas configuracoes no mesmo numero - e o numero deixaria de comparar."
     },
     "verbo_desconhecido": {
+      "cruzam_a_fronteira": true,
       "quando": "comando cujo verbo nao consta do conjunto fechado",
       "regra": "FR-004, RN-V1",
       "porque": "Os verbos sao cinco. Um sexto nao entra por omissao nem por extensao."
     },
     "comando_com_campo_a_mais": {
+      "cruzam_a_fronteira": true,
       "quando": "comando que traz um campo que nao e verbo, autor, pedido_id ou motivo (ficha, instrumento, saldo, lado, preco...)",
       "regra": "contracts/interface.md 1",
       "porque": "Aceitar um campo a mais seria a porta dos verbos a alargar-se sozinha: no dia seguinte alguem mandaria 'lado' por aqui e a mesa passaria a ser comandada a partir da web em nome de uma estrategia."
     },
     "comando_incompleto": {
+      "cruzam_a_fronteira": true,
       "quando": "comando sem verbo, autor ou pedido_id - ou nova_sessao sem motivo",
       "regra": "contracts/interface.md 1",
       "porque": "Um verbo sem autor nao se pode auditar, e um verbo sem pedido_id nao se pode correlacionar com a resposta."
     },
     "comando_com_tipo_invalido": {
+      "cruzam_a_fronteira": true,
       "quando": "campo do comando com o tipo errado",
       "regra": "FR-004",
       "porque": "A mesa recusa, nunca converte: um motivo que nao e texto nao vira texto."
     },
     "abrir_impedido_pela_condicao": {
+      "cruzam_a_fronteira": false,
       "quando": "o setup propos abrir e a condicao do instrumento impede",
       "regra": "FR-015, FR-020",
       "porque": "Nenhuma condicao diferente de `normal` (nem o dado velho) abre. O motivo diz o que foi feito; a CONDICAO vai no campo proprio, para que o registo diga qual delas travou."
     },
     "fechar_impedido_pela_condicao": {
+      "cruzam_a_fronteira": false,
       "quando": "pediu-se fechar e a condicao impede fechar",
       "regra": "FR-016, FR-017, FR-019",
       "porque": "Fechar sem saber o que existe (sem_leitura), sobre um numero que nao bate (divergente) ou com o mercado fechado e fechar as cegas. O dado velho, esse, NAO impede fechar."
     },
     "proposta_sem_lado_a_executar": {
+      "cruzam_a_fronteira": false,
       "quando": "a proposta do setup e `hold`",
       "regra": "RN-T4",
       "porque": "Hold e uma proposta legitima que nao faz nada - e nao uma invalidade. Fica registrada, e nao conta para os invalidos seguidos."
     },
     "proposta_ausente_tratada_como_hold": {
+      "cruzam_a_fronteira": false,
       "quando": "proposta ausente ou com um valor fora dos quatro",
       "regra": "RN-T4",
       "porque": "Nunca se corrige nem se adivinha o lado: trata-se como hold e registra-se a invalidade. Invalido seguido acima do limite declarado inibe a mesa."
     },
     "sem_posicao_para_fechar": {
+      "cruzam_a_fronteira": false,
       "quando": "a proposta e `caixa` e nao ha posicao nossa",
       "regra": "RN-T4, RN-B5",
       "porque": "Ir para caixa sem nada aberto e um pedido sem objecto."
     },
     "sem_margem_no_ciclo": {
+      "cruzam_a_fronteira": false,
       "quando": "o instrumento nao coube no teto da conta neste ciclo",
       "regra": "FR-006, RN-M4.8",
       "porque": "sem_margem NAO e estado: e motivo registrado no ciclo. Se fosse estado, a mesa ficaria presa nele; sendo motivo, o ciclo seguinte corre o seu caminho."
     },
     "posicao_alheia_relatada_nao_gerida": {
+      "cruzam_a_fronteira": false,
       "quando": "ha posicao no venue cuja marca de posse nao e nossa",
       "regra": "FR-021, RN-T16.1",
       "porque": "Relata-se e NAO se gere. Cancelar o que nao se reconhece como seu sem decisao do dono seria a mesa a mexer no que nao e dela."
     },
     "desfecho_aguardado_dentro_do_prazo": {
+      "cruzam_a_fronteira": false,
       "quando": "a boleta saiu e o prazo de resposta ainda corre",
       "regra": "FR-027, RN-S8",
       "porque": "Ainda e tempo de resposta, e nao um silencio. Nao existe classificacao para isto: existe a AUSENCIA de classificacao, e a mesa nao inventa uma."
     },
     "sem_confirmacao_dentro_do_prazo": {
+      "cruzam_a_fronteira": false,
       "quando": "a boleta saiu e o venue ficou em silencio alem do prazo",
       "regra": "FR-027, RN-T7.1",
       "porque": "E o furo mais perigoso: a ordem pode ter entrado. Promover a aceite manda uma segunda ordem; rebaixar a recusado deixa a posicao orfa. Fica desconhecido."
     },
     "desfecho_ilegivel": {
+      "cruzam_a_fronteira": false,
       "quando": "a confirmacao chegou e o contrato recusou",
       "regra": "FR-027, D5",
       "porque": "Uma confirmacao ilegivel NAO e uma confirmacao. Falha-se para o lado de 'nao sei', que e o unico lado seguro."
     },
     "desfecho_recusado_pelo_venue": {
+      "cruzam_a_fronteira": false,
       "quando": "o venue recusou a ordem",
       "regra": "FR-024",
       "porque": "Nao ha posicao. O motivo do venue fica ao lado, para o dono poder ler por que."
     },
     "reconciliacao_decidiu_preenchida": {
+      "cruzam_a_fronteira": false,
       "quando": "a reconciliacao provou que a ordem existe",
       "regra": "FR-029",
       "porque": "A posse passa a ser um facto lido da corretora, e o bloqueio sai."
     },
     "reconciliacao_decidiu_inexistente": {
+      "cruzam_a_fronteira": false,
       "quando": "a reconciliacao provou que a ordem nao existe",
       "regra": "FR-029",
       "porque": "Nao ha posicao, e o bloqueio sai."
     },
     "reconciliacao_indecidivel": {
+      "cruzam_a_fronteira": false,
       "quando": "a reconciliacao nao conseguiu decidir",
       "regra": "FR-030",
       "porque": "Nao decidir nao e decidir que nao entrou. A marca fica e o motivo alarma."
     },
     "reconciliacao_sem_marca": {
+      "cruzam_a_fronteira": false,
       "quando": "reconciliou-se um instrumento que nao estava em duvida",
       "regra": "FR-029",
       "porque": "Uma reconciliacao do que nao estava em duvida nao muda nada."
     },
     "abrir_bloqueado_por_desconhecido": {
+      "cruzam_a_fronteira": false,
       "quando": "chegou uma proposta de abertura com a marca desconhecido presente",
       "regra": "FR-028, RN-T7.1",
       "porque": "Bloqueia aquele instrumento e mais nenhum. O bloqueio NAO re-alarma: a marca ja avisou quando nasceu, e um aviso repetido a cada ciclo deixa de ser um aviso."
     },
     "reset_nao_toca_em_nada": {
+      "cruzam_a_fronteira": true,
       "quando": "chega um reset",
       "regra": "FR-005",
       "porque": "O reset reinicia sem mexer em nada - nem nas marcas. E um efeito, e nao uma ausencia: registra-lo e o que distingue um reset de um esquecimento."
     },
     "registo_nao_retomavel": {
+      "cruzam_a_fronteira": false,
       "quando": "o registo de operacao nao foi possivel retomar",
       "regra": "FR-031",
       "porque": "Uma mesa que arranca sem saber o que ja fez repete o que ja fez. Nao se retoma por optimismo: ou o registo esta retomado, ou a mesa fica parada."
     },
     "cb_disparou_no_ciclo": {
+      "cruzam_a_fronteira": false,
       "quando": "a perda da corrida atingiu o limite declarado",
       "regra": "FR-035, FR-036",
       "porque": "O CB nao 'avisa': ele encerra. Liquidar antes de parar e o que impede uma posicao ficar viva numa mesa parada - e uma mesa parada nao defende nada."
     },
     "sessao_nova_gravada": {
+      "cruzam_a_fronteira": true,
       "quando": "o dono abriu sessao nova",
       "regra": "FR-038, RN-V10",
       "porque": "A sessao nova e o unico caminho fora da inibicao, e grava a configuracao em vigor: e ela que fecha a unidade de comparacao."
     },
     "troca_sem_sessao": {
+      "cruzam_a_fronteira": false,
       "quando": "pediu-se troca de configuracao sem haver sessao em curso",
       "regra": "FR-039",
       "porque": "Sem sessao nao ha unidade de comparacao para proteger: a troca vale para a proxima sessao."
     },
     "troca_sem_mudanca": {
+      "cruzam_a_fronteira": false,
       "quando": "pediu-se a configuracao que ja esta em vigor",
       "regra": "FR-039",
       "porque": "Nada muda, nada se grava, e a unidade de comparacao fica intacta."
     },
     "troca_de_configuracao_sem_sessao_nova": {
+      "cruzam_a_fronteira": false,
       "quando": "pediu-se trocar ficha/setup com uma sessao em curso",
       "regra": "FR-039, RN-M3.5",
       "porque": "Duas configuracoes no mesmo numero nao se comparam. A troca exige uma sessao nova - e recusar e o que impede a troca silenciosa que faria o numero perder o sentido."
     },
     "mesa_pausada_nao_abre": {
+      "cruzam_a_fronteira": false,
       "quando": "chegou proposta de abertura com a mesa pausada",
       "regra": "FR-040/US6, RN-V2.1",
       "porque": "A pausa suspende abrir, nunca defender. O motivo aponta para a pausa e nao para a estrategia: o dono que pausou tem de poder ler que foi ele."
     },
     "resumo_do_encerramento_apresentado": {
+      "cruzam_a_fronteira": true,
       "quando": "a mesa apresentou o resumo do encerramento e espera resposta",
       "regra": "FR-013, FR-014",
       "porque": "O resumo diz o que cada escolha custa antes de ela ser feita - incluindo que MANTER deixa a posicao sem defesa."
     },
     "stop_pendente_por_prazo": {
+      "cruzam_a_fronteira": true,
       "quando": "o prazo passou sem resposta ao resumo do encerramento",
       "regra": "FR-014",
       "porque": "A mesa volta ao normal - a abrir incluido - e o stop fica PENDENTE. Pedido ignorado nao e pedido cumprido, e tambem nao e motivo para deixar de operar."
     },
     "parada_com_posicao_viva": {
+      "cruzam_a_fronteira": true,
       "quando": "o dono escolheu manter com posicao viva",
       "regra": "FR-012, US6",
       "porque": "Fica parada por decisao dele, com o aviso lido. A posicao fica sem defesa - e isso e uma escolha, nao um acidente."
@@ -215,5 +257,10 @@
   },
   "ordem_de_leitura": [
     "o motivo mais especifico primeiro: sessao_inibida antes de porta_do_arranque_falhou, liquidacao_em_curso antes de retomar"
-  ]
+  ],
+  "fronteira": {
+    "de_onde_vem": "`cruzam_a_fronteira` e o ambito da conferencia das duas direcoes (recorte 003, T017): `true` = este motivo pode sair numa resposta ao vigia; `false` = nasce e morre dentro de um ciclo. Os nomes marcados `true` tem de existir no conjunto fechado `conjuntos_do_vigia` de contracts/vocabulario.json, e o inverso tambem: o conjunto nao pode ter nome que o livro nao conheca (as duas excecoes - versao_do_contrato_divergente e posicao_desconhecida - vem da porta e estao declaradas la).",
+    "cruzam": 20,
+    "nao_cruzam": 22
+  }
 }
