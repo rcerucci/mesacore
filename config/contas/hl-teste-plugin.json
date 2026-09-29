@@ -1,0 +1,35 @@
+{
+  "conta": {
+    "conectores": [
+      "hyperliquid"
+    ],
+    "corretora": "hyperliquid",
+    "identificador": "0xb58ad66147d86c58d32613ecc6ae4d10d7a6d13b",
+    "credencial": "hl-teste-plugin",
+    "perda_maxima_pct": "20",
+    "perda_maxima_janela": "corrida_da_mesa",
+    "margem_total_maxima_pct": "100",
+    "contencao": "recusar",
+    "arranque_apos_cb": "exige_decisao",
+    "eventos_que_avisam": [
+      "cb",
+      "encerramento",
+      "desconhecido",
+      "recusa",
+      "divergencia",
+      "falha_de_leitura",
+      "contenda"
+    ],
+    "retencao_ledger": {
+      "dias_integral": "7",
+      "depois": "resumo_diario"
+    }
+  },
+  "conexao": {
+    "ambiente": "teste",
+    "url_da_api": "https://api.hyperliquid-testnet.xyz",
+    "credencial": {
+      "valor_em": "ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key"
+    }
+  }
+}

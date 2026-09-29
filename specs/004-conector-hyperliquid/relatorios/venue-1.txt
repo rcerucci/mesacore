@@ -1,0 +1,13 @@
+# Sondagem ao venue real (teste) — 29 set 2026
+
+Config: config/contas/hl-teste-plugin.json (master 0xb58ad6…6d13b). Nenhum valor de chave na saida.
+
+```
+{"etapa":"conta","corretora":"hyperliquid","ambiente":"teste","url":"https://api.hyperliquid-testnet.xyz","master":"0xb58ad66147d86c58d32613ecc6ae4d10d7a6d13b","credencial":"hl-teste-plugin"}
+{"etapa":"credencial","veredicto":"carregada","de":"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key","protegido":"ficheiro fora do repositorio, modo 600"}
+{"etapa":"agente","endereco_derivado":"0xF87138D298E338962E1a2e0ff23267Dc32c15621"}
+{"etapa":"identidade","agentes_registados_na_conta":0,"enderecos":[],"a_nossa_chave_esta_registada":false,"validade":null}
+{"etapa":"conta_no_venue","margem_usada":"0.0","valor_da_conta":"0.0","posicoes_abertas":0}
+{"etapa":"sonda","instrumentos_que_o_venue_oferece":212,"exemplo":{"nome":"BTC","szDecimals":5,"maxLeverage":40}}
+{"etapa":"manifesto_da_sonda_real","veredicto":"RECUSADO","motivo":"campo_obrigatorio_ausente","porque":"a sonda do venue nao trouxe minimo_de_valor_por_ordem — sem ele nao ha manifesto"}
+```
