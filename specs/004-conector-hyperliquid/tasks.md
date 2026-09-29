@@ -10,18 +10,18 @@ teste** (a bateria de conformidade).
 
 **Formato**: `[ID] [P?] [História] Descrição` — `[P]` = ficheiros diferentes, sem dependência.
 
-**Estado da execução**: **fase 1 por começar**. O contrato está em **1.3.0** e este recorte não cria tipo novo
+**Estado da execução**: **fase 1 FECHADA** (T001–T005). Linha de base medida em `relatorios/linha-de-base.txt`; a estrutura do conector criada; o modelo de dados escrito — e ele levantou **dois achados** que o contrato tem de resolver (Fase 10). O cartão do sysadmin está `running`; a fase seguinte é a **US1**. O contrato está em **1.3.0** e este recorte não cria tipo novo
 (R8): o conector fala o que já existe.
 
 ---
 
 ## Fase 1 — Preparação e linha de base (T001–T005)
 
-- [ ] T001 Medir a linha de base e escrevê-la em `relatorios/linha-de-base.txt`: `provar.sh` (25 de 25), casos do contrato (100), versão do contrato (1.3.0), e os ficheiros do outro projeto tocados (**0** — o motor antigo é oráculo, não se toca)
-- [ ] T002 [P] Criar `brokers/hyperliquid/` com `README.md` (o que este conector entrega, e o que não) e `.gitignore` (o manifesto do runtime e a `conformidade/` fora do versionamento)
-- [ ] T003 [P] Escrever `data-model.md`: manifesto, boleta, resolução, desfecho, leitura — campo a campo, com a origem de cada número (venue, nossa conversão, ou ausente)
-- [ ] T004 [P] Escrever `quickstart.md`: como correr a bateria offline e a do venue, e onde ler o resultado
-- [ ] T005 Pedir ao sysadmin as duas dependências (D1) e registar o pedido; **enquanto não houver resposta**, as tarefas que não precisam do SDK seguem (as de tradução, recusas e derivação da referência correm contra o dublê)
+- [x] T001 Medir a linha de base e escrevê-la em `relatorios/linha-de-base.txt`: `provar.sh` (25 de 25), casos do contrato (100), versão do contrato (1.3.0), e os ficheiros do outro projeto tocados (**0** — o motor antigo é oráculo, não se toca) — **feito:** `relatorios/linha-de-base.txt` (contrato 1.3.0, 12 esquemas, 100 casos iguais nos dois runners (66 recusados · 34 aceites), 47 motivos, `provar` 25 de 25, oráculo 0 modificados)
+- [x] T002 [P] Criar `brokers/hyperliquid/` com `README.md` (o que este conector entrega, e o que não) e `.gitignore` (o manifesto do runtime e a `conformidade/` fora do versionamento) — **feito:** `brokers/hyperliquid/{README.md,casos/}` e o `.gitignore` com o manifesto do runtime e a `conformidade/`
+- [x] T003 [P] Escrever `data-model.md`: manifesto, boleta, resolução, desfecho, leitura — campo a campo, com a origem de cada número (venue, nossa conversão, ou ausente) — **feito:** `data-model.md`, com os dois achados do contrato (§7)
+- [x] T004 [P] Escrever `quickstart.md`: como correr a bateria offline e a do venue, e onde ler o resultado — **feito:** `quickstart.md`
+- [x] T005 Pedir ao sysadmin as duas dependências (D1) e registar o pedido; **enquanto não houver resposta**, as tarefas que não precisam do SDK seguem (as de tradução, recusas e derivação da referência correm contra o dublê) — **feito:** cartão `t_20cd5c48` (assignee `sysadmin`, workspace no repo); estado medido: `running`
 
 ## Fase 2 — Fundacional: o conector de pé e o manifesto (T006–T014) — **US1**
 
@@ -106,3 +106,15 @@ teste** (a bateria de conformidade).
 - [ ] T063 `relatorios/RESULTADO.md`: os 8 SC, cada um com o comando que o mediu e o número que saiu
 - [ ] T064 Actualizar `docs/inventario-de-chaves.md` (§ do conector: as chaves que ele passou a ler, cada uma com o leitor nomeado) e `docs/diagrama-de-blocos.html` (o conector real ao lado do dublê)
 - [ ] T065 Resumo ao dono: o que ficou provado, o que ficou por provar, e a decisão de passagem a produção (que é dele)
+
+## Fase 10 — O contrato aditivo que os dois achados exigem (T066–T070)
+
+*Achados em `data-model.md` §7, ao ler os esquemas do contrato. São **fundacionais** (a leitura da conta vem
+antes da US6), por isso esta fase corre **antes** da Fase 4. A numeração é acrescentada no fim em vez de
+renumerar 65 tarefas — renumerar reescreveria o ficheiro e não muda nada do que ele diz.*
+
+- [ ] T066 [Fase 4] Os quatro números que faltam: `posicao` ganha `nocional`, `margem`, `distancia_de_liquidacao` e `resultado_nao_realizado` (opcionais, e ditos como «do venue, nunca recalculados») — contrato sobe para **1.4.0**
+- [ ] T067 [Fase 4] `distancia_de_liquidacao` **ausente** quando não há posição: caso feliz (com posição) e adversário (sem), com `esperadoOk` nos dois
+- [ ] T068 [Fase 4] `preco_de_liquidacao` passa a admitir um **valor neutro** do conjunto fechado (o precedente é `relogio_de_fecho_de_barra`, com `desconhecido` no enum) — zero continua a significar «1x», nunca «não sei»
+- [ ] T069 [Fase 4] Os mesmos casos novos nos **dois** runners do contrato (a igualdade das duas linguagens é a prova de que a emenda é aditiva e não uma segunda verdade)
+- [ ] T070 [Fase 4] Correr `provar.sh` + a conferência dos casos e registar a contagem antes/depois em `relatorios/us3.txt` (o que já corria não se perde)

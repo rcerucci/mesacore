@@ -23,3 +23,7 @@ vigia/.arranque.json.tmp
 
 # Os lockfiles SÃO versionados: fixam o que correu, e sem eles o "regenera e não dá diff"
 # não prova nada.
+
+# O conector: o manifesto do runtime e o registo da conformidade são ESTADO, não forma.
+brokers/*/.manifesto.json
+brokers/*/conformidade/

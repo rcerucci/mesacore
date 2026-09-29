@@ -1,0 +1,40 @@
+=== linha de base do recorte 004 — o primeiro conector real (Hyperliquid) ===
+medida a 2026-09-29T11:53-03:00, antes da primeira linha de codigo deste recorte.
+Cada linha diz o comando que a produziu. Nenhum numero foi digitado a mao.
+
+--- versao do contrato ---
+$ cat contracts/versao.json
+contrato = 1.3.0
+
+--- esquemas do contrato ---
+$ ls contracts/*.schema.json | wc -l
+12
+
+--- casos do contrato, nos dois runners (o mesmo ficheiro, as duas linguagens) ---
+$ cd contracts/esqueleto && uv run python casos.py    -> casos=100 recusados=66 aceites=34
+$ bun contracts/esqueleto/casos.ts                    -> casos=100 recusados=66 aceites=34
+   (a primeira medicao deste recorte correu o runner python de fora do seu directorio e deu "0 casos":
+    o `from framing import` exige o directorio dele. A medicao foi repetida da forma correcta — e fica
+    registado, porque uma contagem que da zero e sempre mais suspeita de quem a mediu do que do medido.)
+
+--- vocabulario e motivos ---
+$ cat contracts/vocabulario.json            -> 12 conjuntos fechados (lados, tipos de ordem, politicas de
+                                               parcial, destinos do resto, classificacoes de desfecho, ...)
+$ python3 -c "import json;print(len(json.load(open('core/estados/motivos.json'))['motivos']))"
+motivos = 47
+
+--- bateria da maquina (antes deste recorte) ---
+$ bash tools/verificar-maquina/provar.sh
+provar: 25 de 25 passaram
+
+--- o conector, hoje ---
+$ ls brokers/            -> README.md   (mais nada)
+$ ls brokers/hyperliquid -> (nao existe)
+
+--- o outro projeto, o oraculo (nao se toca) ---
+$ cd /home/cerucci/Projects/jev-trade-fusao && git status --porcelain --untracked-files=no | wc -l
+modificados = 0     HEAD = b2f12c4
+
+--- as dependencias que este recorte precisa (pedido entregue a quem muda o host) ---
+cartao kanban t_20cd5c48 (assignee sysadmin, workspace no repo) -> estado medido: running
+$ grep -c "@nktkas/hyperliquid" bun.lock package.json -> 0  (ainda nao instaladas)
