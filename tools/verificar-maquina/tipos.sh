@@ -18,9 +18,13 @@ TSC="$PWD/tools/node_modules/.bin/tsc"  # pinado no lockfile: a porta corre sem 
 falhas=0
 conferidos=0
 
-for dir in core vigia tools contracts; do
+for dir in core vigia tools contracts brokers; do
   if [ ! -f "$dir/tsconfig.json" ]; then
-    printf '  %s: sem tsconfig.json (nada a conferir)\n' "$dir"
+    # Um directorio LISTADO sem tsconfig e uma porta que se salta em silencio: o `tsc` nao confere nada e
+    # a contagem final nao o acusa. Era assim que `brokers/` ficava de fora — o conector nunca passou por
+    # um portao de tipos. Falha, em vez de seguir.
+    falhas=$((falhas + 1))
+    printf '  %s: ERRO — directorio listado e SEM tsconfig.json (o portao nao o confere)\n' "$dir"
     continue
   fi
   if (cd "$dir" && "$TSC" -p tsconfig.json --noEmit > /tmp/tipos-$dir.txt 2>&1); then

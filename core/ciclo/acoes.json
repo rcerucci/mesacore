@@ -93,6 +93,16 @@
       "provadamente_nao_feito": true,
       "porque": "Recusa de validade: a mensagem nunca saiu assim, e o defeito esta do nosso lado."
     },
+    "valor_abaixo_do_minimo_do_venue": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a ordem fica abaixo do PISO de valor do venue (nao se excedeu limite nenhum), e o venue recusaria. Nada saiu, e repetir o mesmo bilhete seria repetir a recusa."
+    },
+    "instrumento_deslistado_no_venue": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: o mandato nomeia um instrumento que o venue deu por ENCERRADO. Nada saiu, e repetir o mesmo mandato seria repetir a recusa (quem decide se ele volta e o venue, nao a mesa)."
+    },
     "prazo_excedido": {
       "accao": "parar_e_reconciliar",
       "provadamente_nao_feito": null,

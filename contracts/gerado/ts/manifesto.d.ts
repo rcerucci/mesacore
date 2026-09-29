@@ -51,18 +51,40 @@ export interface ManifestoDoConector {
        */
       alavancagem_maxima: string;
       /**
-       * Escaloes de valor com maxima proprio. Ausente = vale a maxima unica.
+       * O venue lista o instrumento como DESLISTADO (`isDelisted`). Ausente = o venue nao o declarou para este instrumento — e ausencia NAO e `false`: o venue de teste so escreve a chave quando ela e verdadeira (medido: 54 de 212). Um mandato que nomeie um deslistado RECUSA (`instrumento_deslistado_no_venue`); o campo existe para o facto ter onde ser declarado, e para a mesa poder recusar uma boleta sobre um manifesto que o traga.
        */
-      alavancagem_por_escalao?: {
-        /**
-         * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
-         */
-        ate: string;
-        /**
-         * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
-         */
-        maxima: string;
-      }[];
+      deslistado?: boolean;
+      /**
+       * De quanto em quanto tempo o venue cobra funding, em HORAS, como o venue o declara (`predictedFundings()[coin][HlPerp].fundingIntervalHours`, medido: 1 para os 212 instrumentos). POR INSTRUMENTO, e nao por venue: e onde o venue o declara, e a mesma resposta traz 8 horas para os perps de outras corretoras. Ausente = nao declarado para este instrumento.
+       */
+      funding_intervalo_horas?: number;
+      /**
+       * Escaloes de valor com maxima proprio. Ausente = vale a maxima unica. Cada escalao declara o seu limite INFERIOR (`de`) — a forma como o venue o da (`marginTiers[].lowerBound`, com o primeiro a `0.0`): o escalao de um valor e o maior `de` que nao o excede. O primeiro escalao a zero e legitimo, e e o que cobre os valores baixos; um valor que nenhum `de` cubra nao tem escalao, e a conferencia RECUSA.
+       *
+       * @minItems 1
+       */
+      alavancagem_por_escalao?: [
+        {
+          /**
+           * Limite INFERIOR do escalao. `0` e valor legitimo: o primeiro escalao do venue comeca em `0.0` (medido) — e um `decimal_positivo` recusava-o, que foi o defeito que esta emenda corrige.
+           */
+          de: string;
+          /**
+           * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
+           */
+          maxima: string;
+        },
+        ...{
+          /**
+           * Limite INFERIOR do escalao. `0` e valor legitimo: o primeiro escalao do venue comeca em `0.0` (medido) — e um `decimal_positivo` recusava-o, que foi o defeito que esta emenda corrige.
+           */
+          de: string;
+          /**
+           * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
+           */
+          maxima: string;
+        }[]
+      ];
     },
     ...{
       /**
@@ -86,18 +108,40 @@ export interface ManifestoDoConector {
        */
       alavancagem_maxima: string;
       /**
-       * Escaloes de valor com maxima proprio. Ausente = vale a maxima unica.
+       * O venue lista o instrumento como DESLISTADO (`isDelisted`). Ausente = o venue nao o declarou para este instrumento — e ausencia NAO e `false`: o venue de teste so escreve a chave quando ela e verdadeira (medido: 54 de 212). Um mandato que nomeie um deslistado RECUSA (`instrumento_deslistado_no_venue`); o campo existe para o facto ter onde ser declarado, e para a mesa poder recusar uma boleta sobre um manifesto que o traga.
        */
-      alavancagem_por_escalao?: {
-        /**
-         * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
-         */
-        ate: string;
-        /**
-         * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
-         */
-        maxima: string;
-      }[];
+      deslistado?: boolean;
+      /**
+       * De quanto em quanto tempo o venue cobra funding, em HORAS, como o venue o declara (`predictedFundings()[coin][HlPerp].fundingIntervalHours`, medido: 1 para os 212 instrumentos). POR INSTRUMENTO, e nao por venue: e onde o venue o declara, e a mesma resposta traz 8 horas para os perps de outras corretoras. Ausente = nao declarado para este instrumento.
+       */
+      funding_intervalo_horas?: number;
+      /**
+       * Escaloes de valor com maxima proprio. Ausente = vale a maxima unica. Cada escalao declara o seu limite INFERIOR (`de`) — a forma como o venue o da (`marginTiers[].lowerBound`, com o primeiro a `0.0`): o escalao de um valor e o maior `de` que nao o excede. O primeiro escalao a zero e legitimo, e e o que cobre os valores baixos; um valor que nenhum `de` cubra nao tem escalao, e a conferencia RECUSA.
+       *
+       * @minItems 1
+       */
+      alavancagem_por_escalao?: [
+        {
+          /**
+           * Limite INFERIOR do escalao. `0` e valor legitimo: o primeiro escalao do venue comeca em `0.0` (medido) — e um `decimal_positivo` recusava-o, que foi o defeito que esta emenda corrige.
+           */
+          de: string;
+          /**
+           * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
+           */
+          maxima: string;
+        },
+        ...{
+          /**
+           * Limite INFERIOR do escalao. `0` e valor legitimo: o primeiro escalao do venue comeca em `0.0` (medido) — e um `decimal_positivo` recusava-o, que foi o defeito que esta emenda corrige.
+           */
+          de: string;
+          /**
+           * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
+           */
+          maxima: string;
+        }[]
+      ];
     }[]
   ];
   sabe_ajustar_alavancagem: boolean;
@@ -108,7 +152,11 @@ export interface ManifestoDoConector {
   /**
    * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
    */
-  teto_de_valor_por_ordem: string;
+  minimo_de_valor_por_ordem: string;
+  /**
+   * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
+   */
+  maximo_de_valor_por_ordem?: string;
   modelo_de_posicao: "netting" | "hedging" | "exchange";
   /**
    * @minItems 1

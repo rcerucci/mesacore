@@ -1,13 +1,13 @@
 {
   "mensagem": "conferencia",
-  "nota": "A conferencia contra o manifesto: o que a mesa pode enviar, sem o venue ter declarado. Os manifestos sao fixtures por nome, para os casos nao repetirem 30 linhas cada. `enviadas_esperadas` e o que SC-003 exige: uma mensagem recusada nao gera envio nenhum.",
+  "nota": "A conferencia contra o manifesto: o que a mesa pode enviar, sem o venue ter declarado. Os manifestos sao fixtures por nome, para os casos nao repetirem 30 linhas cada. `enviadas_esperadas` e o que SC-003 exige: uma mensagem recusada nao gera envio nenhum. EMENDA 1.4.0: o piso de valor por ordem (`minimo_de_valor_por_ordem`) e um PISO — abaixo recusa, igual passa —, o tecto existe em `maximo_de_valor_por_ordem` e so quando o venue o declara, o escalao de valor tem limite INFERIOR (`de`, primeiro a zero) e o instrumento deslistado recusa com nome proprio.",
   "manifestos": {
     "completo": {
       "conector": {
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.3.0",
+      "versao": "1.4.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -17,14 +17,16 @@
           "alavancagem_maxima": "30",
           "alavancagem_por_escalao": [
             {
-              "ate": "50000",
+              "de": "0",
               "maxima": "30"
             },
             {
-              "ate": "200000",
+              "de": "50000",
               "maxima": "20"
             }
-          ]
+          ],
+          "funding_intervalo_horas": 8,
+          "deslistado": false
         },
         {
           "simbolo": "XAUUSD",
@@ -39,7 +41,7 @@
         "cruzado",
         "isolado"
       ],
-      "teto_de_valor_por_ordem": "50000.00",
+      "minimo_de_valor_por_ordem": "10.00",
       "modelo_de_posicao": "netting",
       "tipos_de_ordem": [
         "mercado",
@@ -60,14 +62,15 @@
       "idempotencia": true,
       "marca_de_posse": "comment",
       "marca_liga_ordem_a_posicao": false,
-      "estado_do_mercado": true
+      "estado_do_mercado": true,
+      "maximo_de_valor_por_ordem": "50000.00"
     },
     "com_reduce_only": {
       "conector": {
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.3.0",
+      "versao": "1.4.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -81,7 +84,7 @@
       "modos_de_margem": [
         "cruzado"
       ],
-      "teto_de_valor_por_ordem": "50000.00",
+      "minimo_de_valor_por_ordem": "10.00",
       "modelo_de_posicao": "netting",
       "tipos_de_ordem": [
         "mercado"
@@ -105,7 +108,7 @@
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.3.0",
+      "versao": "1.4.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -119,7 +122,7 @@
       "modos_de_margem": [
         "cruzado"
       ],
-      "teto_de_valor_por_ordem": "50000.00",
+      "minimo_de_valor_por_ordem": "10.00",
       "modelo_de_posicao": "netting",
       "tipos_de_ordem": [
         "mercado"
@@ -137,6 +140,114 @@
       "marca_de_posse": "nenhuma",
       "marca_liga_ordem_a_posicao": false,
       "estado_do_mercado": false
+    },
+    "com_instrumento_deslistado": {
+      "conector": {
+        "nome": "mock_conector",
+        "versao": "1.0.0"
+      },
+      "versao": "1.4.0",
+      "instrumentos": [
+        {
+          "simbolo": "EURUSD",
+          "minimo": "0.01",
+          "passo": "0.01",
+          "tick": "0.00001",
+          "alavancagem_maxima": "30",
+          "deslistado": true
+        },
+        {
+          "simbolo": "XAUUSD",
+          "minimo": "0.01",
+          "passo": "0.01",
+          "tick": "0.01",
+          "alavancagem_maxima": "100"
+        }
+      ],
+      "sabe_ajustar_alavancagem": true,
+      "modos_de_margem": [
+        "cruzado",
+        "isolado"
+      ],
+      "minimo_de_valor_por_ordem": "10.00",
+      "modelo_de_posicao": "netting",
+      "tipos_de_ordem": [
+        "mercado",
+        "limite",
+        "stop",
+        "stop_limite"
+      ],
+      "parcial_suportada": [
+        "o_que_der",
+        "tudo_ou_nada"
+      ],
+      "desvio_maximo": "0.5",
+      "reduce_only_suportado": false,
+      "stop_anexo": false,
+      "profundidade_de_livro": 10,
+      "funding": true,
+      "relogio_de_fecho_de_barra": "horario",
+      "idempotencia": true,
+      "marca_de_posse": "comment",
+      "marca_liga_ordem_a_posicao": false,
+      "estado_do_mercado": true,
+      "maximo_de_valor_por_ordem": "50000.00"
+    },
+    "escaloes_a_partir_de_501": {
+      "conector": {
+        "nome": "mock_conector",
+        "versao": "1.0.0"
+      },
+      "versao": "1.4.0",
+      "instrumentos": [
+        {
+          "simbolo": "EURUSD",
+          "minimo": "0.01",
+          "passo": "0.01",
+          "tick": "0.00001",
+          "alavancagem_maxima": "30",
+          "alavancagem_por_escalao": [
+            {
+              "de": "501",
+              "maxima": "30"
+            }
+          ]
+        },
+        {
+          "simbolo": "XAUUSD",
+          "minimo": "0.01",
+          "passo": "0.01",
+          "tick": "0.01",
+          "alavancagem_maxima": "100"
+        }
+      ],
+      "sabe_ajustar_alavancagem": true,
+      "modos_de_margem": [
+        "cruzado",
+        "isolado"
+      ],
+      "minimo_de_valor_por_ordem": "10.00",
+      "modelo_de_posicao": "netting",
+      "tipos_de_ordem": [
+        "mercado",
+        "limite",
+        "stop",
+        "stop_limite"
+      ],
+      "parcial_suportada": [
+        "o_que_der",
+        "tudo_ou_nada"
+      ],
+      "desvio_maximo": "0.5",
+      "reduce_only_suportado": false,
+      "stop_anexo": false,
+      "profundidade_de_livro": 10,
+      "funding": true,
+      "relogio_de_fecho_de_barra": "horario",
+      "idempotencia": true,
+      "marca_de_posse": "comment",
+      "marca_liga_ordem_a_posicao": false,
+      "estado_do_mercado": true
     }
   },
   "casos": [
@@ -375,22 +486,23 @@
       "enviadas_esperadas": 1
     },
     {
-      "nome": "conferencia/resolucao-acima-do-teto-por-ordem",
+      "nome": "conferencia/resolucao-acima-do-maximo-de-valor-por-ordem",
       "manifesto": "completo",
       "alvo": {
         "tipo": "resolucao",
         "instrumento": "EURUSD",
         "carga": {
-          "quantidade": "500.00",
+          "quantidade": "18.42",
           "nocional": "542710.00",
-          "margem_empenhada": "18090.33",
+          "margem_empenhada": "19993.44",
           "alavancagem_efectiva": "30",
-          "preco_de_liquidacao": "1.04922"
+          "preco_de_liquidacao": "0.00000"
         }
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_da_banda",
-      "enviadas_esperadas": 0
+      "enviadas_esperadas": 0,
+      "nota": "O TECTO declarado (aditivo na 1.4.0). O caso chamava-se «acima-do-teto» quando o campo do tecto carregava o MINIMO."
     },
     {
       "nome": "conferencia/resolucao-acima-do-escalao-de-valor",
@@ -399,16 +511,118 @@
         "tipo": "resolucao",
         "instrumento": "EURUSD",
         "carga": {
-          "quantidade": "55.00",
+          "quantidade": "18.42",
           "nocional": "60000.00",
-          "margem_empenhada": "2000.00",
+          "margem_empenhada": "19993.44",
           "alavancagem_efectiva": "30",
-          "preco_de_liquidacao": "1.08542"
+          "preco_de_liquidacao": "0.00000"
         }
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_da_banda",
-      "enviadas_esperadas": 0
+      "enviadas_esperadas": 0,
+      "nota": "Nocional 60000 cai no escalao `de` 50000 (maxima 20), e a efectiva e 30: recusa. O escalao e escolhido pelo maior `de` que nao excede o valor."
+    },
+    {
+      "nome": "conferencia/resolucao-abaixo-do-minimo-por-ordem",
+      "manifesto": "completo",
+      "alvo": {
+        "tipo": "resolucao",
+        "instrumento": "EURUSD",
+        "carga": {
+          "quantidade": "18.42",
+          "nocional": "9.99",
+          "margem_empenhada": "19993.44",
+          "alavancagem_efectiva": "1",
+          "preco_de_liquidacao": "0.00000"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_abaixo_do_minimo_do_venue",
+      "enviadas_esperadas": 0,
+      "nota": "O PISO do venue: 9.99 esta abaixo dos 10.00 declarados. Ate a 1.3.0 este campo era lido como TECTO — 9.99 era «aceite» e 60000 era recusado ao contrario do que o venue faz."
+    },
+    {
+      "nome": "conferencia/resolucao-no-limite-do-minimo-passa",
+      "manifesto": "completo",
+      "alvo": {
+        "tipo": "resolucao",
+        "instrumento": "EURUSD",
+        "carga": {
+          "quantidade": "18.42",
+          "nocional": "10.00",
+          "margem_empenhada": "19993.44",
+          "alavancagem_efectiva": "1",
+          "preco_de_liquidacao": "0.00000"
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "enviadas_esperadas": 1,
+      "nota": "O PAR DE FRONTEIRA do piso: exactamente no minimo PASSA (o minimo e um piso, nao um «acima de»). Comparado com o caso anterior em BigInt: a igualdade nao pode cair para o lado errado."
+    },
+    {
+      "nome": "conferencia/resolucao-sem-maximo-declarado-nao-recusa-por-maximo",
+      "manifesto": "com_reduce_only",
+      "alvo": {
+        "tipo": "resolucao",
+        "instrumento": "EURUSD",
+        "carga": {
+          "quantidade": "18.42",
+          "nocional": "999999.99",
+          "margem_empenhada": "19993.44",
+          "alavancagem_efectiva": "1",
+          "preco_de_liquidacao": "0.00000"
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "enviadas_esperadas": 1,
+      "nota": "Sem tecto declarado nao ha tecto: o campo e aditivo, e ausencia nao e «ilimitado» — e nao medido. A mesa nao inventa um limite que o venue nao escreveu."
+    },
+    {
+      "nome": "conferencia/boleta-de-instrumento-deslistado",
+      "manifesto": "com_instrumento_deslistado",
+      "alvo": {
+        "tipo": "boleta",
+        "carga": {
+          "instrumento": "EURUSD",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "1",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.1",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "c-10",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "instrumento_deslistado_no_venue",
+      "enviadas_esperadas": 0,
+      "nota": "Existir no manifesto NAO e estar a venda: o venue deu o instrumento por encerrado (`isDelisted: true`) e a mesa recusa nomeando-o."
+    },
+    {
+      "nome": "conferencia/resolucao-fora-de-todos-os-escaloes-recusa",
+      "manifesto": "escaloes_a_partir_de_501",
+      "alvo": {
+        "tipo": "resolucao",
+        "instrumento": "EURUSD",
+        "carga": {
+          "quantidade": "18.42",
+          "nocional": "100.00",
+          "margem_empenhada": "19993.44",
+          "alavancagem_efectiva": "10",
+          "preco_de_liquidacao": "0.00000"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda",
+      "enviadas_esperadas": 0,
+      "nota": "Nenhum `de` (501) cobre o nocional 100: sem escalao declarado para aquele valor nao ha maxima declarada — e RECUSA, em vez de cair na maxima unica por omissao."
     }
   ]
 }

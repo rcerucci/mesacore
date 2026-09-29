@@ -1,5 +1,5 @@
 {
-  "contrato": "1.3.0",
+  "contrato": "1.4.0",
   "nota": "Manifesto SIMULADO deste mock. Fixture, nao fonte: o manifesto a serio e sondado do venue no arranque (RN-C1).",
   "tipo": "manifesto",
   "id": "manifesto/mock_conector",
@@ -8,7 +8,7 @@
       "nome": "mock_conector",
       "versao": "1.0.0"
     },
-    "versao": "1.3.0",
+    "versao": "1.4.0",
     "instrumentos": [
       {
         "simbolo": "EURUSD",
@@ -18,14 +18,15 @@
         "alavancagem_maxima": "30",
         "alavancagem_por_escalao": [
           {
-            "ate": "50000",
+            "de": "0",
             "maxima": "30"
           },
           {
-            "ate": "200000",
-            "maxima": "20"
+            "de": "500",
+            "maxima": "5"
           }
-        ]
+        ],
+        "funding_intervalo_horas": 8
       },
       {
         "simbolo": "XAUUSD",
@@ -40,7 +41,8 @@
       "cruzado",
       "isolado"
     ],
-    "teto_de_valor_por_ordem": "50000.00",
+    "minimo_de_valor_por_ordem": "10.00",
+    "maximo_de_valor_por_ordem": "100000.00",
     "modelo_de_posicao": "netting",
     "tipos_de_ordem": [
       "mercado",

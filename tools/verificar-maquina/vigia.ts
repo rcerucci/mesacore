@@ -20,7 +20,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { RAIZ_DO_REPO } from "../../core/livro-de-motivos.ts";
-import { validar } from "../../contracts/esqueleto/framing.ts";
+import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import { fundir } from "./fundir.ts";
 
 const MODO = process.argv[2] ?? "";
@@ -30,7 +30,10 @@ if (MODO !== "--arranque" && MODO !== "--orfandade" && MODO !== "--encerramento"
   process.exit(2);
 }
 
-const VERSAO = "1.3.0";
+// A versao do contrato NAO se escreve aqui: LE-SE de `contracts/versao.json` (`versaoVigente`). Escrita a
+// mao, esta bancada envelheceria em silencio na proxima emenda — e todos os comandos que ela escreve ao
+// vigia passariam a ser recusados por `versao_do_contrato_divergente`.
+const VERSAO = versaoVigente();
 const comando = (id: string, carga: Record<string, unknown>) =>
   JSON.stringify({ contrato: VERSAO, tipo: "comando", id, carga });
 
@@ -528,7 +531,7 @@ async function bancadaDoEncerramento() {
   for (const falha of falhas) console.log("FALHA " + falha);
   // Uma linha por cenario: o relatorio e a saida crua, e nao a leitura que alguem fez dela (T026).
   console.log(`ok    cenario/prazo-expira · a mesa volta a \`em_operacao\` e o stop fica pendente nas marcas`);
-  console.log(`ok    cenario/manter · ${b.carga(3).efeito} · aviso no registro: ${String(tManter.pergunta?.aviso_de_manter).slice(0, 46)}...`);
+  console.log(`ok    cenario/manter · ${b.carga(3).efeito} · aviso no registro: ${String(tManter?.pergunta?.aviso_de_manter).slice(0, 46)}...`);
   console.log(`ok    cenario/fechar-a-mercado · liquidacao decide \`fechar\` em ${fechou.length} volta(s) e a mesa fica em \`encerrando\``);
   console.log(`ok    cenario/decisao-sem-pergunta · recusada: ${d.carga(0).motivo}`);
   console.log(`ok    cenario/sem-numeros-da-corretora · recusada: ${e.carga(1).motivo}`);

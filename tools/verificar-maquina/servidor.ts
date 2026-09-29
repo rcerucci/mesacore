@@ -18,10 +18,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { RAIZ_DO_REPO } from "../../core/livro-de-motivos.ts";
-import { validar } from "../../contracts/esqueleto/framing.ts";
+import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import { TRADUCAO } from "../../core/servidor.ts";
 
-const VERSAO = "1.3.0";
+// A versao do contrato NAO se escreve aqui: LE-SE de `contracts/versao.json` (`versaoVigente`). Escrita a
+// mao, este ficheiro envelheceria em silencio na proxima emenda — e todos os comandos da bancada passariam a
+// ser recusados por `versao_do_contrato_divergente`, medindo o oposto do que dizem medir.
+const VERSAO = versaoVigente();
 const envelope = (tipo: string, id: string, carga: unknown) =>
   JSON.stringify({ contrato: VERSAO, tipo, id, carga });
 

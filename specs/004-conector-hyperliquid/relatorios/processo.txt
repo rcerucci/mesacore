@@ -1,0 +1,266 @@
+PORTA DE PROCESSO DO CONECTOR HYPERLIQUID — o processo que arranca pelas portas, fala no envelope, e a
+prova ponta-a-ponta contra o DUBLE DA MESA (T010, FR-019 a FR-024)
+corrida em: 2026-09-29 (-03), sobre o contrato VIGENTE em contracts/versao.json = 1.4.0
+executor: subagente T010, autorizado a escrever APENAS os quatro ficheiros nomeados abaixo
+
+
+O QUE ESTA ENTREGA E, E COM QUE LEITURA:
+
+  1. O PROCESSO. `brokers/hyperliquid/processo.ts` e o EXECUTAVEL: e ele que tem o `stdio`. A maquina
+     (arranque pelas portas, traducao, resolucao, desfecho) vive em `brokers/hyperliquid/conector.ts`.
+     A costura e a divisao: STDOUT so leva linhas de ENVELOPE (uma mensagem por linha); STDERR leva o
+     DIAGNOSTICO (uma linha de JSON por etapa: cada porta, a conta lida, o envio, o desfecho). Quem le a
+     costura le mensagens; uma linha de mais na costura faria o outro lado ler a mensagem errada.
+
+  2. AS PORTAS DO ARRANQUE DO PROCESSO, PELA ORDEM (as sete, fail-closed: a PRIMEIRA que falha decide o
+     motivo, e o processo NAO sobe). Cada porta diz a regra que cumpre:
+       ficha               FR-019: o documento do arranque existe e tem a forma declarada; campo a mais
+                           RECUSA (`campo_desconhecido`) - o que o contrato nao declara, nao se ignora (RN-C1)
+       versao_do_contrato  D7/RN-E18: igualdade EXACTA com contracts/versao.json, nunca "compativel"
+       uma_conta           FR-019/FR-022/RN-H15: uma ligacao, uma chave, UMA conta - e um lugar so para ela
+       ambiente_e_rede     RN-H17: o recorte corre no ambiente de TESTE; o endereco tem de bater com ele
+       chave               FR-023/RN-C20: a credencial entra por REFERENCIA; falta dela e recusa NOMEADA
+       ligacao             FR-020/FR-021/RN-H2: estado pelo protocolo do venue (silencio = `desconhecido`,
+                           nunca `ligada` nem `caido`); sem leitura da conta nao sai ordem que aumente exposicao
+       sonda_e_manifesto   RN-H1/FR-001..FR-005/FR-027: sonda o venue e PUBLICA o manifesto - o que o venue
+                           nao declarar RECUSA (`capacidade_nao_declarada`), nunca vira `true` por omissao
+
+  3. A PROVA PONTA-A-PONTA. O processo e arrancado pelo DUBLE DA MESA como PLUGIN, boleta a boleta, e o
+     duble confere a ULTIMA linha de cada resposta contra o envelope + o esquema do tipo (contrato),
+     e a resposta e ainda conferida pelo motor do contrato nas DUAS linguagens (`--fidelidade`).
+
+  4. AS PORTAS DA MESA NAO FORAM COPIADAS. As sete portas do arranque DA MESA (`conectores -> manifesto ->
+     mandato -> contenda -> inventario -> versao_do_contrato -> sessao`) sao as do core
+     (`core/ciclo/arranque.ts`, PORTAS) e quem as mede e a bateria do conector que ja existia
+     (`tools/verificar-conector/conformidade.ts`, prova 2). O que este recorte acrescenta e a PONTA: o
+     processo que faz a porta `conectores` ter o que ler (um manifesto publicado por UM processo que sobe).
+
+
+O QUE ESTA PROVA NAO PROVA, e di-lo em voz alta (FR-026):
+
+  * o VENUE a serio COM CHAVE. Nao se assinou nada: o envio real (que exige chave) nao correu. O que
+    correu AO VIVO foi a SONDA, em modo de leitura (`--ao-vivo --so-sonda`): o processo LEU o venue de
+    teste e publicou um manifesto com os numeros dele - sem ler a chave e sem mandar ordem nenhuma.
+  * o COMPORTAMENTO do venue (as oito provas SC-004 da bateria de conformidade, com rede e chave):
+    continua por correr, e e outra bateria.
+  * o vigia a arrancar o processo. O vigia hoje levanta a MESA (`core/servidor.ts`) e nao conhece
+    executavel de conector nenhum - ver ACHADO 5, que diz o que faltaria e por que NAO foi tocado.
+
+
+FICHEIROS DESTA ENTREGA (sha256 e tamanho, medidos):
+
+  b3db73910313affc5f29bb42634736731bc5b84369e6771efa040a601a5f4946  brokers/hyperliquid/conector.ts            1051 linhas
+  a8d050fc2131c406c061c445452329541a4efc52fb0ba724d6d29c7712b32425  brokers/hyperliquid/processo.ts             775 linhas
+  09acbaa8dec6ccd226b2a7915cda9709f6cf4bdb5f135a188337d4393712269b  brokers/hyperliquid/casos/processo.casos.json 1346 linhas
+
+  O ficheiro de casos tem 10 fichas, 10 variantes de venue (todas declaradas, nenhuma medida aqui),
+  10 casos que o DUBLE DA MESA corre (com `com_plugin`), 17 casos de arranque que so a bancada corre,
+  e 3 provocacoes negativas do proprio conferidor.
+
+  A ficha do processo entra por NOME (`--ficha base`, a variante declarada no ficheiro de casos) ou lida da
+  CONFIGURACAO DO DONO (`--ficha @config/contas/hl-teste-plugin.json`, a forma como o vigia a entregaria).
+  As duas correm; a do dono tambem arranca e publica o manifesto contra o duble do venue:
+    {"porta":"ficha","veredicto":"passou","porque":"ficha do conector `hyperliquid` legivel: venue hyperliquid,
+     ambiente teste, UMA conta, 1 instrumento(s) do mandato (BTC)"}
+    {"porta":"chave","veredicto":"nao_corrida","porque":"modo de SONDA: nenhuma assinatura e feita e o VALOR da
+     credencial nao e lido (FR-023/RN-E14)..."}
+    {"etapa":"sonda","veredicto":"publicado","nota":"modo de sonda: nenhuma boleta e servida, nada foi assinado"}
+
+  `core/servidor.ts` NAO foi tocado: nao foi imprescindivel (ACHADO 5).
+
+
+OS COMANDOS, E A SAIDA CRUA
+
+1) A BANCADA DA PROPRIA PORTA (31 casos, um processo por caso):
+
+   $ bun run brokers/hyperliquid/processo.ts --casos brokers/hyperliquid/casos/processo.casos.json --bancada
+   processo: 31 casos · 31 ok · 0 divergentes · 223 verificacoes · 7 portas do arranque em
+   ["ficha","versao_do_contrato","uma_conta","ambiente_e_rede","chave","ligacao","sonda_e_manifesto"]
+
+   Uma linha por caso, com a ORDEM das portas que correram e o veredicto de cada uma. Exemplos crus:
+   {"caso":"processo/aceite-mercado","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+   {"caso":"arranque/venue-calado-no-arranque","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:falhou"}
+   {"caso":"arranque/bateria-mediu-cinco-de-seis","veredicto":"ok","esperado_ok":true,"portas":"... > sonda_e_manifesto:falhou"}
+   {"caso":"arranque/manifesto-publicado","veredicto":"ok","esperado_ok":true,"portas":""}
+   {"caso":"provocacao/classificacao-fora-do-conjunto","veredicto":"ok","esperado_ok":true,"portas":""}
+   {"caso":"provocacao/recusado-sem-motivo","veredicto":"ok","esperado_ok":true,"portas":""}
+   {"caso":"provocacao/numero-em-virgula-flutuante","veredicto":"ok","esperado_ok":true,"portas":""}
+
+   O que os 31 casos cobrem, por grupo:
+     * 10 casos de envelope (2 destes correm tambem contra o duble da mesa): aceite a mercado (duas linhas:
+       a resolucao ANTES do envio e o desfecho depois), parcial com os numeros da POSICAO do venue,
+       recusa do venue com a PALAVRA dele, silencio dentro do prazo (resolucao = a de antes do envio,
+       origem_dos_numeros dita), instrumento fora do manifesto, tipo de ordem nao declarado, quantidade
+       abaixo do minimo, versao divergente, parcial nao declarada, campo em unidade de corretora.
+     * 17 casos de arranque, um por porta e por regra: ficha sem versao, ficha sem conta, versao a frente,
+       duas contas na ficha, ambiente de producao, endereco trocado, chave sem referencia, venue calado,
+       bateria que nao mediu, bateria que mediu cinco de seis, bateria que contradiz a sonda, instrumento
+       do mandato inexistente, sonda calada, preco do venue fora da regra (nao arredonda: RECUSA),
+       conta nao lida antes do envio (nao manda), referencia repetida, ordem em repouso.
+     * 3 provocacoes: o conferidor TEM de reprovar uma classificacao fora do conjunto, um recusado sem
+       motivo, e um numero com virgula flutuante. Um conferidor que aceitasse qualquer um destes seria um
+       carimbo, e os casos verdes nao provariam nada.
+     * 1 caso de publicacao: o manifesto publicado passa o esquema do contrato, e o id e `hyperliquid/manifesto`.
+
+2) A PONTA-A-PONTA CONTRA O DUBLE DA MESA (o processo arrancado como PLUGIN):
+
+   $ python3 contracts/mocks/mesa/main.py --papel conector \
+       --casos $PWD/brokers/hyperliquid/casos/processo.casos.json \
+       --plugin "MESACORE_DUBLE_CREDENCIAL=duble-do-venue-nao-e-chave bun run brokers/hyperliquid/processo.ts \
+                 --casos brokers/hyperliquid/casos/processo.casos.json --ficha base --venue base --prazo-do-venue-ms 300"
+
+   {"caso": "processo/aceite-mercado", "papel": "conector", "modo": null, "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/parcial", "papel": "conector", "modo": null, "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/recusa-do-venue-com-a-palavra-dele", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/silencio-do-venue", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/instrumento-fora-do-manifesto", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/tipo-de-ordem-nao-declarado", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/quantidade-abaixo-do-minimo", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/versao-do-contrato-divergente", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/parcial-nao-declarada", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+   {"caso": "processo/campo-em-unidade-de-corretora", ..., "veredicto": "aceite", "motivo": null, "esperado_ok": true}
+
+   duble de mesa (conector): 0 falhas — 10 casos, cada um com o veredicto declarado, 10 deles contra o plugin a serio
+
+3) A FIDELIDADE (os MESMOS casos contra o motor do contrato, nas duas linguagens):
+
+   $ python3 contracts/mocks/mesa/main.py --fidelidade --papel conector --casos $PWD/brokers/hyperliquid/casos/processo.casos.json
+       10 casos do duble: veredicto e motivo conferidos contra as duas linguagens do motor
+
+   fidelidade: 0 falhas — o duble e o motor do contrato dao o mesmo veredicto nos mesmos casos
+
+4) AS PROVAS NEGATIVAS (o processo responde MAL DE PROPOSITO; o duble TEM de apanhar):
+
+   $ ... --plugin "... --defeito classificacao"   -> duble de mesa (conector): 10 falhas em 10 casos
+         7 "motivo": "campo_obrigatorio_ausente"   (na recusa, a classificacao trocada deixa o desfecho sem resolucao)
+         3 "motivo": "valor_fora_do_conjunto"      (no aceite/parcial/desconhecido, a classificacao fora do conjunto)
+   $ ... --plugin "... --defeito sem_motivo"      -> duble de mesa (conector): 7 falhas em 10 casos
+         7 "motivo": "campo_obrigatorio_ausente"   (as 3 restantes nao tem motivo para apagar: o defeito nao as alcanca)
+   $ ... --plugin "... --defeito versao"          -> duble de mesa (conector): 10 falhas em 10 casos
+        10 "motivo": "versao_do_contrato_divergente"
+
+   Nenhuma das tres mensagens defeituosas passou. Um conferidor que nunca reprovou nao mede nada.
+   NOTA de correcao: o defeito `versao` escrevia a versao 1.4.0 quando a vigente era a 1.3.0; com a
+   vigente a 1.4.0 isso passou a ser um defeito que nao era defeito nenhum. Passou a escrever 9.9.9.
+
+5) A SONDA AO VIVO (teste do venue; SO LEITURA, sem chave):
+
+   $ bun run brokers/hyperliquid/processo.ts --casos <casos> --ficha base --ao-vivo --so-sonda --bateria bateria_ao_vivo
+   {"etapa":"sonda","veredicto":"publicado","nota":"modo de sonda: nenhuma boleta e servida, nada foi assinado"}
+   {"contrato":"1.4.0","tipo":"manifesto","id":"hyperliquid/manifesto","carga":{"conector":{"nome":"hyperliquid",
+    "versao":"0.1.0"},"versao":"1.4.0","instrumentos":[{"simbolo":"BTC","minimo":"0.00001","passo":"0.00001",
+    "tick":"0.1","alavancagem_maxima":"40","funding_intervalo_horas":1,"alavancagem_por_escalao":[
+    {"de":"0.0","maxima":"40"},{"de":"10000.0","maxima":"25"},{"de":"50000.0","maxima":"10"}]}],
+    "sabe_ajustar_alavancagem":true,"modos_de_margem":["cruzado","isolado"],"minimo_de_valor_por_ordem":"10",
+    "modelo_de_posicao":"netting","tipos_de_ordem":["mercado","limite"],"parcial_suportada":["o_que_der"],
+    "desvio_maximo":"0.5","reduce_only_suportado":true,"stop_anexo":false,"profundidade_de_livro":20,
+    "funding":true,"relogio_de_fecho_de_barra":"continuo","idempotencia":true,"marca_de_posse":"cloid",
+    "marca_liga_ordem_a_posicao":false,"estado_do_mercado":true}}
+
+   Leitura: os numeros do INSTRUMENTO e do MERCADO deste manifesto vieram do venue de teste (o passo e o
+   tick derivados do `szDecimals` sondado, os escaloes de margem como o venue os da, a cadencia do funding,
+   a profundidade do livro, o estado do mercado). Os campos que a sonda desta conta NAO consegue medir
+   vieram declarados pela bateria (`--bateria bateria_ao_vivo`) - e o diagnostico diz QUAIS foram, um a um.
+   Sem essa declaracao o processo RECUSA publicar: `a sonda do venue nao trouxe tipos_de_ordem ... A sonda
+   desta corrida NAO mediu: tipos_de_ordem, reduce_only_suportado, marca_de_posse, parcial_suportada,
+   minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia,
+   marca_liga_ordem_a_posicao` (corrida sem --bateria: exit 2, nada publicado).
+
+6) AS PORTAS DO REPOSITORIO, corridas depois (para medir o que ja estava vermelho ANTES desta entrega):
+
+   $ bash tools/verificar-maquina/tipos.sh
+     core: 0 erros de tipo / vigia: 0 / tools: 0 / contracts: 0
+     brokers: ERROS de tipo: hyperliquid/sonda.ts(321,32): error TS18048: 'meta' is possibly 'undefined'.
+     tipos: 1 directorio(s) com erros
+     -> NENHUM erro nos ficheiros desta entrega (`conector.ts` e `processo.ts` sao compilados neste mesmo
+        directorio). O erro e de `sonda.ts`, que nao e ficheiro meu e nao esta modificado na arvore.
+
+   $ bash tools/verificar-conector/provas-offline.sh
+     casos da credencial / manifesto / ordens e cloid / leitura ... OK
+     porta: imports do conector declarados na raiz ... OK
+     porta: importa contracts, nunca o core (RN-E1) ... OK
+     conformidade do conector (duble de mesa) ... FALHOU (exit 1)
+       8 FALHAS, todas `versao_do_contrato_divergente`
+     provas offline do conector: 1 falhas
+     -> a falha NAO e desta entrega: o ficheiro `tools/verificar-conector/casos-duble.json` (nao versionado,
+        de outro trabalho) declara 26 mensagens com `"contrato": "1.3.0"` e so 2 com `"1.4.0"`, e a versao
+        vigente passou a 1.4.0. Ver ACHADO 6.
+
+
+ACHADOS (o que esta entrega ENCONTROU, e o que mudaria - e por que)
+
+  1. `ordens.ts` ainda le o nome ANTIGO do piso de valor. A emenda 1.4.0 renomeou o campo para
+     `minimo_de_valor_por_ordem` (o nome antigo, `teto_de_valor_por_ordem`, carregava o MINIMO e mentia), e
+     `manifesto.ts` publica o nome novo - mas `brokers/hyperliquid/ordens.ts` (linha 65 e linha 382) continua
+     a ler o antigo. Consequencia medida: TODA a boleta recusava com `campo_obrigatorio_ausente` por um campo
+     que existe, medido, com outro nome. `ordens.ts` nao esta na lista de ficheiros que eu podia escrever, e
+     por isso NAO o corrigi: pus em `conector.ts` uma PONTE DE NOME declarada (`manifestoParaATraducao`), com
+     o comentario a dizer o que e, por que existe, e que sai quando `ordens.ts` migrar. O que mudaria:
+     renomear o campo no tipo e na leitura de `ordens.ts` para `minimo_de_valor_por_ordem`.
+
+  2. O TECTO do venue nao e conferido por ninguem. A 1.4.0 acrescentou `maximo_de_valor_por_ordem`
+     (aditivo). Nem a traducao (`ordens.ts`) nem a conversa o conhecem: se um venue declarar um tecto, esta
+     ponta manda na mesma e e o venue que recusa. Nao e um buraco de seguranca (o venue e a autoridade), mas
+     e uma capacidade declarada que nao se usa. O que mudaria: a traducao conferir o nocional contra o tecto
+     quando ele vier declarado, com o motivo proprio do vocabulario.
+
+  3. O nome do ficheiro em `tasks.md` diverge do nome autorizado: a T010 pede
+     `brokers/hyperliquid/processos.ts` (plural) e a autorizacao desta corrida e `processo.ts` (singular).
+     Escrevi `processo.ts`. O que mudaria: alinhar `tasks.md` ao nome real e marcar a T010 com a prova
+     (bancada + duble da mesa), em vez de a deixar por fazer.
+
+  4. `sonda.ts:321` tem um erro de tipo (`meta` possibly undefined) que a porta `tipos.sh` apanha. Nao e
+     desta entrega: o ficheiro nao esta modificado na arvore e nao e meu. Fica dito para nao ser confundido
+     com regressao desta corrida.
+
+  5. O VIGIA ainda nao invoca processo de conector nenhum - e e por isso que `core/servidor.ts` NAO ganhou
+     linha nenhuma. Medido: `vigia/vigia.ts` so levanta `core/servidor.ts` (a MESA), e nem `core/` nem
+     `vigia/` nomeiam corretor nenhum. O que faria falta, e o que mudaria (sem o fazer, por nao ser
+     imprescindivel a esta prova): a ponta que liga a mesa ao processo alheio ser declarada num lugar so -
+     por exemplo a ficha do dono ganhar o `comando` do conector, ou o vigia derivar
+     `brokers/<conector>/processo.ts` do nome do conector da ficha - e o vigia passar a levantar TAMBEM o
+     processo do conector, com `--casos`/`--ficha` declarados, antes de arrancar a mesa (a porta dos
+     conectores da mesa e a PRIMEIRA pela ordem, e sem conector de pe nao ha manifesto a ler). Do lado da
+     MESA, a chamada seria a que o duble exercita:
+       bun run brokers/hyperliquid/processo.ts --casos <casos> --ficha @<config do dono>
+     com a boleta no `stdin` e o desfecho no `stdout` (uma mensagem por linha).
+
+  6. `tools/verificar-conector/casos-duble.json` (nao versionado) ainda declara 26 mensagens na 1.3.0: a
+     bateria que ja existia fica vermelha por isso, e nao por esta entrega. O que mudaria: subir essas 26
+     mensagens para a 1.4.0 (ou lerem a versao de `contracts/versao.json`, que e a casa dela) - um numero de
+     versao escrito a mao num ficheiro de dados envelhece em silencio.
+
+  7. O PROCESSO NAO INVENTA UM PRECO DE LIQUIDACAO. A resolucao de antes do envio projecta o preco a que a
+     posicao liquidaria (RN-M4.13) a partir da marca do venue e da alavancagem pedida; quando essa projeccao
+     nao sai (marca fora da regra do instrumento), o processo LANCA e nao serve a boleta - nao manda uma
+     resolucao com um zero inventado. Alavancagem 1 da zero, e o contrato VIGENTE diz que zero e valor
+     legitimo ("a alavancagem 1 so liquida a preco zero"): a fronteira entre o zero VERDADEIRO e o zero
+     inventado e o que esta guarda separa. O que mudaria (nao faco): uma recusa NOMEADA deste caminho
+     (motivo do vocabulario) em vez de uma excepcao, para a mesa receber uma mensagem em vez de um processo
+     que morre.
+
+  8. O `bateria_ao_vivo` do ficheiro de casos e DADO declarado, nao medicao desta corrida: ele existe para
+     a sonda ao vivo poder publicar o manifesto (FR-027 - onde o venue nao publica, quem mede e a bateria).
+     Os valores dos 6 campos "nao publicados" e dos 4 que esta conta de teste nao consegue medir
+     (`tipos_de_ordem`, `parcial_suportada`, `reduce_only_suportado`, `marca_de_posse`) sao declaracao, e o
+     diagnostico diz um a um quais foram - nenhum entra no manifesto sem estar dito.
+
+
+A PROVA, EM UMA LINHA POR PONTA (contagens medidas)
+
+  processo sobe contra o duble da mesa .......... 10 de 10 casos (0 falhas), 10 contra o plugin a serio
+  desfecho de cada caso escrito ................. 31 casos na bancada (10 de envelope + 17 de arranque + 3 provocacoes + 1 de manifesto)
+  ordem das portas .............................. 7 portas, conferidas contra PORTAS_DO_PROCESSO do codigo (223 verificacoes por corrida)
+  mensagens conferidas pelo contrato ............ 10 de 10 no duble + fidelidade 0 falhas nas duas linguagens
+  recusa nomeada em cada porta .................. 8 dos 17 casos de arranque caem numa porta, com motivo do vocabulario
+  conferidor com dentes ......................... 3 provocacoes reprovadas de proposito + 3 defeitos injectados (10/7/10 recusas)
+  sonda ao vivo (venue de teste, so leitura) .... 1 manifesto publicado, 0 ordens enviadas, 0 chaves lidas
+  credenciais ................................... nenhum valor lido nesta bancada; a ponte vive em `env:MESACORE_DUBLE_CREDENCIAL` (nome, nunca valor)
+
+
+NOTA FINAL SOBRE O QUE NAO ENTROU
+
+  Nada foi escrito fora dos quatro ficheiros autorizados. Nenhum `git add`, nenhum `git commit`, nenhum
+  remote. Nenhum ficheiro de credenciais foi lido (a bancada e os dubles usam uma variavel de ambiente com
+  um valor GERADO em execucao, que nunca se escreve em ficheiro). Nenhum processo ficou a correr: os
+  processos do conector sao filhos de vida curta, e as corridas terminam por si.

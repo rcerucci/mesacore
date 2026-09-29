@@ -45,3 +45,13 @@ config/contas/
 !.example.*
 !*.exemplo.json
 !*example*
+
+# A REDE NAO PODE ENGOLIR CODIGO (medido: um `git add -A` distraido saltava estes tres em silencio, e a
+# bancada offline — `tools/verificar-conector/provas-offline.sh` — corre-os e ficaria sem eles no
+# repositorio). O nome deles tem «credencia» porque o ASSUNTO deles e a credencial: sao a fonte
+# (`credencial.ts`), o corredor (`correr-credencial.ts`) e os casos (`credencial.casos.json`). A rede
+# continua a apanhar qualquer ficheiro de VALOR com esse nome — e nenhum destes tres carrega valor nenhum
+# (a prova 8 da conformidade, RN-E14, varre `brokers/` e nao encontra um).
+!brokers/hyperliquid/credencial.ts
+!brokers/hyperliquid/casos/correr-credencial.ts
+!brokers/hyperliquid/casos/credencial.casos.json

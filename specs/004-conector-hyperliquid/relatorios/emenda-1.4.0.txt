@@ -1,0 +1,223 @@
+EMENDA 1.4.0 DO CONTRATO — o que o venue real obrigou a mudar
+=============================================================
+Mesma frente: specs/004-conector-hyperliquid. Fonte dos numeros: relatorios/sonda-real.txt e as
+sondagens ao venue de teste refeitas hoje (comandos em §4, com a saida crua).
+Regra da casa: contrato e' a autoridade; mudanca ADITIVA; os dois motores (TypeScript e Python) e os
+dois dubles acompanham; toda a mudanca traz caso que a exercita e a prova NEGATIVA.
+
+------------------------------------------------------------------------------
+1. AS QUATRO DECISOES (uma linha cada)
+------------------------------------------------------------------------------
+
+(1) NOME DO VALOR POR ORDEM — `teto_de_valor_por_ordem` mentia nos dois sentidos: a sonda alimentava-o
+    com o MINIMO do venue ($10, §5.d da regra de negocio) e o duble da mesa usava-o como TECTO
+    (`nocional > teto`), pelo que os dois lados diziam coisas OPOSTAS. DECISAO: o campo passa a
+    `minimo_de_valor_por_ordem` (PISO: abaixo recusa `valor_abaixo_do_minimo_do_venue`, igual PASSA) e o
+    tecto entra ADITIVO como `maximo_de_valor_por_ordem` — opcional, e so' quando o venue o declara (este
+    venue nao publica nenhum: fica ausente, e ausencia NAO e' «ilimitado»).
+
+(2) FORMA DO ESCALAO DE ALAVANCAGEM — o esquema pedia `ate` (limite SUPERIOR, `decimal_positivo`) e o
+    venue declara `lowerBound`, com o primeiro escalao a `0.0` (que `decimal_positivo` recusa). DECISAO:
+    o escalao passa a declarar o limite INFERIOR `de` (decimal NAO negativo; zero legitimo no primeiro),
+    como o venue o da'; o escalao de um valor e' o de maior `de` que nao o excede, e um valor que escalao
+    nenhum cubra RECUSA (`valor_fora_da_banda`) em vez de cair na maxima unica por omissao.
+
+(3) CADENCIA DO FUNDING — o manifesto so' tinha o booleano `funding`, e o venue publica
+    `fundingIntervalHours` POR INSTRUMENTO. DECISAO: entra ADITIVO `instrumentos[].funding_intervalo_horas`
+    (inteiro >= 1), lido de `predictedFundings()[coin]["HlPerp"].fundingIntervalHours`; ausente = nao
+    declarado para aquele instrumento.
+
+(4) INSTRUMENTO DESLISTADO — o venue lista 54 dos 212 instrumentos com `isDelisted: true` e continua a
+    dar-lhes unidade, e o contrato nao tinha onde o declarar: um mandato que nomeasse um instrumento
+    encerrado era ACEITE. DECISAO: entra ADITIVO `instrumentos[].deslistado` (booleano; ausencia NAO e'
+    `false` — o venue so' escreve a chave quando e' verdadeira), e a recusa tem nome proprio:
+    `instrumento_deslistado_no_venue`. Quem recusa e' o conector, ao construir o manifesto a partir do
+    mandato (passagem 0, ANTES de tudo o resto), e a conferencia da mesa recusa a boleta sobre um
+    manifesto que declare `deslistado: true`.
+
+------------------------------------------------------------------------------
+2. A VERSAO — 1.3.0 -> 1.4.0, numa so' casa
+------------------------------------------------------------------------------
+contracts/versao.json e' a unica casa da versao do contrato: `{"contrato": "1.4.0"}` + o bloco
+`emenda_1_4_0` com as quatro notas. Nenhuma linguagem tem a versao escrita no codigo (D7, igualdade
+exacta): os envelopes e os casos declaram-na, e `contracts/mocks/conector/historico.py` passou a LER
+`contracts/versao.json` em vez de a repetir — uma versao escrita no codigo sobrevive a emenda e e'
+recusada por `versao_do_contrato_divergente`.
+
+------------------------------------------------------------------------------
+3. OS FICHEIROS
+------------------------------------------------------------------------------
+Contrato (esquemas, vocabulario, casos, motor TS, dubles):
+  contracts/versao.json            contrato 1.4.0 + bloco emenda_1_4_0
+  contracts/vocabulario.json       os 2 motivos novos + prioridade_dos_motivos estendida
+  contracts/_defs/forma.schema.json  enum de recusa espelhado com os 2 motivos novos
+  contracts/manifesto.schema.json  minimo_de_valor_por_ordem (piso) + maximo_de_valor_por_ordem
+                                   (tecto, aditivo); instrumentos[]: alavancagem_por_escalao com `de`,
+                                   funding_intervalo_horas, deslistado
+  contracts/origem-das-grandezas.json  as grandezas novas, com dono e origem
+  contracts/casos/conferencia.conformidade.json  12 -> 17 casos (piso, limite, tecto, escalao, deslistado)
+  contracts/casos/manifesto.casos.json  campos novos do manifesto + adversarios
+  contracts/casos/*.casos.json, contracts/mocks/**/*.json  versao do envelope 1.3.0 -> 1.4.0
+  contracts/esqueleto/conferir.ts  cabecalho da emenda; le o piso, o tecto e o escalao `de`
+  contracts/mocks/conector/main.py  PISO (recusa nomeada) + DESLISTADO + `--manifesto`
+  contracts/mocks/conector/manifesto.json  escaloes `de`, funding_intervalo_horas, minimo/maximo
+  contracts/README.md, contracts/casos/README.md  contagens (111 casos, 17 de conformidade)
+Conector Hyperliquid:
+  brokers/hyperliquid/manifesto.ts  passagem 0 (mandato: existencia + deslistado), minimo/maximo, escaloes `de`
+  brokers/hyperliquid/sonda.ts      leitura de predictedFundings (codencia por moeda), tabelas de margem
+  brokers/hyperliquid/casos/manifesto.casos.json  21 casos (BTC/ETH medidos)
+  brokers/hyperliquid/casos/sonda.casos.json      15 casos (BTC/ETH medidos)
+Porta e especificacao:
+  tools/verificar-conector/porta-do-contrato.ts   NOVO — 4 provas + 4 vacinas (§4)
+  specs/004-conector-hyperliquid/data-model.md    versao 1.4.0, campos, §8 com as quatro decisoes
+  specs/004-conector-hyperliquid/relatorios/emenda-1.4.0.txt  este relatorio
+
+------------------------------------------------------------------------------
+4. A VERIFICACAO — comandos e saida CRUA
+------------------------------------------------------------------------------
+
+$ cd ~/Projects/MesaCore
+$ bun tools/verificar-conector/porta-do-contrato.ts --prova-negativa
+PORTA — versao do contrato: 1.4.0, declarada numa so casa
+PORTA — motivos: o conjunto fechado fecha nas duas direcoes (18 motivos, 12 na prioridade)
+PORTA — paridade: os dois motores, caso a caso
+  ts · contrato 1.4.0 · 111 casos · 36 aceites · 75 recusados · 0 divergentes · 0 erros
+  py · contrato 1.4.0 · 111 casos · 36 aceites · 75 recusados · 0 divergentes · 0 erros
+PORTA — emenda 1.4.0: 6 mensagens que a emenda tem de REPROVAR, nos dois motores
+  recusado campo_desconhecido nos dois motores — manifesto com o nome VELHO do campo do piso
+  recusado campo_desconhecido nos dois motores — manifesto com o escalao no limite SUPERIOR (`ate`)
+  recusado valor_fora_da_banda nos dois motores — manifesto com a cadencia do funding fora da banda
+  recusado tipo_invalido nos dois motores — manifesto com o deslistado a mentir
+  recusado campo_desconhecido nos dois motores — boleta com um campo a mais
+  recusado valor_fora_do_conjunto nos dois motores — desfecho com um motivo FORA do vocabulario
+PORTA — os dois lados, sobre as MESMAS boletas (10 casos de conformidade)
+  10 casos nas duas linguagens · 8 concordam · 2 divergencias anteriores a 1.4.0 (nomeadas)
+PORTA — as bandas da emenda, medidas no duble (4 sondas de nocional)
+  abaixo do PISO: nocional 9.00 vs minimo 10.00 — recusado/valor_abaixo_do_minimo_do_venue no duble
+  no LIMITE do piso (igual PASSA): nocional 10.00 vs minimo 10.00 — aceite/null no duble
+  acima do piso, dentro do primeiro escalao: nocional 19.99 vs minimo 10.00 — aceite/null no duble
+  fora de TODOS os escaloes (o primeiro `de` e' 501): nocional 100.00 vs minimo 10.00 —
+      recusado/valor_fora_da_banda no duble
+PORTA — vacina: cada prova tem de saber reprovar
+  (a) vocabulario furado REPROVA · (b) divergencia entre motores REPROVA · (c) a mensagem de referencia
+  e' aceite · (d) duble a mentir REPROVA
+
+porta-do-contrato: 0 falhas — contrato 1.4.0 · 18 motivos fechados nas duas direcoes · 111 casos lidos
+nos dois motores · 10 casos de conformidade nas duas linguagens · 4 bandas no duble · 4 vacinas
+
+$ cd contracts && bun run esqueleto/casos.ts --relatorio /tmp/emenda-ts.jsonl
+ts · contrato 1.4.0 · 111 casos · 36 aceites · 75 recusados · 0 divergentes · 0 erros
+$ uv run python esqueleto/casos.py --relatorio /tmp/emenda-py.jsonl
+py · contrato 1.4.0 · 111 casos · 36 aceites · 75 recusados · 0 divergentes · 0 erros
+$ uv run python ../tools/verificar-contrato/comparar.py /tmp/emenda-ts.jsonl /tmp/emenda-py.jsonl
+0 divergencias · 111 casos comparados · as duas implementacoes decidem igual
+
+$ bun run esqueleto/conferir.ts --bateria
+conferencia: 17 casos · 0 divergentes
+
+$ cd .. && bun brokers/hyperliquid/casos/correr.ts
+manifesto: 21 casos · 21 ok · 0 divergentes · 21 declarados
+$ bun brokers/hyperliquid/casos/correr.ts brokers/hyperliquid/casos/sonda.casos.json
+manifesto: 15 casos · 15 ok · 0 divergentes · 15 declarados
+
+$ bash tools/verificar-maquina/tipos.sh
+tipos: 0 erros em 5 directorios (o tsc confere o produto e as bancadas)
+
+$ bash tools/verificar-contrato/frescura.sh
+frescura: 0 divergencias — o gerado corresponde aos schemas (30 ficheiros)
+$ uv run python tools/verificar-contrato/py/inventario.py
+inventario: 0 falhas — cada grandeza tem dono, e cada dono tem chave
+$ bash tools/verificar-contrato/fronteira.sh
+fronteira: 0 falhas — os motivos fecham nas duas direcoes, todo o campo tem leitor, e os casos somam
+$ bash tools/verificar-contrato/porteiro-dependencias.sh
+porteiro: 0 dependencias proibidas em 45 ficheiros de /contracts (os mocks contam a parte)
+$ bash tools/verificar-contrato/ponta-a-ponta.sh
+ponta-a-ponta: 0 falhas — as duas pontas falam o contrato, e decidem o que deviam
+$ bash tools/verificar-contrato/reenvio.sh
+reenvio: 0 falhas — a mesma referencia nao produz segunda ordem
+$ bash tools/verificar-contrato/reinicio.sh
+reinicio: 0 falhas — a posse le-se do venue, pela marca
+$ bash tools/verificar-contrato/duble-de-mesa.sh
+duble de mesa: 0 falhas — os casos declarados, contra os mocks do 001 e contra o motor do contrato
+
+E CONTRA O VENUE DE TESTE (transporte publico, testnet; nenhuma credencial):
+
+instrumentos no universo: 212
+com fundingIntervalHours: 212
+com marginTiers (escaloes): 28
+com isDelisted=true: 54
+BTC: {"name":"BTC","szDecimals":5,"maxLeverage":40,"fundingIntervalHours":1,
+      "marginTiers":[{"lowerBound":"0.0","maxLeverage":40},{"lowerBound":"10000.0","maxLeverage":25},
+                     {"lowerBound":"50000.0","maxLeverage":10}]}
+ETH: {"name":"ETH","szDecimals":4,"maxLeverage":25,
+      "marginTiers":[{"lowerBound":"0.0","maxLeverage":25},{"lowerBound":"20000.0","maxLeverage":10},
+                     {"lowerBound":"50000.0","maxLeverage":5}]}
+manifesto de uma sonda real: recusa campo_obrigatorio_ausente
+mandato que nomeia MATIC: recusa instrumento_deslistado_no_venue — o instrumento MATIC esta DESLISTADO
+no venue (isDelisted) — o mandato nao pode nomea-lo
+
+  Nota (a ordem das recusas): uma sonda real recusa por `campo_obrigatorio_ausente` porque o minimo de
+  valor por ordem so' a bateria de conformidade o mede; mas um mandato que nomeie um instrumento
+  DESLISTADO e' recusado NOMEADAMENTE antes disso (passagem 0 do manifesto), e e' isso que se ve acima.
+
+------------------------------------------------------------------------------
+5. AS PROVAS NEGATIVAS (o que a emenda retirou tem de REPROVAR)
+------------------------------------------------------------------------------
+Medidas nos DOIS motores por `tools/verificar-conector/porta-do-contrato.ts` (prova 4), e no duble pela
+prova 6 e pelo caso `conferencia/resolucao-abaixo-do-minimo-por-ordem`:
+  - manifesto com `teto_de_valor_por_ordem` no lugar de `minimo_de_valor_por_ordem` -> campo_desconhecido;
+  - manifesto com o escalao em `ate` (o limite que a 1.4.0 retirou) -> campo_desconhecido;
+  - manifesto com `funding_intervalo_horas: 0` -> valor_fora_da_banda;
+  - manifesto com `deslistado: "sim"` -> tipo_invalido;
+  - boleta com um campo a mais -> campo_desconhecido (recusa a mensagem INTEIRA);
+  - desfecho com um motivo fora do vocabulario -> valor_fora_do_conjunto.
+E as VACINAS, que provam que as provas sabem reprovar (--prova-negativa): vocabulario furado REPROVA;
+divergencia entre os dois motores REPROVA; duble com o veredicto trocado REPROVA.
+
+------------------------------------------------------------------------------
+6. O QUE FICOU POR FAZER (bloqueios, com o sitio exacto)
+------------------------------------------------------------------------------
+Todos medidos por `bash tools/verificar-maquina/provar.sh` (no fim: `provar: 9 de 27 FALHARAM` na
+primeira passagem; depois de corrigir um erro de tipo meu em `sonda.ts` — `meta?.marginTables`, apanhado
+pelo proprio `tipos (tsc)` —, `8 de 27`). Destes oito, sete NAO sao da emenda, e a separacao tem prova:
+
+(a) DOIS MOTIVOS NOVOS SEM ACCAO NO NUCLEO — consequencia DIRECTA da emenda, e fora do meu alcance
+    (nao escrevo em core/**):
+      core/ciclo/acoes.json   falta accao para `valor_abaixo_do_minimo_do_venue` e
+                              `instrumento_deslistado_no_venue`  -> `condicoes, ciclo, desfecho` FALHOU
+                              ("motivo do contrato sem accao: <os dois>")
+      core/servidor.ts        a tabela TRADUCAO (usada por tools/verificar-maquina/servidor.ts:210)
+                              -> `porta da mesa (T014-T016)` FALHOU ("traducao cobre '<os dois>'")
+      servidor.ts             um literal 1.3.0 no envelope de comando
+                              -> "stop/em-operacao-com-a-posicao-declarada-para: recusa nao traz efeito
+                                 :: motivo=versao_do_contrato_divergente"
+(b) MIGRACAO DE VERSOES EM FICHEIROS DE OUTRA FRENTE (a emenda sobe a versao; quem declara 1.3.0 passa a
+    ser recusado por `versao_do_contrato_divergente`):
+      tools/verificar-conector/casos-duble.json   26 casos com "contrato": "1.3.0"
+                              -> `conector hyperliquid (offline, US1)` FALHOU (quatro casos de desfecho:
+                                 "esperado recusado/<o motivo do caso>, veio recusado/versao_do_contrato_divergente")
+      tools/verificar-maquina/servidor.ts   1 literal 1.3.0 no envelope de comando
+      tools/verificar-maquina/vigia.ts      1 literal 1.3.0 nas linhas do vigia
+      tools/verificar-contrato/{ponta-a-ponta,reenvio,reinicio}.sh  boletas com 1.3.0 nos literais: hoje
+                              passam porque o duble da mesa nao confere a versao do envelope — e' uma
+                              versao morta escrita no codigo (5 ocorrencias)
+(c) `frescura (prova negativa, T057)` FALHOU por "o gerado ja estava sujo antes da prova": o
+    contracts/gerado foi REGENERADO pela emenda (os esquemas mudaram) e a prova exige arvore limpa. Nao
+    commitei nada (proibido nesta frente): precisa de um commit do gerado + dos esquemas.
+(d) `vigia + mesa (--arranque)`, `vigia: orfandade`, `encerramento`, `verbos`: falhas do refactor em curso
+    da outra frente (comando_com_tipo_invalido, "linhas=0", TypeError em vigia.ts:531) — nao medidas como
+    consequencia da emenda; `conector.ts/processo.ts/ordens.ts` estavam a ser corridos ao vivo por essa
+    frente durante esta emenda.
+
+DIVERGENCIAS CONHECIDAS entre os dois lados (anteriores a 1.4.0, nomeadas na prova 5 da porta, e NAO
+"corrigidas" para nao mexer em regras alheias a emenda):
+      conferencia/reduce-only-sem-declaracao            o duble nao modela `reduce_only_suportado`
+      conferencia/desvio-acima-do-que-o-venue-aceita    o duble nao modela `desvio_maximo`
+Ambas existiam ja' no HEAD (`git show HEAD:contracts/casos/conferencia.conformidade.json`): o motor do
+contrato recusa, o duble aceita. Sao da frente da mesa, e ficam declaradas em vez de escondidas.
+
+NOTA (sem quebrar nada, do outro lado da fronteira): `brokers/hyperliquid/conector.ts` (ficheiro da frente
+paralela, nao tocado aqui) ja' le' o nome NOVO do contrato — `minimo_de_valor_por_ordem`, no comentario
+«O manifesto do contrato VIGENTE (1.4.0) publica o piso ... o nome antigo carregava o MINIMO e mentia a
+quem o lia como tecto» — e so' re-expoe internamente o alias antigo, na forma que `ordens.ts` consome.
+A emenda nao deixou nenhum modulo a ler um campo que morreu.

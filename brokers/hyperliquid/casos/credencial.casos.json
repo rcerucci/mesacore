@@ -1,0 +1,57 @@
+{
+  "nota": "Casos do carregador da credencial. As fixtures sao criadas pelo corredor num directorio temporario (a unica que precisa de existir de verdade e um ficheiro com modo errado ou com o valor repetido no repositorio). Nenhum caso usa um segredo real: o valor que 'esta no repositorio' e a palavra hyperliquid, que existe num ficheiro versionado.",
+  "casos": [
+    {
+      "caso": "credencial/variavel-de-ambiente-ok",
+      "fixture": "env_ok",
+      "esperadoOk": true
+    },
+    {
+      "caso": "credencial/ficheiro-0600-ok",
+      "fixture": "ficheiro_0600",
+      "esperadoOk": true
+    },
+    {
+      "caso": "credencial/ficheiro-legivel-por-outros-recusa",
+      "fixture": "ficheiro_0644",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda"
+    },
+    {
+      "caso": "credencial/ficheiro-inexistente-recusa",
+      "fixture": "ficheiro_inexistente",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "caso": "credencial/variavel-nao-definida-recusa",
+      "fixture": "env_ausente",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "caso": "credencial/valor-vazio-recusa",
+      "fixture": "vazio",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_nulo_nao_permitido"
+    },
+    {
+      "caso": "credencial/formato-sem-forma-recusa",
+      "fixture": "formato_invalido",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "caso": "credencial/sem-referencia-recusa",
+      "fixture": "sem_referencia",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "caso": "credencial/valor-que-esta-no-repositorio-recusa",
+      "fixture": "valor_no_repo",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda"
+    }
+  ]
+}

@@ -1,20 +1,20 @@
 {
   "mensagem": "manifesto",
-  "nota": "O que o conector DECLARA saber (RN-C1). Sondado no arranque, nunca constante no codigo. Sem declaracao nao ha capacidade: a mesa recusa em vez de tentar.",
+  "nota": "O que o conector DECLARA saber (RN-C1). Sondado no arranque, nunca constante no codigo. Sem declaracao nao ha capacidade: a mesa recusa em vez de tentar. EMENDA 1.4.0 (medida contra o venue, specs/004-conector-hyperliquid/relatorios/emenda-1.4.0.txt): `teto_de_valor_por_ordem` chamava-se assim e carregava o MINIMO — passa a `minimo_de_valor_por_ordem`, e o tecto entra aditivo em `maximo_de_valor_por_ordem`; o escalao passa a declarar o limite INFERIOR (`de`, com zero legitimo no primeiro); a cadencia do funding (`funding_intervalo_horas`) e o deslistado (`deslistado`) atravessam por instrumento. Os quatro casos com «nao-existe-mais» / «zero» / «deslistado» sao as provas negativas e positivas da emenda.",
   "casos": [
     {
       "nome": "manifesto/completo",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "manifesto",
-        "id": "mf-1",
+        "id": "completo",
         "carga": {
           "conector": {
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.3.0",
+          "versao": "1.4.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -24,14 +24,16 @@
               "alavancagem_maxima": "30",
               "alavancagem_por_escalao": [
                 {
-                  "ate": "50000",
+                  "de": "0",
                   "maxima": "30"
                 },
                 {
-                  "ate": "200000",
+                  "de": "50000",
                   "maxima": "20"
                 }
-              ]
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
             },
             {
               "simbolo": "XAUUSD",
@@ -46,7 +48,8 @@
             "cruzado",
             "isolado"
           ],
-          "teto_de_valor_por_ordem": "100000.00",
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
           "modelo_de_posicao": "netting",
           "tipos_de_ordem": [
             "mercado",
@@ -71,21 +74,22 @@
         }
       },
       "veredicto_esperado": "aceite",
-      "motivo_esperado": null
+      "motivo_esperado": null,
+      "nota": "O manifesto 1.4.0 por inteiro: o PISO de valor por ordem, o TECTO aditivo, os escaloes com limite INFERIOR (o primeiro a zero), a cadencia do funding por instrumento e a declaracao de deslistagem."
     },
     {
       "nome": "manifesto/marca-nenhuma-e-declaracao-valida",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "manifesto",
-        "id": "mf-2",
+        "id": "marca-nenhuma-e-declarac",
         "carga": {
           "conector": {
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.3.0",
+          "versao": "1.4.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -99,7 +103,8 @@
           "modos_de_margem": [
             "cruzado"
           ],
-          "teto_de_valor_por_ordem": "100000.00",
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
           "modelo_de_posicao": "netting",
           "tipos_de_ordem": [
             "mercado"
@@ -116,56 +121,82 @@
           "idempotencia": false,
           "marca_de_posse": "nenhuma",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": false
+          "estado_do_mercado": true
         }
       },
       "veredicto_esperado": "aceite",
-      "motivo_esperado": null
+      "motivo_esperado": null,
+      "nota": "Sem tecto declarado (ausencia, nao zero), sem escaloes, sem cadencia e sem deslistagem: o que e aditivo pode faltar."
     },
     {
       "nome": "manifesto/idempotencia-nao-booleana",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "manifesto",
-        "id": "mf-3",
+        "id": "idempotencia-nao-boolean",
         "carga": {
           "conector": {
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.3.0",
+          "versao": "1.4.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
               "minimo": "0.01",
               "passo": "0.01",
               "tick": "0.00001",
-              "alavancagem_maxima": "30"
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
             }
           ],
-          "sabe_ajustar_alavancagem": false,
+          "sabe_ajustar_alavancagem": true,
           "modos_de_margem": [
-            "cruzado"
+            "cruzado",
+            "isolado"
           ],
-          "teto_de_valor_por_ordem": "100000.00",
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
           "modelo_de_posicao": "netting",
           "tipos_de_ordem": [
-            "mercado"
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
           ],
           "parcial_suportada": [
-            "o_que_der"
+            "o_que_der",
+            "tudo_ou_nada"
           ],
           "desvio_maximo": "0.5",
           "reduce_only_suportado": false,
           "stop_anexo": false,
-          "profundidade_de_livro": 5,
-          "funding": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
           "relogio_de_fecho_de_barra": "horario",
           "idempotencia": "sim",
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": false
+          "estado_do_mercado": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -175,46 +206,71 @@
       "nome": "manifesto/campo-desconhecido",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "manifesto",
-        "id": "mf-4",
+        "id": "campo-desconhecido",
         "carga": {
           "conector": {
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.3.0",
+          "versao": "1.4.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
               "minimo": "0.01",
               "passo": "0.01",
               "tick": "0.00001",
-              "alavancagem_maxima": "30"
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
             }
           ],
-          "sabe_ajustar_alavancagem": false,
+          "sabe_ajustar_alavancagem": true,
           "modos_de_margem": [
-            "cruzado"
+            "cruzado",
+            "isolado"
           ],
-          "teto_de_valor_por_ordem": "100000.00",
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
           "modelo_de_posicao": "netting",
           "tipos_de_ordem": [
-            "mercado"
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
           ],
           "parcial_suportada": [
-            "o_que_der"
+            "o_que_der",
+            "tudo_ou_nada"
           ],
           "desvio_maximo": "0.5",
           "reduce_only_suportado": false,
           "stop_anexo": false,
-          "profundidade_de_livro": 5,
-          "funding": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
           "relogio_de_fecho_de_barra": "horario",
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": false,
+          "estado_do_mercado": true,
           "taxa_de_corretagem": "0.0002"
         }
       },
@@ -225,45 +281,70 @@
       "nome": "manifesto/instrumento-sem-passo-declarado",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "manifesto",
-        "id": "mf-5",
+        "id": "instrumento-sem-passo-de",
         "carga": {
           "conector": {
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.3.0",
+          "versao": "1.4.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
               "minimo": "0.01",
               "tick": "0.00001",
-              "alavancagem_maxima": "30"
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
             }
           ],
-          "sabe_ajustar_alavancagem": false,
+          "sabe_ajustar_alavancagem": true,
           "modos_de_margem": [
-            "cruzado"
+            "cruzado",
+            "isolado"
           ],
-          "teto_de_valor_por_ordem": "100000.00",
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
           "modelo_de_posicao": "netting",
           "tipos_de_ordem": [
-            "mercado"
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
           ],
           "parcial_suportada": [
-            "o_que_der"
+            "o_que_der",
+            "tudo_ou_nada"
           ],
           "desvio_maximo": "0.5",
           "reduce_only_suportado": false,
           "stop_anexo": false,
-          "profundidade_de_livro": 5,
-          "funding": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
           "relogio_de_fecho_de_barra": "horario",
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": false
+          "estado_do_mercado": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -273,98 +354,958 @@
       "nome": "manifesto/modelo-de-posicao-invalido",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "manifesto",
-        "id": "mf-6",
+        "id": "modelo-de-posicao-invali",
         "carga": {
           "conector": {
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.3.0",
+          "versao": "1.4.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
               "minimo": "0.01",
               "passo": "0.01",
               "tick": "0.00001",
-              "alavancagem_maxima": "30"
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
             }
           ],
-          "sabe_ajustar_alavancagem": false,
+          "sabe_ajustar_alavancagem": true,
           "modos_de_margem": [
-            "cruzado"
+            "cruzado",
+            "isolado"
           ],
-          "teto_de_valor_por_ordem": "100000.00",
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
           "modelo_de_posicao": "unificado",
           "tipos_de_ordem": [
-            "mercado"
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
           ],
           "parcial_suportada": [
-            "o_que_der"
+            "o_que_der",
+            "tudo_ou_nada"
           ],
           "desvio_maximo": "0.5",
           "reduce_only_suportado": false,
           "stop_anexo": false,
-          "profundidade_de_livro": 5,
-          "funding": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
           "relogio_de_fecho_de_barra": "horario",
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": false
+          "estado_do_mercado": true
         }
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_do_conjunto"
     },
     {
-      "nome": "manifesto/sem-teto-de-valor-por-ordem",
+      "nome": "manifesto/sem-minimo-de-valor-por-ordem",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "manifesto",
-        "id": "mf-7",
+        "id": "sem-minimo-de-valor-por-",
         "carga": {
           "conector": {
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.3.0",
+          "versao": "1.4.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
               "minimo": "0.01",
               "passo": "0.01",
               "tick": "0.00001",
-              "alavancagem_maxima": "30"
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
             }
           ],
-          "sabe_ajustar_alavancagem": false,
+          "sabe_ajustar_alavancagem": true,
           "modos_de_margem": [
-            "cruzado"
+            "cruzado",
+            "isolado"
           ],
+          "maximo_de_valor_por_ordem": "50000.00",
           "modelo_de_posicao": "netting",
           "tipos_de_ordem": [
-            "mercado"
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
           ],
           "parcial_suportada": [
-            "o_que_der"
+            "o_que_der",
+            "tudo_ou_nada"
           ],
           "desvio_maximo": "0.5",
           "reduce_only_suportado": false,
           "stop_anexo": false,
-          "profundidade_de_livro": 5,
-          "funding": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
           "relogio_de_fecho_de_barra": "horario",
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": false
+          "estado_do_mercado": true
         }
       },
       "veredicto_esperado": "recusado",
-      "motivo_esperado": "campo_obrigatorio_ausente"
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "O piso e OBRIGATORIO: sem ele nao se sabe abaixo de que valor o venue recusa."
+    },
+    {
+      "nome": "manifesto/teto-de-valor-por-ordem-nao-existe-mais",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "teto-de-valor-por-ordem-",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true,
+          "teto_de_valor_por_ordem": "10.00"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido",
+      "nota": "PROVA NEGATIVA (defeito 1): o nome que mentia (`teto_de_valor_por_ordem`) e agora um campo A MAIS — o contrato e fechado e nao ha tolerancia. O manifesto traz tambem o `minimo_de_valor_por_ordem` valido, para a recusa so poder ser do campo a mais."
+    },
+    {
+      "nome": "manifesto/escalao-com-ate-nao-existe-mais",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "escalao-com-ate-nao-exis",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "ate": "50000",
+                  "maxima": "30"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido",
+      "nota": "PROVA NEGATIVA (defeito 2): o limite SUPERIOR `ate` (que nao exprimia o primeiro escalao a 0.0) e campo a mais, e falta o `de` — a prioridade declarada no vocabulario escolhe campo_desconhecido nas duas linguagens."
+    },
+    {
+      "nome": "manifesto/escalao-de-zero-e-valido",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "escalao-de-zero-e-valido",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "O primeiro escalao do venue comeca em `0.0` (medido): `de` e decimal NAO NEGATIVO, e `0` passa — com o `decimal_positivo` de antes este caso era impossivel."
+    },
+    {
+      "nome": "manifesto/escalao-de-negativo-recusa",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "escalao-de-negativo-recu",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "-1",
+                  "maxima": "30"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "nome": "manifesto/escalao-com-campo-a-mais-recusa",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "escalao-com-campo-a-mais",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30",
+                  "nota": "escalao"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido",
+      "nota": "PROVA NEGATIVA do objecto aninhado: o escalao tambem e FECHADO."
+    },
+    {
+      "nome": "manifesto/funding-intervalo-horas-zero-recusa",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "funding-intervalo-horas-",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 0,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_da_banda",
+      "nota": "Uma cadencia de zero horas nao existe: o minimo declarado e 1 hora."
+    },
+    {
+      "nome": "manifesto/funding-intervalo-horas-nao-inteiro-recusa",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "funding-intervalo-horas-",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 1.5,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido"
+    },
+    {
+      "nome": "manifesto/instrumento-deslistado-e-declaracao-valida",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "instrumento-deslistado-e",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": true
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "O FACTOS tem onde ser declarado (defeito 4). O esquema ACEITA a mensagem: quem recusa o instrumento deslistado e a porta (o conector, ao construir o manifesto a partir do mandato: `instrumento_deslistado_no_venue`) e a conferencia da mesa, que recusa a boleta sobre um manifesto que o traga — a mensagem bem-formada nao e recusada por isso."
+    },
+    {
+      "nome": "manifesto/deslistado-nao-booleano-recusa",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "deslistado-nao-booleano-",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": "sim"
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido"
+    },
+    {
+      "nome": "manifesto/campo-a-mais-no-instrumento-recusa",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "campo-a-mais-no-instrume",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false,
+              "alavancagem_do_escalao": "30"
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido",
+      "nota": "PROVA NEGATIVA do instrumento: cada unidade declarada tambem e FECHADA (o defeito que a 1.3.0 deixava passar com o nome do campo errado)."
+    },
+    {
+      "nome": "manifesto/minimo-de-valor-zero-recusa",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.4.0",
+        "tipo": "manifesto",
+        "id": "minimo-de-valor-zero-rec",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.4.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "0",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido",
+      "nota": "Um piso de valor por ordem ZERO nao e um piso: `minimo_de_valor_por_ordem` e decimal_positivo."
     }
   ]
 }

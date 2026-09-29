@@ -168,6 +168,8 @@ class Motivo(StrEnum):
     minimo_do_instrumento_acima_da_banda = 'minimo_do_instrumento_acima_da_banda'
     prazo_excedido = 'prazo_excedido'
     desfecho_nao_reconhecido = 'desfecho_nao_reconhecido'
+    valor_abaixo_do_minimo_do_venue = 'valor_abaixo_do_minimo_do_venue'
+    instrumento_deslistado_no_venue = 'instrumento_deslistado_no_venue'
 
 
 class MarcaDePosse(RootModel[conint(ge=0, le=2147483647)]):

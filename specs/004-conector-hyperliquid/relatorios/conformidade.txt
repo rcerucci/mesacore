@@ -1,0 +1,155 @@
+CONFORMIDADE DO CONECTOR HYPERLIQUID — bateria offline, com o duble de mesa (T060-T070)
+corrida em: 2026-09-29T14:31:03-03:00
+
+O QUE ESTA BATERIA PROVA, E COM QUE LEITURA:
+  1. forma          toda mensagem do conector valida contra o ENVELOPE + o esquema do seu tipo
+                    (additionalProperties:false, decimal textual sem expoente, `null` proibido),
+                    em DUAS leituras independentes: o motor do contrato em TypeScript e o duble de
+                    mesa em Python (contracts/mocks/mesa), mais a fidelidade entre as duas
+                    linguagens do motor sobre os MESMOS casos.
+  2. sete portas    conectores -> manifesto -> mandato -> contenda -> inventario -> versao_do_contrato
+                    -> sessao: a ordem, a recusa NOMEADA da primeira que falha, e a lista do que se
+                    chegou a olhar (as portas sao do core, lidas por import - nao ha copia aqui).
+  3. duas versoes   `carga.versao` e a versao do CONTRATO (contracts/versao.json) e `carga.conector.versao`
+                    e a do PLUGIN (a do conector). Trocadas, o conferidor reprova.
+  4. vocabulario    quatro veredictos fechados do duble (aceite|recusado|espera|desconhecido), os motivos
+                    lidos do livro de ONDE VEM (contrato / mesa / duble) - nunca literais escritos aqui.
+  5. manifesto puro a funcao do conector e PURA na sonda: duas chamadas dao os mesmos bytes, a sonda nao
+                    e mutada, e capacidade NAO declarada RECUSA (`capacidade_nao_declarada`) - nunca true.
+  6. mesa sem vigia com a costura fechada e em operacao, a mesa continua a ciclar e a escrever no ledger
+                    (FR-006). Conta-se o LEDGER, nao o tempo.
+  7. espera/recusa uma volta que espera NAO e acontecimento (nada se escreve, o prazo nao reinicia); FORA
+                    do prazo a volta escreve; a recusa de comando transita X->X e fica registada.
+  8. credenciais    nenhum valor de credencial no repositorio (RN-E14), com os controles do varrimento,
+                    e o valor nunca entra numa escrita (log/ledger).
+  9. instrumento    instrumento que nao existe no manifesto -> recusa NOMEADA, dos dois lados
+                    (o conector na sonda, a mesa na porta do manifesto).
+
+O QUE ESTA BATERIA NAO PROVA, E DIZ (FR-026 - o que nao corre fica INCOMPLETO, nunca "passou"):
+  * o VENUE. As oito provas no ambiente de TESTE da corretora (SC-004) sao outra bateria, com rede e
+    chave. Aqui nao ha rede, nao ha chave, e o unico "venue" e a sonda em dado. O veredicto fica
+    INCOMPLETO - a bateria nunca o da por bom.
+  * as mensagens das fases ainda nao construidas (resolucao, leituras, conexao): sem produtor, nao ha
+    mensagem a medir. O que existe e medido.
+
+FICHEIROS
+  tools/verificar-conector/conformidade.ts   a bateria (9 provas, offline)
+  tools/verificar-conector/casos-duble.json  os casos: desfecho (lidos pelo duble de mesa E pela bateria),
+                                             sonda, manifesto, as sete portas, a mesa e as provocacoes
+  tools/verificar-conector/provas-offline.sh  a porta: casos + porta das dependencias + a conformidade
+
+REVISAO MEDIDA (sha256 do que estava em disco quando esta corrida correu - o repositorio tem mais de
+uma bancada a trabalhar, e um numero sem a revisao dele nao se pode atribuir a nada):
+ba7ffc86afe52e0d8a9b3af7ef218c706b8a6c7ee4d5ef4c0bc3e37da2b0f717  contracts/versao.json
+fa6c7f18831e599ab671663d508ab3ba42697741cfe646137bd046b9a27af4a5  contracts/vocabulario.json
+1e551c9317ee18326b0d85a710cbfb65ca0df57d85fd6502d1b61d4d5a88c56c  contracts/envelope.schema.json
+3aeee6642fca329fb4728b8253e04e9b09491e5728bbe67e0eae4bc6115efb7d  contracts/manifesto.schema.json
+f0585794253f9d2a88ee17fb253ee6da72ac373e19d5c1efc371b0a8c34da0be  contracts/desfecho.schema.json
+83daf4469962a0c857319e78e77976ba860453722c0dbc880b2e7857ef998e36  contracts/mocks/mesa/main.py
+31633b6ea446618347dadabd6e8286c7a9173edfb1a1dbc024481b445884ef32  brokers/hyperliquid/manifesto.ts
+22a39054b3f5cbc2129aa74fbfe18bcbc5440c63ce0684dd7e2519d57b3e6bfc  core/ciclo/arranque.ts
+a54ca03f1c68029e2573127c38d63de1d9ef387523cb998c02908ba09dfe6135  core/livro-de-motivos.ts
+95a0c39e9154deaa62d8af835d0ee24fbdc82fcb2e74a97ebed0fcee76986275  tools/verificar-conector/casos-duble.json
+560f297c2ee370a328543a5a1f8ccd246ca6e787fbc3517f63264e5525b84150  tools/verificar-conector/conformidade.ts
+02e279312445b96d6d021ddec9f00ea703db3d9768f16cef062ff3d34e237646  tools/verificar-conector/provas-offline.sh
+
+======================================================================================================
+$ bash tools/verificar-conector/provas-offline.sh
+======================================================================================================
+casos da credencial (hyperliquid)                   OK   credencial: 9 casos · 9 ok · 0 divergentes
+casos do manifesto (hyperliquid)                    OK   manifesto: 16 casos · 16 ok · 0 divergentes · 16 declarados
+porta: imports do conector declarados na raiz       OK   {"porta":"dependencias","manifesto":"package.json","ficheiros_lidos":9,"imports_nus":1,"declaradas":["@nktkas/hyperliquid","ajv","viem"],"nao_declaradas":[],"veredicto":"aprovado"}
+porta: importa contracts, nunca o core (RN-E1)      OK   0 importacoes do core em brokers/hyperliquid
+conformidade do conector (duble de mesa)            OK   conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+
+provas offline do conector: 0 falhas
+
+======================================================================================================
+$ bash tools/verificar-conector/provas-offline.sh --prova-negativa
+(o defeito e REAL: uma capacidade da sonda passa a valer `true` por omissao - fail-closed trocado por
+ fail-open. O ficheiro e reposto a partir de COPIA e a cura prova-se por sha256, byte a byte.)
+======================================================================================================
+casos da credencial (hyperliquid)                   OK   credencial: 9 casos · 9 ok · 0 divergentes
+casos do manifesto (hyperliquid)                    OK   manifesto: 16 casos · 16 ok · 0 divergentes · 16 declarados
+porta: imports do conector declarados na raiz       OK   {"porta":"dependencias","manifesto":"package.json","ficheiros_lidos":9,"imports_nus":1,"declaradas":["@nktkas/hyperliquid","ajv","viem"],"nao_declaradas":[],"veredicto":"aprovado"}
+porta: importa contracts, nunca o core (RN-E1)      OK   0 importacoes do core em brokers/hyperliquid
+conformidade do conector (duble de mesa)            OK   conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+prova negativa: defeito injectado tem de reprovar   OK   o defeito foi apanhado (1 caso(s) divergente(s))
+prova negativa: a conformidade reprova o defeito    OK   a conformidade reprovou o defeito (2 prova(s) nao passaram)
+curado: o reposto e byte a byte o original          OK   sha256 31633b6ea446...
+
+provas offline do conector: 0 falhas
+
+======================================================================================================
+$ bun tools/verificar-conector/conformidade.ts   (a bateria em detalhe)
+======================================================================================================
+=== bateria de conformidade do conector (offline, com duble de mesa) ===
+contrato vigente: 1.3.0 (lido de contracts/versao.json - nao ha versao escrita aqui)
+casos: tools/verificar-conector/casos-duble.json
+
+PROVA 1 — a forma: toda mensagem do conector contra o envelope e o esquema do seu tipo
+OK   — 13 mensagens do conector conferidas pelo motor do contrato (TS) e pelo duble de mesa (Python) · duble de mesa (conector): 0 falhas — 14 casos, cada um com o veredicto declarado · fidelidade: 0 falhas — o duble e o motor do contrato dao o mesmo veredicto nos mesmos casos (motor py: 12 casos conferidos contra o duble · motor ts: 12 casos conferidos contra o duble)
+
+PROVA 2 — as SETE portas do arranque: a ordem, a primeira que falha, e o motivo dela
+OK   — 11 casos (uma porta por caso, a ordem, e o caminho feliz) · 10 recusas com o motivo da porta · a ordem declarada confere com a do core
+
+PROVA 3 — as duas versoes: `versao` e o CONTRATO, `conector.versao` e o PLUGIN
+OK   — contrato 1.3.0 e plugin 9.9.9 (sentinela 9.9.9) · trocadas, o conferidor reprova
+
+PROVA 4 — o vocabulario fechado: quatro veredictos, e motivos lidos da FONTE
+OK   — 14 motivos do CONTRATO (de 16) e 10 da MESA (de 47, 22 deles na fronteira do comando) e 1 proprios do duble · 11 classificacoes dentro do conjunto e 1 declaradamente fora · 4 veredictos fechados, 4 exercitados · 2 provocacoes fora do vocabulario
+
+PROVA 5 — o manifesto e FUNCAO PURA da sonda: capacidade nao declarada RECUSA, nunca `true`
+OK   — 2 chamadas identicas · sonda intacta · 7 casos de capacidade ausente recusados com `capacidade_nao_declarada` · 7 booleanas conferidas contra a sonda
+
+PROVA 6 — a mesa NAO SAI quando a costura fecha (FR-006): conta-se o ledger, nao o tempo
+a costura fechou; a mesa continua em operacao (FR-006), estado em_operacao
+OK   — start aceite (em_operacao) · costura fechada · 8 volta(s) novas do relogio com o cano fechado (1 -> 9 linhas) · processo vivo: true
+
+PROVA 7 — a volta que ESPERA nao e acontecimento, e a RECUSA DE COMANDO transita X->X
+OK   — dentro do prazo: 1 -> 1 linhas (nada escrito) · fora do prazo: 1 -> 2 (1 linha) · recusa de comando: 2 -> 3 com motivo
+
+PROVA 8 — nenhum valor de credencial no repositorio (RN-E14), com os dois controlos
+OK   — 25 ficheiros varridos em brokers/, docs/ e config/ · 0 valores com forma de credencial · 2 controlos do varrimento · 9 ficheiros do conector conferidos, 0 escrita(s) com o valor
+
+PROVA 9 — instrumento que nao existe no manifesto: recusa NOMEADA, dos dois lados
+OK   — o conector recusa nomeando SOL na sonda · a mesa recusa na porta `manifesto` nomeando SOL na configuracao
+
+=== o que cada prova mediu ===
+passou     forma: 13 mensagens do conector conferidas pelo motor do contrato (TS) e pelo duble de mesa (Python) · duble de mesa (conector): 0 falhas — 14 casos, cada um com o veredicto declarado · fidelidade: 0 falhas — o duble e o motor do contrato dao o mesmo veredicto nos mesmos casos (motor py: 12 casos conferidos contra o duble · motor ts: 12 casos conferidos contra o duble)
+passou     sete portas: 11 casos (uma porta por caso, a ordem, e o caminho feliz) · 10 recusas com o motivo da porta · a ordem declarada confere com a do core
+passou     duas versoes: contrato 1.3.0 e plugin 9.9.9 (sentinela 9.9.9) · trocadas, o conferidor reprova
+passou     vocabulario: 14 motivos do CONTRATO (de 16) e 10 da MESA (de 47, 22 deles na fronteira do comando) e 1 proprios do duble · 11 classificacoes dentro do conjunto e 1 declaradamente fora · 4 veredictos fechados, 4 exercitados · 2 provocacoes fora do vocabulario
+passou     manifesto puro: 2 chamadas identicas · sonda intacta · 7 casos de capacidade ausente recusados com `capacidade_nao_declarada` · 7 booleanas conferidas contra a sonda
+passou     mesa sem vigia: start aceite (em_operacao) · costura fechada · 8 volta(s) novas do relogio com o cano fechado (1 -> 9 linhas) · processo vivo: true
+passou     espera e recusa no registo: dentro do prazo: 1 -> 1 linhas (nada escrito) · fora do prazo: 1 -> 2 (1 linha) · recusa de comando: 2 -> 3 com motivo
+passou     credenciais: 25 ficheiros varridos em brokers/, docs/ e config/ · 0 valores com forma de credencial · 2 controlos do varrimento · 9 ficheiros do conector conferidos, 0 escrita(s) com o valor
+passou     instrumento desconhecido: o conector recusa nomeando SOL na sonda · a mesa recusa na porta `manifesto` nomeando SOL na configuracao
+
+venue (as OITO provas de SC-004, no ambiente de TESTE da corretora): INCOMPLETO — nao corre offline; esta bateria nao tem rede nem chave, e esse aceite e outra bateria (RN-C6, FR-025).
+
+conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+
+======================================================================================================
+$ bash tools/verificar-maquina/tipos.sh   (`bun x tsc --noEmit` na raiz nao tem tsconfig: o tsc deste
+ repositorio corre por projecto, um directorio de cada vez - e e este o portao de tipos)
+======================================================================================================
+  core: 0 erros de tipo
+  vigia: 0 erros de tipo
+  tools: 0 erros de tipo
+  contracts: 0 erros de tipo
+tipos: 0 erros em 4 directorios (o tsc confere o produto e as bancadas)
+
+======================================================================================================
+BLOQUEIOS E ACHADOS DECLARADOS
+======================================================================================================
+1. core/ciclo/contenda.ts, `escalar()`: se o TETO (conta.margem_total_maxima_pct) tiver MAIS casas
+   decimais do que os saldos das fichas, `"0".repeat(c - casas(s))` recebe um numero negativo e o
+   arranque LANCA (RangeError) em vez de recusar com motivo nomeado - a porta da contenda deixa de
+   ser um portao. Nao foi corrigido: esta bateria so pode escrever quatro ficheiros, e este e do core.
+   Os casos de contenda desta bateria usam o mesmo numero de casas no teto e nos saldos (esta na nota
+   do caso) - e o defeito esta escrito aqui, em vez de escondido pela escolha dos numeros.
+2. A trava `.provar.lock` e a mesma do provar.sh: recusa correr com outra bateria a correr, e admite a
+   corrida quando a trava e de um ANTEPASSADO (sob o provar.sh nao ha impasse). Provado em TRES corridas
+   fora desta: trava com pid morto -> limpa e corre (exit 0); trava com pid vivo que nao e antepassado ->
+   RECUSADO (exit 1); trava do proprio antepassado -> corre (exit 0). A trava fica limpa no fim.

@@ -23,7 +23,29 @@
 //      casa invisivel decidiria quem fica de fora - um numero que ninguem escreveu decide uma recusa. A
 //      soma e feita em inteiros escalados (`BigInt`), pela mesma razao que o CB do recorte 002.
 
-export type CriterioDaContenda = "fifo" | "fifo_desempatado_por_simbolo";
+export type CriterioDaContenda = "fifo" | "fifo_desempatado_por_simbolo" | "recusada";
+
+/**
+ * O motivo da RECUSA da contenda: quando o tecto e os saldos nao partilham uma escala, nao ha soma
+ * comparavel a tecto nenhum, e a contenda nao se resolve por omissao (RN-M4.7).
+ *
+ * E um nome PROPRIO e exportado, e nao um texto solto no meio do codigo: quem le a recusa (a bancada, o
+ * registo) le o nome DAQUI. Comparar um motivo contra um literal escrito no consumidor nao mede
+ * vocabulario nenhum. Isto e o vocabulario da CONTENDA (uma funcao pura do core), e por isso nao vive em
+ * `contracts/vocabulario.json`, que e a lingua que cruza a fronteira entre processos — a contenda nao a
+ * cruza: o arranque le-a em processo e recusa com a porta `contenda` e o motivo `porta_do_arranque_falhou`.
+ */
+export const MOTIVO_DA_ESCALA = "escala_do_tecto_incompativel_com_os_saldos";
+
+/**
+ * Uma recusa COM NOME — o motivo e a razao dele. Substitui a excepcao: um numero que nao cabe na escala
+ * dos outros RECUSA-se, e recusa nomeia-se. Nao ha `null` em lado nenhum: ou o campo esta la, ou nao esta.
+ */
+export interface RecusaDaContenda {
+  motivo: string;
+  porque: string;
+}
+
 
 export interface PedidoDeContenda {
   instrumento: string;
@@ -46,15 +68,38 @@ export interface Contenda {
   admitidos: string[];
   de_fora: string[];
   porque: string;
+  /**
+   * A recusa, quando a contenda NAO se pode decidir: os numeros declarados nao sao comparaveis, e por
+   * isso nenhuma ficha entra. AUSENTE = a contenda decidiu — mesmo com `de_fora` cheio, que ai e a fila a
+   * ESPERAR (a politica do dono), nao uma recusa.
+   */
+  recusa?: RecusaDaContenda;
 }
 
 const casas = (s: string): number => (s.split(".")[1] ?? "").length;
-const escalar = (s: string, c: number): bigint => BigInt(s.replace(".", "") + "0".repeat(c - casas(s)));
+
+/**
+ * O valor de um decimal textual na escala `c` — ou `undefined` quando ele NAO CABE nessa escala (tem
+ * mais casas decimais do que ela admite).
+ *
+ * Era aqui o defeito: `"0".repeat(c - casas(s))` sem guarda recebia um numero NEGATIVO e lancava
+ * `RangeError: String.prototype.repeat argument must be greater than or equal to 0` — uma excepcao
+ * anonima no lugar de uma recusa com motivo, e um fail-closed que deixava de fechar. Um numero que nao
+ * cabe na escala dos outros NAO SE COMPARA: devolve-se `undefined`, e quem chama RECUSA pelo nome.
+ */
+const escalar = (s: string, c: number): bigint | undefined => {
+  const d = casas(s);
+  if (d > c) return undefined;
+  return BigInt(s.replace(".", "") + "0".repeat(c - d));
+};
 
 /** A soma dos saldos em inteiros escalados - nunca em ponto flutuante. */
 export function somarSaldos(pedidos: PedidoDeContenda[]): { total: bigint; casas: number } {
   const c = Math.max(0, ...pedidos.map((p) => casas(p.saldo_pct)));
-  return { total: pedidos.reduce((acc, p) => acc + escalar(p.saldo_pct, c), 0n), casas: c };
+  // `c` e o MAXIMO das casas dos saldos: cada saldo cabe nele por construcao, e e essa a unica razao de
+  // aqui poder afirmar o valor (a guarda da escala so pode disparar para um valor com MAIS casas do que
+  // a escala pedida - que aqui nao existe).
+  return { total: pedidos.reduce((acc, p) => acc + escalar(p.saldo_pct, c)!, 0n), casas: c };
 }
 
 /** A ordem de atendimento: chegada na mesa, e o simbolo so quando os instantes coincidem (ou faltam). */
@@ -77,14 +122,46 @@ function ordenarFifo(pedidos: PedidoDeContenda[]): PedidoDeContenda[] {
 export function resolverContenda(pedidos: PedidoDeContenda[], tectoPct: string): Contenda {
   const ordenados = ordenarFifo(pedidos);
   const { total, casas: c } = somarSaldos(pedidos);
+
+  const casasTxt = c === 0 ? "" : "0".repeat(0);
+  const emTexto = (v: bigint) => {
+    const s = v.toString().padStart(c + 1, "0");
+    return c === 0 ? s : `${s.slice(0, s.length - c)}.${s.slice(s.length - c)}`;
+  };
+
+  // O TECTO TEM DE CABER NA ESCALA DOS SALDOS — e um facto sobre os numeros DECLARADOS, e nao um detalhe
+  // de implementacao. Um tecto com mais casas do que TODOS os saldos (ex.: tecto `99.75` com saldos
+  // inteiros) nao cabe em inteiro nenhum na escala deles, e o tecto NAO se arredonda para o fazer caber
+  // (isso seria a mesa a decidir pelo dono): RECUSA-SE, pelo nome. Antes disto o motor lancava
+  // `RangeError` aqui e a porta da contenda deixava de ser um portao.
   const tecto = escalar(tectoPct, c);
+  if (tecto === undefined) {
+    const porque =
+      `O tecto declarado '${tectoPct}' tem ${casas(tectoPct)} casa(s) decimal(is) e os saldos das fichas ` +
+      `levam no maximo ${c}: com escalas diferentes nao ha soma comparavel a tecto nenhum, e arredondar ` +
+      "o tecto para o fazer caber esta fora do que a mesa pode fazer (o tecto e do dono, RN-M9). A " +
+      "contenda RECUSA e nenhuma ficha entra — nao se resolve por omissao (RN-M4.7).";
+    return {
+      soma: emTexto(total) + casasTxt,
+      tecto: tectoPct,
+      criterio: "recusada",
+      ordem: ordenados.map((p) => p.instrumento),
+      admitidos: [],
+      // Ninguem entra. Aqui `de_fora` NAO e a fila a esperar (essa e a politica do dono): e a RECUSA —
+      // quem a le tem de ler `recusa`, porque o nome do motivo vive la.
+      de_fora: ordenados.map((p) => p.instrumento),
+      porque,
+      recusa: { motivo: MOTIVO_DA_ESCALA, porque },
+    };
+  }
 
   const admitidos: string[] = [];
   let soma = 0n;
   let cortou = false;
   const deFora: string[] = [];
   for (const p of ordenados) {
-    const valor = escalar(p.saldo_pct, c);
+    // `c` e o maximo das casas dos saldos: o valor cabe sempre nesta escala (ver `somarSaldos`).
+    const valor = escalar(p.saldo_pct, c)!;
     if (!cortou && soma + valor <= tecto) {
       soma += valor;
       admitidos.push(p.instrumento);
@@ -110,12 +187,6 @@ export function resolverContenda(pedidos: PedidoDeContenda[], tectoPct: string):
       instante(ultimoDentro) !== null &&
       (instante(primeiroFora) as number) > (instante(ultimoDentro) as number));
   const criterio: CriterioDaContenda = decididoPeloInstante ? "fifo" : "fifo_desempatado_por_simbolo";
-
-  const casasTxt = c === 0 ? "" : "0".repeat(0);
-  const emTexto = (v: bigint) => {
-    const s = v.toString().padStart(c + 1, "0");
-    return c === 0 ? s : `${s.slice(0, s.length - c)}.${s.slice(s.length - c)}`;
-  };
 
   return {
     soma: emTexto(total) + casasTxt,

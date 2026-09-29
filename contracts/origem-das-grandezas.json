@@ -53,14 +53,16 @@
     "historico.execucoes[].taxa": {"origem": "venue", "regra": "RN-C11"},
     "historico.execucoes[].funding": {"origem": "venue", "regra": "RN-C11"},
 
-    "manifesto.teto_de_valor_por_ordem": {"origem": "venue", "regra": "RN-C1: declarado pelo venue no manifesto"},
+    "manifesto.minimo_de_valor_por_ordem": {"origem": "venue", "regra": "RN-C1: e o PISO do venue, declarado no manifesto — quem o mede e a bateria de conformidade (prova 2). Antes da 1.4.0 este valor viajava com o nome `teto_de_valor_por_ordem`, que mentia"},
+    "manifesto.maximo_de_valor_por_ordem": {"origem": "venue", "regra": "RN-C1: aditivo na 1.4.0; ausente quando o venue nao o declara"},
     "manifesto.desvio_maximo": {"origem": "venue", "regra": "RN-C1"},
     "manifesto.profundidade_de_livro": {"origem": "venue", "regra": "RN-C1"},
     "manifesto.instrumentos[].minimo": {"origem": "venue", "regra": "RN-C1"},
     "manifesto.instrumentos[].passo": {"origem": "venue", "regra": "RN-C1"},
     "manifesto.instrumentos[].tick": {"origem": "venue", "regra": "RN-C1"},
     "manifesto.instrumentos[].alavancagem_maxima": {"origem": "venue", "regra": "RN-C1"},
-    "manifesto.instrumentos[].alavancagem_por_escalao[].ate": {"origem": "venue", "regra": "RN-C1"},
+    "manifesto.instrumentos[].funding_intervalo_horas": {"origem": "venue", "regra": "RN-C1: aditivo na 1.4.0 — a cadencia do funding por instrumento (`fundingIntervalHours`), onde o venue a declara"},
+    "manifesto.instrumentos[].alavancagem_por_escalao[].de": {"origem": "venue", "regra": "RN-C1: aditivo na 1.4.0 — o limite INFERIOR de cada escalao (`marginTiers[].lowerBound`); zero e legitimo no primeiro"},
     "manifesto.instrumentos[].alavancagem_por_escalao[].maxima": {"origem": "venue", "regra": "RN-C1"}
   },
   "prefixos": {

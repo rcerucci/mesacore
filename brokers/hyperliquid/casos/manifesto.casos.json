@@ -1,5 +1,5 @@
 {
-  "nota": "Casos da sonda e do manifesto (FR-001 a FR-005). A `sonda_base` e a resposta do venue como ela chega — o formato segue a resposta real (meta.universe com name/szDecimals/maxLeverage), e cada caso muda so o que quer medir. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que o manifesto afirma, e a versao do contrato vem de contracts/versao.json.",
+  "nota": "Casos da sonda e do manifesto (FR-001 a FR-005). A `sonda_base` e a resposta do venue como ela chega — as chaves de `meta.universe` sao as do VENUE (`isDelisted`, `fundingIntervalHours`, `marginTiers[].lowerBound`), tal como ele as escreve, e o manifesto e que as traduz. Cada caso muda so o que quer medir. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que o manifesto afirma, e a versao do contrato vem de contracts/versao.json. EMENDA 1.4.0: o minimo de valor por ordem, a cadencia do funding por instrumento, os escaloes em limite INFERIOR e o deslistado atravessam o contrato; os casos desta emenda estao no fim.",
   "sonda_base": {
     "venue": {
       "nome": "hyperliquid",
@@ -11,7 +11,22 @@
         {
           "name": "BTC",
           "szDecimals": 5,
-          "maxLeverage": 40
+          "maxLeverage": 40,
+          "fundingIntervalHours": 1,
+          "marginTiers": [
+            {
+              "lowerBound": "0.0",
+              "maxLeverage": 40
+            },
+            {
+              "lowerBound": "10000.0",
+              "maxLeverage": 25
+            },
+            {
+              "lowerBound": "50000.0",
+              "maxLeverage": 10
+            }
+          ]
         },
         {
           "name": "ETH",
@@ -53,20 +68,24 @@
       "esperadoOk": true,
       "conferir": {
         "conector.nome": "hyperliquid",
-        "versao": "1.3.0",
+        "versao": "1.4.0",
         "instrumentos.0.simbolo": "BTC",
         "instrumentos.0.passo": "0.00001",
         "instrumentos.0.tick": "0.1",
         "instrumentos.0.alavancagem_maxima": "40",
-        "teto_de_valor_por_ordem": "10",
         "modelo_de_posicao": "netting",
         "idempotencia": true,
         "marca_de_posse": "cloid",
         "marca_liga_ordem_a_posicao": false,
         "stop_anexo": false,
         "reduce_only_suportado": true,
-        "estado_do_mercado": true
-      }
+        "estado_do_mercado": true,
+        "minimo_de_valor_por_ordem": "10",
+        "instrumentos.0.funding_intervalo_horas": 1,
+        "instrumentos.0.alavancagem_por_escalao.0.de": "0.0",
+        "instrumentos.0.alavancagem_por_escalao.2.maxima": "10"
+      },
+      "nota": "A sonda inteira: o manifesto confere contra o esquema do contrato e declara o piso de valor por ordem (nome da 1.4.0), a cadencia do funding e os escaloes do venue tal como ele os da."
     },
     {
       "caso": "manifesto/mudanca-no-venue-muda-o-manifesto",
@@ -224,6 +243,170 @@
       "motivo_esperado": "capacidade_nao_declarada",
       "sonda": {
         "estado_do_mercado": null
+      }
+    },
+    {
+      "caso": "manifesto/instrumento-deslistado-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "instrumento_deslistado_no_venue",
+      "nota": "DEFEITO 4 medido: o venue lista o instrumento e declara `isDelisted: true` (medido: 54 de 212 instrumentos; MATIC e um deles). O mandato que o nomeia RECUSA, com motivo proprio — existir no universo nao e estar a venda. O `maxLeverage`/`szDecimals` da entrada sao os de uma entrada de universo qualquer: a recusa tem de vir do DESLISTADO, e nao de uma unidade que falte.",
+      "sonda": {
+        "instrumentos_pedidos": [
+          "BTC",
+          "MATIC"
+        ],
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 40,
+              "fundingIntervalHours": 1,
+              "marginTiers": [
+                {
+                  "lowerBound": "0.0",
+                  "maxLeverage": 40
+                },
+                {
+                  "lowerBound": "10000.0",
+                  "maxLeverage": 25
+                },
+                {
+                  "lowerBound": "50000.0",
+                  "maxLeverage": 10
+                }
+              ]
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25
+            },
+            {
+              "name": "MATIC",
+              "szDecimals": 1,
+              "maxLeverage": 25,
+              "isDelisted": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "caso": "manifesto/escaloes-do-venue-em-limite-inferior",
+      "esperadoOk": true,
+      "nota": "DEFEITO 2: o venue da o limite INFERIOR de cada escalao (`lowerBound`), e o primeiro e `0.0` — que nao era `decimal_positivo`. O manifesto declara-os com o nome do contrato (`de`), e o primeiro escalao a zero atravessa.",
+      "conferir": {
+        "instrumentos.0.alavancagem_por_escalao.0.de": "0.0",
+        "instrumentos.0.alavancagem_por_escalao.0.maxima": "40",
+        "instrumentos.0.alavancagem_por_escalao.1.de": "10000.0",
+        "instrumentos.0.alavancagem_por_escalao.2.de": "50000.0",
+        "instrumentos.0.alavancagem_por_escalao.2.maxima": "10"
+      }
+    },
+    {
+      "caso": "manifesto/cadencia-do-funding-por-instrumento",
+      "esperadoOk": true,
+      "nota": "DEFEITO 3: a cadencia e POR INSTRUMENTO no venue (`fundingIntervalHours`), e atravessa o contrato em `funding_intervalo_horas`. Medido no venue: `HlPerp` = 1 hora em todos os 212 instrumentos, e a mesma resposta traz 8 horas para outras modalidades — e por isso que o campo nao pode ser um so numero do venue. Os dois valores deste caso sao medidos; o que o caso mede e o caminho por instrumento.",
+      "sonda": {
+        "instrumentos_pedidos": [
+          "BTC",
+          "ETH"
+        ],
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 40,
+              "fundingIntervalHours": 1,
+              "marginTiers": [
+                {
+                  "lowerBound": "0.0",
+                  "maxLeverage": 40
+                },
+                {
+                  "lowerBound": "10000.0",
+                  "maxLeverage": 25
+                },
+                {
+                  "lowerBound": "50000.0",
+                  "maxLeverage": 10
+                }
+              ]
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25,
+              "fundingIntervalHours": 8
+            }
+          ]
+        }
+      },
+      "conferir": {
+        "instrumentos.0.funding_intervalo_horas": 1,
+        "instrumentos.1.funding_intervalo_horas": 8
+      }
+    },
+    {
+      "caso": "manifesto/maximo-do-venue-declarado-entra",
+      "esperadoOk": true,
+      "nota": "O TECTO e aditivo (1.4.0) e entra so quando a sonda o declara. O venue de teste NAO publica maximo nenhum hoje (medido): este caso exercita o caminho do campo, com uma sonda que o declara — o manifesto sem ele continua valido e nao inventa limite (ver `manifesto/sonda-completa-ok`).",
+      "sonda": {
+        "maximo_de_valor_por_ordem": "50000"
+      },
+      "conferir": {
+        "minimo_de_valor_por_ordem": "10",
+        "maximo_de_valor_por_ordem": "50000"
+      }
+    },
+    {
+      "caso": "manifesto/mandato-deslistado-recusa-antes-de-tudo",
+      "esperadoOk": false,
+      "motivo_esperado": "instrumento_deslistado_no_venue",
+      "nota": "A ORDEM das recusas tambem e' uma decisao: este mandato nomeia um instrumento deslistado E a sonda ainda nao trouxe o minimo de valor por ordem (numa sonda real e' sempre assim — o minimo so a bateria de conformidade o mede). O que sai e' `instrumento_deslistado_no_venue`, e nao a recusa por campo em falta: um mandato que pede um instrumento encerrado e' o problema mais grave, e tem de ser NOMEADO.",
+      "sonda": {
+        "instrumentos_pedidos": [
+          "BTC",
+          "MATIC"
+        ],
+        "minimo_de_valor_por_ordem": null,
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 40,
+              "fundingIntervalHours": 1,
+              "marginTiers": [
+                {
+                  "lowerBound": "0.0",
+                  "maxLeverage": 40
+                },
+                {
+                  "lowerBound": "10000.0",
+                  "maxLeverage": 25
+                },
+                {
+                  "lowerBound": "50000.0",
+                  "maxLeverage": 10
+                }
+              ]
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25
+            },
+            {
+              "name": "MATIC",
+              "szDecimals": 1,
+              "maxLeverage": 25,
+              "isDelisted": true
+            }
+          ]
+        }
       }
     }
   ]

@@ -10,6 +10,7 @@ Le uma boleta (unidades neutras) e devolve, por esta ordem:
     ... --desfecho parcial | recusado | desconhecido
     ... --silencioso          # nao responde: a mesa tem de registar DESCONHECIDO (RN-T7.1)
     ... --preco 1.05000       # muda o preco simulado (para provocar a recusa por minimo)
+    ... --manifesto outro.json # confere contra OUTRO manifesto (o de omissao e o fixture ao lado)
 
 Regras que este mock tem de cumprir, e que se veem no codigo:
 
@@ -20,6 +21,20 @@ Regras que este mock tem de cumprir, e que se veem no codigo:
   - Dinheiro em DECIMAL, nunca em virgula flutuante (D4).
   - O conector nao decide se se deve operar: nao ve estrategia, mandato nem fichas. Se um dia
     precisar de ver, o contrato esta errado.
+
+EMENDA 1.4.0 do contrato (medida contra o venue; ver specs/004-conector-hyperliquid/relatorios/
+emenda-1.4.0.txt). O campo que aqui se chamava `teto_de_valor_por_ordem` carregava o MINIMO de valor por
+ordem do venue e era usado como TECTO (`nocional > teto`): recusava exactamente os nocionais que o venue
+aceita e deixava passar os que ele recusa. Agora:
+
+  - `minimo_de_valor_por_ordem` e o PISO: nocional ABAIXO dele RECUSA (`valor_abaixo_do_minimo_do_venue`);
+    nocional IGUAL ao piso PASSA (um minimo e um piso, nao um «acima de»);
+  - `maximo_de_valor_por_ordem` e o TECTO, e so existe quando o venue o declara (aditivo): ausente nao e
+    «ilimitado», e nao medido — e nao se recusa por um limite que ninguem escreveu;
+  - o escalao de alavancagem passou a declarar o limite INFERIOR (`de`, o primeiro a zero, como o venue o
+    da), e o escalao de um valor e o de maior `de` que nao o excede; um valor que escalao nenhum cubra
+    RECUSA em vez de cair na maxima unica por omissao;
+  - um instrumento que o manifesto declare `deslistado` RECUSA (`instrumento_deslistado_no_venue`).
 """
 
 from __future__ import annotations
@@ -74,8 +89,21 @@ def recusa(identificador: str, motivo: str, resposta: dict, resolucao: dict | No
     return 0
 
 
+def manifesto_em_vigor() -> dict:
+    """O manifesto contra o qual se confere: o fixture ao lado, ou `--manifesto <ficheiro>`.
+
+    O argumento existe para se poder conferir contra um manifesto DIFERENTE sem mexer no fixture —
+    e o que permite provar a recusa por instrumento deslistado sem deixar um instrumento morto
+    declarado no manifesto com que todas as outras contas correm.
+    """
+    indicado = argumento("--manifesto")
+    caminho = Path(indicado) if indicado is not None else AQUI / "manifesto.json"
+    documento = ler_json(caminho)
+    return documento.get("carga", documento)
+
+
 def main() -> int:
-    manifesto = ler_json(AQUI / "manifesto.json")["carga"]
+    manifesto = manifesto_em_vigor()
     conta = ler_json(AQUI / "conta.json")
 
     texto = sys.stdin.read().strip()
@@ -104,6 +132,16 @@ def main() -> int:
             {"erro": "instrumento_sem_unidades_declaradas", "instrumento": instrumento},
         )
     unidade = unidades[instrumento]
+
+    # DESLISTADO (emenda 1.4.0): um instrumento que o manifesto declare deslistado nao se opera — existir
+    # no manifesto nao e estar a venda. Recusa nomeada, e antes das capacidades: nao se discute o que a
+    # boleta pede para um instrumento que o venue deu por encerrado.
+    if unidade.get("deslistado") is True:
+        return recusa(
+            identificador,
+            "instrumento_deslistado_no_venue",
+            {"erro": "instrumento_deslistado_no_venue", "instrumento": instrumento},
+        )
 
     for capacidade, declaradas in (
         ("tipo", manifesto["tipos_de_ordem"]),
@@ -184,7 +222,6 @@ def main() -> int:
         )
 
     nocional = quantizar(quantidade * preco, CENTAVO)
-    teto = Decimal(manifesto["teto_de_valor_por_ordem"])
     resolucao = {
         "quantidade": str(quantidade),
         "nocional": str(nocional),
@@ -192,13 +229,57 @@ def main() -> int:
         "alavancagem_efectiva": str(pedida),
         "preco_de_liquidacao": str(quantizar(preco * (1 - 1 / pedida), Decimal(unidade["tick"]))),
     }
-    if nocional > teto:
+
+    # PISO de valor por ordem (emenda 1.4.0): ABAIXO dele o venue recusa a ordem, e IGUAL a ele passa —
+    # um minimo e um piso, nao um «acima de». Este valor era lido como TECTO ate a 1.3.0 (`nocional >
+    # teto`), o que recusava os nocionais grandes que o venue aceita e aceitava os pequenos que ele
+    # recusa: os dois lados ao contrario.
+    piso = Decimal(manifesto["minimo_de_valor_por_ordem"])
+    if nocional < piso:
+        return recusa(
+            identificador,
+            "valor_abaixo_do_minimo_do_venue",
+            {"erro": "nocional_abaixo_do_minimo_do_venue", "nocional": str(nocional), "minimo": str(piso),
+             "nota": "o venue recusa ordens abaixo deste valor"},
+            resolucao,
+        )
+
+    # TECTO de valor por ordem: so existe quando o venue o declara. Ausente nao e «ilimitado» — e nao
+    # medido, e nao se recusa por um limite que ninguem escreveu (aditivo na 1.4.0).
+    maximo = Decimal(manifesto["maximo_de_valor_por_ordem"]) if "maximo_de_valor_por_ordem" in manifesto else None
+    if maximo is not None and nocional > maximo:
         return recusa(
             identificador,
             "valor_fora_da_banda",
-            {"erro": "nocional_acima_do_teto", "nocional": str(nocional), "teto": str(teto)},
+            {"erro": "nocional_acima_do_maximo", "nocional": str(nocional), "maximo": str(maximo)},
             resolucao,
         )
+
+    # O ESCALAO de alavancagem do valor real. O escalao de um valor e o de maior `de` (limite INFERIOR)
+    # que nao o excede — a forma como o venue o declara (`marginTiers[].lowerBound`, primeiro a `0.0`).
+    # Um valor que escalao nenhum cubra nao tem maxima declarada: RECUSA, em vez de cair na maxima unica
+    # por omissao (seria a mesa a decidir em lugar do venue).
+    escaloes = unidade.get("alavancagem_por_escalao") or []
+    if escaloes:
+        cobrem = [escalao for escalao in escaloes if Decimal(escalao["de"]) <= nocional]
+        if not cobrem:
+            return recusa(
+                identificador,
+                "valor_fora_da_banda",
+                {"erro": "nocional_fora_de_todos_os_escaloes", "nocional": str(nocional),
+                 "limites_inferiores": [escalao["de"] for escalao in escaloes]},
+                resolucao,
+            )
+        escalao = max(cobrem, key=lambda candidato: Decimal(candidato["de"]))
+        maxima_do_escalao = min(Decimal(escalao["maxima"]), maxima)
+        if pedida > maxima_do_escalao:
+            return recusa(
+                identificador,
+                "valor_fora_da_banda",
+                {"erro": "alavancagem_acima_da_maxima_do_escalao", "pedida": str(pedida),
+                 "maxima": str(maxima_do_escalao), "de": str(escalao["de"])},
+                resolucao,
+            )
 
     # 3. a resolucao vai PRIMEIRO: quem decide ve o que vai ser enviado antes de ser enviado
     emitir({"_tipo": "resolucao", **resolucao}, f"{identificador}/resolucao")

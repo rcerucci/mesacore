@@ -22,7 +22,10 @@ class AlavancagemPorEscalaoItem(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    ate: forma_schema.DecimalPositivo
+    de: forma_schema.DecimalNaoNegativo = Field(
+        ...,
+        description='Limite INFERIOR do escalao. `0` e valor legitimo: o primeiro escalao do venue comeca em `0.0` (medido) — e um `decimal_positivo` recusava-o, que foi o defeito que esta emenda corrige.',
+    )
     maxima: forma_schema.DecimalPositivo
 
 
@@ -35,9 +38,18 @@ class Instrumento(BaseModel):
     passo: forma_schema.DecimalPositivo
     tick: forma_schema.DecimalPositivo
     alavancagem_maxima: forma_schema.DecimalPositivo
+    deslistado: bool | None = Field(
+        None,
+        description='O venue lista o instrumento como DESLISTADO (`isDelisted`). Ausente = o venue nao o declarou para este instrumento — e ausencia NAO e `false`: o venue de teste so escreve a chave quando ela e verdadeira (medido: 54 de 212). Um mandato que nomeie um deslistado RECUSA (`instrumento_deslistado_no_venue`); o campo existe para o facto ter onde ser declarado, e para a mesa poder recusar uma boleta sobre um manifesto que o traga.',
+    )
+    funding_intervalo_horas: conint(ge=1) | None = Field(
+        None,
+        description='De quanto em quanto tempo o venue cobra funding, em HORAS, como o venue o declara (`predictedFundings()[coin][HlPerp].fundingIntervalHours`, medido: 1 para os 212 instrumentos). POR INSTRUMENTO, e nao por venue: e onde o venue o declara, e a mesma resposta traz 8 horas para os perps de outras corretoras. Ausente = nao declarado para este instrumento.',
+    )
     alavancagem_por_escalao: list[AlavancagemPorEscalaoItem] | None = Field(
         None,
-        description='Escaloes de valor com maxima proprio. Ausente = vale a maxima unica.',
+        description='Escaloes de valor com maxima proprio. Ausente = vale a maxima unica. Cada escalao declara o seu limite INFERIOR (`de`) — a forma como o venue o da (`marginTiers[].lowerBound`, com o primeiro a `0.0`): o escalao de um valor e o maior `de` que nao o excede. O primeiro escalao a zero e legitimo, e e o que cobre os valores baixos; um valor que nenhum `de` cubra nao tem escalao, e a conferencia RECUSA.',
+        min_length=1,
     )
 
 
@@ -96,9 +108,13 @@ class ManifestoDoConector(BaseModel):
     )
     sabe_ajustar_alavancagem: bool
     modos_de_margem: list[ModosDeMargemEnum] = Field(..., min_length=1)
-    teto_de_valor_por_ordem: forma_schema.DecimalPositivo = Field(
+    minimo_de_valor_por_ordem: forma_schema.DecimalPositivo = Field(
         ...,
-        description='Teto de valor por ordem imposto pelo venue. Nao e o limite do dono: e o do venue, e a mesa confere contra ele antes de enviar.',
+        description='PISO de valor por ordem imposto pelo venue: abaixo dele o venue RECUSA a ordem. Nao e o limite do dono, nem um tecto — e o minimo OBSERVADO no venue (Hyperliquid: $10, §5.d da regra de negocio; quem o mede e a bateria de conformidade). A mesa confere-o antes de enviar, e igual ao minimo PASSA.',
+    )
+    maximo_de_valor_por_ordem: forma_schema.DecimalPositivo | None = Field(
+        None,
+        description='TECTO de valor por ordem, quando o venue o declara. ADITIVO na 1.4.0: o campo que existia chamava-se `teto_de_valor_por_ordem` e carregava o MINIMO — o nome mentia. Ausente = o venue nao declarou tecto nenhum (ausencia nao e «ilimitado»: e nao medido), e a mesa nao inventa um.',
     )
     modelo_de_posicao: ModeloDePosicao
     tipos_de_ordem: list[TiposDeOrdemEnum] = Field(..., min_length=1)

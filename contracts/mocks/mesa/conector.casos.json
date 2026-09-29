@@ -10,7 +10,7 @@
       "nota": "a posicao existe inteira - este caso corre contra o mock de conector do recorte 001 (FR-031)",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "desfecho",
         "id": "d-1",
         "carga": {
@@ -29,7 +29,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -56,7 +56,7 @@
       "nota": "sabe-se exactamente o que ficou: parcial nao e desconhecido",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "desfecho",
         "id": "d-1",
         "carga": {
@@ -75,7 +75,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -101,7 +101,7 @@
       "nota": "o venue nao disse o que se passou - e a mesa tem de poder ouvir isso",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "desfecho",
         "id": "d-1",
         "carga": {
@@ -120,7 +120,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -146,7 +146,7 @@
       "nota": "recusa limpa, com a resolucao a zero e o MOTIVO da corretora: um desfecho recusado sem motivo nao diz o que se passou",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "desfecho",
         "id": "d-1",
         "carga": {
@@ -166,7 +166,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -192,7 +192,7 @@
       "nota": "a classificacao e do conjunto fechado das quatro",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "desfecho",
         "id": "d-1",
         "carga": {
@@ -211,7 +211,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -237,7 +237,7 @@
       "nota": "sem a resolucao nao ha numeros: o desfecho nao se aceita pela palavra",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "desfecho",
         "id": "d-2",
         "carga": {
@@ -249,7 +249,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -275,7 +275,7 @@
       "nota": "ADVERSARIO: numeros em unidade de corretora (pontos, do vocabulario) - quem converte e a mesa",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "desfecho",
         "id": "d-3",
         "carga": {
@@ -295,7 +295,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -318,10 +318,10 @@
       "nome": "desfecho-de-versao-a-frente",
       "veredicto_esperado": "recusado",
       "motivo_esperado": "versao_do_contrato_divergente",
-      "nota": "ADVERSARIO: a versao a frente tambem e divergente - igualdade exacta, nao 'compativel'",
+      "nota": "ADVERSARIO: a versao a frente (1.5.0, que nao existe em lado nenhum) tambem e divergente — igualdade exacta, nao 'compativel' (D7).",
       "prazo_de_resposta_ms": 3000,
       "resposta_do_plugin": {
-        "contrato": "1.4.0",
+        "contrato": "1.5.0",
         "tipo": "desfecho",
         "id": "d-4",
         "carga": {
@@ -340,7 +340,7 @@
         }
       },
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -367,7 +367,7 @@
       "modo_adversario": "silencio",
       "prazo_de_resposta_ms": 3000,
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {
@@ -395,7 +395,7 @@
       "chegada_ms": 20000,
       "prazo_de_resposta_ms": 3000,
       "boleta": {
-        "contrato": "1.3.0",
+        "contrato": "1.4.0",
         "tipo": "boleta",
         "id": "b-1",
         "carga": {

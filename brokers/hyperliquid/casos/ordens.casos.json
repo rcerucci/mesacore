@@ -1,0 +1,271 @@
+{
+  "nota": "Casos da TRADUCAO DE ORDENS e do CLOID (FR-006 a FR-011; RN-H4 a RN-H9). A boleta e o manifesto entram como DADO, e os dois numeros que so o conector tem (saldo e preco) entram como DADO tambem — por isso isto corre offline, sem rede e sem chave. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que a traducao AFIRMA. Os casos adversarios (preco fora da regra, alavancagem fora do intervalo, abaixo do minimo, capacidade nao declarada) valem tanto como os felizes: um conector que so sabe dizer sim prova a fiacao, nao o comportamento.",
+  "conta_de_teste": "0x00000000000000000000000000000000000000ab",
+  "manifesto_base": {
+    "conector": { "nome": "hyperliquid", "versao": "0.1.0" },
+    "instrumentos": [
+      { "simbolo": "BTC", "minimo": "0.00001", "passo": "0.00001", "tick": "0.1", "alavancagem_maxima": "40" }
+    ],
+    "sabe_ajustar_alavancagem": true,
+    "modos_de_margem": ["cruzado", "isolado"],
+    "minimo_de_valor_por_ordem": "10",
+    "modelo_de_posicao": "netting",
+    "tipos_de_ordem": ["mercado", "limite"],
+    "parcial_suportada": ["o_que_der"],
+    "desvio_maximo": "0.5",
+    "reduce_only_suportado": true,
+    "stop_anexo": false,
+    "profundidade_de_livro": 5,
+    "funding": true,
+    "relogio_de_fecho_de_barra": "continuo",
+    "idempotencia": true,
+    "marca_de_posse": "cloid",
+    "marca_liga_ordem_a_posicao": false,
+    "estado_do_mercado": true
+  },
+  "boleta_base": {
+    "instrumento": "BTC",
+    "lado": "buy",
+    "tipo": "mercado",
+    "saldo_pct": "10",
+    "alavancagem": "5",
+    "parcial": "o_que_der",
+    "desvio_maximo": "0.5",
+    "prazo_da_passiva_ms": 0,
+    "destino_do_resto": "cancelar",
+    "reduce_only": false,
+    "referencia_do_cliente": "ciclo-1/linha-1",
+    "marca_de_posse": 7
+  },
+  "pedido_base": {
+    "saldo": "1000",
+    "preco": "60000"
+  },
+  "casos": [
+    {
+      "caso": "ordens/mercado-aceite-com-numeros-calculados",
+      "esperadoOk": true,
+      "conferir": {
+        "instrumento": "BTC",
+        "lado": "buy",
+        "tipo": "mercado",
+        "tif": "Ioc",
+        "quantidade": "0.00833",
+        "preco": "60000",
+        "nocional": "499.8",
+        "alavancagem": "5",
+        "reduce_only": false
+      }
+    },
+    {
+      "caso": "ordens/limite-post-only-aceite-e-preco-exacto",
+      "esperadoOk": true,
+      "boleta": { "tipo": "limite" },
+      "preco": "1234.5",
+      "conferir": {
+        "tipo": "limite",
+        "tif": "Alo",
+        "preco": "1234.5",
+        "quantidade": "0.40502",
+        "nocional": "499.99719"
+      }
+    },
+    {
+      "caso": "ordens/preco-inteiro-de-6-algarismos-aceite",
+      "esperadoOk": true,
+      "boleta": { "tipo": "limite" },
+      "preco": "123456",
+      "conferir": { "preco": "123456", "quantidade": "0.00405", "nocional": "499.9968" }
+    },
+    {
+      "caso": "ordens/preco-com-6-algarismos-significativos-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda",
+      "boleta": { "tipo": "limite" },
+      "preco": "12345.6"
+    },
+    {
+      "caso": "ordens/preco-com-casas-a-mais-do-que-o-tick-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda",
+      "boleta": { "tipo": "limite" },
+      "preco": "1.2345"
+    },
+    {
+      "caso": "ordens/preco-com-expoente-nao-e-decimal-do-contrato",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "preco": "1e5"
+    },
+    {
+      "caso": "ordens/alavancagem-1-aceite",
+      "esperadoOk": true,
+      "boleta": { "alavancagem": "1" },
+      "conferir": { "alavancagem": "1", "quantidade": "0.00166", "nocional": "99.6" }
+    },
+    {
+      "caso": "ordens/alavancagem-2-aceite",
+      "esperadoOk": true,
+      "boleta": { "alavancagem": "2" },
+      "conferir": { "alavancagem": "2" }
+    },
+    {
+      "caso": "ordens/alavancagem-17-aceite-nao-e-degrau-nenhum",
+      "esperadoOk": true,
+      "boleta": { "alavancagem": "17" },
+      "conferir": { "alavancagem": "17" }
+    },
+    {
+      "caso": "ordens/alavancagem-no-maximo-do-instrumento-aceite",
+      "esperadoOk": true,
+      "boleta": { "alavancagem": "40" },
+      "conferir": { "alavancagem": "40", "quantidade": "0.06666", "nocional": "3999.6" }
+    },
+    {
+      "caso": "ordens/alavancagem-acima-do-maximo-recusa-e-nomeia-o-maximo",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda",
+      "boleta": { "alavancagem": "41" }
+    },
+    {
+      "caso": "ordens/alavancagem-nao-inteira-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "boleta": { "alavancagem": "2.5" }
+    },
+    {
+      "caso": "ordens/alavancagem-zero-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "boleta": { "alavancagem": "0" }
+    },
+    {
+      "caso": "ordens/ordem-abaixo-do-minimo-de-10-usd-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
+      "boleta": { "saldo_pct": "1", "alavancagem": "1" },
+      "saldo": "100",
+      "preco": "60000"
+    },
+    {
+      "caso": "ordens/quantidade-abaixo-do-passo-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
+      "boleta": { "saldo_pct": "0.001", "alavancagem": "1" },
+      "saldo": "1000",
+      "preco": "60000"
+    },
+    {
+      "caso": "ordens/reduce-only-pedido-e-honrado",
+      "esperadoOk": true,
+      "boleta": { "reduce_only": true },
+      "conferir": { "reduce_only": true }
+    },
+    {
+      "caso": "ordens/reduce-only-nao-declarado-no-manifesto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": { "reduce_only": true },
+      "manifesto": { "reduce_only_suportado": false }
+    },
+    {
+      "caso": "ordens/tipo-de-ordem-nao-declarado-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": { "tipo": "stop" }
+    },
+    {
+      "caso": "ordens/parcial-nao-suportada-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": { "parcial": "tudo_ou_nada" }
+    },
+    {
+      "caso": "ordens/instrumento-fora-do-manifesto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "instrumento_desconhecido_no_manifesto",
+      "boleta": { "instrumento": "ETH" }
+    },
+    {
+      "caso": "ordens/lado-fora-de-buy-sell-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "boleta": { "lado": "hold" }
+    },
+    {
+      "caso": "ordens/saldo-nulo-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_nulo_nao_permitido",
+      "saldo": null
+    },
+    {
+      "caso": "ordens/preco-ausente-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sem": ["preco"]
+    },
+    {
+      "caso": "ordens/referencia-fora-da-forma-do-contrato-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "boleta": { "referencia_do_cliente": "referencia com espaco" }
+    },
+    {
+      "caso": "ordens/marca-de-posse-que-nao-e-cloid-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "manifesto": { "marca_de_posse": "comment" }
+    },
+    {
+      "caso": "ordens/venue-sem-verbo-de-alavancagem-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "manifesto": { "sabe_ajustar_alavancagem": false }
+    }
+  ],
+  "checagens_de_cloid": [
+    {
+      "caso": "cloid/mesma-referencia-da-sempre-o-mesmo-cloid",
+      "instrumento": "BTC",
+      "referencia": "ciclo-1/linha-1",
+      "outra_referencia": "ciclo-1/linha-2",
+      "repeticoes": 3
+    },
+    {
+      "caso": "cloid/referencia-com-barras-e-dois-pontos-nao-vai-crua",
+      "instrumento": "BTC",
+      "referencia": "ciclo-2026/linha:7",
+      "outra_referencia": "ciclo-2026/linha:8",
+      "repeticoes": 2
+    },
+    {
+      "caso": "cloid/instrumento-diferente-da-cloid-diferente",
+      "instrumento": "BTC",
+      "referencia": "ciclo-1/linha-1",
+      "outra_referencia": "ciclo-1/linha-1",
+      "outro_instrumento": "ETH",
+      "repeticoes": 2
+    }
+  ],
+  "checagens_de_recusa_do_cloid": [
+    {
+      "caso": "cloid/referencia-com-espaco-recusa",
+      "instrumento": "BTC",
+      "referencia": "referencia com espaco",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "caso": "cloid/instrumento-fora-da-forma-recusa",
+      "instrumento": "btc",
+      "referencia": "ciclo-1/linha-1",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "caso": "cloid/conta-nula-recusa",
+      "conta": null,
+      "instrumento": "BTC",
+      "referencia": "ciclo-1/linha-1",
+      "motivo_esperado": "valor_nulo_nao_permitido"
+    }
+  ]
+}

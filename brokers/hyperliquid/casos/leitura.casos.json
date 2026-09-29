@@ -1,0 +1,421 @@
+{
+  "nota": "Casos da LEITURA DA CONTA (T071, FR-016 a FR-018) em DADO — sem rede e sem chave. A base `real` e a leitura COMO O VENUE A DEU, medida a 29 set 2026 em https://api.hyperliquid-testnet.xyz contra a conta publica 0xF87138D298E338962E1a2e0ff23267Dc32c15621, e transcrita em specs/004-conector-hyperliquid/relatorios/sonda-real.txt §3.1: as DUAS carteiras com os seus numeros (perpetuo 998.46, spot USDC 0.004965), ZERO posicoes, o instante DO VENUE e o agente que assina por esta conta. A base `com_posicao` NAO e uma medicao do venue: e o DUBLE DECLARADO no mesmo relatorio (§3.2, provas 3 e 4) — os numeros da posicao (entryPx 80000, positionValue 805, marginUsed 80.5, unrealizedPnl 5, liquidationPx 72000, marca 80500) estao la declarados como duble, e cada caso que os usa di-lo na sua nota. O `null` que aparece nestes casos e o do VENUE (`liquidationPx` a null, medido): e ENTRADA sob prova, nunca saida do contrato — e o corredor reprova qualquer `null` que a leitura deixe passar. O corredor confere `esperadoOk`, o `motivo` (contra o conjunto FECHADO do contrato), o `porque` quando o caso o fixa, os caminhos declarados em `conferir`, e exige AUSENTES os caminhos de `ausentes` (uma chave que la estivesse com zero ou vazio passaria por presente).",
+  "conta": "0xF87138D298E338962E1a2e0ff23267Dc32c15621",
+  "instrumento": "BTC",
+  "bases": {
+    "real": {
+      "perpetuo": {
+        "ok": true,
+        "valor": {
+          "marginSummary": {
+            "accountValue": "998.46",
+            "totalNtlPos": "0.0",
+            "totalMarginUsed": "0.0"
+          },
+          "withdrawable": "998.46",
+          "assetPositions": [],
+          "time": 1790703260673
+        }
+      },
+      "spot": {
+        "ok": true,
+        "valor": {
+          "balances": [
+            {
+              "coin": "USDC",
+              "total": "0.004965",
+              "hold": "0.0",
+              "entryNtl": "0.0"
+            }
+          ]
+        }
+      },
+      "agentes": {
+        "ok": true,
+        "valor": [
+          {
+            "address": "0x7b3a39ccadb8dd294bbb83d3e0bbd1b3b411ca81",
+            "name": "teste-plugin",
+            "validUntil": 1798477732304
+          }
+        ]
+      }
+    },
+    "com_posicao": {
+      "perpetuo": {
+        "ok": true,
+        "valor": {
+          "marginSummary": {
+            "accountValue": "998.46",
+            "totalNtlPos": "0.0",
+            "totalMarginUsed": "0.0"
+          },
+          "withdrawable": "998.46",
+          "time": 1790703260673,
+          "assetPositions": [
+            {
+              "position": {
+                "coin": "BTC",
+                "szi": "0.01",
+                "entryPx": "80000",
+                "positionValue": "805",
+                "marginUsed": "80.5",
+                "unrealizedPnl": "5",
+                "leverage": {
+                  "type": "cross",
+                  "value": 10
+                },
+                "liquidationPx": "72000"
+              }
+            }
+          ]
+        }
+      },
+      "spot": {
+        "ok": true,
+        "valor": {
+          "balances": [
+            {
+              "coin": "USDC",
+              "total": "0.004965",
+              "hold": "0.0",
+              "entryNtl": "0.0"
+            }
+          ]
+        }
+      },
+      "agentes": {
+        "ok": true,
+        "valor": [
+          {
+            "address": "0x7b3a39ccadb8dd294bbb83d3e0bbd1b3b411ca81",
+            "name": "teste-plugin",
+            "validUntil": 1798477732304
+          }
+        ]
+      },
+      "activo": {
+        "ok": true,
+        "valor": {
+          "markPx": "80500"
+        }
+      }
+    }
+  },
+  "casos": [
+    {
+      "caso": "leitura/as-duas-carteiras-respondem-e-o-venue-confirma-as-duas",
+      "nota": "A leitura real (§3.1), sem uma unica alteracao: e o caminho feliz, e e contra ele que as recusas significam alguma coisa.",
+      "esperadoOk": true,
+      "conferir": {
+        "conta": "0xF87138D298E338962E1a2e0ff23267Dc32c15621",
+        "instante_do_venue_ms": 1790703260673,
+        "carteiras.perpetuo.estado": "lida",
+        "carteiras.perpetuo.equity": "998.46",
+        "carteiras.perpetuo.nocional_total": "0.0",
+        "carteiras.perpetuo.margem_usada": "0.0",
+        "carteiras.perpetuo.retiravel": "998.46",
+        "carteiras.spot.estado": "lida",
+        "carteiras.spot.saldos": [
+          {
+            "moeda": "USDC",
+            "total": "0.004965",
+            "retido": "0.0",
+            "valor_de_entrada": "0.0"
+          }
+        ],
+        "carteiras.confirmadas_pelo_venue": 2,
+        "carteiras.nomes": ["perpetuo", "spot"],
+        "carteiras.nao_lidas": [],
+        "posicoes": [],
+        "identidade.agentes": [
+          {
+            "endereco": "0x7b3a39ccadb8dd294bbb83d3e0bbd1b3b411ca81",
+            "nome": "teste-plugin",
+            "valido_ate_ms": 1798477732304
+          }
+        ]
+      }
+    },
+    {
+      "caso": "leitura/caso-gemeo-zero-posicoes-nao-e-sem-leitura",
+      "nota": "Par de controle do primeiro: os MESMOS numeros da conta, e a leitura diz `posicoes: []` (zero posicoes MEDIDAS) sem nenhuma carteira `nao_lida`. Sem este caso, `posicoes: []` podia ser uma leitura que nao chegou.",
+      "esperadoOk": true,
+      "conferir": {
+        "carteiras.confirmadas_pelo_venue": 2,
+        "carteiras.nao_lidas": [],
+        "posicoes": []
+      }
+    },
+    {
+      "caso": "leitura/spot-falha-a-carteira-e-dita-nao_lida-com-o-motivo",
+      "nota": "Uma leitura falhada e DITA como falha (§3.2, prova 1): nao vira zero, nao vira o valor anterior e nao vira «sem saldo». O `erro` e o texto medido no relatorio.",
+      "esperadoOk": true,
+      "respostas": {
+        "spot": {
+          "ok": false,
+          "erro": "a leitura de spot nao respondeu"
+        }
+      },
+      "conferir": {
+        "carteiras.perpetuo.estado": "lida",
+        "carteiras.perpetuo.equity": "998.46",
+        "carteiras.spot.estado": "nao_lida",
+        "carteiras.spot.contrato": "spot",
+        "carteiras.spot.motivo": "campo_obrigatorio_ausente",
+        "carteiras.spot.porque": "a leitura spotClearinghouseState falhou: a leitura de spot nao respondeu",
+        "carteiras.confirmadas_pelo_venue": 1,
+        "carteiras.nomes": ["perpetuo"],
+        "carteiras.nao_lidas": ["spot"]
+      },
+      "ausentes": ["carteiras.spot.saldos", "carteiras.spot.origem"]
+    },
+    {
+      "caso": "leitura/perpetuo-falha-recusa-as-posicoes-nao-se-leem",
+      "nota": "A OUTRA direccao da mesma falha, e nao e simetrica: sem a carteira do PERPETUO nao se leem as posicoes, e uma posicao que nao se leu nunca vira «sem posicao» (FR-021). Por isso aqui nao ha leitura: RECUSA.",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "respostas": {
+        "perpetuo": {
+          "ok": false,
+          "erro": "a leitura de perpetuo nao respondeu"
+        }
+      }
+    },
+    {
+      "caso": "leitura/as-duas-carteiras-falham-recusa-nomeando-as-duas",
+      "nota": "Sem NENHUMA das duas carteiras nao ha leitura da conta (§3.2, prova 2). O `porque` e, caracter a caracter, o medido no relatorio: diz as DUAS que falharam, em vez de escolher uma.",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "porque_esperado": "nenhuma das DUAS carteiras do venue respondeu: perpetuo (a leitura clearinghouseState falhou: a leitura de perpetuo nao respondeu) e spot (a leitura spotClearinghouseState falhou: a leitura de spot nao respondeu). Sem leitura da conta o conector nao manda ordem que aumente exposicao (FR-021)",
+      "respostas": {
+        "perpetuo": {
+          "ok": false,
+          "erro": "a leitura de perpetuo nao respondeu"
+        },
+        "spot": {
+          "ok": false,
+          "erro": "a leitura de spot nao respondeu"
+        }
+      }
+    },
+    {
+      "caso": "leitura/posicao-com-liquidacao-publicada-a-distancia-e-calculada",
+      "nota": "DUBLE DECLARADO (§3.2, prova 3) — NAO e medicao do venue. A distancia e a UNICA conta do ficheiro [C]: |marca - liquidationPx| / marca. |80500 - 72000| / 80500 = 10.5590...%, truncado na 4a casa.",
+      "esperadoOk": true,
+      "base": "com_posicao",
+      "conferir": {
+        "carteiras.perpetuo.estado": "lida",
+        "posicoes[0].instrumento": "BTC",
+        "posicoes[0].lado": "buy",
+        "posicoes[0].unidades": "0.01",
+        "posicoes[0].preco_medio": "80000",
+        "posicoes[0].nocional": "805",
+        "posicoes[0].margem": "80.5",
+        "posicoes[0].resultado_nao_realizado": "5",
+        "posicoes[0].alavancagem": {
+          "tipo": "cross",
+          "valor": 10
+        },
+        "posicoes[0].preco_de_liquidacao": "72000",
+        "posicoes[0].distancia_de_liquidacao": {
+          "em": "porcento_da_marca",
+          "valor": "10.559",
+          "marca": "80500"
+        }
+      },
+      "ausentes": ["posicoes[0].porque_sem_distancia"]
+    },
+    {
+      "caso": "leitura/posicao-com-liquidacao-a-null-a-distancia-fica-AUSENTE",
+      "nota": "DUBLE DECLARADO (§3.2, prova 4), com o `liquidationPx` a `null` COMO O VENUE O PUBLICA. A distancia fica AUSENTE — nunca zero, que pareceria um numero medido — e a ausencia DIZ-SE pelo proprio. A prova e a chave nao existir (`ausentes`), e nao o valor ser 0.",
+      "esperadoOk": true,
+      "base": "com_posicao",
+      "respostas": {
+        "perpetuo": {
+          "valor": {
+            "assetPositions": [
+              {
+                "position": {
+                  "coin": "BTC",
+                  "szi": "0.01",
+                  "entryPx": "80000",
+                  "positionValue": "805",
+                  "marginUsed": "80.5",
+                  "unrealizedPnl": "5",
+                  "leverage": {
+                    "type": "cross",
+                    "value": 10
+                  },
+                  "liquidationPx": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      "conferir": {
+        "posicoes[0].instrumento": "BTC",
+        "posicoes[0].porque_sem_distancia": "o venue publica `liquidationPx` a null nesta posicao — a distancia fica AUSENTE, nunca zero, que pareceria um numero medido"
+      },
+      "ausentes": ["posicoes[0].distancia_de_liquidacao", "posicoes[0].preco_de_liquidacao"]
+    },
+    {
+      "caso": "leitura/posicao-com-liquidacao-sem-marca-a-razao-fica-dita",
+      "nota": "DUBLE DECLARADO (§3.2, prova 3) SEM a leitura do activo: o preco de liquidacao existe, mas sem marca do venue nao ha regua para medir distancia — e a conta NAO se inventa. `preco_de_liquidacao` fica (foi lido); a distancia fica ausente COM razao.",
+      "esperadoOk": true,
+      "base": "com_posicao",
+      "remover": ["activo"],
+      "conferir": {
+        "posicoes[0].preco_de_liquidacao": "72000",
+        "posicoes[0].porque_sem_distancia": "sem marca do venue nao ha regua para medir a distancia (a conta nao se inventa)"
+      },
+      "ausentes": ["posicoes[0].distancia_de_liquidacao"]
+    },
+    {
+      "caso": "leitura/posicao-vendida-e-lida-com-unidades-sem-sinal-e-lado-sell",
+      "nota": "DEFEITO MEDIDO E CORRIGIDO (era `posicao-vendida-a-leitura-recusa-ACHADO-para-o-dono`). Com `szi` NEGATIVO — a forma com que o venue diz uma posicao VENDIDA — a leitura RECUSAVA a conta inteira, com a razao «uma posicao do venue veio sem `coin`/`szi` legivel»: o decimal de `szi` era conferido contra o padrao SEM sinal, o ramo `lado: \"sell\"` era codigo morto, e so a positiva (o caso de controle `posicao-com-liquidacao-publicada-a-distancia-e-calculada`) chegava a ser lida. Corrigido em leitura.ts: `szi` — e `unrealizedPnl`, que o venue tambem publica com signo — conferem-se contra o `decimal` do contrato (`forma.schema.json`, COM sinal). Aqui a posicao vendida LE-SE: as UNIDADES ficam sem o sinal (o lado ja o diz) e o `lado` e `sell`.",
+      "esperadoOk": true,
+      "base": "com_posicao",
+      "respostas": {
+        "perpetuo": {
+          "valor": {
+            "assetPositions": [
+              {
+                "position": {
+                  "coin": "BTC",
+                  "szi": "-0.01",
+                  "entryPx": "80000",
+                  "positionValue": "805",
+                  "marginUsed": "80.5",
+                  "unrealizedPnl": "5",
+                  "leverage": {
+                    "type": "cross",
+                    "value": 10
+                  },
+                  "liquidationPx": "72000"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "conferir": {
+        "carteiras.perpetuo.estado": "lida",
+        "posicoes[0].instrumento": "BTC",
+        "posicoes[0].lado": "sell",
+        "posicoes[0].unidades": "0.01",
+        "posicoes[0].preco_medio": "80000",
+        "posicoes[0].nocional": "805",
+        "posicoes[0].margem": "80.5",
+        "posicoes[0].resultado_nao_realizado": "5",
+        "posicoes[0].preco_de_liquidacao": "72000",
+        "posicoes[0].distancia_de_liquidacao": {
+          "em": "porcento_da_marca",
+          "valor": "10.559",
+          "marca": "80500"
+        }
+      },
+      "ausentes": ["posicoes[0].porque_sem_distancia"]
+    },
+    {
+      "caso": "leitura/equity-a-null-nao-vira-zero",
+      "nota": "Armadilha de coerccao (`Number(null) === 0`): `accountValue` a `null` NAO vira equity zero — vira carteira `nao_lida` com `valor_nulo_nao_permitido`. Um zero aqui seria uma conta sem fundos que ninguem mediu.",
+      "esperadoOk": true,
+      "respostas": {
+        "perpetuo": {
+          "valor": {
+            "marginSummary": {
+              "accountValue": null
+            }
+          }
+        }
+      },
+      "conferir": {
+        "carteiras.perpetuo.estado": "nao_lida",
+        "carteiras.perpetuo.motivo": "valor_nulo_nao_permitido",
+        "carteiras.perpetuo.porque": "clearinghouseState.marginSummary.accountValue veio a null",
+        "carteiras.spot.estado": "lida",
+        "carteiras.confirmadas_pelo_venue": 1,
+        "carteiras.nao_lidas": ["perpetuo"]
+      },
+      "ausentes": ["carteiras.perpetuo.equity"]
+    },
+    {
+      "caso": "leitura/equity-em-numero-do-json-nao-vira-decimal",
+      "nota": "O mesmo campo em virgula flutuante do JSON (`998.46` sem aspas): o contrato exige decimal TEXTUAL, e um numero do JSON nunca entra na aritmetica decimal.",
+      "esperadoOk": true,
+      "respostas": {
+        "perpetuo": {
+          "valor": {
+            "marginSummary": {
+              "accountValue": 998.46
+            }
+          }
+        }
+      },
+      "conferir": {
+        "carteiras.perpetuo.estado": "nao_lida",
+        "carteiras.perpetuo.motivo": "tipo_invalido"
+      },
+      "ausentes": ["carteiras.perpetuo.equity"]
+    },
+    {
+      "caso": "leitura/equity-com-expoente-nao-e-decimal-textual",
+      "nota": "Forma hostil da mesma familia: `9.9846e2` e o mesmo numero e NAO e decimal textual do contrato. Aceita-lo seria aceitar uma forma que o resto do sistema nao sabe comparar.",
+      "esperadoOk": true,
+      "respostas": {
+        "perpetuo": {
+          "valor": {
+            "marginSummary": {
+              "accountValue": "9.9846e2"
+            }
+          }
+        }
+      },
+      "conferir": {
+        "carteiras.perpetuo.estado": "nao_lida",
+        "carteiras.perpetuo.motivo": "formato_invalido"
+      },
+      "ausentes": ["carteiras.perpetuo.equity"]
+    },
+    {
+      "caso": "leitura/sem-withdrawable-a-carteira-do-perpetuo-fica-nao_lida",
+      "nota": "Campo obrigatorio AUSENTE (nao nulo): o venue respondeu a conta, mas nao declarou o retiravel. Ausencia nunca se preenche (D4) — a carteira do perpetuo fica `nao_lida` com `campo_obrigatorio_ausente`, e o spot continua a ser lido.",
+      "esperadoOk": true,
+      "remover": ["perpetuo.valor.withdrawable"],
+      "conferir": {
+        "carteiras.perpetuo.estado": "nao_lida",
+        "carteiras.perpetuo.motivo": "campo_obrigatorio_ausente",
+        "carteiras.confirmadas_pelo_venue": 1,
+        "carteiras.nao_lidas": ["perpetuo"]
+      },
+      "ausentes": ["carteiras.perpetuo.retiravel"]
+    },
+    {
+      "caso": "leitura/saldo-do-spot-em-numero-nao-vira-saldo",
+      "nota": "A armadilha do lado do SPOT: `total` em virgula flutuante do JSON. Vira `nao_lida` com `tipo_invalido` — e nao um saldo de 0.004965 que ninguem escreveu como texto.",
+      "esperadoOk": true,
+      "respostas": {
+        "spot": {
+          "valor": {
+            "balances": [
+              {
+                "coin": "USDC",
+                "total": 0.004965,
+                "hold": "0.0",
+                "entryNtl": "0.0"
+              }
+            ]
+          }
+        }
+      },
+      "conferir": {
+        "carteiras.spot.estado": "nao_lida",
+        "carteiras.spot.motivo": "tipo_invalido",
+        "carteiras.perpetuo.estado": "lida"
+      },
+      "ausentes": ["carteiras.spot.saldos"]
+    }
+  ]
+}

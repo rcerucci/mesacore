@@ -1,0 +1,366 @@
+PORTAS DE VERIFICACAO — AS QUATRO QUE FALTAVAM FECHAR
+spec 004-conector-hyperliquid · quando: 2026-09-29 14:30-14:5x (-03) · quem mediu: esta sessao, na hora
+ficheiros que esta frente escreveu (e so estes):
+  brokers/tsconfig.json (NOVO) · tools/verificar-maquina/tipos.sh · core/ciclo/contenda.ts
+  brokers/hyperliquid/casos/leitura.casos.json (NOVO) · brokers/hyperliquid/casos/correr-leitura.ts (NOVO)
+  tools/verificar-conector/provas-offline.sh · este relatorio
+Nada disto foi commitado (o dono manda) e nada disto escreveu em ficheiro de outra frente.
+
+========================================================================================================
+0. AS QUATRO PORTAS, EM UMA LINHA CADA
+========================================================================================================
+
+(1) TIPOS: `bun x tsc --noEmit` na raiz nao confere nada (nao ha `tsconfig.json` na raiz — o compilador
+    imprime a AJUDA e sai 1, medido em sonda-real.txt §1.1). Criado `brokers/tsconfig.json` (molde do
+    `contracts/tsconfig.json`, adaptado) e `brokers` acrescentado a lista do `tipos.sh`. Portao: 5
+    directorios a 0 erros — MEDIDO (5.1), com a ressalva datada que se segue.
+(2) CONTENDA: `escalar()` lancava `RangeError` quando o tecto tinha mais casas decimais do que os saldos
+    (argumento NEGATIVO do `String.repeat`). Passa a RECUSAR pelo nome
+    (`escala_do_tecto_incompativel_com_os_saldos`), sem mudar o que a contenda decide nos casos validos.
+(3) ORDENS: `casos/correr-ordens.ts` (32 casos) existia e nao estava ligada a porta nenhuma. Ligada em
+    `provas-offline.sh`, no molde das outras linhas (FALHA se a ultima linha nao disser `0 divergentes`).
+(4) LEITURA: nao tinha caso offline nenhum (achado (g) do relatorio da sonda). Escritos
+    `casos/leitura.casos.json` (14 casos, com as respostas REAIS do venue como base) e
+    `casos/correr-leitura.ts`, tambem ligados a porta.
+
+========================================================================================================
+1. O PORTAO DE TIPOS DO CONECTOR
+========================================================================================================
+
+1.1 o portao
+
+    `brokers/tsconfig.json` e o molde do `contracts/tsconfig.json`, com DUAS adaptacoes ditadas por
+    medicao:
+
+      * `typeRoots: ["../core/node_modules/@types"]` — os tipos do `bun` vivem no `core/node_modules`
+        (e o que o `tools/tsconfig.json` ja fazia); sem isto o `tsc` nao encontra `@types/bun`;
+      * SEM `exactOptionalPropertyTypes` — com ele ligado, o `sonda.ts` do conector (ficheiro que NAO e
+        desta frente) reprova com TS2375 em 1 ponto, e o portao nao podia nascer a acusar um ficheiro que
+        nao se pode tocar. `core/` e `vigia/` tambem nao o tem. O rigor que se mantem e o que o conector
+        satisfaz: `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `resolveJsonModule`,
+        `allowImportingTsExtensions`.
+
+1.2 o `tipos.sh` deixou de saltar directorios em silencio
+
+    Um directorio LISTADO sem `tsconfig.json` nao falhava: imprimia "sem tsconfig.json (nada a conferir)",
+    seguia, e a contagem final nao o acusava — e era exactamente assim que `brokers/` ficava de fora.
+    Agora isso e FALHA, com o nome do directorio, e a contagem passa a ter de fechar com a lista.
+
+1.3 A PROVA NEGATIVA (corrida numa COPIA, no scratch desta sessao — nada dentro do repo foi tocado)
+
+    $ cp -r brokers <scratch>/tipos-negativo/brokers && ln -s <repo>/core ... && ln -s <repo>/node_modules ...
+    $ (cd <scratch>/tipos-negativo/brokers && tools/node_modules/.bin/tsc -p tsconfig.json --noEmit)   # copia INTACTA
+    rc=0                       # controlo: o mesmo tsconfig sem defeito -> passa
+    $ python3 ... # troca `instrumentos_pedidos` por `instrumentos_pedidos_COM_ERRADO` no tipo Sonda
+    $ (cd <scratch>/tipos-negativo/brokers && tools/node_modules/.bin/tsc -p tsconfig.json --noEmit)   # com o defeito
+    hyperliquid/manifesto.ts(82,37): error TS2339: Property 'instrumentos_pedidos' does not exist on type 'Sonda'.
+    hyperliquid/manifesto.ts(144,31): error TS2339: Property 'instrumentos_pedidos' does not exist on type 'Sonda'.
+    hyperliquid/sonda.ts(620,5): error TS2353: Object literal may only specify known properties, and 'instrumentos_pedidos' does not exist in type 'Sonda'.
+    rc=1
+
+    E a classe de defeito que o portao existe para apanhar: um NOME de campo trocado — que o `bun` corre
+    sem conferir e que rebenta em execucao.
+
+========================================================================================================
+2. A CONTENDA: o fail-closed que quebrou (RangeError em vez de recusa)
+========================================================================================================
+
+2.1 o defeito, medido no codigo ANTES (HEAD, copia em scratch) e DEPOIS
+
+    O caso: fichas `40` e `50`, tecto declarado `99.75` — o tecto tem MAIS casas (2) do que os saldos (0).
+
+    $ bun -e '<importa as duas versoes e corre o MESMO caso nas duas>'
+    ANTES (HEAD)   tecto="99.75" -> LANCOU RangeError: String.prototype.repeat argument must be greater than or equal to 0 and not be Infinity
+    ANTES (HEAD)   tecto="100"   -> devolveu: {"criterio":"fifo","admitidos":["EURUSD","XAUUSD"],"de_fora":[],"recusa":null}
+    DEPOIS         tecto="99.75" -> devolveu: {"criterio":"recusada","admitidos":[],"de_fora":["EURUSD","XAUUSD"],"recusa":{"motivo":"escala_do_tecto_incompativel_com_os_saldos","porque":"O tecto declarado '99.75' tem 2 casa(s) decimal(is) e os saldos das fichas levam no maximo 0: com escalas diferentes nao ha soma comparavel a tecto nenhum, e arredondar o tecto para o fazer caber esta fora do que a mesa pode fazer (o tecto e do dono, RN-M9). A contenda RECUSA e nenhuma ficha entra — nao se resolve por omissao (RN-M4.7)."}}
+    DEPOIS         tecto="100"   -> devolveu: {"criterio":"fifo","admitidos":["EURUSD","XAUUSD"],"de_fora":[],"recusa":null}
+
+    sha256 da copia do HEAD : 3b96c53d30b696dfb0b3dd154311cdace4cc296756334356e6d4e855621ae7e1
+    sha256 do ficheiro actual: 9d9780a6413722f1d7586087060cded547a434e5ae97d43ffb1322e0077ce1a1
+
+    O que MUDOU e so o modo de falhar: um numero que nao cabe na escala dos outros deixa de derrubar o
+    motor com uma excepcao anonima e passa a RECUSAR, com o motivo pelo NOME e exportado
+    (`MOTIVO_DA_ESCALA`), para quem le a recusa o ler da fonte em vez de o reescrever. O caso NORMAL
+    (mesma escala, ou tecto com MENOS casas do que os saldos) decide exactamente o que decidia — e ha um
+    caso com 0.1+0.2 contra 0.3 na bancada, que continua a entrar.
+
+2.2 a bancada da contenda continua a passar, com os MESMOS 7 casos
+
+    $ bun run tools/verificar-maquina/contenda.ts resumo
+    resumo: 35 verificacoes · 0 divergentes · 7 casos
+    rc=0
+
+2.3 a RECUSA e um valor de primeira classe, e a porta do arranque recusa por ela
+    (provado na porta a SERIO, com o fixture do proprio `core/ciclo/arranque.casos.json`)
+
+    $ bun -e '<arranque com o padrao da bateria do arranque, so o tecto trocado>'
+    --- tecto 100 (normal, mesma escala)
+        arrancou=true  porta=null  motivo=null  estado=em_operacao
+        contenda: criterio=fifo admitidos=["EURUSD","XAUUSD"] recusa=null
+    --- tecto 100.5 (MAIS casas que os saldos), sem contencao
+        arrancou=false  porta=contenda  motivo=porta_do_arranque_falhou  estado=parada
+        porque: Sem 'conta.contencao' declarada, o arranque recusa: contenda nao se resolve por omissao (RN-M4.7). O tecto declarado '100.5' tem 1 casa(s) decimal(is) e os saldos das fichas levam no maximo 0: ...
+        contenda: criterio=recusada admitidos=[] recusa=escala_do_tecto_incompativel_com_os_saldos
+    --- tecto 100.5, com contencao "espera"
+        arrancou=true  porta=null  motivo=null  estado=em_operacao
+        contenda: criterio=recusada admitidos=[] recusa=escala_do_tecto_incompativel_com_os_saldos
+
+    Como a recusa e representada (e porque ASSIM): a porta do arranque decide "cabe todo" por
+    `contenda.de_fora.length === 0`, e por isso a recusa deixa `de_fora` com TODAS as fichas — nenhuma
+    entra, ninguem arranca com exposicao. `recusa` e `criterio: "recusada"` sao os campos que dizem que
+    o que ali esta NAO e a fila a esperar (essa e a politica do dono).
+
+    A bancada do arranque (as sete portas, 17 casos) continua verde:
+    $ bun run tools/verificar-maquina/arranque.ts
+    resumo: 35 verificacoes · 0 divergentes · 17 casos · 13 portas falhadas de proposito
+
+========================================================================================================
+3. A BANCADA DE ORDENS, LIGADA A PORTA
+========================================================================================================
+
+3.1 o que ela mede, sem rede e sem chave
+
+    $ bun brokers/hyperliquid/casos/correr-ordens.ts
+    ... (32 linhas JSON, `"veredicto":"ok"` em todas) ...
+    ordens: 32 casos · 32 ok · 0 divergentes · 26 traducoes declaradas
+    rc=0
+
+3.2 a linha que a liga (e que FALHA se ela nao passar)
+
+      declarar "casos das ordens e do cloid (hyperliquid)"
+      saida_o=$(bun brokers/hyperliquid/casos/correr-ordens.ts 2>&1)
+      if printf '%s\n' "$saida_o" | tail -1 | grep -q "0 divergentes"; then
+        echo "OK   $(printf '%s\n' "$saida_o" | tail -1)"
+      else
+        echo "FALHOU"; printf '%s\n' "$saida_o" | grep divergente | head -5; falhas=$((falhas+1))
+      fi
+
+    A condicao e a das outras linhas: a ULTIMA linha do corredor tem de declarar `0 divergentes`. Um
+    corredor que saia com erro, ou que mude a ultima linha, FALHA a porta — nao passa por "correu".
+
+========================================================================================================
+4. A LEITURA DA CONTA: os casos offline que faltavam (T071, FR-016 a FR-018)
+========================================================================================================
+
+4.1 o corredor, a correr
+
+    $ bun brokers/hyperliquid/casos/correr-leitura.ts
+    {"caso":"leitura/as-duas-carteiras-respondem-e-o-venue-confirma-as-duas",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/caso-gemeo-zero-posicoes-nao-e-sem-leitura",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/spot-falha-a-carteira-e-dita-nao_lida-com-o-motivo",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/perpetuo-falha-recusa-as-posicoes-nao-se-leem",...,"veredicto":"ok","esperado_ok":false}
+    {"caso":"leitura/as-duas-carteiras-falham-recusa-nomeando-as-duas",...,"veredicto":"ok","esperado_ok":false}
+    {"caso":"leitura/posicao-com-liquidacao-publicada-a-distancia-e-calculada",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/posicao-com-liquidacao-a-null-a-distancia-fica-AUSENTE",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/posicao-com-liquidacao-sem-marca-a-razao-fica-dita",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/posicao-vendida-a-leitura-recusa-ACHADO-para-o-dono",...,"veredicto":"ok","esperado_ok":false}
+    {"caso":"leitura/equity-a-null-nao-vira-zero",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/equity-em-numero-do-json-nao-vira-decimal",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/equity-com-expoente-nao-e-decimal-textual",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/sem-withdrawable-a-carteira-do-perpetuo-fica-nao_lida",...,"veredicto":"ok","esperado_ok":true}
+    {"caso":"leitura/saldo-do-spot-em-numero-nao-vira-saldo",...,"veredicto":"ok","esperado_ok":true}
+    leitura: 14 casos · 14 ok · 0 divergentes · 14 declarados
+    rc=0
+
+4.2 o que cada caso obriga a leitura a fazer (os cinco pedidos, e mais)
+
+  as duas carteiras respondem  `as-duas-carteiras-respondem-e-o-venue-confirma-as-duas` — a leitura REAL
+                               (§3.1 do sonda-real.txt: perpetuo 998.46, spot USDC 0.004965, zero posicoes,
+                               instante do venue 1790703260673, agente 0x7b3a39...ca81) — mais o caso-gemeo
+                               `zero-posicoes-nao-e-sem-leitura`: os MESMOS numeros, so para mostrar que
+                               `posicoes: []` e uma medicao de zero e nao uma leitura que nao chegou
+  uma falha -> nao_lida      `spot-falha-a-carteira-e-dita-nao_lida-com-o-motivo` (motivo
+                               `campo_obrigatorio_ausente`, `nao_lidas: ["spot"]`, `confirmadas_pelo_venue: 1`,
+                               `saldos` e `origem` AUSENTES — nada do valor anterior)
+  as duas falham -> recusa   `as-duas-carteiras-falham-recusa-nomeando-as-duas` (o `porque` e, caracter a
+                               caracter, o medido em §3.2(2) do relatorio da sonda: nomeia as DUAS)
+  liquidacao publicada       `posicao-com-liquidacao-publicada-a-distancia-e-calculada` (marca 80500,
+                               liquidationPx 72000 -> `10.559` % da marca, com a marca nomeada)
+  liquidationPx null         `posicao-com-liquidacao-a-null-a-distancia-fica-AUSENTE` — a chave
+                               `distancia_de_liquidacao` NAO EXISTE (provada por `ausentes`, e nao por um
+                               valor 0), `preco_de_liquidacao` tambem ausente, e a razao publicada
+  e ainda:                   a falha do PERPETUO (nao e simetrica: sem ele nao se leem posicoes, e a leitura
+                               RECUSA em vez de dizer "sem posicao"); a liquidacao sem marca ("sem regua nao
+                               ha conta"); `null` a nao virar zero (`accountValue`, `Number(null) === 0`);
+                               numero do JSON a nao virar decimal; expoente a nao ser decimal textual;
+                               campo obrigatorio ausente (`withdrawable`); saldo do spot em numero do JSON.
+
+  O corredor nao confere so o caso: VARA a leitura produzida e reprova se (a) aparecer um `null` em
+  qualquer sitio (o contrato nao tem `null`), (b) as tres contagens das carteiras nao fecharem
+  (`confirmadas_pelo_venue` == `nomes` == 2 - `nao_lidas`), (c) um `motivo` nao existir no conjunto FECHADO
+  de `contracts/vocabulario.json` (a comparacao e contra a fonte, nao contra um literal escrito no
+  corredor), (d) um numero vier em virgula flutuante do JSON, ou (e) uma posicao ficar sem distancia E sem
+  razao — ausencia sem razao parece esquecimento (FR-017).
+
+4.3 A PROVA NEGATIVA do corredor (corrida numa COPIA, no scratch — o repo nao foi tocado)
+
+    controlo, copia INTACTA:  leitura: 14 casos · 14 ok · 0 divergentes · 14 declarados   (rc=0)
+
+    defeito 1 injectado (`null` deixa de ser recusa e vira o valor `0` — o `Number(null) === 0`):
+      {"caso":"leitura/equity-a-null-nao-vira-zero",...,"veredicto":"divergente","problemas":[
+        "carteiras.perpetuo.estado=\"lida\", esperado=\"nao_lida\"",
+        "carteiras.perpetuo.motivo=undefined, esperado=\"valor_nulo_nao_permitido\"",
+        "carteiras.confirmadas_pelo_venue=2, esperado=1",
+        "carteiras.nao_lidas=[], esperado=[\"perpetuo\"]",
+        "carteiras.perpetuo.equity devia estar AUSENTE e veio \"0\""]}
+      leitura: 14 casos · 13 ok · 1 divergentes · 14 declarados   (rc=1)
+
+    defeito 2 injectado (`liquidationPx` a `null` vira distancia ZERO):
+      {"caso":"leitura/posicao-com-liquidacao-a-null-a-distancia-fica-AUSENTE",...,"veredicto":"divergente",
+       "problemas":["posicoes[0].porque_sem_distancia=undefined, esperado=\"o venue publica `liquidationPx`
+       a null nesta posicao — a distancia fica AUSENTE, nunca zero, que pareceria um numero medido\"",
+       "posicoes[0].distancia_de_liquidacao devia estar AUSENTE e veio {\"em\":\"porcento_da_marca\",\"valor\":\"0\",\"marca\":\"80500\"}",
+       "posicoes[0].preco_de_liquidacao devia estar AUSENTE e veio \"0\""]}
+      leitura: 14 casos · 13 ok · 1 divergentes · 14 declarados   (rc=1)
+
+    Ou seja: o corredor nao mede so o caminho feliz — morde os dois defeitos que o pedido nomeia (o zero
+    que parece medido, e a ausencia sem nome).
+
+4.4 de onde vem cada numero (e o que e duble)
+    Os casos de CONTA partem da leitura REAL do venue (§3.1). Os casos de POSICAO partem do DUBLE
+    DECLARADO em §3.2 (provas 3 e 4) — NAO de uma medicao do venue — e a `nota` de cada um di-lo em voz
+    alta, no ficheiro. O unico `null` do ficheiro de casos e o `liquidationPx: null` DO VENUE: e ENTRADA
+    sob prova (a forma com que o venue publica uma posicao sem liquidacao), nunca saida do contrato.
+
+========================================================================================================
+5. AS PORTAS, AGORA — E UMA INTERFERENCIA MEDIDA DE OUTRA FRENTE
+========================================================================================================
+
+5.1 `bash tools/verificar-maquina/tipos.sh` — 5 DIRECTORIOS, 0 ERROS (medido as 15:04, e as 14:44)
+
+    $ bash tools/verificar-maquina/tipos.sh
+      core: 0 erros de tipo
+      vigia: 0 erros de tipo
+      tools: 0 erros de tipo
+      contracts: 0 erros de tipo
+      brokers: 0 erros de tipo
+    tipos: 0 erros em 5 directorios (o tsc confere o produto e as bancadas)
+    rc=0
+
+    MEDIDO DUAS VEZES, antes e depois da emenda 1.4.0 que outra frente estava a fazer nestes ficheiros:
+      * 14:44 — verde, com o conector ja dentro da lista (antes das escritas da outra frente);
+      * 14:45-15:03 — o MESMO portao acusou UM erro real em `brokers/hyperliquid/sonda.ts` (linha escrita
+        as 14:48 pela outra frente): `TS18048: 'meta' is possibly 'undefined'` (§6(a)). Nao toquei no
+        ficheiro: um portao nao se afrouxa para ficar verde. A outra frente corrigiu-o as 15:03:46
+        (`meta?.marginTables`);
+      * 15:04 — verde outra vez, 5 directorios a 0 erros.
+    O portao de tipos do conector morde a serio: nasceu, e no mesmo dia apanhou um erro que ninguem tinha
+    visto — porque `bun` corre sem conferir, e o conector nunca tinha passado por `tsc`.
+
+5.2 `bash tools/verificar-conector/provas-offline.sh` — as linhas DESTA frente passam todas
+
+    $ bash tools/verificar-conector/provas-offline.sh
+    casos da credencial (hyperliquid)                   OK   credencial: 9 casos · 9 ok · 0 divergentes
+    casos do manifesto (hyperliquid)                    OK   manifesto: 21 casos · 21 ok · 0 divergentes · 21 declarados
+    casos das ordens e do cloid (hyperliquid)           OK   ordens: 32 casos · 32 ok · 0 divergentes · 26 traducoes declaradas
+    casos da leitura da conta (hyperliquid)             OK   leitura: 14 casos · 14 ok · 0 divergentes · 14 declarados
+    porta: imports do conector declarados na raiz       OK   {"porta":"dependencias",...,"veredicto":"aprovado"}
+    porta: importa contracts, nunca o core (RN-E1)      OK   0 importacoes do core em brokers/hyperliquid
+    conformidade do conector (duble de mesa)            FALHOU (exit 1)
+         FALHA  conector/desfecho-aceite: o motor do contrato recusou uma mensagem declarada valida (versao_do_contrato_divergente)
+         ... (8 falhas, TODAS `versao_do_contrato_divergente`)
+    provas offline do conector: 1 falhas
+    rc=1
+
+    A UNICA linha vermelha e a da conformidade, e a causa esta MEDIDA e nao e desta frente:
+      * `contracts/versao.json` passou a `1.4.0` as 14:41:15, no âmbito da emenda 1.4.0 do contrato
+        (outra frente, em `contracts/**` — ficheiros que esta frente NAO pode tocar);
+      * `tools/verificar-conector/casos-duble.json` — ficheiro da outra frente, na lista de NAO TOCAR —
+        traz ainda 26 mensagens com `"contrato": "1.3.0"`; todas sao recusadas por igualdade exacta
+        (D7) com `versao_do_contrato_divergente`. Nao ha nada a corrigir do lado desta frente sem
+        escrever naquele ficheiro.
+      * A prova do varrimento de credenciais DESTA bateria passou, e conta os ficheiros novos desta
+        frente: "32 ficheiros varridos em brokers/, docs/ e config/ · 0 valores com forma de credencial".
+      * A mensagem de falha `13 mensagens do conector conferidas` e a MESMA contagem que a conformidade
+        ja declarava verde no relatorio dela (specs/004-conector-hyperliquid/relatorios/conformidade.txt,
+        §"passou forma"): os ficheiros desta frente nao entram nessa contagem.
+
+5.3 a MAQUINA inteira (`provar.sh --rapido`), no mesmo instante
+
+    $ bash tools/verificar-maquina/provar.sh --rapido
+    ... 19 linhas; as tres vermelhas sao todas da emenda 1.4.0 em curso (nenhuma desta frente):
+    condicoes, ciclo, desfecho   FALHOU   resumo: 64 verificacoes · 1 divergentes ...
+        FALHA a tabela cobre os 18 motivos do contrato ... motivo do contrato sem accao: valor_abaixo_do_minimo_do_venue
+                                                        ... motivo do contrato sem accao: instrumento_deslistado_no_venue
+    porta da mesa (T014-T016)    FALHOU   motivo=versao_do_contrato_divergente ... traducao cobre 'valor_abaixo_do_minimo_do_venue'
+    conector hyperliquid (US1)   FALHOU   provas offline do conector: 2 falhas
+    provar: 3 de 17 FALHARAM      (e, verdes: tipos 5 directorios · contenda 35/0 · arranque 35/0 ...)
+
+    Os dois motivos que a tabela do core nao conhece (`valor_abaixo_do_minimo_do_venue`,
+    `instrumento_deslistado_no_venue`) foram ACRESCENTADOS a `contracts/vocabulario.json` pela emenda em
+    curso (`git diff` mostra-os como linhas novas), e nenhum ficheiro do core os produz ainda. O motivo
+    desta frente (`escala_do_tecto_incompativel_com_os_saldos`) vive em `core/ciclo/contenda.ts`, NAO no
+    contrato — e nao aparece em nenhuma destas falhas.
+
+5.4 a trava `.provar.lock` continua a recusar (provado em duas corridas)
+
+    (a) outra bateria a correr (pid vivo, que nao e antepassado meu):
+        $ cat .provar.lock -> 949683
+        $ bash tools/verificar-conector/provas-offline.sh
+        provas-offline do conector: RECUSADO — outra bateria esta a correr (pid 949683); uma bateria mede-se sozinha
+        rc=1     (e a trava ficou onde estava: nao a roubei)
+    (b) a trava de um pid que ja morreu:
+        provas-offline: (trava do pid 949683, que ja nao existe — a limpar)
+        ... a bateria corre, e no fim a trava e limpa (nao existe no fim).
+    (c) no fim desta frente, a trava esta ocupada por OUTRA frente, a correr a bateria da maquina inteira:
+        $ cat .provar.lock -> 978712 ; $ ps -o cmd= -p 978712 -> bash tools/verificar-maquina/provar.sh
+        (trava VIVA, de outro processo — nao se toca; esta frente nao deixou processo nenhum a correr)
+
+========================================================================================================
+6. ACHADOS PARA O DONO (o que vi no caminho e nao era meu para decidir)
+========================================================================================================
+
+(a) UM TIPO REAL NO CONECTOR — o portao NOVO apanhou-o, e a frente dona corrigiu-o no mesmo dia.
+    Estado inicial (medido as 14:44, verde) — depois a outra frente escreveu `sonda.ts` as 14:48 e o
+    portao passou a recusar:
+    $ bash tools/verificar-maquina/tipos.sh
+      ...
+      brokers: ERROS de tipo:
+        hyperliquid/sonda.ts(321,32): error TS18048: 'meta' is possibly 'undefined'.
+    tipos: 1 directorio(s) com erros     (rc=1)
+
+    E um erro A SERIO: `const meta = objecto(veio(respostas.meta))` e depois `lista(meta.marginTables)`
+    dentro do `else` de `universo === undefined` — o TypeScript nao consegue correlacionar as duas
+    variaveis, e `meta` pode ser `undefined`. Nao e artefacto das opcoes deste tsconfig: MEDIDO numa copia
+    com `noUncheckedIndexedAccess` REMOVIDO, o MESMO `TS18048` aparece. O conserto e de uma linha
+    (`meta?.marginTables`) em `brokers/hyperliquid/sonda.ts` — ficheiro da outra frente, que esta frente
+    NAO toca. As 15:03:46 a frente dona corrigiu-o exactamente assim, e as 15:04 o portao esta verde
+    outra vez (5 directorios, §5.1). Fica a prova de que a porta nao e decorativa: no dia em que nasceu,
+    apanhou um erro que o `bun` corria sem ver.
+
+(b) A POSICAO VENDIDA NAO SE LE (achado do corredor novo, `leitura.ts`, ficheiro de outra frente).
+    Com `szi` NEGATIVO — a forma com que o venue diz uma posicao VENDIDA — a leitura RECUSA a conta
+    inteira ("uma posicao do venue veio sem `coin`/`szi` legivel"). A causa esta em `leitura.ts`: o
+    `decimal()` de `szi` usa o padrao SEM sinal, por isso `negativo` nunca e verdadeiro, `lado: "sell"` e
+    codigo MORTO, e a unica posicao legivel e a positiva. O caso
+    `leitura/posicao-vendida-a-leitura-recusa-ACHADO-para-o-dono` fixa o estado ACTUAL (com a nota a dizer
+    que nao e o desejado) para o defeito nao desaparecer do radar; o conserto e aceitar o sinal no decimal
+    do `szi`, e nesse dia o caso passa a `esperadoOk: true` com `lado: "sell"`.
+
+(c) COM `contencao: "espera"` A RECUSA NAO E UM PORTAO (residuo, dito e nao escondido).
+    A recusa deixa `de_fora` com todas as fichas; o ramo `espera` de `core/ciclo/arranque.ts` aceita uma
+    fila toda a espera (a mesa arranca SEM exposicao nenhuma e o motivo fica nomeado em `contenda.recusa`).
+    Fechar esse ramo exige escrever em `arranque.ts`, que NAO e ficheiro desta frente.
+
+(d) FORMA DE NUMERO INVALIDO CONTINUA A SER EXCEPCAO (residuo declarado, fora do pedido).
+    Fechei a ESCALA (o defeito medido). Um tecto com forma invalida (ex.: `abc`) continua a lancar no
+    `BigInt` — mesma familia de falha, NAO fechada aqui de proposito: a forma dos numeros ja e recusada
+    ANTES, com o nome do campo, no porteiro da configuracao (`tools/verificar-config/conferir-config.ts`)
+    e na porta do mandato (`numero()` de `arranque.ts`, que grita); a ESCALA, essa, nenhum portao a olhava.
+
+========================================================================================================
+7. O QUE NAO FECHA, E DE QUEM E
+========================================================================================================
+
+Duas linhas fecham-se nesta frente e estao a 0 erros / 0 divergentes: o portao de tipos (5 directorios,
+§5.1, verde as 14:44 e outra vez as 15:04, rc=0) e as provas do conector (as linhas desta frente, §5.2 —
+a da credencial, a do manifesto, a das ORDENS e a da LEITURA). O que ficou VERMELHO enquanto esta frente
+trabalhava e da emenda 1.4.0 do contrato, em curso noutra frente, nos ficheiros que
+esta frente NAO pode escrever: `contracts/**`, `core/ciclo/arranque.ts`, `core/estados/motivos.json` (a
+tabela que ainda nao cobre os dois motivos novos), `brokers/hyperliquid/{manifesto.ts,sonda.ts}`,
+`brokers/hyperliquid/casos/manifesto.casos.json` e
+`tools/verificar-conector/{conformidade.ts,casos-duble.json}`. A prova de que a causa e essa, e nao estas
+quatro portas: as mensagens nomeiam `versao_do_contrato_divergente` (1.4.0 contra 1.3.0) e os dois motivos
+novos; o varrimento de credenciais conta os ficheiros novos desta frente e passa; a contagem de mensagens
+do conector (13) e a mesma que a conformidade ja declarava verde; e o erro de tipo do §6(a) e de uma linha
+de `sonda.ts` escrita as 14:48, depois de o portao novo ja estar a correr verde.

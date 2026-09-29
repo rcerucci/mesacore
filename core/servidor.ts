@@ -66,6 +66,8 @@ export const TRADUCAO: Record<string, string> = {
   capacidade_nao_declarada: "comando_com_tipo_invalido",
   instrumento_desconhecido_no_manifesto: "comando_com_tipo_invalido",
   minimo_do_instrumento_acima_da_banda: "comando_com_tipo_invalido",
+  valor_abaixo_do_minimo_do_venue: "comando_com_tipo_invalido",
+  instrumento_deslistado_no_venue: "comando_com_tipo_invalido",
   prazo_excedido: "comando_com_tipo_invalido",
   desfecho_nao_reconhecido: "comando_com_tipo_invalido",
 };

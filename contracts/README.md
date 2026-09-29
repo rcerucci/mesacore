@@ -35,9 +35,9 @@ verifica o contrato e por isso tem de o ler.
 | `vocabulario.json` | os conjuntos fechados, os **motivos normalizados** de recusa com a prioridade entre eles, e o **layout do campo da marca** (bits de ficha, bits de ciclo). Os runners leem daqui: não há esta lista escrita em código em lado nenhum |
 | `versao.json` | a versão vigente do contrato, num só sítio |
 | `origem-das-grandezas.json` | **de onde vem o valor de cada grandeza** (dono · setup · mesa · venue), com a chave de `/config` quando é do dono ou do setup. É o que torna o RN-A1 conferível: `tools/verificar-contrato/inventario.sh` reprova grandeza sem origem e chave fora do inventário |
-| `casos/*.casos.json` | **81 casos de mensagem** — válidos e **inválidos de propósito**. Um conjunto que só sabe aceitar prova metade |
+| `casos/*.casos.json` | **111 casos de mensagem** — válidos e **inválidos de propósito**. Um conjunto que só sabe aceitar prova metade |
 | `casos/referencia.decisoes.json` | **9 decisões da mesa** (reenviar, esperar, reconciliar, não enviar). Família separada de propósito: os casos de mensagem correm nas **duas** linguagens; as decisões correm só na implementação da mesa |
-| `casos/conferencia.conformidade.json` | **12 casos de conformidade** contra manifestos-fixture, cada um com o número de mensagens que seriam enviadas (`enviadas=0` em toda a recusa) — é o que mede o SC-003 |
+| `casos/conferencia.conformidade.json` | **17 casos de conformidade** contra manifestos-fixture, cada um com o número de mensagens que seriam enviadas (`enviadas=0` em toda a recusa) — é o que mede o SC-003 |
 | `esqueleto/` | o enquadramento, os runners e as peças partilhadas, nas duas linguagens: `framing.{ts,py}`, `casos.{ts,py}`, `marca.ts` (a marca e os seus seis invariantes), `conferir.ts` (conferência contra o manifesto), `referencia.ts` (não-duplicação), `validar_linha.{ts,py}` (validar uma mensagem à mão) |
 | `mocks/setup/main.ts` | o setup falso: só decide o lado, e sabe ser inválido de propósito |
 | `mocks/conector/main.py` | o conector falso: traduz, resolve **antes** de executar, recusa em vez de arredondar, cumpre a idempotência que declara, e sabe ficar em silêncio |

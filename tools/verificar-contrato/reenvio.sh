@@ -14,7 +14,11 @@ set -uo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$RAIZ/contracts"
 
-base='{"contrato":"1.3.0","tipo":"boleta","id":"reenvio-b1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"REF-UNICA","marca_de_posse":1694498816}}'
+# A versao do contrato NAO se escreve aqui: LE-SE de contracts/versao.json. Escrita a mao, esta boleta
+# envelheceria em silencio na proxima emenda — e o reenvio passaria a medir uma recusa por versao.
+CONTRATO="$(jq -r .contrato "$RAIZ/contracts/versao.json")"
+
+base='{"contrato":"'"$CONTRATO"'","tipo":"boleta","id":"reenvio-b1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"REF-UNICA","marca_de_posse":1694498816}}'
 outra="${base/REF-UNICA/REF-DIFERENTE}"
 outra="${outra/reenvio-b1/reenvio-b2}"
 

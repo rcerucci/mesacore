@@ -1,0 +1,983 @@
+{
+  "nota": "Casos do conector Hyperliquid contra o DUBLE DE MESA (contracts/mocks/mesa) e contra as SETE PORTAS do arranque. Serve DOIS leitores, e di-lo: (1) o duble de mesa le `casos` no papel `conector` - entrega a boleta e confere o desfecho; (2) a bateria de conformidade (tools/verificar-conector/conformidade.ts) le `casos`, `sonda_base`, `manifesto`, `arranque`, `mesa_sem_vigia` e `provocacoes`. Nenhum numero do venue entra aqui por copia: `sonda_base` e a resposta do venue COMO ELA CHEGA, e o manifesto e construido a partir dela pela funcao pura do conector.",
+  "versao_do_contrato": {
+    "nota": "A versao do contrato NAO se escreve neste ficheiro: escreve-se o TOKEN, e os dois leitores (o duble de mesa em Python e a bateria de conformidade em TypeScript) trocam-no pela versao LIDA de `contracts/versao.json` - a vigente vive num so sitio, e um ficheiro de dados que a copiasse envelheceria em silencio na emenda seguinte (foi o que aconteceu a 1.4.0: as 26 mensagens ficaram na 1.3.0 e passaram a ser recusadas por `versao_do_contrato_divergente`).",
+    "vigente": "$CONTRATO",
+    "a_frente": "$CONTRATO_A_FRENTE",
+    "atras": "$CONTRATO_ATRAS",
+    "sem_tolerancia": "Um token desconhecido (ou um que fique por resolver) NAO passa como texto: os dois leitores RECUSAM. Um literal `$CONTRATO` a chegar ao validador daria `versao_do_contrato_divergente` em todos os casos e a bateria mediria outra coisa."
+  },
+  "mensagem": "desfecho",
+  "dono": "tools/verificar-conector/casos-duble.json",
+  "veredictos_do_duble": ["aceite", "recusado", "espera", "desconhecido"],
+  "nota_dos_veredictos": "O conjunto FECHADO de veredictos do duble de mesa (contracts/mocks/mesa/main.py, VEREDICTOS). Nao se confunde com `classificacoes_de_desfecho` do contrato (aceite|parcial|desconhecido|recusado): o veredicto e do duble, a classificacao e da mensagem.",
+  "motivos_do_duble": ["atraso_alem_do_prazo", "plugin_recusou"],
+  "nota_dos_motivos_do_duble": "Os motivos que sao do DUBLE (contracts/mocks/mesa/main.py: o silencio que passou o prazo e a recusa dita pelo plugin). Nao constam do vocabulario do contrato NEM do livro de motivos da mesa - e a bateria confere que nao constam, para dois nomes iguais nao ficarem com dois sentidos.",
+  "boleta_da_mesa": {
+    "contrato": "$CONTRATO",
+    "tipo": "boleta",
+    "id": "b-1",
+    "carga": {
+      "instrumento": "BTC",
+      "lado": "buy",
+      "tipo": "mercado",
+      "saldo_pct": "2",
+      "alavancagem": "5",
+      "parcial": "o_que_der",
+      "desvio_maximo": "0.5",
+      "prazo_da_passiva_ms": 3000,
+      "destino_do_resto": "agressivo",
+      "reduce_only": false,
+      "referencia_do_cliente": "hl-0001",
+      "marca_de_posse": 1694498816
+    }
+  },
+  "casos": [
+    {
+      "nome": "conector/desfecho-aceite",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "O caso feliz: a posicao existe inteira, e a resolucao traz os numeros do venue.",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "0.0123",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8842",
+            "estado": "filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-parcial",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "Execucao parcial: sabe-se exactamente o que ficou - parcial nao e desconhecido (RN-C2).",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "parcial",
+          "resolucao": {
+            "quantidade": "0.0123",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8842",
+            "estado": "partially_filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-desconhecido",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "O venue nao disse o que se passou: e estado de primeira classe, e a mesa tem de poder ouvi-lo (FR-015).",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "desconhecido",
+          "resolucao": {
+            "quantidade": "0.0123",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8842",
+            "estado": "sem_resposta_no_prazo"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-recusado-com-motivo",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "Recusa limpa, com o MOTIVO nomeado: um desfecho recusado sem motivo nao diz o que se passou (RN-C2).",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "recusado",
+          "motivo": "minimo_do_instrumento_acima_da_banda",
+          "resposta_do_venue": {
+            "erro": "min_volume",
+            "palavra_do_venue": "Order value below $10 minimum"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-recusado-sem-motivo-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "ADVERSARIO: recusado SEM motivo - o contrato exige o motivo na recusa, e recusa sem motivo e recusada por ele.",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "recusado",
+          "resposta_do_venue": {
+            "erro": "min_volume"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-sem-resolucao-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "ADVERSARIO: fora da recusa a resolucao e OBRIGATORIA - o desfecho nao se aceita pela palavra (RN-C10).",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "aceite",
+          "resposta_do_venue": {
+            "order_id": "8843",
+            "estado": "filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-classificacao-fora-do-conjunto-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "classificacao_fora_do_conjunto": true,
+      "nota": "ADVERSARIO: a classificacao e o conjunto FECHADO das quatro (aceite|parcial|desconhecido|recusado).",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "talvez",
+          "resolucao": {
+            "quantidade": "0.0123",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8842",
+            "estado": "filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-com-campo-a-mais-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido",
+      "nota": "ADVERSARIO: o contrato e FECHADO (D5) - um campo que o esquema nao declara recusa a mensagem inteira.",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "0.0123",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8842",
+            "estado": "filled"
+          },
+          "arredondamento": "0.0001"
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-com-unidade-de-corretora-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora",
+      "nota": "ADVERSARIO: numeros em unidade de corretora (pontos) - o desfecho leva a resolucao, e a resolucao nao tem unidade nossa.",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "0.0123",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00",
+            "pontos": "1230"
+          },
+          "resposta_do_venue": {
+            "order_id": "8844",
+            "estado": "filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-com-nulo-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_nulo_nao_permitido",
+      "nota": "ADVERSARIO: `null` nao existe no contrato (D4) - ausencia e a chave que nao esta la, e o valor nulo tem nome proprio.",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": null,
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8845",
+            "estado": "filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-com-expoente-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido",
+      "nota": "ADVERSARIO: decimal TEXTUAL sem expoente (D4) - '1.23e-2' tem o tipo certo e a forma errada.",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "1.23e-2",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8846",
+            "estado": "filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/desfecho-de-versao-a-frente-recusa",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "versao_do_contrato_divergente",
+      "nota": "ADVERSARIO: a versao a frente tambem e divergente - igualdade EXACTA, nunca 'compativel' (D7).",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO_A_FRENTE",
+        "tipo": "desfecho",
+        "id": "hl-0001",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "0.0123",
+            "nocional": "1000.00",
+            "margem_empenhada": "200.00",
+            "alavancagem_efectiva": "5",
+            "preco_de_liquidacao": "60000.00"
+          },
+          "resposta_do_venue": {
+            "order_id": "8842",
+            "estado": "filled"
+          }
+        }
+      }
+    },
+    {
+      "nome": "conector/mudo-dentro-do-prazo-espera",
+      "veredicto_esperado": "espera",
+      "motivo_esperado": null,
+      "nota": "ADVERSARIO: o conector calado DENTRO do prazo. Ainda se sabe que ele pode responder - e 'espera', nunca sucesso (FR-013).",
+      "modo_adversario": "silencio",
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      }
+    },
+    {
+      "nome": "conector/mudo-passado-o-prazo-desconhecido",
+      "veredicto_esperado": "desconhecido",
+      "motivo_esperado": "atraso_alem_do_prazo",
+      "nota": "ADVERSARIO: calado DEPOIS do prazo e DESCONHECIDO - ja nao se sabe se chegou a tempo, e nunca vira sucesso (FR-013).",
+      "modo_adversario": "silencio",
+      "chegada_ms": 20000,
+      "prazo_de_resposta_ms": 3000,
+      "boleta": {
+        "contrato": "$CONTRATO",
+        "tipo": "boleta",
+        "id": "b-1",
+        "carga": {
+          "instrumento": "BTC",
+          "lado": "buy",
+          "tipo": "mercado",
+          "saldo_pct": "2",
+          "alavancagem": "5",
+          "parcial": "o_que_der",
+          "desvio_maximo": "0.5",
+          "prazo_da_passiva_ms": 3000,
+          "destino_do_resto": "agressivo",
+          "reduce_only": false,
+          "referencia_do_cliente": "hl-0001",
+          "marca_de_posse": 1694498816
+        }
+      }
+    }
+  ],
+  "sonda_base": {
+    "venue": {
+      "nome": "hyperliquid",
+      "ambiente": "teste"
+    },
+    "versao_do_conector": "0.1.0",
+    "meta": {
+      "universe": [
+        {
+          "name": "BTC",
+          "szDecimals": 5,
+          "maxLeverage": 40
+        },
+        {
+          "name": "ETH",
+          "szDecimals": 4,
+          "maxLeverage": 25
+        }
+      ]
+    },
+    "instrumentos_pedidos": ["BTC"],
+    "minimo_de_valor_por_ordem": "10",
+    "modos_de_margem": ["cruzado", "isolado"],
+    "tipos_de_ordem": ["mercado", "limite"],
+    "parcial_suportada": ["o_que_der"],
+    "desvio_maximo": "0.5",
+    "reduce_only_suportado": true,
+    "stop_anexo": false,
+    "ajusta_alavancagem": true,
+    "profundidade_de_livro": 5,
+    "funding_publicado": true,
+    "relogio_de_fecho_de_barra": "continuo",
+    "idempotencia": true,
+    "marca_de_posse": "cloid",
+    "marca_liga_ordem_a_posicao": false,
+    "estado_do_mercado": true
+  },
+  "capacidades_da_sonda": [
+    "ajusta_alavancagem",
+    "reduce_only_suportado",
+    "stop_anexo",
+    "funding_publicado",
+    "idempotencia",
+    "marca_liga_ordem_a_posicao",
+    "estado_do_mercado"
+  ],
+  "nota_das_capacidades": "As SETE booleanas da sonda. Cada uma leva um caso de ausencia: capacidade nao declarada e RECUSA (`capacidade_nao_declarada`), nunca `true` por omissao (FR-004, fail-closed). A lista vive aqui, e nao no codigo da bateria, para um campo novo nao entrar sem caso.",
+  "manifesto": [
+    {
+      "caso": "manifesto/sonda-completa",
+      "esperadoOk": true,
+      "conferir": {
+        "conector.nome": "hyperliquid",
+        "conector.versao": "0.1.0",
+        "instrumentos.0.simbolo": "BTC",
+        "instrumentos.0.passo": "0.00001",
+        "instrumentos.0.alavancagem_maxima": "40",
+        "marca_de_posse": "cloid",
+        "reduce_only_suportado": true,
+        "stop_anexo": false
+      }
+    },
+    {
+      "caso": "manifesto/o-limite-muda-no-venue-e-o-manifesto-segue",
+      "esperadoOk": true,
+      "conferir": {
+        "instrumentos.0.alavancagem_maxima": "40"
+      },
+      "segunda_sonda": {
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 20
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25
+            }
+          ]
+        }
+      },
+      "conferir_na_segunda": {
+        "instrumentos.0.alavancagem_maxima": "20"
+      },
+      "nota": "SC-001: o manifesto seguinte reflecte a mudanca do venue SEM uma linha de codigo nosso mudar."
+    },
+    {
+      "caso": "manifesto/instrumento-que-nao-existe-no-venue-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "porque_contem": "SOL",
+      "sonda": {
+        "instrumentos_pedidos": ["BTC", "SOL"]
+      },
+      "nota": "FR-003: recusa e diz QUAL o instrumento que nao encontrou."
+    },
+    {
+      "caso": "manifesto/minimo-do-venue-ausente-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sonda": {
+        "minimo_de_valor_por_ordem": null
+      }
+    },
+    {
+      "caso": "manifesto/marca-fora-do-conjunto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "sonda": {
+        "marca_de_posse": "nonce"
+      }
+    },
+    {
+      "caso": "manifesto/tipo-de-ordem-fora-do-conjunto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "sonda": {
+        "tipos_de_ordem": ["mercado", "iceberg"]
+      }
+    }
+  ],
+  "arranque": {
+    "nota": "As SETE portas do arranque, uma de cada vez, mais a ordem. O `padrao` e declarado AQUI (e nao lido de outro fixture) porque a configuracao e do CONECTOR: ela nomeia o conector `hyperliquid` e os instrumentos que o manifesto dele declara. O manifesto e construido a partir de `sonda_base` pela funcao pura do conector - as portas olham para o manifesto A SERIO, nao para uma copia.",
+    "ordem_das_portas": ["conectores", "manifesto", "mandato", "contenda", "inventario", "versao_do_contrato", "sessao"],
+    "padrao": {
+      "config": {
+        "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "sem_ligacao"],
+        "margem_total_maxima_pct": "100",
+        "contencao": null,
+        "fichas": {
+          "BTC": {
+            "saldo_pct": "1",
+            "alavancagem": "5",
+            "bandas": {
+              "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+              "alavancagem": { "minimo": "1", "maximo": "20" }
+            }
+          }
+        },
+        "arranque_apos_cb": "exige_decisao",
+        "conectores": ["hyperliquid"]
+      },
+      "marcas": {
+        "sessao": null,
+        "inibicao_cb": null,
+        "desconhecido": [],
+        "pedidos": []
+      },
+      "registo_retomavel": true,
+      "conectores_de_pe": ["hyperliquid"],
+      "inventario": { "ok": true, "problemas": [] }
+    },
+    "casos": [
+      {
+        "nome": "portas/as-sete-passam",
+        "porta_esperada": null,
+        "motivo_esperado": null,
+        "arrancou_esperado": true,
+        "nota": "O caminho feliz: sem ele, as recusas nao significam nada."
+      },
+      {
+        "nome": "portas/conectores-recusa-sem-dizer-qual",
+        "conectores_de_pe": [],
+        "porta_esperada": "conectores",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "detalhe_esperado": "hyperliquid",
+        "arrancou_esperado": false,
+        "nota": "FR-005/FR-019: a mesa recusa arrancar sem o conector que ela propria nomeia, e diz QUAL."
+      },
+      {
+        "nome": "portas/manifesto-recusa-instrumento-sem-unidade-declarada",
+        "config_mudanca": {
+          "fichas": {
+            "BTC": {
+              "saldo_pct": "1",
+              "alavancagem": "5",
+              "bandas": {
+                "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+                "alavancagem": { "minimo": "1", "maximo": "20" }
+              }
+            },
+            "ETH": { "saldo_pct": "1", "alavancagem": "5" }
+          }
+        },
+        "porta_esperada": "manifesto",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "arrancou_esperado": false,
+        "nota": "FR-003: o mandato nomeia ETH e o manifesto do conector nao o declara (so publicou o que foi pedido). Recusa nomeando o instrumento."
+      },
+      {
+        "nome": "portas/manifesto-recusa-o-contrato",
+        "manifesto_mudanca": { "reduce_only_suportado": "sim" },
+        "porta_esperada": "manifesto",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "motivo_do_contrato_esperado": "tipo_invalido",
+        "arrancou_esperado": false,
+        "nota": "O manifesto que o CONTRATO recusa: a forma e conferida antes de qualquer regra nossa."
+      },
+      {
+        "nome": "portas/mandato-recusa-saldo-pct-fora-da-banda",
+        "config_mudanca": {
+          "fichas": {
+            "BTC": {
+              "saldo_pct": "9",
+              "alavancagem": "5",
+              "bandas": {
+                "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+                "alavancagem": { "minimo": "1", "maximo": "20" }
+              }
+            }
+          }
+        },
+        "porta_esperada": "mandato",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "arrancou_esperado": false,
+        "nota": "FR-032: a mesa NAO encolhe o valor para o fazer caber na banda - recusa."
+      },
+      {
+        "nome": "portas/contenda-recusa-sem-politica-declarada",
+        "config_mudanca": {
+          "margem_total_maxima_pct": "0.5",
+          "contencao": null,
+          "fichas": {
+            "BTC": { "saldo_pct": "0.6", "alavancagem": "5" }
+          }
+        },
+        "porta_esperada": "contenda",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "arrancou_esperado": false,
+        "nota": "Contenda nao se resolve por omissao: sem politica declarada, recusa. (O teto e os saldos levam a MESMA casa decimal: a soma da contenda e feita em inteiros escalados, e um teto com mais casas do que os saldos nao tem escala comum.)"
+      },
+      {
+        "nome": "portas/inventario-recusa-chave-sem-origem",
+        "inventario": { "ok": false, "problemas": ["a chave `conta.alavancagem_maxima` esta em uso e nao consta do inventario"] },
+        "porta_esperada": "inventario",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "arrancou_esperado": false
+      },
+      {
+        "nome": "portas/versao-do-contrato-recusa",
+        "manifesto_mudanca": { "versao": "$CONTRATO_ATRAS" },
+        "porta_esperada": "versao_do_contrato",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "motivo_do_contrato_esperado": "versao_do_contrato_divergente",
+        "arrancou_esperado": false,
+        "nota": "D7: a versao confere-se por igualdade exacta, e o motivo do CONTRATO fica ao lado do nosso."
+      },
+      {
+        "nome": "portas/sessao-recusa-registo-nao-retomavel",
+        "registo_retomavel": false,
+        "porta_esperada": "sessao",
+        "motivo_esperado": "registo_nao_retomavel",
+        "arrancou_esperado": false
+      },
+      {
+        "nome": "portas/sessao-recusa-inibicao-do-cb",
+        "marcas_mudanca": {
+          "inibicao_cb": { "motivo": "perda de 5% na sessao", "instante_ms": 1, "perda_medida": "50.00" }
+        },
+        "porta_esperada": "sessao",
+        "motivo_esperado": "sessao_inibida",
+        "arrancou_esperado": false
+      },
+      {
+        "nome": "portas/ordem-o-primeiro-manda",
+        "config_mudanca": {
+          "margem_total_maxima_pct": "0.5",
+          "fichas": {
+            "BTC": {
+              "saldo_pct": "0.9",
+              "alavancagem": "5",
+              "bandas": {
+                "saldo_pct": { "minimo": "0.1", "maximo": "5" },
+                "alavancagem": { "minimo": "1", "maximo": "20" }
+              }
+            },
+            "ETH": { "saldo_pct": "0.5", "alavancagem": "5" }
+          }
+        },
+        "manifesto_mudanca": { "versao": "$CONTRATO_ATRAS" },
+        "inventario": { "ok": false, "problemas": ["chave sem origem"] },
+        "registo_retomavel": false,
+        "porta_esperada": "manifesto",
+        "motivo_esperado": "porta_do_arranque_falhou",
+        "arrancou_esperado": false,
+        "nota": "CINCO portas falham depois dos conectores (manifesto, contenda, inventario, versao_do_contrato, sessao) e o motivo que sai e o da PRIMEIRA. Sem isto, o motivo que o dono le depende de quem escreveu o codigo por ultimo."
+      }
+    ]
+  },
+  "mesa_sem_vigia": {
+    "nota": "A mesa continua a operar quando a costura fecha (FR-006). O fixture do ciclo e o do proprio core: a decisao de cada volta e a que a bateria do ciclo ja declara para a mesma leitura.",
+    "caso_do_ciclo": "core/ciclo/ciclo.casos.json",
+    "prefixo_do_caso": "normal-proposta-buy-abre",
+    "tick_ms": 120,
+    "espera_ms": 900,
+    "minimo_de_voltas": 2,
+    "config": {
+      "eventos_que_avisam": ["desconhecido", "recusa", "divergencia", "falha_de_leitura", "congelamento", "cb", "encerramento", "contenda", "sem_ligacao"],
+      "margem_total_maxima_pct": "100",
+      "contencao": null,
+      "fichas": {
+        "EURUSD": { "saldo_pct": "1", "alavancagem": "2" }
+      },
+      "arranque_apos_cb": "exige_decisao",
+      "conectores": ["hyperliquid"]
+    }
+  },
+  "provocacoes": [
+    {
+      "nome": "envelope-com-campo-a-mais",
+      "tipo": "envelope",
+      "base": "manifesto",
+      "alvo": "carga",
+      "mudanca": { "campo_inventado": "1" },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido"
+    },
+    {
+      "nome": "envelope-com-campo-em-unidade-de-corretora",
+      "tipo": "envelope",
+      "base": "desfecho",
+      "alvo": "carga.resolucao",
+      "mudanca": { "pontos": "1230" },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora"
+    },
+    {
+      "nome": "envelope-com-nulo",
+      "tipo": "envelope",
+      "base": "manifesto",
+      "alvo": "carga",
+      "mudanca": { "desvio_maximo": null },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_nulo_nao_permitido"
+    },
+    {
+      "nome": "envelope-com-decimal-em-expoente",
+      "tipo": "envelope",
+      "base": "manifesto",
+      "alvo": "carga.instrumentos.0",
+      "mudanca": { "passo": "1e-5" },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido"
+    },
+    {
+      "nome": "envelope-com-versao-a-frente",
+      "tipo": "envelope",
+      "base": "manifesto",
+      "alvo": "",
+      "mudanca": { "contrato": "$CONTRATO_A_FRENTE" },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "versao_do_contrato_divergente"
+    },
+    {
+      "nome": "motivo-fora-do-vocabulario",
+      "tipo": "vocabulario",
+      "motivo": "motivo_inventado_pela_bateria",
+      "nota": "Um motivo que nao existe em contracts/vocabulario.json tem de REPROVAR - se passar, a bateria aceita nomes que o contrato nao conhece."
+    },
+    {
+      "nome": "veredicto-fora-do-conjunto",
+      "tipo": "veredicto",
+      "veredicto": "talvez",
+      "nota": "Um veredicto fora do conjunto fechado do duble tem de REPROVAR."
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "contrato": "1.3.0",
+  "contrato": "1.4.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",
@@ -181,6 +181,14 @@
       "descricao": "O minimo do instrumento obriga a mais risco do que a banda autoriza.",
       "quando": "RN-C9: recusa em vez de arredondar. Nao ha resolucao; ha desfecho recusado COM MOTIVO."
     },
+    "valor_abaixo_do_minimo_do_venue": {
+      "descricao": "O valor da ordem fica ABAIXO do minimo de valor por ordem que o venue impoe.",
+      "quando": "E o PISO declarado em `manifesto.minimo_de_valor_por_ordem` (o venue recusa ordens abaixo dele). O valor IGUAL ao minimo passa: o minimo e um piso, nao um «acima de». Motivo proprio, e nao `valor_fora_da_banda`, porque a causa e outra: nao se excedeu limite nenhum — ficou-se abaixo do piso do venue."
+    },
+    "instrumento_deslistado_no_venue": {
+      "descricao": "O mandato nomeia um instrumento que o venue lista como DESLISTADO.",
+      "quando": "O venue continua a listar o instrumento (`meta.universe`) e declara `isDelisted: true`. Existir na lista NAO e estar a venda: a mesa recusa o mandato em vez de operar um instrumento que o venue deu por encerrado (medido: 54 de 212 instrumentos no venue de teste)."
+    },
     "prazo_excedido": {
       "descricao": "A ponta nao respondeu dentro do prazo declarado.",
       "quando": "Nao e excepcao, e ESTADO: setup silencioso congela o instrumento (RN-S8); conector silencioso da desfecho desconhecido (RN-T7.1)."
@@ -200,6 +208,8 @@
     "campo_obrigatorio_ausente",
     "formato_invalido",
     "tipo_invalido",
-    "valor_fora_do_conjunto"
+    "valor_fora_do_conjunto",
+    "valor_abaixo_do_minimo_do_venue",
+    "instrumento_deslistado_no_venue"
   ]
 }

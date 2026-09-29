@@ -15,13 +15,38 @@ function lerJson(caminho: string): any {
   return JSON.parse(readFileSync(caminho, "utf8"));
 }
 
-/** O que o venue responde. Tudo o que o manifesto afirma tem de vir daqui. */
+/**
+ * O que o venue responde. Tudo o que o manifesto afirma tem de vir daqui.
+ *
+ * As chaves de `meta.universe` e dos escaloes sao as do VENUE, tal como ele as escreve (`isDelisted`,
+ * `fundingIntervalHours`, `marginTiers[].lowerBound`): a sonda e a leitura crua, e quem traduz para a
+ * lingua do contrato e `construirManifesto`. Traduzir na leitura seria esconder o que o venue disse.
+ */
 export type Sonda = {
   venue: { nome: string; ambiente: "teste" | "producao" };
   versao_do_conector: string;
-  meta: { universe: { name: string; szDecimals: number; maxLeverage: number }[] };
+  /**
+   * O universo do venue. OPCIONAL de proposito: se a leitura do `meta` falhar, a sonda NAO pode escrever
+   * uma lista vazia — uma lista vazia diria «o instrumento nao existe no venue» quando a verdade e «nao se
+   * leu». Sem `meta`, o manifesto recusa com `campo_obrigatorio_ausente` e nomeia `meta.universe`.
+   */
+  meta?: {
+    universe: {
+      name: string;
+      szDecimals: number;
+      maxLeverage: number;
+      /** `isDelisted` do venue: a chave so aparece quando e verdadeira (medido: 54 de 212 instrumentos). */
+      isDelisted?: boolean;
+      /** `fundingIntervalHours` da leitura `predictedFundings()[coin][HlPerp]`. */
+      fundingIntervalHours?: number;
+      /** `marginTiers` da tabela de margem do instrumento (`lowerBound` textual, como o venue o da). */
+      marginTiers?: { lowerBound: string; maxLeverage: number }[];
+    }[];
+  };
   instrumentos_pedidos: string[];
   minimo_de_valor_por_ordem?: string;
+  /** Aditivo na 1.4.0: o TECTO, e so quando o venue o declara. Sonda que nao o traga nao produz tecto. */
+  maximo_de_valor_por_ordem?: string;
   modos_de_margem?: string[];
   tipos_de_ordem?: string[];
   parcial_suportada?: string[];
@@ -71,6 +96,26 @@ function dezElevadoA(casas: number): string {
  * RECUSA (valor_fora_do_conjunto). Um campo que falta nunca fica com o valor "de sempre".
  */
 export function construirManifesto(sonda: Sonda): Resultado {
+  // ---- 0. O MANDATO: os instrumentos que o dono nomeou existem, e estao VIVOS? ----------------------
+  //
+  // Esta passagem vem PRIMEIRO, e de proposito. Numa sonda real as outras grandezas ainda nao estao todas
+  // medidas (o minimo de valor por ordem, por exemplo, so a bateria de conformidade o mede), e uma recusa
+  // por campo em falta deixaria passar o problema mais grave sem o nomear: o mandato a pedir um instrumento
+  // que o venue deu por ENCERRADO (`isDelisted`, medido: 54 de 212). Aqui NAO se le a unidade — le-se so o
+  // que decide se o mandato pode existir.
+  const universoDoMandato = sonda?.meta?.universe;
+  if (Array.isArray(universoDoMandato)) {
+    for (const simbolo of sonda?.instrumentos_pedidos ?? []) {
+      const cru = universoDoMandato.find((u) => u.name === simbolo);
+      if (cru?.isDelisted === true) {
+        return recusa(
+          "instrumento_deslistado_no_venue",
+          `o instrumento ${simbolo} esta DESLISTADO no venue (isDelisted) — o mandato nao pode nomea-lo`,
+        );
+      }
+    }
+  }
+
   // O que a sonda tem de trazer, sem o que nao ha manifesto nenhum.
   const obrigatorios: [string, unknown][] = [
     ["meta.universe", sonda?.meta?.universe],
@@ -87,6 +132,23 @@ export function construirManifesto(sonda: Sonda): Resultado {
     if (valor === undefined || valor === null) {
       return recusa("campo_obrigatorio_ausente", `a sonda do venue nao trouxe ${nome} — sem ele nao ha manifesto`);
     }
+  }
+
+  // A profundidade do livro: o esquema do contrato exige um inteiro >= 0, e uma sonda que a nao trouxesse
+  // produzia um manifesto «ok» que o proprio esquema rejeitava — um buraco fail-OPEN. Fecha-se aqui: sem
+  // profundidade declarada nao ha manifesto.
+  if (sonda.profundidade_de_livro === undefined || sonda.profundidade_de_livro === null) {
+    return recusa(
+      "campo_obrigatorio_ausente",
+      "a sonda do venue nao trouxe profundidade_de_livro — sem ela o esquema do manifesto rejeitava o manifesto, " +
+        "e o setup nao sabia o que nao ve",
+    );
+  }
+  if (typeof sonda.profundidade_de_livro !== "number" || !Number.isInteger(sonda.profundidade_de_livro) || sonda.profundidade_de_livro < 0) {
+    return recusa(
+      "tipo_invalido",
+      `a profundidade_de_livro tem de ser um inteiro nao negativo, e a sonda trouxe ${JSON.stringify(sonda.profundidade_de_livro)}`,
+    );
   }
 
   // As capacidades booleanas: ausentes NAO viram `true` por omissao (fail-closed).
@@ -109,20 +171,47 @@ export function construirManifesto(sonda: Sonda): Resultado {
   }
 
   // Os instrumentos: cada um com a SUA unidade. Sem unidade declarada nao ha resolucao possivel.
+  const universo = sonda.meta?.universe;
+  if (!Array.isArray(universo)) {
+    // Cinto e suspensorios: o laco dos obrigatorios ja recusou acima, e esta guarda impede que uma leitura
+    // falhada vire «o instrumento nao existe no venue» por outra porta.
+    return recusa(
+      "campo_obrigatorio_ausente",
+      "a sonda do venue nao trouxe meta.universe — sem ele nao se sabe que instrumentos existem",
+    );
+  }
   const instrumentos = [];
   for (const simbolo of sonda.instrumentos_pedidos) {
-    const cru = sonda.meta.universe.find((u) => u.name === simbolo);
+    const cru = universo.find((u) => u.name === simbolo);
     if (!cru) {
       return recusa(
         "valor_fora_do_conjunto",
         `o instrumento ${simbolo} nao existe no venue`,
       );
     }
+    // O deslistado NAO se confere aqui: a passagem 0 ja recusou o mandato que nomeia um instrumento que o
+    // venue deu por encerrado, e essa recusa sai ANTES de qualquer leitura de unidade. Este laco so chega
+    // aos instrumentos vivos.
     if (typeof cru.szDecimals !== "number" || typeof cru.maxLeverage !== "number") {
       return recusa(
         "campo_obrigatorio_ausente",
         `o venue nao declarou szDecimals/alavancagem maxima para ${simbolo}`,
       );
+    }
+    // O que o venue declarar a MAIS entra porque ele o declarou — nunca por omissao nossa:
+    //   - `deslistado` quando o venue escreve a chave (o contrato distingue «declarado falso» de «nao dito»);
+    //   - `funding_intervalo_horas` quando a cadencia vem inteira e positiva (uma cadencia de 0 horas nao existe);
+    //   - `alavancagem_por_escalao` quando o venue publica os escaloes, com o limite INFERIOR que ele da.
+    const extra: Record<string, unknown> = {};
+    if (typeof cru.isDelisted === "boolean") extra.deslistado = cru.isDelisted;
+    if (typeof cru.fundingIntervalHours === "number" && Number.isInteger(cru.fundingIntervalHours) && cru.fundingIntervalHours >= 1) {
+      extra.funding_intervalo_horas = cru.fundingIntervalHours;
+    }
+    if (Array.isArray(cru.marginTiers) && cru.marginTiers.length > 0) {
+      extra.alavancagem_por_escalao = cru.marginTiers.map((escalao) => ({
+        de: escalao.lowerBound,
+        maxima: String(escalao.maxLeverage),
+      }));
     }
     instrumentos.push({
       simbolo: cru.name,
@@ -131,6 +220,7 @@ export function construirManifesto(sonda: Sonda): Resultado {
       passo: dezElevadoA(cru.szDecimals),
       tick: dezElevadoA(Math.max(0, 6 - cru.szDecimals)),
       alavancagem_maxima: String(cru.maxLeverage),
+      ...extra,
     });
   }
 
@@ -158,7 +248,14 @@ export function construirManifesto(sonda: Sonda): Resultado {
     instrumentos,
     sabe_ajustar_alavancagem: sonda.ajusta_alavancagem,
     modos_de_margem: sonda.modos_de_margem,
-    teto_de_valor_por_ordem: sonda.minimo_de_valor_por_ordem,
+    // O nome diz o que o valor E: a sonda mede o MINIMO de valor por ordem do venue (abaixo dele o venue
+    // recusa a ordem). Ate a 1.4.0 este valor saia daqui com o nome `teto_de_valor_por_ordem` — o nome
+    // mentia, e quem o lia como tecto decidia ao contrario. O tecto, quando existe, vem no campo aditivo
+    // abaixo, e so quando o venue o declara.
+    minimo_de_valor_por_ordem: sonda.minimo_de_valor_por_ordem,
+    ...(sonda.maximo_de_valor_por_ordem !== undefined && sonda.maximo_de_valor_por_ordem !== null
+      ? { maximo_de_valor_por_ordem: sonda.maximo_de_valor_por_ordem }
+      : {}),
     modelo_de_posicao: "netting",
     tipos_de_ordem: sonda.tipos_de_ordem,
     parcial_suportada: sonda.parcial_suportada,

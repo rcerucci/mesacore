@@ -23,6 +23,17 @@ from pathlib import Path
 import venue
 
 AQUI = Path(__file__).resolve().parent
+CONTRATOS = AQUI.parent.parent
+
+
+def versao_do_contrato() -> str:
+    """A versao do contrato, LIDA de contracts/versao.json — como os outros dois mocks.
+
+    Escrita no codigo, esta versao vira uma segunda verdade e sobrevive a uma emenda do contrato: a
+    mensagem sai com a versao velha e o motor do contrato recusa-a por `versao_do_contrato_divergente`.
+    """
+    with (CONTRATOS / "versao.json").open(encoding="utf-8") as ficheiro:
+        return json.load(ficheiro)["contrato"]
 
 
 def quantizar(valor: Decimal, passo: str) -> str:
@@ -77,7 +88,7 @@ def main() -> int:
         "resultado_realizado": conta["resultado_realizado"][instrumento],
         "execucoes": execucoes,
     }
-    envelope = {"contrato": "1.3.0", "tipo": "historico", "id": f"historico-{instrumento}", "carga": carga}
+    envelope = {"contrato": versao_do_contrato(), "tipo": "historico", "id": f"historico-{instrumento}", "carga": carga}
     print(json.dumps(envelope, separators=(",", ":"), ensure_ascii=False))
 
     # Medido, para o relatorio: a soma das parcelas NAO da o numero do venue.

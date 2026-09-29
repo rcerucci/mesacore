@@ -1,0 +1,859 @@
+RELATORIO — A SONDA REAL DO VENUE (testnet) A ALIMENTAR O MANIFESTO
+spec 004-conector-hyperliquid · US2 (T015-T022) e T071 · as duas emendas ao manifesto que a medicao exigiu
+
+quando: 2026-09-29T14:33:57-03:00 (-03) · quem mediu: esta sessao, contra o venue, na hora
+ambiente: teste — https://api.hyperliquid-testnet.xyz (sdk @nktkas/hyperliquid, InfoClient + HttpTransport({isTestnet:true}))
+conta: 0xF87138D298E338962E1a2e0ff23267Dc32c15621 (endereco PUBLICO; nenhuma chave foi lida, usada ou escrita em nenhuma destas leituras)
+nada aqui assina, nada aqui envia ordem: todas as leituras sao publicas (as quatro de conta levam o `user`, e sao publicas por natureza)
+o que entrou em cada ficheiro: sonda.ts (novo: a sonda do venue), manifesto.ts (duas emendas, ver §5),
+leitura.ts (novo: as DUAS carteiras), casos/sonda.casos.json (novo: 12 casos offline), este relatorio
+
+========================================================================================================
+0. O QUE ESTE RELATORIO RESPONDE
+========================================================================================================
+
+O pedido era: construir o manifesto a partir de uma sonda REAL do venue, sem nenhum campo inventado, e
+dizer exatamente qual campo nao e publicamente medivel e por que.
+
+A resposta, medida:
+
+  * a sonda LE o venue e mede 9 dos 15 campos do manifesto so com leitura publica (mais 1 campo de contexto
+    que o contrato nao tem onde guardar: a cadencia do funding);
+  * 6 campos NAO tem leitura publica nenhuma. Nao foram inventados, nem preenchidos por omissao, nem
+    copiados da documentacao (RN-C1): ficam DESCONHECIDOS, ditos pelo nome, e o manifesto RECUSA nomeando
+    cada um deles — um a um, medido em §2.3;
+  * com esses 6 declarados (e so por quem os pode medir: a BATERIA DE CONFORMIDADE, RN-C6), o manifesto
+    CONSTROI-SE e o esquema do contrato 1.3.0 aceita-o, com os outros 9 valores vindos da sonda real (§2.3,
+    ultima volta). Ou seja: nao falta nada a sonda que se possa medir publicamente;
+  * T071: o venue tem DUAS carteiras. Neste instante a conta tem 998.46 na do PERPETUO e 0.004965 na do SPOT
+    (§3.1). Quem le so o perpetuo ve dinheiro; quem le so o spot ve uma conta quase vazia. O conector le as
+    duas, diz qual e qual, e NAO as soma.
+
+========================================================================================================
+1. AS VERIFICACOES — COMANDO E SAIDA CRUA
+========================================================================================================
+
+1.1 tipos
+
+    $ bun x tsc --noEmit
+    rc=1
+    Resolving dependencies
+    Resolved, downloaded and extracted [2]
+    Version 7.0.2
+    (e a seguir o compilador imprime a AJUDA — nao compilou nada)
+
+    $ bun x tsc --showConfig
+    rc=1
+    error TS5081: Cannot find a tsconfig.json file at the current directory: /home/cerucci/Projects/MesaCore.
+
+    ACHADO (ferramenta): nao ha `tsconfig.json` na raiz, por isso o `bun x tsc --noEmit` da raiz nao confere
+    nada — imprime a ajuda e sai com rc=1. O pedido "bun x tsc --noEmit tem de passar" nao e satisfazivel na
+    raiz como esta. O que confere o conector e a invocacao explicita, com os tipos do bun e do node:
+
+    $ ./tools/node_modules/.bin/tsc --noEmit --target esnext --module esnext --moduleResolution bundler \
+        --strict --allowImportingTsExtensions --skipLibCheck --types bun --typeRoots core/node_modules/@types \
+        brokers/hyperliquid/manifesto.ts brokers/hyperliquid/sonda.ts brokers/hyperliquid/leitura.ts \
+        brokers/hyperliquid/casos/correr.ts
+    rc=0
+
+    E o projecto confere os quatro directorios que TEM tsconfig — `brokers/` nao esta na lista do
+    tools/verificar-maquina/tipos.sh (equivalente correndo o mesmo tsc, um directorio de cada vez):
+
+    $ for d in core vigia tools contracts; do (cd $d && tools/node_modules/.bin/tsc -p tsconfig.json --noEmit); done
+  core: 0 erros de tipo
+  vigia: 0 erros de tipo
+  tools: 0 erros de tipo
+  contracts: 0 erros de tipo
+
+    ACHADO (ferramenta): `tipos.sh` percorre `core vigia tools contracts` e NAO entra em `brokers/` — o
+    conector nao e conferido pelo portao de tipos do projecto. Sem a invocacao explicita acima, um erro de
+    tipo no conector passa a correr (o bun nao confere tipos) e rebenta em execucao.
+
+1.2 os casos do manifesto que ja existiam (nao mexi neles)
+
+    $ bun brokers/hyperliquid/casos/correr.ts
+    rc=0
+{"caso":"manifesto/sonda-completa-ok","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"manifesto/mudanca-no-venue-muda-o-manifesto","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"manifesto/instrumento-inexistente-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-nao-declarada-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/minimo-do-venue-ausente-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/marca-fora-do-conjunto-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/tipo-de-ordem-fora-do-conjunto-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/unidade-do-instrumento-nao-declarada-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/sem-alavancagem-maxima-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-ajusta-alavancagem","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-reduce-only-suportado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-stop-anexo","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-funding-publicado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-idempotencia","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-marca-liga-ordem-a-posicao","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-estado-do-mercado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+manifesto: 16 casos · 16 ok · 0 divergentes · 16 declarados
+
+1.3 os casos novos da sonda (12 casos, em dado)
+
+    $ bun brokers/hyperliquid/casos/correr.ts brokers/hyperliquid/casos/sonda.casos.json
+    rc=0
+{"caso":"sonda-real/venue-medido-recusa-enquanto-o-minimo-nao-for-publicado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"sonda-real/com-o-minimo-da-bateria-recusa-no-campo-seguinte","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"sonda-real/com-o-minimo-e-o-desvio-recusa-na-alavancagem","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"sonda-real/sem-parada-anexa-medida-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"sonda-real/com-os-seis-da-bateria-o-manifesto-constroi-se","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"sonda-real/segundo-instrumento-do-mandato-traz-a-sua-unidade","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"sonda-real/mudanca-no-venue-muda-o-manifesto","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"sonda-real/profundidade-medida-no-venue-atravessa-o-manifesto","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"sonda-real/sem-profundidade-de-livro-medida-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"sonda-real/meta-ilegivel-nao-vira-instrumento-inexistente","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"sonda-real/instrumento-que-o-venue-nao-lista-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"sonda-real/declarar-false-e-uma-declaracao-ausente-nao-e","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+manifesto: 12 casos · 12 ok · 0 divergentes · 12 declarados
+
+    O que estes 12 casos cobrem: a sonda como o venue a deu RECUSA (e o `motivo_esperado` e conferido);
+    encher cada campo que o venue nao publica leva a recusa seguinte (as portas sao sequenciais, nao se
+    atropelam); com os seis declarados o manifesto constroi-se E O ESQUEMA DO CONTRATO ACEITA-O (quem valida
+    e o ajv, dentro do corredor); um segundo instrumento do mandato traz a SUA unidade (ETH != BTC);
+    mudanca no venue muda o manifesto; a profundidade medida atravessa; um `meta` ilegivel NAO vira
+    "instrumento inexistente" (recusa com campo_obrigatorio_ausente, nao com valor_fora_do_conjunto);
+    `false` declarado e uma declaracao, ausente nao e.
+
+1.4 as provas do projecto que nao precisam do venue
+
+    $ bun brokers/hyperliquid/casos/correr-credencial.ts
+    rc=0 :: credencial: 9 casos · 9 ok · 0 divergentes
+
+    $ bun tools/verificar-conector/porta-das-dependencias.ts
+    rc=0 :: {"porta":"dependencias","manifesto":"package.json","ficheiros_lidos":9,"imports_nus":1,"declaradas":["@nktkas/hyperliquid","ajv","viem"],"nao_declaradas":[],"veredicto":"aprovado"}
+
+1.5 a bateria de conformidade (a do outro trabalho, corrida para provar que eu nao a parti)
+
+    $ bun tools/verificar-conector/conformidade.ts
+    rc=0 :: conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+
+    Corrida porque a emenda 1 do manifesto (§5) acrescenta uma porta na sequencia: se algum duble da bateria
+    nao trouxesse `profundidade_de_livro` na sonda, o manifesto recusava e a bateria caia. Conferido: o
+    `sonda_base` do casos-duble.json traz o campo, e as 9 provas passam.
+
+========================================================================================================
+2. (a) A SONDA CONTRA O VENUE REAL — SAIDA CRUA
+========================================================================================================
+
+2.1 o registo dos campos: o que se mediu, ONDE, e o que nao se mediu
+
+    $ bun -e '
+    const { InfoClient, HttpTransport } = await import("@nktkas/hyperliquid");
+    const S = await import("./brokers/hyperliquid/sonda.ts");
+    const info = new InfoClient({ transport: new HttpTransport({ isTestnet: true }) });
+    const pedido = { venue: "hyperliquid", ambiente: "teste", versao_do_conector: "0.1.0",
+                     instrumentos_pedidos: ["BTC","ETH"], instante_de_referencia_ms: Date.now() };
+    const r = await S.sondar(S.portaDoCliente(info), pedido, "0xF87138D298E338962E1a2e0ff23267Dc32c15621");
+    console.log(JSON.stringify({ campos: r.campos, nao_medidos: r.nao_medidos, manifesto: r.manifesto }, null, 1));
+    '
+    rc=0
+{
+ "campos": [
+  {
+   "campo": "meta.universe",
+   "estado": "medido",
+   "valor": "212 instrumentos",
+   "fonte": "info.meta().universe[]",
+   "porque": "o venue devolveu 212 instrumentos com name/szDecimals/maxLeverage (dos quais 54 trazem isDelisted=true: o venue continua a lista-los, e o manifesto nao tem campo para a deslistagem — fica anotado, nao escondido)"
+  },
+  {
+   "campo": "instrumentos_pedidos",
+   "estado": "medido",
+   "valor": [
+    "BTC",
+    "ETH"
+   ],
+   "fonte": "pedido (config do conector)",
+   "porque": "os instrumentos do mandato NAO sao um facto do venue: o manifesto confere-os contra `meta.universe` e recusa nomeando o que nao encontrar"
+  },
+  {
+   "campo": "funding_publicado",
+   "estado": "medido",
+   "valor": true,
+   "fonte": "info.metaAndAssetCtxs()[1][].funding",
+   "porque": "o venue publica a taxa de funding por instrumento (208 de 212 contextos trazem `funding`; exemplo medido: BTC = 0.0000125), e `predictedFundings` declara o intervalo horario"
+  },
+  {
+   "campo": "funding.cadencia",
+   "estado": "medido",
+   "valor": "horaria",
+   "fonte": "info.predictedFundings()[coin][HlPerp].fundingIntervalHours",
+   "porque": "o venue declara o funding hora a hora, mas o manifesto so tem um booleano `funding` — a UNIDADE e o CALENDARIO do funding nao atravessam o contrato 1.3.0 (achado para o dono)"
+  },
+  {
+   "campo": "profundidade_de_livro",
+   "estado": "medido",
+   "valor": 20,
+   "fonte": "info.l2Book({coin}).levels[]",
+   "porque": "o livro que o venue publica tem 20 niveis de compra e 20 de venda; a profundidade declarada e a do lado mais curto (20) — o setup sabe o que nao ve"
+  },
+  {
+   "campo": "relogio_de_fecho_de_barra",
+   "estado": "medido",
+   "valor": "continuo",
+   "fonte": "info.candleSnapshot({coin, interval:'1h'})",
+   "porque": "o venue publicou velas de hora a hora em 26 horas distintas do dia, sem falha nenhuma: nao ha fecho de sessao — o calendario do perpueto e continuo"
+  },
+  {
+   "campo": "estado_do_mercado",
+   "estado": "medido",
+   "valor": true,
+   "fonte": "info.exchangeStatus().specialStatuses",
+   "porque": "o venue declara a lista de estados especiais do mercado e ela vem VAZIA (`null` = nenhum em vigor): o venue sabe dizer se o mercado esta aberto"
+  },
+  {
+   "campo": "tipos_de_ordem",
+   "estado": "medido",
+   "valor": [
+    "mercado",
+    "limite"
+   ],
+   "fonte": "info.historicalOrders()[].order.orderType",
+   "porque": "o venue registou 415 ordens simples desta conta e o vocabulario dele deu mercado, limite; ordens de disparo registadas: 0 — os campos de trigger (`isTrigger`, `triggerPx`, `children`, `isPositionTpsl`) existem no registo mas nenhuma os preencheu, logo `stop`/`stop_limite` NAO entram no conjunto declarado"
+  },
+  {
+   "campo": "reduce_only_suportado",
+   "estado": "medido",
+   "valor": true,
+   "fonte": "info.historicalOrders()[].order.reduceOnly",
+   "porque": "o venue registou 153 ordens desta conta com reduceOnly verdadeiro e tem estados proprios para o tratar (o vocabulario de `status` inclui reduceOnlyCanceled e reduceOnlyRejected): e nativo"
+  },
+  {
+   "campo": "marca_de_posse",
+   "estado": "medido",
+   "valor": "cloid",
+   "fonte": "info.historicalOrders()[].order.cloid",
+   "porque": "o registo de ordens do venue traz o campo `cloid` em 415/415 ordens: e a forma com que este venue transporta a marca de posse (todas a null porque o motor antigo nunca o usou — a FORMA esta declarada, a GARANTIA de nao-duplicar e o campo `idempotencia`, que nao esta medido)"
+  },
+  {
+   "campo": "parcial_suportada",
+   "estado": "medido",
+   "valor": [
+    "o_que_der"
+   ],
+   "fonte": "info.userFills() somado por `oid` contra info.historicalOrders()[].order.origSz",
+   "porque": "o venue serviu 20 ordens desta conta SO EM PARTE antes de as cancelar (ordem 60803094155: pediu 0.00045, o venue executou 0.00024): a politica que ele pratica e `o_que_der`; `tudo_ou_nada` nao foi medido em lado nenhum"
+  },
+  {
+   "campo": "modos_de_margem",
+   "estado": "medido",
+   "valor": [
+    "cruzado",
+    "isolado"
+   ],
+   "fonte": "info.meta().universe[].marginMode + info.activeAssetData().leverage.type",
+   "porque": "meta().universe[] tem 18 activos com marginMode=strictIsolated; activeAssetData().leverage.type=cross — o venue reporta a conta em margem cruzada neste activo"
+  },
+  {
+   "campo": "minimo_de_valor_por_ordem",
+   "estado": "desconhecido",
+   "porque": "nenhuma leitura publica o publica. O endpoint cujo NOME o sugere (`perpDexLimits`) trata de tectos de interesse aberto de mercados de terceiros e devolve `null` no dex principal (medido); o minimo por ordem so se prova com a RECUSA do venue a uma ordem abaixo dele — e isso exige ASSINAR e enviar, que e a prova 2 da bateria de conformidade (RN-C6). Escreve-lo aqui seria um numero do venue constante no nosso codigo (RN-C1)"
+  },
+  {
+   "campo": "desvio_maximo",
+   "estado": "desconhecido",
+   "porque": "o desvio de uma ordem a mercado e um parametro que a NOSSA ponta manda na boleta, nao um limite que o venue publique: nenhuma leitura devolve um desvio maximo aceite. `desvio_maximo` e campo [C] do data-model, nao [V]"
+  },
+  {
+   "campo": "ajusta_alavancagem",
+   "estado": "desconhecido",
+   "porque": "o verbo que ajusta a alavancagem pertence a superficie de ESCRITA do venue: nenhuma LEITURA o declara. A leitura da conta diz o VALOR da alavancagem daquele activo (medido: leverage.value no activo de referencia), nao a capacidade de a mudar. Quem o mede e a bateria (prova 3). CONSEQUENCIA: enquanto este campo for desconhecido, a traducao RECUSA toda a boleta que peca alavancagem (ordens.ts, porta 4) — e essa e a consequencia correcta de nao prometer o que nao se mediu"
+  },
+  {
+   "campo": "stop_anexo",
+   "estado": "desconhecido",
+   "porque": "o registo de ordens do venue traz os campos de disparo (`isTrigger`, `triggerPx`, `triggerCondition`, `children`, `isPositionTpsl`), mas NENHUMA das ordens desta conta os preencheu (medido: 0 instancias): o venue declara a FORMA, nao o comportamento. Quem o mede e a bateria (provas 4 e 5)"
+  },
+  {
+   "campo": "idempotencia",
+   "estado": "desconhecido",
+   "porque": "o registo de ordens do venue traz o campo `cloid`, mas o campo EXISTIR nao prova que um reenvio da mesma referencia nao cria segunda ordem — isso so se prova ENVIANDO duas vezes com a mesma referencia (bateria, prova 6). RN-C4: sem esta declaracao a mesa reconcilia ANTES de reenviar"
+  },
+  {
+   "campo": "marca_liga_ordem_a_posicao",
+   "estado": "desconhecido",
+   "porque": "exige uma POSICAO viva para se medir e a conta nao tem nenhuma no instante da sonda (medido no `clearinghouseState` da leitura). O registo de posicoes do venue nao traz campo de ordem nem `cloid` — mas isso e a forma DECLARADA, nao uma medicao nesta conta; quem o mede e a bateria"
+  }
+ ],
+ "nao_medidos": [
+  "minimo_de_valor_por_ordem",
+  "desvio_maximo",
+  "ajusta_alavancagem",
+  "stop_anexo",
+  "idempotencia",
+  "marca_liga_ordem_a_posicao"
+ ],
+ "manifesto": {
+  "ok": false,
+  "motivo": "campo_obrigatorio_ausente",
+  "porque": "a sonda do venue nao trouxe minimo_de_valor_por_ordem — sem ele nao ha manifesto"
+ }
+}
+
+2.2 o manifesto que a sonda produz AGORA
+
+    RECUSA. motivo=campo_obrigatorio_ausente, porque="a sonda do venue nao trouxe minimo_de_valor_por_ordem —
+    sem ele nao ha manifesto". E a recusa correcta: o venue nao publica o minimo por ordem (ver §4), e um
+    manifesto que o inventasse seria um numero do venue constante no nosso codigo (RN-C1).
+
+    Os seis que faltam, pela ordem em que o manifesto os encontra:
+      minimo_de_valor_por_ordem · desvio_maximo · ajusta_alavancagem · stop_anexo · idempotencia ·
+      marca_liga_ordem_a_posicao
+
+2.3 o caminho ate ao manifesto construido — cada recusa NOMEIA o campo
+
+    $ bun -e '
+    const { InfoClient, HttpTransport } = await import("@nktkas/hyperliquid");
+    const S = await import("./brokers/hyperliquid/sonda.ts");
+    const M = await import("./brokers/hyperliquid/manifesto.ts");
+    const info = new InfoClient({ transport: new HttpTransport({ isTestnet: true }) });
+    const pedido = { venue: "hyperliquid", ambiente: "teste", versao_do_conector: "0.1.0",
+                     instrumentos_pedidos: ["BTC","ETH"], instante_de_referencia_ms: Date.now() };
+    const r = await S.sondar(S.portaDoCliente(info), pedido, "0xF87138D298E338962E1a2e0ff23267Dc32c15621");
+    // os SEIS valores que so a bateria de conformidade mede (RN-C6). NAO sao leituras do venue: sao a
+    // declaracao que a bateria fara quando medir. Estao aqui para provar que, com eles, o manifesto se
+    // constroi — e que os outros valores vem todos da sonda.
+    const bateria = { minimo_de_valor_por_ordem: "10", desvio_maximo: "0.5", ajusta_alavancagem: true,
+                     stop_anexo: false, idempotencia: true, marca_liga_ordem_a_posicao: false };
+    let sonda = r.sonda;
+    for (let volta = 0; volta < 12; volta++) {
+      const m = M.construirManifesto(sonda);
+      if (m.ok) { console.log(JSON.stringify({ volta, veredicto: "CONSTRUIDO", manifesto: m.manifesto }, null, 1)); break; }
+      const nomeado = Object.keys(bateria).find((k) => m.porque.includes(k)) ?? null;
+      console.log(JSON.stringify({ volta, motivo: m.motivo, campo_nomeado: nomeado, porque: m.porque }));
+      if (nomeado === null) break;
+      sonda = { ...sonda, [nomeado]: bateria[nomeado] };
+    }
+    '
+    rc=0
+{"volta":0,"motivo":"campo_obrigatorio_ausente","campo_nomeado":"minimo_de_valor_por_ordem","porque":"a sonda do venue nao trouxe minimo_de_valor_por_ordem — sem ele nao ha manifesto"}
+{"volta":1,"motivo":"campo_obrigatorio_ausente","campo_nomeado":"desvio_maximo","porque":"a sonda do venue nao trouxe desvio_maximo — sem ele nao ha manifesto"}
+{"volta":2,"motivo":"capacidade_nao_declarada","campo_nomeado":"ajusta_alavancagem","porque":"o venue nao declarou ajusta_alavancagem: a mesa recusa a boleta em vez de a mandar a um venue que pode ignora-la"}
+{"volta":3,"motivo":"capacidade_nao_declarada","campo_nomeado":"stop_anexo","porque":"o venue nao declarou stop_anexo: a mesa recusa a boleta em vez de a mandar a um venue que pode ignora-la"}
+{"volta":4,"motivo":"capacidade_nao_declarada","campo_nomeado":"idempotencia","porque":"o venue nao declarou idempotencia: a mesa recusa a boleta em vez de a mandar a um venue que pode ignora-la"}
+{"volta":5,"motivo":"capacidade_nao_declarada","campo_nomeado":"marca_liga_ordem_a_posicao","porque":"o venue nao declarou marca_liga_ordem_a_posicao: a mesa recusa a boleta em vez de a mandar a um venue que pode ignora-la"}
+{
+ "volta": 6,
+ "veredicto": "CONSTRUIDO",
+ "manifesto": {
+  "conector": {
+   "nome": "hyperliquid",
+   "versao": "0.1.0"
+  },
+  "versao": "1.3.0",
+  "instrumentos": [
+   {
+    "simbolo": "BTC",
+    "minimo": "0.00001",
+    "passo": "0.00001",
+    "tick": "0.1",
+    "alavancagem_maxima": "40"
+   },
+   {
+    "simbolo": "ETH",
+    "minimo": "0.0001",
+    "passo": "0.0001",
+    "tick": "0.01",
+    "alavancagem_maxima": "25"
+   }
+  ],
+  "sabe_ajustar_alavancagem": true,
+  "modos_de_margem": [
+   "cruzado",
+   "isolado"
+  ],
+  "teto_de_valor_por_ordem": "10",
+  "modelo_de_posicao": "netting",
+  "tipos_de_ordem": [
+   "mercado",
+   "limite"
+  ],
+  "parcial_suportada": [
+   "o_que_der"
+  ],
+  "desvio_maximo": "0.5",
+  "reduce_only_suportado": true,
+  "stop_anexo": false,
+  "profundidade_de_livro": 20,
+  "funding": true,
+  "relogio_de_fecho_de_barra": "continuo",
+  "idempotencia": true,
+  "marca_de_posse": "cloid",
+  "marca_liga_ordem_a_posicao": false,
+  "estado_do_mercado": true
+ }
+}
+
+    Leitura do que isto mede: seis recusas, cada uma nomeando UM campo, e na setima volta o manifesto e
+    construido — e quem o aceita e o ESQUEMA (o corredor valida o manifesto contra contracts/manifesto.schema.json
+    com o ajv em todos os casos `esperadoOk: true`). Os valores que o manifesto afirma e que vieram do VENUE:
+    instrumentos (passo 0.00001 / tick 0.1 / alavancagem 40 para o BTC; 0.0001 / 0.01 / 25 para o ETH),
+    modos_de_margem [cruzado, isolado], tipos_de_ordem [mercado, limite], parcial_suportada [o_que_der],
+    profundidade_de_livro 20, funding true, relogio_de_fecho_de_barra continuo, marca_de_posse cloid,
+    reduce_only_suportado true, estado_do_mercado true.
+
+2.4 o universo medido (212 instrumentos) — apendice, como o venue o devolveu
+
+    (a sonda guarda os 212 em `sonda.meta.universe`; aqui, um por linha, para se poder conferir qualquer um)
+SOL szDecimals=2 maxLeverage=10
+APT szDecimals=2 maxLeverage=3
+ATOM szDecimals=2 maxLeverage=10
+BTC szDecimals=5 maxLeverage=40
+ETH szDecimals=4 maxLeverage=25
+MATIC szDecimals=1 maxLeverage=50
+BNB szDecimals=3 maxLeverage=10
+AVAX szDecimals=2 maxLeverage=10
+GMT szDecimals=0 maxLeverage=2
+DYDX szDecimals=1 maxLeverage=20
+APE szDecimals=1 maxLeverage=5
+OP szDecimals=1 maxLeverage=50
+kPEPE szDecimals=0 maxLeverage=10
+ARB szDecimals=1 maxLeverage=10
+RLB szDecimals=0 maxLeverage=50
+WLD szDecimals=1 maxLeverage=10
+HPOS szDecimals=0 maxLeverage=50
+UNIBOT szDecimals=2 maxLeverage=2
+COMP szDecimals=2 maxLeverage=5
+FXS szDecimals=1 maxLeverage=3
+MKR szDecimals=4 maxLeverage=10
+AAVE szDecimals=2 maxLeverage=10
+SNX szDecimals=1 maxLeverage=10
+RNDR szDecimals=1 maxLeverage=20
+LDO szDecimals=1 maxLeverage=5
+SUI szDecimals=1 maxLeverage=10
+INJ szDecimals=1 maxLeverage=10
+STX szDecimals=1 maxLeverage=10
+FTM szDecimals=0 maxLeverage=3
+kSHIB szDecimals=0 maxLeverage=10
+OX szDecimals=0 maxLeverage=3
+FRIEND szDecimals=1 maxLeverage=3
+ZRO szDecimals=1 maxLeverage=10
+BLZ szDecimals=0 maxLeverage=5
+BANANA szDecimals=1 maxLeverage=3
+FTT szDecimals=1 maxLeverage=3
+TRB szDecimals=2 maxLeverage=5
+CANTO szDecimals=0 maxLeverage=3
+BIGTIME szDecimals=0 maxLeverage=3
+NTRN szDecimals=0 maxLeverage=5
+KAS szDecimals=0 maxLeverage=5
+BLUR szDecimals=0 maxLeverage=10
+TIA szDecimals=1 maxLeverage=10
+BSV szDecimals=2 maxLeverage=10
+TON szDecimals=1 maxLeverage=10
+ADA szDecimals=0 maxLeverage=10
+MINA szDecimals=0 maxLeverage=10
+POLYX szDecimals=0 maxLeverage=10
+GAS szDecimals=1 maxLeverage=10
+AXL szDecimals=0 maxLeverage=3
+PENDLE szDecimals=0 maxLeverage=10
+STG szDecimals=0 maxLeverage=10
+FET szDecimals=0 maxLeverage=10
+STRAX szDecimals=0 maxLeverage=10
+NEAR szDecimals=1 maxLeverage=20
+MEME szDecimals=0 maxLeverage=10
+ORDI szDecimals=2 maxLeverage=10
+BADGER szDecimals=1 maxLeverage=10
+NEO szDecimals=2 maxLeverage=20
+ZEN szDecimals=2 maxLeverage=10
+FIL szDecimals=1 maxLeverage=10
+PYTH szDecimals=0 maxLeverage=10
+RUNE szDecimals=1 maxLeverage=10
+SUSHI szDecimals=1 maxLeverage=10
+ILV szDecimals=2 maxLeverage=10
+MAV szDecimals=0 maxLeverage=5
+IMX szDecimals=1 maxLeverage=10
+kBONK szDecimals=0 maxLeverage=5
+NFTI szDecimals=1 maxLeverage=3
+SUPER szDecimals=0 maxLeverage=10
+USTC szDecimals=0 maxLeverage=10
+JUP szDecimals=0 maxLeverage=50
+JOE szDecimals=0 maxLeverage=10
+GALA szDecimals=0 maxLeverage=10
+RSR szDecimals=0 maxLeverage=5
+kLUNC szDecimals=0 maxLeverage=10
+JTO szDecimals=0 maxLeverage=10
+ACE szDecimals=2 maxLeverage=10
+WIF szDecimals=0 maxLeverage=5
+CAKE szDecimals=1 maxLeverage=10
+PEOPLE szDecimals=0 maxLeverage=10
+ENS szDecimals=2 maxLeverage=10
+ETC szDecimals=2 maxLeverage=10
+XAI szDecimals=1 maxLeverage=10
+MANTA szDecimals=1 maxLeverage=10
+UMA szDecimals=1 maxLeverage=10
+REQ szDecimals=0 maxLeverage=5
+ONDO szDecimals=0 maxLeverage=10
+ALT szDecimals=0 maxLeverage=10
+ZETA szDecimals=1 maxLeverage=10
+DYM szDecimals=1 maxLeverage=10
+MAVIA szDecimals=1 maxLeverage=5
+W szDecimals=0 maxLeverage=3
+PANDORA szDecimals=5 maxLeverage=3
+AI szDecimals=1 maxLeverage=10
+TAO szDecimals=3 maxLeverage=10
+PIXEL szDecimals=0 maxLeverage=5
+AR szDecimals=2 maxLeverage=10
+TNSR szDecimals=1 maxLeverage=5
+SAGA szDecimals=1 maxLeverage=3
+MERL szDecimals=0 maxLeverage=5
+HBAR szDecimals=0 maxLeverage=5
+POPCAT szDecimals=0 maxLeverage=5
+OMNI szDecimals=2 maxLeverage=5
+EIGEN szDecimals=2 maxLeverage=5
+REZ szDecimals=0 maxLeverage=5
+NOT szDecimals=0 maxLeverage=5
+TURBO szDecimals=0 maxLeverage=5
+IO szDecimals=1 maxLeverage=5
+BRETT szDecimals=0 maxLeverage=5
+ZK szDecimals=0 maxLeverage=3
+BLAST szDecimals=0 maxLeverage=3
+LISTA szDecimals=0 maxLeverage=5
+MEW szDecimals=0 maxLeverage=5
+RENDER szDecimals=0 maxLeverage=5
+kDOGS szDecimals=0 maxLeverage=5
+POL szDecimals=0 maxLeverage=10
+CATI szDecimals=0 maxLeverage=5
+CELO szDecimals=0 maxLeverage=5
+HMSTR szDecimals=0 maxLeverage=5
+SCR szDecimals=1 maxLeverage=3
+NEIROETH szDecimals=0 maxLeverage=5
+kNEIRO szDecimals=1 maxLeverage=5
+GOAT szDecimals=0 maxLeverage=5
+MOODENG szDecimals=0 maxLeverage=3
+PURR szDecimals=0 maxLeverage=3
+GRASS szDecimals=1 maxLeverage=3
+PNUT szDecimals=1 maxLeverage=5
+XLM szDecimals=0 maxLeverage=5
+CHILLGUY szDecimals=0 maxLeverage=3
+SAND szDecimals=0 maxLeverage=5
+ALGO szDecimals=0 maxLeverage=5
+ICP szDecimals=2 maxLeverage=10
+IOTA szDecimals=0 maxLeverage=5
+VET szDecimals=0 maxLeverage=5
+HYPE szDecimals=2 maxLeverage=10
+ME szDecimals=1 maxLeverage=3
+MOVE szDecimals=0 maxLeverage=10
+VIRTUAL szDecimals=1 maxLeverage=5
+PENGU szDecimals=0 maxLeverage=5
+USUAL szDecimals=0 maxLeverage=5
+FARTCOIN szDecimals=1 maxLeverage=10
+AIXBT szDecimals=0 maxLeverage=5
+AI16Z szDecimals=1 maxLeverage=5
+ZEREBRO szDecimals=0 maxLeverage=5
+BIO szDecimals=0 maxLeverage=5
+SPX szDecimals=1 maxLeverage=5
+GRIFFAIN szDecimals=0 maxLeverage=3
+S szDecimals=0 maxLeverage=5
+MORPHO szDecimals=1 maxLeverage=5
+TRUMP szDecimals=1 maxLeverage=10
+ANIME szDecimals=0 maxLeverage=12
+MELANIA szDecimals=1 maxLeverage=3
+VINE szDecimals=0 maxLeverage=3
+VVV szDecimals=2 maxLeverage=3
+JELLYJELLY szDecimals=0 maxLeverage=3
+JELLY szDecimals=0 maxLeverage=3
+BERA szDecimals=1 maxLeverage=5
+TST szDecimals=0 maxLeverage=3
+LAYER szDecimals=0 maxLeverage=3
+IP szDecimals=1 maxLeverage=3
+OM szDecimals=1 maxLeverage=5
+KAITO szDecimals=0 maxLeverage=5
+CHZ szDecimals=0 maxLeverage=5
+NIL szDecimals=0 maxLeverage=5
+PAXG szDecimals=3 maxLeverage=10
+PROMPT szDecimals=0 maxLeverage=3
+BABY szDecimals=0 maxLeverage=5
+WCT szDecimals=0 maxLeverage=3
+HYPER szDecimals=0 maxLeverage=3
+ZORA szDecimals=0 maxLeverage=3
+INIT szDecimals=0 maxLeverage=3
+DOOD szDecimals=0 maxLeverage=3
+DOGE szDecimals=0 maxLeverage=10
+LAUNCHCOIN szDecimals=0 maxLeverage=3
+NXPC szDecimals=0 maxLeverage=3
+SOPH szDecimals=0 maxLeverage=3
+RESOLV szDecimals=0 maxLeverage=3
+SYRUP szDecimals=0 maxLeverage=3
+PUMP szDecimals=0 maxLeverage=10
+PROVE szDecimals=0 maxLeverage=3
+YZY szDecimals=0 maxLeverage=3
+XPL szDecimals=0 maxLeverage=10
+WLFI szDecimals=0 maxLeverage=5
+LINEA szDecimals=0 maxLeverage=3
+SKY szDecimals=0 maxLeverage=3
+ASTER szDecimals=0 maxLeverage=5
+AVNT szDecimals=0 maxLeverage=5
+STBL szDecimals=0 maxLeverage=3
+0G szDecimals=0 maxLeverage=3
+HEMI szDecimals=0 maxLeverage=3
+APEX szDecimals=0 maxLeverage=3
+2Z szDecimals=0 maxLeverage=3
+ZEC szDecimals=0 maxLeverage=3
+MON szDecimals=0 maxLeverage=5
+MET szDecimals=0 maxLeverage=3
+MEGA szDecimals=0 maxLeverage=3
+CC szDecimals=0 maxLeverage=3
+AERO szDecimals=0 maxLeverage=3
+STABLE szDecimals=0 maxLeverage=3
+FOGO szDecimals=0 maxLeverage=3
+LIT szDecimals=0 maxLeverage=5
+XMR szDecimals=2 maxLeverage=5
+AXS szDecimals=1 maxLeverage=5
+DASH szDecimals=2 maxLeverage=5
+SKR szDecimals=0 maxLeverage=3
+AZTEC szDecimals=0 maxLeverage=3
+CHIP szDecimals=0 maxLeverage=3
+GRAM szDecimals=0 maxLeverage=5
+CASHCAT szDecimals=0 maxLeverage=3
+PONS szDecimals=0 maxLeverage=3
+USELESS szDecimals=0 maxLeverage=5
+
+========================================================================================================
+3. (c) A LEITURA DAS DUAS CARTEIRAS (T071) — SAIDA CRUA
+========================================================================================================
+
+3.1 a leitura real, feita agora
+
+    $ bun -e '
+    const { InfoClient, HttpTransport } = await import("@nktkas/hyperliquid");
+    const L = await import("./brokers/hyperliquid/leitura.ts");
+    const info = new InfoClient({ transport: new HttpTransport({ isTestnet: true }) });
+    console.log(JSON.stringify(await L.lerNoVenue(L.portaDoCliente(info),
+      { conta: "0xF87138D298E338962E1a2e0ff23267Dc32c15621", instrumento: "BTC" }), null, 1));
+    '
+    rc=0
+{
+ "ok": true,
+ "leitura": {
+  "conta": "0xF87138D298E338962E1a2e0ff23267Dc32c15621",
+  "instante_do_venue_ms": 1790703260673,
+  "carteiras": {
+   "perpetuo": {
+    "estado": "lida",
+    "contrato": "perpetuo",
+    "origem": "info.clearinghouseState({user}).marginSummary",
+    "equity": "998.46",
+    "nocional_total": "0.0",
+    "margem_usada": "0.0",
+    "retiravel": "998.46"
+   },
+   "spot": {
+    "estado": "lida",
+    "contrato": "spot",
+    "origem": "info.spotClearinghouseState({user}).balances[]",
+    "saldos": [
+     {
+      "moeda": "USDC",
+      "total": "0.004965",
+      "retido": "0.0",
+      "valor_de_entrada": "0.0"
+     }
+    ]
+   },
+   "confirmadas_pelo_venue": 2,
+   "nomes": [
+    "perpetuo",
+    "spot"
+   ],
+   "nota": "este venue tem DUAS carteiras e o conector NAO as soma: cada valor leva a carteira de onde veio (T071). O equity e os numeros de margem sao do PERPETUO; os saldos sao do SPOT. Quem so le o perpetuo conclui «conta sem fundos» com o dinheiro no spot, e quem so le o spot conclui o mesmo com o dinheiro no perpetuo — por isso as duas sao lidas, e as duas sao ditas.",
+   "nao_lidas": []
+  },
+  "posicoes": [],
+  "identidade": {
+   "origem": "info.extraAgents({user})",
+   "agentes": [
+    {
+     "endereco": "0x7b3a39ccadb8dd294bbb83d3e0bbd1b3b411ca81",
+     "nome": "teste-plugin",
+     "valido_ate_ms": 1798477732304
+    }
+   ],
+   "nota": "quem o venue diz que ASSINA por esta conta (agente, com validade). A chave NAO entra aqui (RN-C20, RN-E14): esta leitura traz enderecos, nunca segredos. Consultar a conta com o endereco do AGENTE devolve vazio — por isso `conta` e o endereco principal"
+  },
+  "origens": {
+   "equity_do_perpetuo": "info.clearinghouseState({user}).marginSummary.accountValue — [V] do venue, so do perpetuo",
+   "nocional_total_do_perpetuo": "info.clearinghouseState({user}).marginSummary.totalNtlPos — [V]",
+   "margem_usada_do_perpetuo": "info.clearinghouseState({user}).marginSummary.totalMarginUsed — [V]",
+   "retiravel_do_perpetuo": "info.clearinghouseState({user}).withdrawable — [V]",
+   "saldo_do_spot": "info.spotClearinghouseState({user}).balances[].total — [V], por moeda e SO do spot",
+   "unidades_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.szi — [V], o sinal e o lado",
+   "preco_medio": "info.clearinghouseState({user}).assetPositions[].position.entryPx — [V]",
+   "nocional_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.positionValue — [V]",
+   "margem_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.marginUsed — [V]",
+   "resultado_nao_realizado": "info.clearinghouseState({user}).assetPositions[].position.unrealizedPnl — [V], nunca recalculado",
+   "preco_de_liquidacao": "info.clearinghouseState({user}).assetPositions[].position.liquidationPx — [V], nunca recalculado",
+   "marca_para_a_distancia": "info.activeAssetData({user,coin}).markPx — [V]",
+   "distancia_de_liquidacao": "[C] NOSSA: |marca - liquidationPx| / marca, em percentagem da marca. Ausente sem posicao (FR-017)",
+   "alavancagem_da_posicao": "info.clearinghouseState({user}).assetPositions[].position.leverage — [V]",
+   "agentes_da_conta": "info.extraAgents({user}) — [V]; enderecos, nunca chaves",
+   "instante_do_venue": "info.clearinghouseState({user}).time — [V]; o relogio da conta, nao o nosso"
+  }
+ }
+}
+
+    O QUE ISTO MEDE, em numeros do venue:
+      * `clearinghouseState` (perpetuo): accountValue 998.46, totalNtlPos 0.0, totalMarginUsed 0.0, withdrawable 998.46;
+      * `spotClearinghouseState` (spot): USDC total 0.004965, hold 0.0, entryNtl 0.0;
+      * as DUAS responderam para a MESMA conta: `confirmadas_pelo_venue: 2`. Nao e uma suposicao sobre o
+        venue — e ele que respondeu por cada uma das duas carteiras;
+      * zero posicoes abertas; a leitura diz `posicoes: []`, nao "sem posicao" por omissao de leitura;
+      * a identidade: `extraAgents` declara 1 agente (0x7b3a39...ca81, "teste-plugin", valido ate
+        1798477732304) — enderecos, nunca chaves.
+
+    A armadilha que a T071 fecha, medida: na medicao registada no briefing desta tarefa, a MESMA conta tinha
+    `clearinghouseState.accountValue = 0.0` e 998.464965 USDC no SPOT. Agora tem 998.46 no PERPETUO. Nao e
+    contradicao: sao dois instantes, e o dinheiro mudou de carteira. Quem so le o perpetuo conclui "conta sem
+    fundos" no primeiro instante; quem so le o spot conclui o mesmo no segundo. Por isso a leitura le as duas
+    e NUNCA as soma: a soma seria uma conta nossa, e uma conta nossa a decidir margem e o defeito que se quer
+    evitar. Quem ve as duas e a mesa.
+
+3.2 as quatro provas fail-closed da leitura (com a leitura REAL como base; so a falha e injectada)
+
+    $ bun -e '
+    ... (o portao: as respostas reais; e um duble que falha, ou um duble DECLARADO com posicao) ...
+    '
+    rc=0
+(1) so o spot falha: {"ok":true,"leitura":{"conta":"0xF87138D298E338962E1a2e0ff23267Dc32c15621","instante_do_venue_ms":1790703269794,"carteiras":{"perpetuo":{"estado":"lida","contrato":"perpetuo","origem":"info.clearinghouseState({user}).marginSummary","equity":"998.46","nocional_total":"0.0","margem_usada":"0.0","retiravel":"998.46"},"spot":{"estado":"nao_lida","contrato":"spot","motivo":"campo_obrigatorio_ausente","porque":"a leitura spotClearinghouseState falhou: a leitura de spot nao respondeu"},"confirmadas_pelo_venue":1,"nomes":["perpetuo"],"nota":"este venue tem DUAS carteiras e o conector NAO as soma: cada valor leva a carteira de onde veio (T071). O equity e os numeros de margem sao do PERPETUO; os saldos sao do SPOT. Quem so le o perpetuo conclui «conta sem fundos» com o dinheiro no spot, e quem so le o spot conclui o mesmo com o dinheiro no perpetuo — por isso as duas sao lidas, e as duas sao ditas.","nao_lidas":["spot"]},"posicoes":[],"identidade":{"origem":"info.extraAgents({user})","agentes":[{"endereco":"0x7b3a39ccadb8dd294bbb83d3e0bbd1b3b411ca81","nome":"teste-plugin","valido_ate_ms":1798477732304}],"nota":"quem o venue diz que ASSINA por esta conta (agente, com validade). A chave NAO entra aqui (RN-C20, RN-E14): esta leitura traz enderecos, nunca segredos. Consultar a conta com o endereco do AGENTE devolve vazio — por isso `conta` e o endereco principal"},"origens":{"equity_do_perpetuo":"info.clearinghouseState({user}).marginSummary.accountValue — [V] do venue, so do perpetuo","nocional_total_do_perpetuo":"info.clearinghouseState({user}).marginSummary.totalNtlPos — [V]","margem_usada_do_perpetuo":"info.clearinghouseState({user}).marginSummary.totalMarginUsed — [V]","retiravel_do_perpetuo":"info.clearinghouseState({user}).withdrawable — [V]","saldo_do_spot":"info.spotClearinghouseState({user}).balances[].total — [V], por moeda e SO do spot","unidades_da_posicao":"info.clearinghouseState({user}).assetPositions[].position.szi — [V], o sinal e o lado","preco_medio":"info.clearinghouseState({user}).assetPositions[].position.entryPx — [V]","nocional_da_posicao":"info.clearinghouseState({user}).assetPositions[].position.positionValue — [V]","margem_da_posicao":"info.clearinghouseState({user}).assetPositions[].position.marginUsed — [V]","resultado_nao_realizado":"info.clearinghouseState({user}).assetPositions[].position.unrealizedPnl — [V], nunca recalculado","preco_de_liquidacao":"info.clearinghouseState({user}).assetPositions[].position.liquidationPx — [V], nunca recalculado","marca_para_a_distancia":"info.activeAssetData({user,coin}).markPx — [V]","distancia_de_liquidacao":"[C] NOSSA: |marca - liquidationPx| / marca, em percentagem da marca. Ausente sem posicao (FR-017)","alavancagem_da_posicao":"info.clearinghouseState({user}).assetPositions[].position.leverage — [V]","agentes_da_conta":"info.extraAgents({user}) — [V]; enderecos, nunca chaves","instante_do_venue":"info.clearinghouseState({user}).time — [V]; o relogio da conta, nao o nosso"}}}
+(2) as duas falham: {"ok":false,"motivo":"campo_obrigatorio_ausente","porque":"nenhuma das DUAS carteiras do venue respondeu: perpetuo (a leitura clearinghouseState falhou: a leitura de perpetuo nao respondeu) e spot (a leitura spotClearinghouseState falhou: a leitura de spot nao respondeu). Sem leitura da conta o conector nao manda ordem que aumente exposicao (FR-021)"}
+(3) duble com posicao: {"posicoes":[{"instrumento":"BTC","lado":"buy","unidades":"0.01","preco_medio":"80000","nocional":"805","margem":"80.5","resultado_nao_realizado":"5","alavancagem":{"tipo":"cross","valor":10},"preco_de_liquidacao":"72000","distancia_de_liquidacao":{"em":"porcento_da_marca","valor":"10.559","marca":"80500"}}]}
+(4) duble sem liquidacao publicada: {"posicoes":[{"instrumento":"BTC","lado":"buy","unidades":"0.01","preco_medio":"80000","nocional":"805","margem":"80.5","resultado_nao_realizado":"5","alavancagem":{"tipo":"cross","valor":10},"porque_sem_distancia":"o venue publica `liquidationPx` a null nesta posicao — a distancia fica AUSENTE, nunca zero, que pareceria um numero medido"}]}
+
+    (1) so o SPOT falha  -> ok:true, a carteira do spot vem `estado:"nao_lida"` com motivo e porque nomeados,
+        `nao_lidas:["spot"]`, e `confirmadas_pelo_venue: 1` (a leitura nao inventa a segunda);
+    (2) as DUAS falham   -> NAO ha leitura da conta: ok:false, motivo `campo_obrigatorio_ausente`, e o porque
+        diz as duas que falharam. Nenhum numero fica com o valor anterior (FR-021);
+    (3) posicao (DUBLE declarado) -> os cinco numeros + a distancia de liquidacao: com marca 80500 e
+        liquidationPx 72000, a distancia deu 10.559 % da marca — |80500-72000|/80500 = 10.5590...%, truncado
+        na 4a casa. E a UNICA conta [C] do ficheiro, e vai nomeada como nossa;
+    (4) liquidationPx a null (DUBLE) -> a distancia fica AUSENTE com `porque_sem_distancia`. Nunca zero: um
+        zero pareceria um numero medido, e uma posicao NA liquidacao e outra coisa (FR-017).
+
+========================================================================================================
+4. OS SEIS CAMPOS QUE O VENUE NAO PUBLICA — QUAL, POR QUE, E QUEM MEDE
+========================================================================================================
+
+Cada um destes seis e um campo do manifesto. Nenhum tem leitura publica que o devolva. Nao foram escritos
+aqui com um valor da documentacao (RN-C1: um numero do venue escrito no nosso codigo e um numero que
+ninguem volta a conferir). Quem os mede e a BATERIA DE CONFORMIDADE (RN-C6), que exige ENVIAR, e que ainda
+nao corre — `conformidade.ts` diz isso na ultima linha: as OITO provas de SC-004 ficam INCOMPLETAS sem o
+venue.
+
+1. minimo_de_valor_por_ordem — o que bloqueia o manifesto AGORA
+   POR QUE: o endpoint cujo NOME o sugere (`perpDexLimits`) trata de tectos de interesse aberto de mercados
+   de terceiros e devolve `null` no dex principal (medido); nao ha leitura de minimos por ordem. O minimo
+   por ordem so se prova com a RECUSA do venue a uma ordem abaixo dele.
+   QUEM MEDE: bateria, prova 2 (ordem abaixo do minimo -> recusa nomeada).
+   NOTA: o valor 10 USD que o briefing cita e o que a bateria vai MEDIR; nao entrou em nenhum ficheiro meu
+   como se fosse leitura. Nos casos offline aparece declarado como valor da bateria, marcado como tal.
+
+2. desvio_maximo
+   POR QUE: o desvio de uma ordem a mercado e um parametro que a NOSSA ponta manda na boleta, nao um limite
+   que o venue publique. Nenhuma leitura devolve um desvio maximo aceite. E campo [C] do data-model, nao [V].
+   QUEM MEDE: e nosso, nao do venue — a bateria so pode provar ate onde o venue ACEITA (ordem com desvio
+   grande -> recusa?). Nao ha leitura que o faca.
+
+3. ajusta_alavancagem
+   POR QUE: o verbo que ajusta a alavancagem (`updateLeverage`) pertence a superficie de ESCRITA. Nenhuma
+   LEITURA o declara. A leitura da conta diz o VALOR da alavancagem daquele activo (medido:
+   `activeAssetData().leverage.type = cross`), nao a capacidade de a mudar.
+   QUEM MEDE: bateria, prova 3 (ajustar a alavancagem e ver o valor mudar na leitura).
+   CONSEQUENCIA, dita: enquanto este campo for desconhecido, ordens.ts RECUSA toda a boleta que peca
+   alavancagem (porta 4). Nao e um defeito: e a consequencia correcta de nao prometer o que nao se mediu — e
+   e a razao pela qual a bateria e o proximo passo, nao um extra.
+
+4. stop_anexo
+   POR QUE: o registo de ordens do venue traz os campos de disparo (`isTrigger`, `triggerPx`,
+   `triggerCondition`, `children`, `isPositionTpsl`), mas NENHUMA das 415 ordens desta conta os preencheu
+   (medido: 0 instancias — 0 ordens de disparo). O venue declara a FORMA, nao o comportamento.
+   QUEM MEDE: bateria, provas 4 e 5 (prender um stop a uma posicao e ver o desfecho de uma parcial com ele
+   preso).
+   NOTA para o dono: ha uma leitura possivel em sentido contrario — "os campos de trigger existirem no
+   registo do venue e o venue saber a forma". Nao a tomei: uma capacidade nao se declara por um campo vazio.
+   Se o dono aceitar essa leitura, este campo passa a `true` numa linha (sonda.ts, 7a/`stop_anexo`).
+
+5. idempotencia
+   POR QUE: o registo de ordens traz o campo `cloid`, mas o campo EXISTIR nao prova que um reenvio da mesma
+   referencia nao cria segunda ordem. Isso prova-se enviando DUAS vezes com a mesma referencia.
+   QUEM MEDE: bateria, prova 6. RN-C4: sem esta declaracao a mesa reconcilia ANTES de reenviar.
+
+6. marca_liga_ordem_a_posicao
+   POR QUE: exige uma POSICAO viva para se medir, e a conta nao tem nenhuma no instante da sonda (medido:
+   0 posicoes). O registo de posicoes do venue nao traz campo de ordem nem `cloid` — mas isso e a forma
+   DECLARADA, nao uma medicao nesta conta.
+   QUEM MEDE: bateria, com posicao aberta e marcada.
+
+UM CAMPO MEDIDO QUE O CONTRATO NAO TEM ONDE GUARDAR (nao e recusa: e achado)
+  funding.cadencia: o venue publica funding HORA A HORA (`predictedFundings()[coin][HlPerp].fundingIntervalHours`),
+  medido. O manifesto 1.3.0 so tem `funding: boolean` — a UNIDADE e o CALENDARIO do funding nao atravessam o
+  contrato. A mesa nao tem como saber, pelo manifesto, de quanto em quanto tempo o funding corre.
+
+========================================================================================================
+5. O QUE MUDOU NOS FICHEIROS
+========================================================================================================
+
+brokers/hyperliquid/sonda.ts (NOVO, ~640 linhas)
+  `construirSonda(respostas, pedido)` e PURA (recebe o que o venue respondeu como DADO) e devolve a Sonda do
+  manifesto mais um REGISTO por campo: `{campo, estado: medido|desconhecido, valor?, fonte?, porque}`.
+  `sondar(porta, pedido, conta)` faz as leituras e devolve `{sonda, campos, nao_medidos, manifesto}`.
+  A porta entra como PARAMETRO: os casos correm sem rede, e a mesma sonda corre contra o venue.
+  Nenhum valor do venue vive no ficheiro: o que la esta sao nomes de campos, a TABELA declarada que traduz
+  o vocabulario de ordens do venue (Market->mercado, Limit->limite; so ordens SEM disparo contam, porque o
+  `orderType` de uma ordem de disparo nao e o tipo simples) e um nome de campo para a marca (`cloid`).
+  Uma leitura falhada fica com a RAZAO e o campo fica desconhecido — nunca com um valor.
+
+brokers/hyperliquid/manifesto.ts (ESTENDIDO — duas emendas, nenhuma delas muda o que ja passava)
+  emenda 1: `profundidade_de_livro` passou a ser conferida. Era um buraco fail-OPEN: o esquema exige o campo
+  (`integer >= 0`), mas o manifesto construia um manifesto "ok" sem ele, que o proprio esquema rejeitava —
+  ou seja, a sonda podia declarar um manifesto invalido. Agora sem profundidade declarada NAO HA manifesto
+  (campo_obrigatorio_ausente), e um valor que nao seja inteiro nao negativo e RECUSADO (tipo_invalido).
+  emenda 2: `meta` passou a OPCIONAL no tipo Sonda. Se a leitura do `meta` falhar, a sonda nao pode escrever
+  uma lista vazia — uma lista vazia diria "o instrumento nao existe no venue" quando a verdade e "nao se leu".
+  Com `meta` ausente o manifesto recusa com campo_obrigatorio_ausente e nomeia `meta.universe`. Ha um caso
+  novo que mede exatamente isso.
+  Nada mais mudou: as 16 provas de caso que ja existiam continuam a passar (1.2).
+
+brokers/hyperliquid/leitura.ts (NOVO, ~490 linhas)
+  A leitura da conta nas DUAS carteiras (T071), com a origem de cada numero nomeada (`origens`), as posicoes
+  com os cinco numeros ([V], nunca recalculados), a distancia de liquidacao ([C], nomeada como nossa, ausente
+  sem posicao) e a identidade (enderecos do `extraAgents`, nunca chaves). Pura pelo mesmo desenho da sonda:
+  `lerConta(respostas, pedido)` decide sobre DADO, `lerNoVenue(porta, pedido)` vai buscar.
+
+brokers/hyperliquid/casos/sonda.casos.json (NOVO, 12 casos)
+  A `sonda_base` e a sonda COMO O VENUE A DEU: os campos medidos com os seus valores medidos, e os seis que o
+  venue nao publica AUSENTES (ausente, nao `false`). O universo e o EXCERTO pedido pelo mandato (BTC e ETH,
+  com os valores medidos do venue); o universo inteiro esta no apendice de §2.4.
+
+specs/004-conector-hyperliquid/relatorios/sonda-real.txt (NOVO) — este relatorio.
+
+========================================================================================================
+6. ACHADOS PARA O DONO (o que vi no caminho e nao e meu para decidir)
+========================================================================================================
+
+a) `bun x tsc --noEmit` na raiz sai com rc=1 e nao confere nada (nao ha tsconfig.json na raiz) — §1.1.
+b) `tools/verificar-maquina/tipos.sh` nao entra em `brokers/`: o conector nao passa pelo portao de tipos —
+   §1.1. Sem a invocacao explicita, um erro de tipo no conector passa a correr.
+c) o universo do venue tem 212 instrumentos, dos quais 54 trazem `isDelisted: true` (medido). O manifesto
+   NAO tem campo para a deslistagem: um mandato que nomeie um instrumento deslistado e aceite (ele existe no
+   universo). A sonda ANOTA a contagem (esta no `porque` de `meta.universe`), nao a esconde — mas a regra de
+   recusar um deslistado nao tem onde viver no contrato 1.3.0.
+d) a cadencia do funding (horaria, com prova) nao atravessa o contrato — campo booleano apenas. §4.
+e) `alavancagem_por_escalao` (campo OPCIONAL do manifesto, com o comentario "ausente = vale a maxima unica"):
+   o venue PUBLICA escaloes por instrumento (`meta().marginTables` + `universe[].marginTableId`), mas o
+   esquema pede `ate` (limite SUPERIOR, `decimal_positivo`) e o venue declara `lowerBound` — e o primeiro
+   escalao comeca em `0.0`, que nao e `decimal_positivo`. Conclusao: os escaloes medidos NAO cabem no
+   contrato como ele esta; nao os declarei. Se o dono quiser os escaloes no manifesto, o contrato precisa
+   de mudar (`ate` -> `de`/`abaixo_de`, com o primeiro escalao a zero permitido).
+f) `contratos/origem-das-grandezas.json` existe e diz de onde vem cada grandeza: vale a pena conferir se os
+   [V]/[C] que usei em leitura.ts estao declarados la como os classifiquei.
+g) nao ha caso offline para a leitura da conta: o corredor `casos/correr.ts` so sabe construir manifesto a
+   partir de uma Sonda, e nao ha `casos/leitura.casos.json` (nem ficheiro em que o escrevesse — o meu ambito
+   era sonda.ts, manifesto.ts, leitura.ts, casos/sonda.casos.json e este relatorio). A leitura esta coberta
+   por medicao contra o venue (§3.1) e por quatro provas de falha injectada (§3.2); um corredor proprio para
+   ela e o proximo passo natural.
+h) `sonda.ts` le a historia de ordens DESTA conta para medir `tipos_de_ordem`, `reduce_only_suportado` e
+   `parcial_suportada`. E uma medicao real do venue (ele aceitou e registou aquelas ordens), mas depende da
+   historia: uma conta sem ordens devolve estes campos DESCONHECIDOS (fail-closed, nunca "sim"). Estes tres
+   campos, com a bateria, passam a ser medidos por ENVIO — e a sonda fica so com o que a leitura publica da.

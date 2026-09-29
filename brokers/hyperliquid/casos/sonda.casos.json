@@ -1,0 +1,405 @@
+{
+  "nota": "Casos da SONDA REAL do venue (testnet) a alimentar o manifesto (FR-001 a FR-005, T015-T021). A `sonda_base` e a sonda COMO O VENUE A DEU, medida a 29 set 2026 em https://api.hyperliquid-testnet.xyz: os campos que uma leitura publica mediu estao nos seus valores medidos, e os que o venue NAO publica estao AUSENTES (ausente, nao `false`: um campo que nao se mediu nao vira um sim nem um nao). O universo de `sonda_base` e o EXCERTO pedido pelo mandato — o venue publicou 212 instrumentos e aqui ficam os dois que o mandato nomeia, com os valores medidos dele (BTC szDecimals=5 maxLeverage=40, ETH szDecimals=4 maxLeverage=25) e, desde a emenda 1.4.0, com as chaves POR INSTRUMENTO que o venue publica e o contrato passou a declarar: `fundingIntervalHours` (1 hora) e `marginTiers[].lowerBound` (0.0 / 10000.0 / 50000.0). O universo inteiro esta em specs/004-conector-hyperliquid/relatorios/sonda-real.txt, e o antes/depois da emenda em specs/004-conector-hyperliquid/relatorios/emenda-1.4.0.txt. Os casos `com-os-seis-da-bateria` declaram os SEIS valores que so a BATERIA DE CONFORMIDADE mede (RN-C6, provas 2 a 6): NAO sao leituras do venue e estao marcados como tal em cada caso — servem para provar que, com eles medidos, o manifesto SE CONSTROI e o esquema do contrato o aceita, e que os outros campos vem da sonda. O corredor confere `esperadoOk` e, na recusa, o `motivo`; o NOME do campo que a recusa nomeia esta no `porque` e prova-se no relatorio (sonda-real.txt), nao aqui.",
+  "sonda_base": {
+    "venue": {
+      "nome": "hyperliquid",
+      "ambiente": "teste"
+    },
+    "versao_do_conector": "0.1.0",
+    "meta": {
+      "universe": [
+        {
+          "name": "BTC",
+          "szDecimals": 5,
+          "maxLeverage": 40,
+          "fundingIntervalHours": 1,
+          "marginTiers": [
+            {
+              "lowerBound": "0.0",
+              "maxLeverage": 40
+            },
+            {
+              "lowerBound": "10000.0",
+              "maxLeverage": 25
+            },
+            {
+              "lowerBound": "50000.0",
+              "maxLeverage": 10
+            }
+          ]
+        },
+        {
+          "name": "ETH",
+          "szDecimals": 4,
+          "maxLeverage": 25
+        }
+      ]
+    },
+    "instrumentos_pedidos": [
+      "BTC"
+    ],
+    "modos_de_margem": [
+      "cruzado",
+      "isolado"
+    ],
+    "tipos_de_ordem": [
+      "mercado",
+      "limite"
+    ],
+    "parcial_suportada": [
+      "o_que_der"
+    ],
+    "reduce_only_suportado": true,
+    "profundidade_de_livro": 20,
+    "funding_publicado": true,
+    "relogio_de_fecho_de_barra": "continuo",
+    "marca_de_posse": "cloid",
+    "estado_do_mercado": true
+  },
+  "casos": [
+    {
+      "caso": "sonda-real/venue-medido-recusa-enquanto-o-minimo-nao-for-publicado",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente"
+    },
+    {
+      "caso": "sonda-real/com-o-minimo-da-bateria-recusa-no-campo-seguinte",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10"
+      }
+    },
+    {
+      "caso": "sonda-real/com-o-minimo-e-o-desvio-recusa-na-alavancagem",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5"
+      }
+    },
+    {
+      "caso": "sonda-real/sem-parada-anexa-medida-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "reduce_only_suportado": true,
+        "funding_publicado": true,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false,
+        "estado_do_mercado": true
+      }
+    },
+    {
+      "caso": "sonda-real/com-os-seis-da-bateria-o-manifesto-constroi-se",
+      "esperadoOk": true,
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false
+      },
+      "conferir": {
+        "conector.nome": "hyperliquid",
+        "conector.versao": "0.1.0",
+        "versao": "1.4.0",
+        "instrumentos.0.simbolo": "BTC",
+        "instrumentos.0.passo": "0.00001",
+        "instrumentos.0.minimo": "0.00001",
+        "instrumentos.0.tick": "0.1",
+        "instrumentos.0.alavancagem_maxima": "40",
+        "modelo_de_posicao": "netting",
+        "modos_de_margem.0": "cruzado",
+        "modos_de_margem.1": "isolado",
+        "tipos_de_ordem.0": "mercado",
+        "tipos_de_ordem.1": "limite",
+        "parcial_suportada.0": "o_que_der",
+        "desvio_maximo": "0.5",
+        "profundidade_de_livro": 20,
+        "funding": true,
+        "relogio_de_fecho_de_barra": "continuo",
+        "marca_de_posse": "cloid",
+        "marca_liga_ordem_a_posicao": false,
+        "reduce_only_suportado": true,
+        "stop_anexo": false,
+        "sabe_ajustar_alavancagem": true,
+        "idempotencia": true,
+        "estado_do_mercado": true,
+        "minimo_de_valor_por_ordem": "10"
+      }
+    },
+    {
+      "caso": "sonda-real/segundo-instrumento-do-mandato-traz-a-sua-unidade",
+      "esperadoOk": true,
+      "sonda": {
+        "instrumentos_pedidos": [
+          "BTC",
+          "ETH"
+        ],
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false
+      },
+      "conferir": {
+        "instrumentos.0.simbolo": "BTC",
+        "instrumentos.0.passo": "0.00001",
+        "instrumentos.0.tick": "0.1",
+        "instrumentos.0.alavancagem_maxima": "40",
+        "instrumentos.1.simbolo": "ETH",
+        "instrumentos.1.passo": "0.0001",
+        "instrumentos.1.tick": "0.01",
+        "instrumentos.1.alavancagem_maxima": "25"
+      }
+    },
+    {
+      "caso": "sonda-real/mudanca-no-venue-muda-o-manifesto",
+      "esperadoOk": true,
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false
+      },
+      "conferir": {
+        "instrumentos.0.alavancagem_maxima": "40"
+      },
+      "segunda_sonda": {
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 20
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25
+            }
+          ]
+        }
+      },
+      "conferir_na_segunda": {
+        "instrumentos.0.alavancagem_maxima": "20"
+      }
+    },
+    {
+      "caso": "sonda-real/profundidade-medida-no-venue-atravessa-o-manifesto",
+      "esperadoOk": true,
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false
+      },
+      "conferir": {
+        "profundidade_de_livro": 20
+      },
+      "segunda_sonda": {
+        "profundidade_de_livro": 5
+      },
+      "conferir_na_segunda": {
+        "profundidade_de_livro": 5
+      }
+    },
+    {
+      "caso": "sonda-real/sem-profundidade-de-livro-medida-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false,
+        "profundidade_de_livro": null
+      }
+    },
+    {
+      "caso": "sonda-real/meta-ilegivel-nao-vira-instrumento-inexistente",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false,
+        "meta": null
+      }
+    },
+    {
+      "caso": "sonda-real/instrumento-que-o-venue-nao-lista-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "sonda": {
+        "instrumentos_pedidos": [
+          "BTC",
+          "SOL"
+        ],
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false
+      }
+    },
+    {
+      "caso": "sonda-real/declarar-false-e-uma-declaracao-ausente-nao-e",
+      "esperadoOk": true,
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": false,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false
+      },
+      "conferir": {
+        "sabe_ajustar_alavancagem": false,
+        "stop_anexo": false
+      }
+    },
+    {
+      "caso": "sonda-real/cadencia-do-funding-medida-atravessa-por-instrumento",
+      "esperadoOk": true,
+      "nota": "DEFEITO 3, medido: `predictedFundings()` da a cadencia POR INSTRUMENTO, e o valor de `HlPerp` deste venue e 1 hora (medido nos 212 instrumentos). O segundo instrumento leva 8 horas — o valor medido de OUTRA modalidade da mesma resposta — para o caso medir que o campo e por instrumento, e nao um numero unico do venue.",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false,
+        "instrumentos_pedidos": [
+          "BTC",
+          "ETH"
+        ],
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 40,
+              "fundingIntervalHours": 1,
+              "marginTiers": [
+                {
+                  "lowerBound": "0.0",
+                  "maxLeverage": 40
+                },
+                {
+                  "lowerBound": "10000.0",
+                  "maxLeverage": 25
+                },
+                {
+                  "lowerBound": "50000.0",
+                  "maxLeverage": 10
+                }
+              ]
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25,
+              "fundingIntervalHours": 8
+            }
+          ]
+        }
+      },
+      "conferir": {
+        "instrumentos.0.funding_intervalo_horas": 1,
+        "instrumentos.1.funding_intervalo_horas": 8
+      }
+    },
+    {
+      "caso": "sonda-real/escaloes-de-margem-medidos-atravessam",
+      "esperadoOk": true,
+      "nota": "DEFEITO 2, medido: a tabela de margem do BTC (`marginTableId` 54) traz `lowerBound` 0.0 / 10000.0 / 50000.0 com maximas 40 / 25 / 10. O manifesto declara-os em `de` — o limite INFERIOR — e o primeiro escalao, a ZERO, e o que o `ate` de antes nao conseguia exprimir.",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false
+      },
+      "conferir": {
+        "instrumentos.0.alavancagem_por_escalao.0.de": "0.0",
+        "instrumentos.0.alavancagem_por_escalao.0.maxima": "40",
+        "instrumentos.0.alavancagem_por_escalao.1.de": "10000.0",
+        "instrumentos.0.alavancagem_por_escalao.1.maxima": "25",
+        "instrumentos.0.alavancagem_por_escalao.2.de": "50000.0",
+        "instrumentos.0.alavancagem_por_escalao.2.maxima": "10"
+      }
+    },
+    {
+      "caso": "sonda-real/instrumento-deslistado-no-mandato-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "instrumento_deslistado_no_venue",
+      "nota": "DEFEITO 4, medido: o venue lista 54 instrumentos com `isDelisted: true`. Um deles e MATIC — que o venue continua a LISTAR, com unidade propria. O mandato que o nomeia RECUSA, nomeando-o: existir no universo nao e estar a venda.",
+      "sonda": {
+        "minimo_de_valor_por_ordem": "10",
+        "desvio_maximo": "0.5",
+        "ajusta_alavancagem": true,
+        "stop_anexo": false,
+        "idempotencia": true,
+        "marca_liga_ordem_a_posicao": false,
+        "instrumentos_pedidos": [
+          "BTC",
+          "MATIC"
+        ],
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 40,
+              "fundingIntervalHours": 1,
+              "marginTiers": [
+                {
+                  "lowerBound": "0.0",
+                  "maxLeverage": 40
+                },
+                {
+                  "lowerBound": "10000.0",
+                  "maxLeverage": 25
+                },
+                {
+                  "lowerBound": "50000.0",
+                  "maxLeverage": 10
+                }
+              ]
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25
+            },
+            {
+              "name": "MATIC",
+              "szDecimals": 1,
+              "maxLeverage": 25,
+              "isDelisted": true
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

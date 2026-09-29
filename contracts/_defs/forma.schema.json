@@ -152,7 +152,9 @@
         "instrumento_desconhecido_no_manifesto",
         "minimo_do_instrumento_acima_da_banda",
         "prazo_excedido",
-        "desfecho_nao_reconhecido"
+        "desfecho_nao_reconhecido",
+        "valor_abaixo_do_minimo_do_venue",
+        "instrumento_deslistado_no_venue"
       ],
       "description": "Motivo NORMALIZADO de recusa. Espelho de vocabulario.json — a fonte é lá."
     },

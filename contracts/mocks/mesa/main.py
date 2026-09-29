@@ -63,6 +63,59 @@ def versao_vigente() -> str:
     return ler(CONTRATOS / "versao.json")["contrato"]
 
 
+# ---------------------------------------------------------------------------------------------------
+# A VERSAO DO CONTRATO NAO SE ESCREVE NUM FICHEIRO DE CASOS.
+#
+# Os casos escrevem o TOKEN (`$CONTRATO`, e `$CONTRATO_A_FRENTE` / `$CONTRATO_ATRAS` onde o caso e
+# ADVERSARIO), e e aqui — no momento de os ler — que o token e trocado pela versao LIDA de
+# `contracts/versao.json`. A vigente vive num so sitio; copiada para 26 mensagens, envelhece em silencio e
+# passa a ser recusada por `versao_do_contrato_divergente`, e a bateria mede o contrario do que diz medir.
+#
+# Um token DESCONHECIDO (ou um que ficasse por resolver) NAO passa como texto: e uma RECUSA nomeada. Um
+# literal a chegar ao validador daria a mesma recusa em todos os casos, e ninguem saberia por que.
+#
+# O mesmo resolver vive do lado TypeScript (tools/verificar-conector/conformidade.ts), que le os MESMOS
+# casos: se os dois resolverem de forma diferente, os veredictos divergem e a bateria fica vermelha.
+# ---------------------------------------------------------------------------------------------------
+
+TOKEN_VIGENTE = "$CONTRATO"
+TOKEN_A_FRENTE = "$CONTRATO_A_FRENTE"
+TOKEN_ATRAS = "$CONTRATO_ATRAS"
+
+
+class TokenDeVersaoDesconhecido(Exception):
+    """Um token de versao que ninguem sabe resolver. Recusa NOMEADA, nunca um texto a passar por versao."""
+
+
+def _versao_deslocada(delta: int) -> str:
+    """Uma versao DIFERENTE da vigente — sempre: sobe (ou desce) o numero do meio.
+
+    Ex.: vigente 1.4.0 -> a frente 1.5.0, atras 1.3.0. Se o deslocamento cair na propria vigente (o numero
+    do meio ja e zero), muda-se a ultima casa: o que o caso adversario pede e uma versao DIFERENTE, e so.
+    """
+    maior, menor, _ = (int(p) for p in versao_vigente().split("."))
+    candidata = f"{maior}.{menor + delta}.0" if delta > 0 else f"{maior}.{max(0, menor - 1)}.0"
+    return candidata if candidata != versao_vigente() else f"{maior}.{menor}.1"
+
+
+def resolver_tokens_de_versao(valor: Any) -> Any:
+    if isinstance(valor, str):
+        if valor == TOKEN_VIGENTE:
+            return versao_vigente()
+        if valor == TOKEN_A_FRENTE:
+            return _versao_deslocada(1)
+        if valor == TOKEN_ATRAS:
+            return _versao_deslocada(-1)
+        if valor.startswith("$CONTRATO"):
+            raise TokenDeVersaoDesconhecido(f"token de versao desconhecido nos casos: {valor!r}")
+        return valor
+    if isinstance(valor, list):
+        return [resolver_tokens_de_versao(v) for v in valor]
+    if isinstance(valor, dict):
+        return {chave: resolver_tokens_de_versao(v) for chave, v in valor.items()}
+    return valor
+
+
 def vocabulario() -> dict[str, Any]:
     return ler(CONTRATOS / "vocabulario.json")
 
@@ -312,7 +365,13 @@ def main(argv: list[str]) -> int:
     caminho = Path(args.casos)
     if not caminho.is_absolute():
         caminho = Path(__file__).resolve().parent / caminho
-    casos = ler(caminho)
+    # OS TOKENS DE VERSAO resolvem-se AQUI, uma so vez, antes de qualquer leitor os ver: os casos nunca
+    # trazem a versao escrita, e um token que ninguem soubesse resolver e RECUSADO com nome.
+    try:
+        casos = resolver_tokens_de_versao(ler(caminho))
+    except TokenDeVersaoDesconhecido as erro:
+        print(f"duble de mesa: RECUSADO — {erro}", file=sys.stderr)
+        return 2
     if args.fidelidade:
         if not args.papel:
             print("--fidelidade precisa do --papel (e o papel decide qual resposta se confere)", file=sys.stderr)

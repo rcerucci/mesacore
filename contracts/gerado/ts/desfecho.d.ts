@@ -34,7 +34,9 @@ export type DesfechoDaOrdem = {
     | "instrumento_desconhecido_no_manifesto"
     | "minimo_do_instrumento_acima_da_banda"
     | "prazo_excedido"
-    | "desfecho_nao_reconhecido";
+    | "desfecho_nao_reconhecido"
+    | "valor_abaixo_do_minimo_do_venue"
+    | "instrumento_deslistado_no_venue";
   resolucao?: ResolucaoDoConector;
   /**
    * A resposta BRUTA do venue. O contrato nao a interpreta — o registo guarda-a como chegou, para que nada dependa de interpretacao (FR-021).
