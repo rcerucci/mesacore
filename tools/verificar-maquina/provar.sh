@@ -13,6 +13,24 @@ RAIZ="$(pwd)"
 RAPIDO=0
 [ "${1:-}" = "--rapido" ] && RAPIDO=1
 
+# ---------------------------------------------------------------------------------------------
+# UMA BATERIA DE CADA VEZ. Duas ao mesmo tempo pisam-se: a prova negativa da frescura reescreve
+# ficheiros gerados e o vigia escreve estado de runtime — e a segunda mede a sujeira da primeira.
+# Quem chega depois RECUSA: nao espera, nao corre a meias. Uma bateria mede-se com o repositorio
+# so para ela (foi assim que uma corrida concorrente deu "fronteira: 1 falhas" em codigo verde).
+# A trava e um pid: se o processo ja morreu, a trava velha e limpa em vez de bloquear para sempre.
+TRAVA=".provar.lock"
+if [ -f "$TRAVA" ]; then
+  outro=$(cat "$TRAVA" 2>/dev/null || echo "")
+  if [ -n "$outro" ] && kill -0 "$outro" 2>/dev/null; then
+    echo "provar: RECUSADO — outra bateria esta a correr (pid $outro); uma bateria mede-se sozinha"
+    exit 1
+  fi
+  echo "provar: (trava do pid $outro, que ja nao existe — a limpar)"
+fi
+echo $$ > "$TRAVA"
+trap 'rm -f "$TRAVA"' EXIT
+
 falhas=0
 corridas=0
 declarar() {

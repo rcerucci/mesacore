@@ -27,3 +27,6 @@ vigia/.arranque.json.tmp
 # O conector: o manifesto do runtime e o registo da conformidade são ESTADO, não forma.
 brokers/*/.manifesto.json
 brokers/*/conformidade/
+
+# A trava da bateria: estado de execucao, nunca forma.
+.provar.lock
