@@ -169,6 +169,60 @@ def campos_das_mensagens() -> int:
     return len(falhas)
 
 
+def _totais_dos_runners() -> dict[str, tuple[int, int, int]]:
+    """Corre os dois runners e le os totais que eles imprimem (e a implementacao real de cada lingua)."""
+    saida: dict[str, tuple[int, int, int]] = {}
+    for nome, comando in (("py", ["uv", "run", "python", "esqueleto/casos.py"]),
+                          ("ts", ["bun", "run", "esqueleto/casos.ts"])):
+        processo = subprocess.run(comando, cwd=CONTRATOS, capture_output=True, text=True)
+        texto = processo.stdout + processo.stderr
+        achado = re.search(r"(\d+) casos · (\d+) aceites · (\d+) recusados", texto)
+        if achado is None:
+            raise SystemExit(f"nao se leu o resumo do runner {nome}:\n{texto[-800:]}")
+        saida[nome] = (int(achado.group(1)), int(achado.group(2)), int(achado.group(3)))
+    return saida
+
+
+def contagem(com_prova: bool = True) -> int:
+    ficheiros = sorted(CASOS.glob("*.casos.json"))
+    por_ficheiro = {f.name: len(ler(f)["casos"]) for f in ficheiros}
+    soma = sum(por_ficheiro.values())
+    print(f"    {len(ficheiros)} ficheiros de caso · {soma} casos somados: "
+          + ", ".join(f"{nome}={quantos}" for nome, quantos in por_ficheiro.items()))
+
+    totais = _totais_dos_runners()
+    for nome, (casos, aceites, recusados) in totais.items():
+        conferir(casos == soma, f"runner {nome}: total ({casos}) e a soma dos ficheiros ({soma})")
+        conferir(aceites + recusados == casos, f"runner {nome}: aceites+recusados ({aceites}+{recusados}) e o total")
+        print(f"    runner {nome}: {casos} casos · {aceites} aceites · {recusados} recusados")
+    conferir(totais["py"][0] == totais["ts"][0],
+             f"as duas linguagens correm os mesmos casos ({totais['py'][0]} = {totais['ts'][0]})")
+
+    if not com_prova:
+        return len(falhas)
+
+    # A PROVA DA SOMA, feita a serio: entra um caso a mais, corre, e sai outra vez. Sem isto, "soma" e uma
+    # afirmacao sobre um numero que ninguem viu crescer.
+    original = CASOS / "vigia.casos.json"
+    temporario = CASOS / "zz-temp-contagem.casos.json"
+    try:
+        # UM caso a mais, e nao o ficheiro inteiro copiado: a primeira versao desta prova escrevia os 19
+        # casos do ficheiro sob outro nome e esperava +1 - e o total subiu 20. A contagem estava certa; a
+        # prova e que nao media o que dizia medir.
+        conteudo = ler(original)
+        novo = json.loads(json.dumps(conteudo["casos"][0]))
+        novo["nome"] = novo["nome"] + "-copia-para-a-prova-da-soma"
+        temporario.write_text(json.dumps({"mensagem": conteudo["mensagem"], "nota": "temporario da prova da soma", "casos": [novo]}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        depois = _totais_dos_runners()
+    finally:
+        temporario.unlink(missing_ok=True)
+    conferir(depois["py"][0] == soma + 1 and depois["ts"][0] == soma + 1,
+             f"com um caso a mais nas duas linguagens o total sobe um ({soma} -> {depois['py'][0]}/{depois['ts'][0]})")
+    conferir(_totais_dos_runners()["py"][0] == soma,
+             f"e volta ao total de antes quando o caso sai ({soma})")
+    return len(falhas)
+
+
 def main(argv: list[str]) -> int:
     modo = argv[1] if len(argv) > 1 else "--tudo"
     antes = len(falhas)
