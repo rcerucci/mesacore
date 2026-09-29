@@ -57,3 +57,55 @@ armadilha mais comum).
 Recomendação para agora (teste): **variável de ambiente** + agent wallet, e o valor nunca escrito no
 repositório. Quando passar a produção, decidimos entre o ficheiro `0600` fora de pasta sincronizada e o
 cifrado — é decisão sua, e fica declarada.
+
+## Como colocar a chave, em concreto (o processo levanta com isto)
+
+**O URL da API não é segredo** e já está no `brokers/hyperliquid/conector.exemplo.json` — é lá que ele vive
+(versionado, sem risco).
+
+**A chave é segredo. O sítio é este, e só este:**
+
+```bash
+# 1. a pasta (0700) e o ficheiro (0600), FORA do repositorio e fora de pasta sincronizada
+install -d -m 700 ~/.config/mesacore/credenciais
+install -m 600 /dev/null ~/.config/mesacore/credenciais/hl_teste.key
+
+# 2. escrever a chave SEM a passar pela linha de comando (nao fica no historico do shell)
+read -rs -p "chave da API wallet: " K && printf '%s' "$K" > ~/.config/mesacore/credenciais/hl_teste.key
+unset K
+chmod 600 ~/.config/mesacore/credenciais/hl_teste.key
+
+# 3. conferir que so o dono a le (tem de dizer 600)
+stat -c '%a %n' ~/.config/mesacore/credenciais/hl_teste.key
+```
+
+E no `brokers/hyperliquid/<nome>.conector.json`:
+
+```json
+"credencial": { "referencia": "hl_teste", "valor_em": "ficheiro:~/.config/mesacore/credenciais/hl_teste.key" }
+```
+
+A alternativa, igualmente aceite, é a variável de ambiente:
+
+```bash
+export HL_TESTNET_PRIVATE_KEY='...'     # exportada no ambiente onde o conector corre
+```
+```json
+"credencial": { "referencia": "hl_teste", "valor_em": "env:HL_TESTNET_PRIVATE_KEY" }
+```
+
+### O que o conector faz com isto (medido, não prometido)
+
+O carregador `brokers/hyperliquid/credencial.ts` resolve a referência **nestes dois sítios e em mais nenhum**
+e **recusa** — com motivo nomeado — quando:
+
+| Situação | Motivo | Caso |
+|---|---|---|
+| o ficheiro é legível por grupo ou por outros (ex.: 644) | `valor_fora_da_banda` | `credencial/ficheiro-legivel-por-outros-recusa` |
+| o **valor** aparece num ficheiro **versionado** do repositório | `valor_fora_da_banda` | `credencial/valor-que-esta-no-repositorio-recusa` |
+| a referência não diz de onde vem | `formato_invalido` | `credencial/formato-sem-forma-recusa` |
+| a variável/ficheiro não existe, ou está vazio | `campo_obrigatorio_ausente` / `valor_nulo_nao_permitido` | os dois casos de ausência |
+
+São **9 casos**, todos offline, todos a passar (`credencial: 9 casos · 9 ok · 0 divergentes`), e entram na
+bancada do conector. A varredura do repositório faz-se **em memória, ficheiro a ficheiro** — o valor nunca
+entra numa linha de comando (nem no `ps`, nem no histórico).

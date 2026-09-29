@@ -1,9 +1,11 @@
 {
   "_como_usar": [
-    "Copie para brokers/hyperliquid/<nome>.conector.json e preencha os null.",
-    "Este ficheiro diz QUAL ambiente e QUAL credencial — nunca traz o valor dela.",
-    "O valor entra por variavel de ambiente (ou ficheiro) indicado em credencial.valor_em.",
-    "Ambiente de TESTE primeiro (RN-H17): a passagem a producao e decisao declarada do dono."
+    "Copie para brokers/hyperliquid/<nome>.conector.json e edite o que estiver null.",
+    "O URL da API nao e segredo: vive aqui.",
+    "A chave NAO vive aqui: aqui vive so o NOME dela (credencial.referencia) e ONDE esta (credencial.valor_em).",
+    "Duas formas aceites: \"env:NOME_DA_VARIAVEL\" ou \"ficheiro:/caminho/fora/do/repo.key\" (modo 600).",
+    "Os comandos exactos para por a chave estao em config/README.md, seccao 'Como colocar a chave, em concreto'.",
+    "O carregador RECUSA se o ficheiro for legivel por outros, ou se o valor aparecer num ficheiro versionado."
   ],
   "venue": "hyperliquid",
   "ambiente": "teste",
@@ -14,8 +16,8 @@
     "BTC"
   ],
   "credencial": {
-    "referencia": "hl_teste_do_dono",
-    "valor_em": "env:HL_TESTNET_PRIVATE_KEY",
+    "referencia": "hl_teste",
+    "valor_em": "ficheiro:~/.config/mesacore/credenciais/hl_teste.key",
     "_nota": "a REFERENCIA viaja na mensagem e no manifesto; o VALOR fica fora do repositorio, do ledger e do log (RN-E14, RN-C20)"
   }
 }

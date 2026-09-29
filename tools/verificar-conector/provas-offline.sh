@@ -7,6 +7,14 @@ falhas=0
 declarar() { printf '%-52s' "$1"; }
 
 # 1. Os casos do manifesto (em dado, contra a sonda — sem rede e sem chave)
+declarar "casos da credencial (hyperliquid)"
+saida_c=$(bun brokers/hyperliquid/casos/correr-credencial.ts 2>&1)
+if printf '%s\n' "$saida_c" | tail -1 | grep -q "0 divergentes"; then
+  echo "OK   $(printf '%s\n' "$saida_c" | tail -1)"
+else
+  echo "FALHOU"; printf '%s\n' "$saida_c" | grep divergente | head -5; falhas=$((falhas+1))
+fi
+
 declarar "casos do manifesto (hyperliquid)"
 saida=$(bun brokers/hyperliquid/casos/correr.ts 2>&1)
 if printf '%s\n' "$saida" | tail -1 | grep -q "0 divergentes"; then
