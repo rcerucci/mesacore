@@ -1,0 +1,6 @@
+=== linha de base ===
+2026-09-28T21:42:15-03:00
+provar: 16 de 16 passaram — a maquina decide o que devia, e explica o que nao fez
+resumo: 3 verificacoes · 0 divergentes · 7 chaves
+ocorrencias de 1.0.0 em contracts/: 354
+ficheiros com 1.0.0: 91

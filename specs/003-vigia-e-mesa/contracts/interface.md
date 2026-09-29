@@ -71,7 +71,7 @@ decisão sem pergunta é uma decisão sem contexto.
 
 Nada do que existia mudou de sentido: o que entra são **quatro tipos** e uma **família de motivos**. Quem não
 conhece o tipo recusa com `tipo_desconhecido` — comportamento declarado. A versão é comparada por igualdade
-exacta, logo **todos** os casos existentes migram: **354 ocorrências em 45 ficheiros**, e a tarefa mede
+exacta, logo **todos** os casos existentes migram: **354 ocorrências em 91 ficheiros**, e a tarefa mede
 **zero** ocorrências de `1.0.0` fora do histórico no fim.
 
 ## 8. Os motivos que atravessam: **20 dos 42**

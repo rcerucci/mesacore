@@ -25,7 +25,7 @@ motivos do comando (R7). Nada do que existia muda de sentido.
 
 **Razão:** a versão é comparada por **igualdade exacta** (D7 do recorte 001) — quem não conhece o tipo novo
 recusa com `tipo_desconhecido`, que é comportamento **declarado**, não um comportamento novo. A mudança é
-**detectada** em vez de sofrida (RN-C7). **Custo medido:** a versão aparece **354 vezes em 45 ficheiros** — a
+**detectada** em vez de sofrida (RN-C7). **Custo medido:** a versão aparece **354 vezes em 91 ficheiros** — a
 subida é um acto com contagem, e a tarefa mede zero ocorrências de `1.0.0` fora do histórico no fim.
 
 **Alternativas recusadas:** manter `1.0.0` com o comando fora do contrato (um acordo tácito entre dois

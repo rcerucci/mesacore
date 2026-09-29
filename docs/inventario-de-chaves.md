@@ -159,10 +159,18 @@ onde ajustar (RN-A1).
 | `conta.arranque_apos_cb` | `core/ciclo/arranque.ts` (porta da sessao) | `exige_decisao`: depois do CB, o `start` recusa ate haver sessao nova (FR-037) |
 | `fichas/<i>.risco.*`, `fichas/<i>.setup.*` | `core/ciclo/arranque.ts`, `core/ciclo/decisao.ts` | o que a mesa le para montar a boleta (bandas, parcial, desvio, stop, tp, relogio) |
 
-**O que este recorte NAO declarou, e devia:** o **prazo de resposta do encerramento** (em `encerrando`, a
-mesa pergunta e espera — `setup.prazo_de_resposta_ms` nao existe no inventario). Hoje ele entra como
-parametro do pedido, que e o mesmo que dizer que quem chama e que sabe. Numa mesa manual este prazo e do
-dono, e por isso fica aqui registrado como **lacuna**, e nao como decisao.
+**A lacuna que o recorte 003 fecha: o prazo de resposta do encerramento.** Em `encerrando` a mesa pergunta e
+espera — e o prazo nao existia como chave (entrava como parametro do pedido, que e o mesmo que dizer que quem
+chama e que sabe). Numa mesa manual este prazo e do **dono**. A chave passa a existir, com forma declarada
+(RN-A3: a spec inventa a chave primeiro, e **o valor continua a ser do dono**):
+
+| Chave | Tipo | Unidade | Omissao | Significado |
+|---|---|---|---|---|
+| `setup.prazo_de_resposta_ms` | inteiro positivo | milissegundos | **a ficha declara** (a omissao vai aqui quando o dono disser o valor; ate la, uma ficha sem ela **recusa**, nao adivinha) | quanto tempo a mesa espera pela resposta ao «fecho a mercado?» antes de voltar a operar com o `stop` pendente (RN-V9.1) |
+
+**A linha na tabela de cima entra na mesma tarefa que traz o leitor** (T036 do recorte 003), e nao antes: uma
+chave na tabela sem quem a leia e exactamente o que a conferencia recusa, e essa forca **nao** se relaxa para
+acomodar uma tarefa.
 
 **O que a conferencia apanhou (2):** a porta da sessao recusava por inibicao **sem ler**
 `conta.arranque_apos_cb`: a politica estava num `if` (RN-A1). Passou a ler a chave, e a mesa **grita** se
