@@ -129,10 +129,15 @@ sh tools/preparar-contas/preparar-contas.sh --sem-perguntas --respostas r.json \
 sh tools/preparar-contas/provas.sh
 ```
 
-Corre sem rede, contra um directorio temporário, e prova quatro coisas: (1) o ficheiro produzido **passa
+Corre sem rede, contra um directorio temporário, e prova cinco coisas: (1) o ficheiro produzido **passa
 no conferidor**; (2) a chave fica **fora do repositório** com modo **600**; (3) a configuração traz a
 **referência** e o valor **não aparece** nela nem em ficheiro versionado nenhum; (4) um questionário com
-segredo sem destino é **recusado**. Nenhum segredo real entra na bateria: a «chave» de prova é uma string
+segredo sem destino é **recusado**; (5) **responder só com Enter** aplica as omissões declaradas no
+questionário e produz um ficheiro válido — o prompt promete «Enter aceita …», logo a omissão tem de valer
+como resposta (foi um defeito real, apanhado em campo: o script só olhava para uma conta já existente).
+
+Nos textos do questionário, `{{conta}}` é substituído pelo nome da conta — é assim que a credencial assume
+o nome da conta sem ninguém o escrever duas vezes. Nenhum segredo real entra na bateria: a «chave» de prova é uma string
 inventada.
 
 ## O que ainda não existe

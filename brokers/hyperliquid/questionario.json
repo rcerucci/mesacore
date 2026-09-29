@@ -65,8 +65,8 @@
       "tipo": "texto",
       "obrigatorio": true,
       "pergunta": "Nome da credencial (Enter usa o nome da conta)",
-      "explicacao": "E o NOME, nunca a chave. O nome viaja na configuracao e no manifesto; o valor fica no ficheiro protegido que o conector le (modo 600, fora do repositorio).",
-      "omissao": "(igual ao nome da conta)"
+      "explicacao": "E o NOME, nunca a chave. O nome viaja na configuracao e no manifesto; o valor fica no ficheiro protegido que o conector le (modo 600, fora do repositorio). Enter usa o nome da conta (o token {{conta}} e substituido).",
+      "omissao": "{{conta}}"
     },
     {
       "id": "chave_privada",

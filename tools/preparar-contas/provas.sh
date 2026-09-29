@@ -78,7 +78,9 @@ fi
 
 prova "3. a configuracao traz a REFERENCIA, nunca o valor"
 if [ -f "$CFG/conta-de-prova.json" ] && grep -q '"ficheiro:' "$CFG/conta-de-prova.json" && ! grep -q "$CHAVE_FALSA" "$CFG/conta-de-prova.json"; then
-  if git -C "$RAIZ" grep -qF "$CHAVE_FALSA" -- . 2>/dev/null; then
+  # A «chave» de prova vive no proprio ficheiro da bateria (versionado, e inventada) — e a UNICA
+  # excepcao ao varrimento. Fora dele, o valor nao pode aparecer em ficheiro versionado nenhum.
+  if git -C "$RAIZ" grep -qF "$CHAVE_FALSA" -- . ':(exclude)tools/preparar-contas/provas.sh' 2>/dev/null; then
     falhou "o valor da chave aparece num ficheiro VERSIONADO do repositorio"
   else
     ok "referencia presente, valor ausente da configuracao e do repositorio"
@@ -105,6 +107,45 @@ if printf '%s' "$SAIDA_MAU" | grep -q "RECUSADO" && [ ! -f "$CASA/config2/teste.
   ok "$(printf '%s' "$SAIDA_MAU" | grep 'RECUSADO' | head -1 | cut -c1-90)"
 else
   falhou "o questionario mau passou"; printf '%s\n' "$SAIDA_MAU" | tail -3
+fi
+
+# 5. o caso que o dono apanhou em campo: responder so com Enter. Toda pergunta que DECLARA uma omissao
+#    tem de aceita-la — o prompt promete-o («Enter aceita a lista completa») e a promessa tem de ser
+#    verdade. Aqui omite-se tudo o que tem omissao no questionario e exige-se um ficheiro valido no fim.
+prova "5. responder so com Enter (as omissoes do questionario) produz valido"
+cat > "$CASA/respostas-enter.json" <<EOF
+{
+  "_questionario": "$ESPERADO",
+  "identificador": "0x2222222222222222222222222222222222222222",
+  "chave_privada": "$CHAVE_FALSA",
+  "instrumentos": "BTC",
+  "retencao_dias_integral": "90",
+  "retencao_depois": "resumo_diario",
+  "versao_do_mandato": "2026-09-29-a",
+  "saldo_pct": "1",
+  "alavancagem": "3",
+  "stop_pct": "1.5",
+  "tp_pct": "3",
+  "desvio_maximo": "0.5",
+  "prazo_da_passiva_ms": "30000",
+  "versao_do_setup": "2026-09-29",
+  "prazo_de_resposta_ms": "600000"
+}
+EOF
+SAIDA_E=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-enter.json" --config-dir "$CASA/config-enter" --credenciais "$CASA/cred-enter" 2>&1)
+CODIGO_E=$?
+if [ "$CODIGO_E" -eq 0 ] && printf '%s' "$SAIDA_E" | grep -q "conferidor: aprovado"; then
+  # e as omissoes tem de estar LA, nao vazias: prova-se lendo o ficheiro
+  ALVO="$CASA/config-enter/hl-teste-a.json"
+  VAL=$(jq -r '.conta.eventos_que_avisam | length' "$ALVO" 2>/dev/null)
+  NOME=$(jq -r '.conta.credencial' "$ALVO" 2>/dev/null)
+  if [ "$VAL" = "7" ] && [ "$NOME" = "hl-teste-a" ]; then
+    ok "omissoes aplicadas (7 eventos, credencial=$NOME)"
+  else
+    falhou "as omissoes nao foram aplicadas (eventos=$VAL, credencial=$NOME)"
+  fi
+else
+  falhou "exit=$CODIGO_E"; printf '%s\n' "$SAIDA_E" | tail -4
 fi
 
 printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"

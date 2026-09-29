@@ -105,13 +105,17 @@ for _k in $(jq -r '.preenche_sempre // {} | keys[]' "$ESCOLHIDO" 2>/dev/null); d
     || recusar "nao consegui acrescentar '$_k' a configuracao" 
 done
 
-perguntar() {  # $1=id $2=chave $3=tipo $4=pergunta $5=explicacao $6=opcional $7=opcoes json $8=instrumento
-  _id=$1; _chave=$2; _tipo=$3; _pergunta=$4; _explicacao=$5; _opcional=$6; _opcoes=$7; _instr=$8
+perguntar() {  # $1=id $2=chave $3=tipo $4=pergunta $5=explicacao $6=opcional $7=opcoes json $8=instrumento $9=omissao do questionario
+  _id=$1; _chave=$2; _tipo=$3; _pergunta=$4; _explicacao=$5; _opcional=$6; _opcoes=$7; _instr=$8; _omissao=$9
   _padrao=""
   if [ -n "$CONTA" ] && [ -f "$CONTA" ]; then
     _pj=$(printf '%s' "$_chave" | jq -Rc 'split(".")')
     _padrao=$(jq -r --argjson p "$_pj" 'getpath($p) // empty | if type == "array" then join(",") else tostring end' "$CONTA" 2>/dev/null)
   fi
+  # O prompt diz «Enter aceita ...»: entao a omissao DECLARADA no questionario tem de valer como
+  # resposta. Foi um defeito real — o script so olhava para uma conta ja existente, e a pergunta
+  # prometia uma omissao que ele nunca aplicava.
+  [ -n "$_padrao" ] || _padrao=$(printf '%s' "$_omissao" | sed "s/{{conta}}/$NOME_CONTA/g")
   if [ -n "$RESPOSTAS" ]; then
     # com mais de um instrumento, a resposta por instrumento usa a chave id@instrumento; sem ela, cai no id simples
     _resp=$(jq -r --arg id "$_id" --arg i "$_instr" 'if ($i != "" and (.[$id + "@" + $i] != null)) then .[$id + "@" + $i] else (.[$id] // empty) end' "$RESPOSTAS")
@@ -174,8 +178,9 @@ correr_perguntas() {  # $1=ficheiro de perguntas dentro do questionario, $2=pref
     _explicacao=$(printf '%s' "$_q" | jq -r '.explicacao // ""')
     _opcoes=$(printf '%s' "$_q" | jq -c '.opcoes // null')
     _opcional=$(printf '%s' "$_q" | jq -r '.opcional // false')
+    _omissao=$(printf '%s' "$_q" | jq -r '.omissao // ""')
     [ -n "$_instr" ] && _chave=$(printf '%s' "$_chave" | sed "s/<instrumento>/$_instr/")
-    if perguntar "$_id" "$_chave" "$_tipo" "$_pergunta" "$_explicacao" "$_opcional" "$_opcoes" "$_instr"; then
+    if perguntar "$_id" "$_chave" "$_tipo" "$_pergunta" "$_explicacao" "$_opcional" "$_opcoes" "$_instr" "$_omissao"; then
       guardar "$_id" "$_chave" "$_tipo" "$_resp" "$_opcoes"
     fi
     _i=$((_i+1))
@@ -185,6 +190,9 @@ correr_perguntas() {  # $1=ficheiro de perguntas dentro do questionario, $2=pref
 # o nome da conta define o ficheiro e a chave
 if [ -n "$RESPOSTAS" ]; then
   NOME_CONTA=$(jq -r '.nome_da_conta // empty' "$RESPOSTAS")
+  # sem nome nas respostas, vale o exemplo declarado pelo questionario (o mesmo que o modo
+  # interactivo usa como omissao) — sem isto, responder so com Enter morria em «a conta ficou sem nome»
+  [ -n "$NOME_CONTA" ] || NOME_CONTA=$(jq -r '.conta_de_exemplo // empty' "$ESCOLHIDO")
 else
   NOME_CONTA=$(jq -r '.conta_de_exemplo // "conta"' "$ESCOLHIDO")
   dizer ""
