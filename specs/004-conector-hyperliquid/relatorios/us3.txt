@@ -1,0 +1,165 @@
+# US3 — a resolucao antes de executar e o desfecho com os numeros do venue (T023 a T030)
+
+contrato: **1.4.0** (lido de `contracts/versao.json`) · medido em: 2026-09-29T15:44:45-03:00 · quem mediu: esta vaga, na hora
+
+Regra da casa: **nenhum numero deste relatorio foi digitado** — todos saem crus dos comandos que aparecem
+por cima de cada bloco. Onde um numero nao foi medido, diz-se que nao foi.
+
+---
+
+## T023 — os casos da resolucao e do desfecho (com o que produz cada um)
+
+**Comando**: `bun run brokers/hyperliquid/processo.ts --bancada` (31 casos: 10 do processo, 18 do arranque,
+3 de provocacao). Os 10 casos do processo, um a um:
+
+```
+{"caso":"processo/aceite-mercado","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/parcial","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/recusa-do-venue-com-a-palavra-dele","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/silencio-do-venue","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/instrumento-fora-do-manifesto","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/tipo-de-ordem-nao-declarado","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/quantidade-abaixo-do-minimo","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/versao-do-contrato-divergente","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/parcial-nao-declarada","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+{"caso":"processo/campo-em-unidade-de-corretora","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+processo: 31 casos · 31 ok · 0 divergentes · 223 verificacoes · 7 portas do arranque em ["ficha","versao_do_contrato","uma_conta","ambiente_e_rede","chave","ligacao","sonda_e_manifesto"]
+```
+
+Os quatro desfechos do contrato estao produzidos por casos proprios: `processo/aceite-mercado` (aceite),
+`processo/parcial` (parcial), `processo/recusa-do-venue-com-a-palavra-dele` (recusado),
+`processo/silencio-do-venue` e `arranque/ordem-em-repouso` (desconhecido).
+
+## T024 — a resolucao sai ANTES do envio, com os numeros
+
+**Comando** (o caso `processo/aceite-mercado`, corrido a mao — as duas linhas da costura, pela ordem):
+
+```
+{"contrato":"1.4.0","tipo":"resolucao","id":"b-0001/resolucao","carga":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"}}
+{"contrato":"1.4.0","tipo":"desfecho","id":"b-0001","carga":{"classificacao":"aceite","resolucao":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"},"resposta_do_venue":{"estado":"filled","order_id":"8842","preenchido":"0.00166","preco_medio":"60000","origem_dos_numeros":"posicao_lida_depois_do_envio","bruto":{"totalSz":"0.00166","avgPx":"60000","oid":8842}}}}
+```
+
+O diagnostico do mesmo caso mostra a ORDEM dos factos: a traducao, o envio, e so depois o desfecho:
+
+```
+{"etapa": "ficha", "de": "variante `base` do ficheiro de casos", "conector": "hyperliquid", "ambiente": "teste", "url": "https://api.hyperliquid-testnet.xyz", "instrumentos": ["BTC"], "contrato_da_ficha": "1.4.0", "nota": "o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)"}
+{"porta": "ficha", "veredicto": "passou", "porque": "ficha do conector `hyperliquid` legivel: venue hyperliquid, ambiente teste, UMA conta, 1 instrumento(s) do mandato (BTC)"}
+{"porta": "ligacao", "veredicto": "passou", "porque": "estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot"}
+{"etapa": "conta", "equity": "1000", "marca": "60000", "origem_marca": "info.activeAssetData({user,coin}).markPx — [V]"}
+{"etapa": "traducao", "cloid": "0xeab5b6f15977095eac958e351c6472e6", "quantidade": "0.00166", "nocional": "99.6", "tif": "Ioc"}
+{"etapa": "envio", "veredicto": "aceite", "preenchido": "0.00166", "preco_medio": "60000", "origem_dos_numeros": "posicao_lida_depois_do_envio"}
+{"etapa": "fim", "atendidas": 1, "nota": "o cano fechou: nenhuma operacao fica nas maos deste processo"}
+```
+
+Leitura: a primeira linha e `tipo: "resolucao"` com os cinco numeros do que VAI ser enviado
+(quantidade `0.00166`, nocional `99.6`, margem empenhada `19.92`, alavancagem efectiva `5`, preco de
+liquidacao `48000`); a segunda e o `desfecho`, com a resolucao do venue (`origem_dos_numeros:
+"posicao_lida_depois_do_envio"`).
+
+## T025 — o NOME: `desfecho.ts` nao existe; a normalizacao vive no `conector.ts`
+
+Esta tarefa nomeava `brokers/hyperliquid/desfecho.ts`. **Esse ficheiro nao existe e nao se renomeia codigo**:
+a normalizacao das quatro classificacoes vive no **`brokers/hyperliquid/conector.ts`** (a funcao `atender` e a
+funcao interna `saida`, que passa TODOS os desfechos pelo conferidor do contrato antes de sairem). Provas
+medidas, uma por classificacao, tiradas dos casos corridos a mao:
+
+```
+aceite       {"contrato":"1.4.0","tipo":"desfecho","id":"b-0001","carga":{"classificacao":"aceite","resolucao":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco
+parcial      {"contrato":"1.4.0","tipo":"desfecho","id":"b-0101","carga":{"classificacao":"parcial","resolucao":{"quantidade":"0.00041","nocional":"24.6","margem_empenhada":"6.15","alavancagem_efectiva":"5","preco
+recusado     {"contrato":"1.4.0","tipo":"desfecho","id":"b-0200","carga":{"classificacao":"recusado","motivo":"valor_abaixo_do_minimo_do_venue","resposta_do_venue":{"erro":"Order value below $10 minimum","palavra_
+desconhecido {"contrato":"1.4.0","tipo":"desfecho","id":"b-0300","carga":{"classificacao":"desconhecido","resolucao":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5",
+```
+
+(As quatro linhas acima estao truncadas a 200 caracteres para caberem lado a lado — as mensagens INTEIRAS
+estao nos blocos crus de T024, T026 e T027, e nenhuma delas foi reescrita: o corte e so de apresentacao.)
+
+O conjunto das quatro e o do CONTRATO (nao um conjunto nosso): a prova 4 da conformidade mede-o da fonte —
+`OK   — 14 motivos do CONTRATO (de 18) e 10 da MESA (de 47, 22 deles na fronteira do comando) e 1 proprios do duble · 11 classificacoes dentro do conjunto e 1 declaradamente fora · 4 veredictos fechado`.
+
+## T026 — a recusa com a PALAVRA do venue, nunca interpretada
+
+```
+{"etapa": "envio", "veredicto": "recusado_pelo_venue", "palavra_do_venue": "Order value below $10 minimum", "motivo": "valor_abaixo_do_minimo_do_venue", "nota": "o venue recusa ordens abaixo do piso de valor dele"}
+{"etapa": "desfecho", "veredicto": "recusado", "motivo": "valor_abaixo_do_minimo_do_venue", "porque": "o venue recusou com a palavra DELE: Order value below $10 minimum (o venue recusa ordens abaixo do piso de valor dele)"}
+```
+
+Leitura: o motivo e o do vocabulario fechado (`valor_abaixo_do_minimo_do_venue`) e a palavra do venue viaja
+INTEIRA no campo `palavra_do_venue` — o conector nao a interpreta nem a substitui. **O que isto NAO prova**: a
+palavra e a do DUBLE (com a letra da documentacao oficial). A palavra do venue real e o SC-006, que exige
+enviar: fica na bateria de TESTE (**T057**).
+
+## T027 — nada se deduz: o que nao esta no venue e `desconhecido`
+
+Caso do venue que registou a ordem e **nada** executou (`arranque/ordem-em-repouso`):
+
+```
+{"contrato":"1.4.0","tipo":"resolucao","id":"b-1100/resolucao","carga":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"}}
+{"contrato":"1.4.0","tipo":"desfecho","id":"b-1100","carga":{"classificacao":"desconhecido","resolucao":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"},"resposta_do_venue":{"estado":"resting","order_id":"8844","origem_dos_numeros":"calculo_antes_do_envio","bruto":{"oid":8844},"nota":"o venue aceitou a ordem e nada executou; o contrato 1.3.0 nao tem classificacao propria para este estado"}}}
+```
+
+```
+{"etapa": "envio", "veredicto": "em_repouso", "order_id": "8844", "porque": "o venue registou a ordem e nada executou: o desfecho fica `desconhecido` ate a leitura do venue dizer o que se passou — FR-014/FR-015, e o achado 3 (o contrato nao tem classificacao para «na ordem, por executar»)"}
+```
+
+O conector **nao** transforma «a ordem esta na fila» em `aceite` nem em falha: fica `desconhecido`, com a
+resolucao que saiu antes do envio e a origem dela dita (`calculo_antes_do_envio`), FR-015/FR-014.
+
+**Achado de texto, medido no caminho**: a nota dessa mensagem ainda diz «o contrato **1.3.0** nao tem
+classificacao propria para este estado», e o contrato vigente e o **1.4.0**. Nao muda o que a mensagem
+transporta (a nota vai no `resposta_do_venue`), mas e um numero datado escrito em texto que ninguem reconferiu
+— fica registado, nao corrigido (nao se reescreve comportamento nesta vaga).
+
+## T028 — a conferencia contra o contrato, em portao automatico
+
+**Comando 1**: `bun tools/verificar-conector/conformidade.ts` (prova 1 — a forma de toda mensagem, conferida
+por DUAS leituras independentes: o motor do contrato em TypeScript e o duble de mesa em Python):
+
+```
+PROVA 1 — a forma: toda mensagem do conector contra o envelope e o esquema do seu tipo
+OK   — 13 mensagens do conector conferidas pelo motor do contrato (TS) e pelo duble de mesa (Python) · duble de mesa (conector): 0 falhas — 14 casos, cada um com o veredicto declarado · fidelidade: 0 falhas — o duble e o motor do contrato dao o mesmo veredicto nos mesmos casos (motor py: 12 casos conferidos contra o duble · motor ts: 12 casos conferidos contra o duble)
+passou     forma: 13 mensagens do conector conferidas pelo motor do contrato (TS) e pelo duble de mesa (Python) · duble de mesa (conector): 0 falhas — 14 casos, cada um com o veredicto declarado · fidelidade: 0 falhas — o duble e o motor do contrato dao o mesmo veredicto nos mesmos casos (motor py: 12 casos conferidos contra o duble · motor ts: 12 casos conferidos contra o duble)
+```
+
+**Comando 2**: `bun tools/verificar-conector/porta-do-contrato.ts` (o portao do contrato inteiro — os
+motivos fechados nas duas direcoes e os dois motores sobre os MESMOS casos):
+
+```
+  recusado campo_desconhecido nos dois motores — manifesto com o escalao no limite SUPERIOR (`ate`), que a 1.4.0 retirou
+  recusado valor_fora_da_banda nos dois motores — manifesto com a cadencia do funding fora da banda (`funding_intervalo_horas: 0`)
+  recusado tipo_invalido nos dois motores — manifesto com o deslistado a mentir (`deslistado: "sim"`)
+  recusado campo_desconhecido nos dois motores — boleta com um campo a mais (campo a mais RECUSA a mensagem inteira)
+  recusado valor_fora_do_conjunto nos dois motores — desfecho com um motivo FORA do vocabulario
+
+PORTA — os dois lados, sobre as MESMAS boletas (10 casos de conformidade)
+  10 casos nas duas linguagens · 8 concordam · 2 divergencias anteriores a 1.4.0 (nomeadas)
+
+PORTA — as bandas da emenda, medidas no duble (4 sondas de nocional)
+  abaixo do PISO: nocional 9.00 vs minimo 10.00 — recusado/valor_abaixo_do_minimo_do_venue no duble
+  no LIMITE do piso (igual PASSA): nocional 10.00 vs minimo 10.00 — aceite/null no duble
+  acima do piso, dentro do primeiro escalao: nocional 19.99 vs minimo 10.00 — aceite/null no duble
+  fora de TODOS os escaloes (o primeiro `de` e' 501): nocional 100.00 vs minimo 10.00 — recusado/valor_fora_da_banda no duble
+
+porta-do-contrato: 0 falhas — contrato 1.4.0 · 18 motivos fechados nas duas direcoes · 111 casos lidos nos dois motores · 10 casos de conformidade nas duas linguagens · 4 bandas no duble
+```
+
+**Comando 3** (o `provar.sh`, que corre a porta do conector dentro da bateria da maquina — o portao nao
+depende de alguem se lembrar):
+
+```
+conector hyperliquid (offline, US1)        OK   provas offline do conector: 0 falhas
+provar: 27 de 27 passaram — a maquina decide o que devia, e explica o que nao fez
+```
+
+## T029 — este relatorio
+
+E o proprio. As saidas cruas estao acima, cada uma com o comando que a produziu.
+
+## T030 — commit
+
+Um commit desta vaga com o assunto `specs/004: T029/T030 (US3)` — o hash esta no `RESULTADO.md` (§ commit).
+
+## O que este relatorio NAO prova, e di-lo
+
+- A resolucao e o desfecho foram medidos contra o **duble** do venue, nao contra a corretora.
+- O enderecamento do desfecho `parcial` **pelo venue real** (execucao parcial verdadeira) e o SC-006
+  (a palavra do venue) ficam na bateria de TESTE (**T057**), que exige enviar.
