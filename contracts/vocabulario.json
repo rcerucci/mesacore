@@ -1,5 +1,5 @@
 {
-  "contrato": "1.1.0",
+  "contrato": "1.2.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",
@@ -8,7 +8,7 @@
     "caixa"
   ],
   "conjuntos_do_vigia": {
-    "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 20 dos 42, research R7; as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa. Duas excecoes, e as duas da PORTA, nao do livro: `versao_do_contrato_divergente` (quem recusa e o CONTRATO, e a porta relata-o tal e qual - traduzi-lo para um motivo da mesa faria o vigia perder a razao certa, que e o que se quer saber quando nada acontece) e `posicao_desconhecida` (a porta nao sabe se ha posicao viva e NAO para por adivinhacao: a tabela trata \"nao sei\" como \"nao ha posicao\", e por isso o desconhecido sai como recusa NOMEADA).",
+    "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 23 dos 45, research R7. `liquidacao_em_curso` e o unico nome que serve de recusa E de efeito: como recusa, e um `start` durante a liquidacao; como efeito, e a decisao do dono que a comecou (o recorte 002 ja o usava assim); as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa. Duas excecoes, e as duas da PORTA, nao do livro: `versao_do_contrato_divergente` (quem recusa e o CONTRATO, e a porta relata-o tal e qual - traduzi-lo para um motivo da mesa faria o vigia perder a razao certa, que e o que se quer saber quando nada acontece) e `posicao_desconhecida` (a porta nao sabe se ha posicao viva e NAO para por adivinhacao: a tabela trata \"nao sei\" como \"nao ha posicao\", e por isso o desconhecido sai como recusa NOMEADA).",
     "verbos": [
       "start",
       "pause",
@@ -43,14 +43,18 @@
       "comando_incompleto",
       "comando_com_tipo_invalido",
       "versao_do_contrato_divergente",
-      "posicao_desconhecida"
+      "posicao_desconhecida",
+      "prazo_de_resposta_nao_declarado",
+      "numeros_da_corretora_ausentes",
+      "decisao_sem_pergunta"
     ],
     "efeitos_de_comando": [
       "sessao_nova_gravada",
       "reset_nao_toca_em_nada",
       "resumo_do_encerramento_apresentado",
       "stop_pendente_por_prazo",
-      "parada_com_posicao_viva"
+      "parada_com_posicao_viva",
+      "liquidacao_em_curso"
     ],
     "nota_dos_que_ficam_de_fora": "Os outros 22 motivos de core/estados/motivos.json (ciclo, posicao, reconciliacao) NAO atravessam esta fronteira: nao sao resposta a comando nenhum. Leva-los seria levar os que ninguem produz deste lado - o defeito espelhado dos falsos botoes."
   },

@@ -153,11 +153,45 @@
       "nome": "stop-com-posicao-vai-a-encerrando",
       "de": "em_operacao",
       "verbo": "stop",
-      "contexto": { "posicao_viva": true },
+      "contexto": {
+        "posicao_viva": true,
+        "numeros_da_corretora_ausentes": false,
+        "prazo_de_resposta_nao_declarado": false
+      },
       "resultado_esperado": "aceite",
       "estado_esperado": "encerrando",
       "motivo_esperado": null,
-      "historico": "US1 cenario 5, FR-011"
+      "historico": "US1 cenario 5, FR-011 - com o resumo ja construivel (os dois campos entram com a T033)"
+    },
+    {
+      "nome": "stop-com-posicao-e-sem-os-numeros-da-corretora-recusa",
+      "de": "em_operacao",
+      "verbo": "stop",
+      "contexto": { "posicao_viva": true, "numeros_da_corretora_ausentes": true, "prazo_de_resposta_nao_declarado": false },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "numeros_da_corretora_ausentes",
+      "historico": "T033/RN-V8 - o resumo mostra os numeros DA CORRETORA; sem eles a mesa nao pergunta, e a posicao continua governada"
+    },
+    {
+      "nome": "stop-com-posicao-e-sem-o-prazo-do-dono-recusa",
+      "de": "em_operacao",
+      "verbo": "stop",
+      "contexto": { "posicao_viva": true, "numeros_da_corretora_ausentes": false, "prazo_de_resposta_nao_declarado": true },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "prazo_de_resposta_nao_declarado",
+      "historico": "T033/RN-V9.1 - a pergunta leva o prazo do dono; sem ele nao se inventa um tempo"
+    },
+    {
+      "nome": "stop-com-posicao-e-contexto-vazio-recusa-por-fail-closed",
+      "de": "em_operacao",
+      "verbo": "stop",
+      "contexto": { "posicao_viva": true },
+      "resultado_esperado": "recusado",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "numeros_da_corretora_ausentes",
+      "historico": "prova negativa da polaridade: um contexto que NAO sabe se os numeros vieram recusa, em vez de deixar passar - o exemplo do D-006, agora na direccao da RECUSA"
     },
     {
       "nome": "reset-em-operacao-nao-muda-nada",
@@ -226,11 +260,15 @@
       "nome": "stop-da-pausa-com-posicao-vai-a-encerrando",
       "de": "pausada",
       "verbo": "stop",
-      "contexto": { "posicao_viva": true },
+      "contexto": {
+        "posicao_viva": true,
+        "numeros_da_corretora_ausentes": false,
+        "prazo_de_resposta_nao_declarado": false
+      },
       "resultado_esperado": "aceite",
       "estado_esperado": "encerrando",
       "motivo_esperado": null,
-      "historico": "FR-012"
+      "historico": "FR-012 - com o resumo ja construivel (T033)"
     },
     {
       "nome": "reset-em-pausada-nao-muda-nada",

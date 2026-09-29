@@ -191,7 +191,7 @@
         "motivo": "decisao_do_dono_apos_o_cb",
         "configuracao_em_vigor": {
           "ficha": "3232",
-          "versao_do_setup": "1.1.0",
+          "versao_do_setup": "1.2.0",
           "versao_do_mandato": "1.0.0"
         }
       },
@@ -267,7 +267,7 @@
       "troca": {
         "ficha": "3232",
         "versao_do_setup": "2.0.0",
-        "versao_do_mandato": "1.1.0"
+        "versao_do_mandato": "1.2.0"
       },
       "troca_esperada": {
         "aceite": true,

@@ -14,7 +14,7 @@ bash tools/verificar-maquina/provar.sh
 # 2. só o vigia (a bateria deste recorte, com o dublê de mesa e os dublês dos plugins)
 bash tools/verificar-maquina/vigia.sh
 
-# 3. o contrato (as duas linguagens, agora na versão 1.1.0)
+# 3. o contrato (as duas linguagens, agora na versão 1.2.0)
 bash tools/verificar-contrato/ponta-a-ponta.sh
 ```
 

@@ -19,7 +19,7 @@ inibição do CB, desconhecido, transições — ficam como estão.
 
 | Campo | Tipo | Notas |
 |---|---|---|
-| envelope | versão (`1.1.0`), `tipo=comando`, `pedido_id` (correlação) | a versão é comparada por igualdade exacta |
+| envelope | versão (`1.2.0`), `tipo=comando`, `pedido_id` (correlação) | a versão é comparada por igualdade exacta |
 | `verbo` | texto, do conjunto de 5 | obrigatório |
 | `autor` | texto | obrigatório — sem autor não se audita |
 | `motivo` | texto, só no `nova_sessao` | obrigatório nesse verbo |

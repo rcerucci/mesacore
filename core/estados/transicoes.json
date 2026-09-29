@@ -9,6 +9,8 @@
     "portas_do_arranque_falham": "Pelo menos uma das sete portas do arranque recusa (conectores, manifesto, mandato, contenda, inventario, versao, sessao).",
     "com_liquidacao_em_curso": "A liquidacao a mercado do encerramento ja comecou.",
     "sem_posicao_viva": "Nenhum instrumento esta em abrindo, aberta ou fechando, e nenhuma marca desconhecido bloqueia.",
+  "prazo_de_resposta_nao_declarado": "A posicao esta viva e a ficha do dono NAO declara `setup.prazo_de_resposta_ms` (ou as fichas discordam entre si). Polaridade: ao contrario das guardas de PERMISSAO, esta RECUSA enquanto o contexto nao disser que o prazo existe (`!== false`) - um contexto vazio nao pode deixar passar um resumo que promete um tempo que ninguem declarou.",
+  "numeros_da_corretora_ausentes": "A posicao esta viva e o relato da corretora nao traz os cinco numeros que o resumo exige. Mesma polaridade: recusa enquanto o contexto nao disser que os numeros vieram.",
     "com_posicao_viva": "Algum instrumento esta em abrindo, aberta ou fechando."
   },
   "linhas": [
@@ -118,6 +120,20 @@
     {
       "de": "em_operacao",
       "verbo": "stop",
+      "guarda": "numeros_da_corretora_ausentes",
+      "recusa": "numeros_da_corretora_ausentes",
+      "nota": "T033/RN-V8 - o resumo mostra os numeros DA CORRETORA e nao os estima; sem eles a mesa nao pergunta, RECUSA, e a posicao fica governada. Vem antes do prazo: sem factos nao ha resumo para prazo nenhum."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "stop",
+      "guarda": "prazo_de_resposta_nao_declarado",
+      "recusa": "prazo_de_resposta_nao_declarado",
+      "nota": "T033/RN-V9.1 - a pergunta leva o prazo do dono; sem ele a mesa nao inventa um tempo."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "stop",
       "guarda": "sempre",
       "para": "encerrando",
       "nota": "US1 cenario 5, FR-011 - com posicao, apresenta o resumo e PERGUNTA."
@@ -128,6 +144,20 @@
       "guarda": "sem_posicao_viva",
       "para": "parada",
       "nota": "FR-012."
+    },
+    {
+      "de": "pausada",
+      "verbo": "stop",
+      "guarda": "numeros_da_corretora_ausentes",
+      "recusa": "numeros_da_corretora_ausentes",
+      "nota": "T033 - parar a partir da pausa segue o mesmo caminho, com as mesmas travas."
+    },
+    {
+      "de": "pausada",
+      "verbo": "stop",
+      "guarda": "prazo_de_resposta_nao_declarado",
+      "recusa": "prazo_de_resposta_nao_declarado",
+      "nota": "T033 - idem: sem prazo declarado nao se pergunta."
     },
     {
       "de": "pausada",

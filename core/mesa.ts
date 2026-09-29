@@ -14,13 +14,17 @@ import { join } from "node:path";
 import { aplicar, type Contexto, type Estado, type Resposta } from "./estados/maquina.ts";
 import { validarComando } from "./estados/comando.ts";
 import * as marcas_mod from "./estado/marcas.ts";
-import { registarRecusa, registarTransicao } from "./estado/registo.ts";
+import { instanteDaUltimaTransicaoPara, registarRecusa, registarTransicao } from "./estado/registo.ts";
+import { correrPedidoDeParada, type PedidoDeParada, type ResultadoDoEncerramento } from "./ciclo/encerramento.ts";
 
 export const RAIZ_DO_CORE = join(import.meta.dir);
 
 export interface ContextoDaMesa extends Contexto {
   /** O relogio e o do VENUE (RN-D3): quem chama traz o instante de la. */
   instante_ms: number;
+  /** So no encerramento: o prazo declarado pela ficha e a configuracao que o decide. */
+  prazo_de_resposta_ms?: number;
+  configuracao?: import("./config/configuracao.ts").ConfiguracaoDaConta;
   /** Só em `nova_sessao`: o que a mesa leu e a configuracao que passa a valer. */
   sessao_nova?: {
     equity_de_partida: string;
@@ -50,6 +54,154 @@ export class Mesa {
 
   marcas(): marcas_mod.Marcas {
     return marcas_mod.lerMarcas(this.caminhoDasMarcas);
+  }
+
+  /**
+   * A DECISAO DO DONO ao resumo do encerramento (T034/T035). Nao e um verbo - nao entra pela tabela.
+   *
+   * O instante em que a pergunta foi apresentada vem do REGISTO (a ultima transicao para `encerrando`), e nao
+   * de memoria: a mesa nao guarda estado que sobreviva (R3), e um prazo contado a partir de um instante
+   * inventado decidiria por quem o declarou. Sem essa transicao nao ha pergunta datavel - e devolve-se
+   * `null`, para quem chamou recusar com o motivo proprio em vez de responder a uma pergunta que nao existe.
+   *
+   * A transicao da decisao entra no registo com o verbo `stop`: e o `stop` pendente que ela resolve, com o
+   * motivo/efeito que a decisao produziu (`parada_com_posicao_viva`, `liquidacao_em_curso`).
+   */
+  receberDecisaoDoEncerramento(resposta: "fechar_a_mercado" | "manter", contexto: ContextoDaMesa & { avaliacao?: string | null }) {
+    return this.aplicarEncerramento(resposta, contexto, `decisao do dono: ${resposta}`);
+  }
+
+  /**
+   * A VOLTA DO RELOGIO DURANTE O ENCERRAMENTO (T036/RN-V9.1), sem resposta ainda.
+   *
+   * E aqui que o prazo se cumpre: dentro dele a mesa espera; fora dele VOLTA A OPERAR - a abrir incluido -
+   * com o `stop` arquivado como PENDENTE. A tentacao era esperar para sempre; uma mesa congelada a espera de
+   * uma resposta que nao vem nao defende nada, e nem sequer se sabe que parou.
+   */
+  esperarPeloEncerramento(contexto: ContextoDaMesa & { avaliacao?: string | null }) {
+    return this.aplicarEncerramento(null, contexto, "prazo do encerramento");
+  }
+
+  private aplicarEncerramento(
+    resposta: "fechar_a_mercado" | "manter" | null,
+    contexto: ContextoDaMesa & { avaliacao?: string | null },
+    nota: string,
+  ): {
+    resultado: "aceite" | "recusado";
+    estado_anterior: Estado;
+    estado_novo: Estado;
+    efeito: string | null;
+    motivo: string | null;
+    resumo: ResultadoDoEncerramento["resumo"] | null;
+    nota: string;
+  } {
+    if (this.estado !== "encerrando") {
+      return {
+        resultado: "recusado",
+        estado_anterior: this.estado,
+        estado_novo: this.estado,
+        efeito: null,
+        motivo: "decisao_sem_pergunta",
+        resumo: null,
+        nota: `Nao ha pergunta do encerramento em aberto: a mesa esta ${this.estado}.`,
+      };
+    }
+
+    const inicio = instanteDaUltimaTransicaoPara("encerrando", this.caminhoDoRegisto);
+    if (inicio === null) {
+      return {
+        resultado: "recusado",
+        estado_anterior: this.estado,
+        estado_novo: this.estado,
+        efeito: null,
+        motivo: "decisao_sem_pergunta",
+        resumo: null,
+        nota: "A mesa esta em `encerrando` mas o registo nao tem a transicao que data a pergunta.",
+      };
+    }
+
+    if (contexto.configuracao === undefined) {
+      throw new Error(
+        "receberDecisaoDoEncerramento sem configuracao: a lista de eventos que avisam e do dono (RN-A3) e " +
+          "sem ela nao se decide se o desfecho avisa - decide-se de menos ou decide-se por ele.",
+      );
+    }
+
+    if (resposta !== null && contexto.prazo_de_resposta_ms === undefined) {
+      throw new Error("decisao do encerramento sem o prazo declarado: o prazo e do dono (RN-V9.1)");
+    }
+
+    const m = this.marcas();
+    const pedido: PedidoDeParada = {
+      inicio_ms: inicio,
+      agora_ms: contexto.instante_ms,
+      prazo_de_resposta_ms: contexto.prazo_de_resposta_ms ?? 0,
+      resposta,
+    };
+    const anterior = this.estado;
+    const r = correrPedidoDeParada(m, pedido, contexto.posicao_viva === true, contexto.avaliacao ?? null, contexto.configuracao);
+
+    // A VOLTA QUE ESPERA NAO E UM ACONTECIMENTO. Dentro do prazo a mesa nao fez nada de novo: escrever uma
+    // transicao `encerrando -> encerrando` a cada volta enchia o registo de ruido E - pior - reiniciava o
+    // prazo: o instante que data a pergunta e o da ultima transicao para `encerrando`, e cada linha dessas
+    // empurrava-o para a frente. Medido: a mesa esperava para sempre. Uma recusa de COMANDO transita X->X
+    // (T022), porque responder a um pedido e um acto; uma volta de relogio que nada mudou, nao.
+    if (resposta === null && r.estado === anterior) {
+      return {
+        resultado: "aceite",
+        estado_anterior: anterior,
+        estado_novo: r.estado,
+        efeito: r.motivo,
+        motivo: null,
+        resumo: r.resumo,
+        nota: `${nota}: nada mudou - ${r.porque}`,
+      };
+    }
+
+    this.estado = r.estado;
+    marcas_mod.gravarMarcas(r.marcas, this.caminhoDasMarcas);
+    registarTransicao(
+      contexto.instante_ms,
+      anterior,
+      r.estado,
+      "stop",
+      "dono",
+      r.motivo,
+      `${nota}: ${r.porque}`,
+      this.caminhoDoRegisto,
+    );
+
+    return {
+      resultado: "aceite",
+      estado_anterior: anterior,
+      estado_novo: r.estado,
+      efeito: r.motivo,
+      motivo: null,
+      resumo: r.resumo,
+      nota: r.porque,
+    };
+  }
+
+  /**
+   * A LIQUIDACAO ACABOU: a posicao fechou e a mesa fica `parada`.
+   *
+   * A transicao vai para o registo com o motivo a `null` - e uma transicao, e nao uma recusa (so as recusas
+   * exigem motivo), e na nota fica dito o que a fechou. O desfecho da liquidacao (o que o venue confirmou)
+   * entra pela reconciliacao, como todos os outros.
+   */
+  terminarLiquidacao(contexto: { instante_ms: number }): void {
+    const anterior = this.estado;
+    this.estado = "parada";
+    registarTransicao(
+      contexto.instante_ms,
+      anterior,
+      "parada",
+      "stop",
+      "dono",
+      null,
+      "liquidacao cumprida: nao ha posicao nossa para fechar em instrumento nenhum - a mesa fica parada",
+      this.caminhoDoRegisto,
+    );
   }
 
   /** Recebe uma linha de comando. Devolve sempre resposta: aceite com estado novo, ou recusa com motivo. */

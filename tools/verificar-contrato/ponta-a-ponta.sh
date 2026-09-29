@@ -16,9 +16,9 @@ set -uo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$RAIZ/contracts"
 
-MERCADO_ABERTO='{"contrato":"1.1.0","tipo":"mercado","id":"e2e-m1","carga":{"instrumento":"EURUSD","tempo_do_venue_ms":1759000000000,"idade_do_dado_ms":95,"estado":"aberto","bid":"1.08541","ask":"1.08543","ultimo":"1.08542","equity":"1000.00"}}'
-MERCADO_FECHADO='{"contrato":"1.1.0","tipo":"mercado","id":"e2e-m2","carga":{"instrumento":"EURUSD","tempo_do_venue_ms":1759000000000,"idade_do_dado_ms":300,"estado":"fechado","equity":"1000.00"}}'
-BOLETA='{"contrato":"1.1.0","tipo":"boleta","id":"e2e-b1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"r-e2e-1","marca_de_posse":1694498816}}'
+MERCADO_ABERTO='{"contrato":"1.2.0","tipo":"mercado","id":"e2e-m1","carga":{"instrumento":"EURUSD","tempo_do_venue_ms":1759000000000,"idade_do_dado_ms":95,"estado":"aberto","bid":"1.08541","ask":"1.08543","ultimo":"1.08542","equity":"1000.00"}}'
+MERCADO_FECHADO='{"contrato":"1.2.0","tipo":"mercado","id":"e2e-m2","carga":{"instrumento":"EURUSD","tempo_do_venue_ms":1759000000000,"idade_do_dado_ms":300,"estado":"fechado","equity":"1000.00"}}'
+BOLETA='{"contrato":"1.2.0","tipo":"boleta","id":"e2e-b1","carga":{"instrumento":"EURUSD","lado":"buy","tipo":"mercado","saldo_pct":"2","alavancagem":"1","parcial":"o_que_der","desvio_maximo":"0.1","prazo_da_passiva_ms":3000,"destino_do_resto":"agressivo","reduce_only":false,"referencia_do_cliente":"r-e2e-1","marca_de_posse":1694498816}}'
 # Referencias proprias por caso: uma boleta que partilhasse a referencia com outra responderia por
 # idempotencia, e o caso deixava de medir o que diz medir.
 BOLETA_ICEBERG="${BOLETA/\"tipo\":\"mercado\"/\"tipo\":\"iceberg\"}"

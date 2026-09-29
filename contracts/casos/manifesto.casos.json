@@ -6,7 +6,7 @@
       "nome": "manifesto/completo",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.1.0",
+        "contrato": "1.2.0",
         "tipo": "manifesto",
         "id": "mf-1",
         "carga": {
@@ -14,7 +14,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.1.0",
+          "versao": "1.2.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -77,7 +77,7 @@
       "nome": "manifesto/marca-nenhuma-e-declaracao-valida",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.1.0",
+        "contrato": "1.2.0",
         "tipo": "manifesto",
         "id": "mf-2",
         "carga": {
@@ -85,7 +85,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.1.0",
+          "versao": "1.2.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -126,7 +126,7 @@
       "nome": "manifesto/idempotencia-nao-booleana",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.1.0",
+        "contrato": "1.2.0",
         "tipo": "manifesto",
         "id": "mf-3",
         "carga": {
@@ -134,7 +134,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.1.0",
+          "versao": "1.2.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -175,7 +175,7 @@
       "nome": "manifesto/campo-desconhecido",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.1.0",
+        "contrato": "1.2.0",
         "tipo": "manifesto",
         "id": "mf-4",
         "carga": {
@@ -183,7 +183,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.1.0",
+          "versao": "1.2.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -225,7 +225,7 @@
       "nome": "manifesto/instrumento-sem-passo-declarado",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.1.0",
+        "contrato": "1.2.0",
         "tipo": "manifesto",
         "id": "mf-5",
         "carga": {
@@ -233,7 +233,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.1.0",
+          "versao": "1.2.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -273,7 +273,7 @@
       "nome": "manifesto/modelo-de-posicao-invalido",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.1.0",
+        "contrato": "1.2.0",
         "tipo": "manifesto",
         "id": "mf-6",
         "carga": {
@@ -281,7 +281,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.1.0",
+          "versao": "1.2.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -322,7 +322,7 @@
       "nome": "manifesto/sem-teto-de-valor-por-ordem",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.1.0",
+        "contrato": "1.2.0",
         "tipo": "manifesto",
         "id": "mf-7",
         "carga": {
@@ -330,7 +330,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.1.0",
+          "versao": "1.2.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",

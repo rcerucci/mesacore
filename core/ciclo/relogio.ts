@@ -92,6 +92,9 @@ export interface ResultadoDoCiclo {
   linhas: number;
   /** O que se decidiu, por instrumento. */
   acoes: Record<string, string>;
+  /** O motivo de cada decisao, por instrumento. A ACCAO diz o que se fez; o MOTIVO diz por que nao se fez
+   *  o resto - e ha perguntas (a liquidacao acabou?) que so o motivo responde. */
+  motivos: Record<string, string | null>;
 }
 
 export interface FontesDoCiclo {
@@ -110,6 +113,7 @@ export interface FontesDoCiclo {
 export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
   const { operacao, config, marcas, estado, ciclo, instante_ms } = fontes;
   const acoes: Record<string, string> = {};
+  const motivos: Record<string, string | null> = {};
   let linhas = 0;
 
   for (const [instrumento, decl] of Object.entries(operacao.instrumentos)) {
@@ -142,8 +146,9 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       fontes.caminhoDoRegisto,
     );
     acoes[instrumento] = decisao.acao;
+    motivos[instrumento] = decisao.motivo;
     linhas += 1;
   }
 
-  return { ciclo, linhas, acoes };
+  return { ciclo, linhas, acoes, motivos };
 }

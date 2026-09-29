@@ -5,77 +5,77 @@
     {
       "nome": "proposta/buy",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-1", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "buy"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-1", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "buy"}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "proposta/sell",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-2", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "sell"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-2", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "sell"}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "proposta/hold",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-3", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "hold"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-3", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "hold"}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "proposta/caixa",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-4", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "caixa"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-4", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "caixa"}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "proposta/com-relogio-adiantado",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-5", "carga": {"setup": {"nome": "sigma", "versao": "3.4.1"}, "lado": "hold", "relogio": {"proxima_consulta_ms": 300000}}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-5", "carga": {"setup": {"nome": "sigma", "versao": "3.4.1"}, "lado": "hold", "relogio": {"proxima_consulta_ms": 300000}}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "proposta/invalido-limpar",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-6", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "limpar"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-6", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "limpar"}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_do_conjunto"
     },
     {
       "nome": "proposta/invalido-sem-lado",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-7", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-7", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_obrigatorio_ausente"
     },
     {
       "nome": "proposta/invalido-lado-como-numero",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-8", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": 1}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-8", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": 1}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "tipo_invalido"
     },
     {
       "nome": "proposta/sem-assinatura-do-setup",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-9", "carga": {"lado": "buy"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-9", "carga": {"lado": "buy"}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_obrigatorio_ausente"
     },
     {
       "nome": "proposta/nome-de-setup-fora-do-padrao",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-10", "carga": {"setup": {"nome": "Manual", "versao": "1.0.0"}, "lado": "buy"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-10", "carga": {"setup": {"nome": "Manual", "versao": "1.0.0"}, "lado": "buy"}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "formato_invalido"
     },
     {
       "nome": "proposta/campo-de-estrategia-no-envelope",
       "mensagem": "proposta",
-      "entrada": {"contrato": "1.1.0", "tipo": "proposta", "id": "p-11", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "buy", "rsi": "72.5"}},
+      "entrada": {"contrato": "1.2.0", "tipo": "proposta", "id": "p-11", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "buy", "rsi": "72.5"}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_desconhecido"
     }

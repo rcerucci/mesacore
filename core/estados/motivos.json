@@ -2,6 +2,24 @@
   "nota": "Conjunto FECHADO dos motivos de recusa da MESA (R7 do specs/002). Nao se confunde com contracts/vocabulario.json: aquele e a lingua que cruza a fronteira entre processos e linguagens (validade de mensagem); este e a resposta a um COMANDO, que e interface interna. Nenhum destes motivos e escrito em codigo: o interprete le-os daqui. No dia em que o vigia for processo separado (RN-E8), estes motivos passam a cruzar a fronteira e terao de entrar no contrato - e uma mensagem nova volta ao recorte 001.",
   "familia": "recusa_da_mesa",
   "motivos": {
+    "prazo_de_resposta_nao_declarado": {
+      "cruzam_a_fronteira": true,
+      "quando": "stop com posicao viva e a ficha do dono nao declara `setup.prazo_de_resposta_ms`",
+      "regra": "RN-V9.1, RN-A3",
+      "porque": "Sem o prazo a mesa nao consegue apresentar um resumo VALIDO (o contrato exige o prazo na pergunta), e um resumo sem prazo promete um tempo que ninguem declarou. Recusar o stop deixa a posicao governada - que e o lado seguro. Adivinhar o prazo seria decidir por quem tem de decidir."
+    },
+    "numeros_da_corretora_ausentes": {
+      "cruzam_a_fronteira": true,
+      "quando": "stop com posicao viva e o relato da corretora nao traz os numeros que o resumo exige",
+      "regra": "RN-V8, FR-014",
+      "porque": "O resumo mostra os numeros DA CORRETORA e nenhum deles se recalcula por aqui. Sem eles, o resumo que a mesa apresentasse seria uma estimativa nossa - e uma estimativa apresentada como facto e pior do que nao perguntar. Recusar o stop deixa a posicao governada."
+    },
+    "decisao_sem_pergunta": {
+      "cruzam_a_fronteira": true,
+      "quando": "chega uma decisao do encerramento e nao ha pergunta em aberto (a mesa nao esta em `encerrando`, ou o registo nao data a pergunta)",
+      "regra": "FR-015, FR-018",
+      "porque": "Uma decisao sem pergunta nao tem a que responder: aceita-la faria a mesa mudar de estado por um pedido que ela nunca fez. Registra-se a recusa com autor e instante - decidir e sempre um acto datado."
+    },
     "mesa_ja_em_operacao": {
       "cruzam_a_fronteira": true,
       "quando": "start com a mesa ja em em_operacao",

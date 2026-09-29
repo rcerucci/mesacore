@@ -77,7 +77,7 @@ def main() -> int:
         "resultado_realizado": conta["resultado_realizado"][instrumento],
         "execucoes": execucoes,
     }
-    envelope = {"contrato": "1.1.0", "tipo": "historico", "id": f"historico-{instrumento}", "carga": carga}
+    envelope = {"contrato": "1.2.0", "tipo": "historico", "id": f"historico-{instrumento}", "carga": carga}
     print(json.dumps(envelope, separators=(",", ":"), ensure_ascii=False))
 
     # Medido, para o relatorio: a soma das parcelas NAO da o numero do venue.

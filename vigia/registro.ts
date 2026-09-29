@@ -23,13 +23,28 @@ export interface TransicaoDoVigia {
   para: string;
   motivo: string | null;
   efeito: string | null;
-  /** Só quando as portas recusaram: QUAL das seis, e o motivo dela. E este o "detalhe" da T021. */
+  /** Só quando as portas recusaram: QUAL das sete, e o motivo dela. E este o "detalhe" da T021. */
   porta: string | null;
   motivo_da_porta: string | null;
   /** O NOME do que faltou naquela porta (o conector que nao esta de pe - T027). */
   detalhe_da_porta: string | null;
   /** O que se chegou a olhar no arranque - nao o que se diz que se olhou. */
   portas_conferidas: string[];
+  /**
+   * A PERGUNTA do encerramento, quando este comando a fez sair (T033): e a segunda linha que a mesa emite em
+   * `encerrando`, e fica DENTRO da transicao do `stop` que a mandou abrir - uma linha por transicao, e a
+   * pergunta pertence a esta. O aviso de manter fica aqui por inteiro: quem le o registro tem de poder ver o
+   * que foi dito ao dono ANTES de ele escolher.
+   */
+  pergunta: PerguntaRegistada | null;
+}
+
+export interface PerguntaRegistada {
+  pedido_id: string | null;
+  prazo_de_resposta_ms: number | null;
+  aviso_de_manter: string | null;
+  opcoes: string[];
+  numeros: Record<string, string> | null;
 }
 
 /**

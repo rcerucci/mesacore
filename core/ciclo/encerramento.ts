@@ -48,6 +48,66 @@ export function resumoDoEncerramento(posicaoViva: boolean, avaliacao: string | n
   };
 }
 
+/** Os cinco numeros do resumo, como a corretora os relatou. Nenhum se recalcula por aqui (RN-V8). */
+export const NUMEROS_DA_CORRETORA = [
+  "posicao",
+  "nocional",
+  "margem",
+  "distancia_de_liquidacao",
+  "resultado_nao_realizado",
+] as const;
+
+export type NumerosDaCorretora = Record<(typeof NUMEROS_DA_CORRETORA)[number], string>;
+
+/** A mesma forma decimal textual do contrato - conferida aqui tambem, para nenhum numero nosso sair torto. */
+const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
+
+export interface CargaDaPergunta {
+  pedido_id: string;
+  opcoes: string[];
+  prazo_de_resposta_ms: number;
+  aviso_de_manter: string;
+  numeros: NumerosDaCorretora;
+}
+
+/**
+ * A PERGUNTA do encerramento, montada a partir do resumo e dos factos do venue.
+ *
+ * Lanca quando falta o que a pergunta exige. Nao e um caminho de negocio: quem decide nao perguntar e a
+ * TABELA (as guardas `numeros_da_corretora_ausentes` e `prazo_de_resposta_nao_declarado`), antes de a mesa
+ * entrar em `encerrando`. Chegar aqui sem os numeros ou sem o prazo e um defeito NOSSO, e um defeito que
+ * so sai gritando - uma pergunta sem numeros seria uma estimativa apresentada como facto.
+ */
+export function cargaDaPergunta(
+  pedidoId: string,
+  prazoMs: number,
+  numeros: NumerosDaCorretora,
+  avaliacao: string | null = null,
+): CargaDaPergunta {
+  if (!Number.isInteger(prazoMs) || prazoMs <= 0) {
+    throw new Error(`cargaDaPergunta: prazo invalido (${prazoMs}); a mesa nao inventa um prazo (RN-V9.1)`);
+  }
+  const faltam = NUMEROS_DA_CORRETORA.filter((n) => typeof numeros?.[n] !== "string");
+  if (faltam.length > 0) {
+    throw new Error(`cargaDaPergunta: faltam numeros da corretora (${faltam.join(", ")}); a mesa nao os estima (RN-V8)`);
+  }
+  const tortos = NUMEROS_DA_CORRETORA.filter((n) => !DECIMAL.test(numeros[n]));
+  if (tortos.length > 0) {
+    throw new Error(`cargaDaPergunta: numero fora da forma decimal textual (${tortos.join(", ")})`);
+  }
+  const resumo = resumoDoEncerramento(true, avaliacao);
+  if (resumo.aviso_de_manter === null) {
+    throw new Error("cargaDaPergunta: com posicao viva o aviso de manter e obrigatorio - e o que o dono le ANTES de escolher");
+  }
+  return {
+    pedido_id: pedidoId,
+    opcoes: resumo.opcoes,
+    prazo_de_resposta_ms: prazoMs,
+    aviso_de_manter: resumo.aviso_de_manter,
+    numeros: { ...numeros },
+  };
+}
+
 export interface PedidoDeParada {
   inicio_ms: number;
   agora_ms: number;

@@ -14,7 +14,7 @@ Um ficheiro `*.casos.json` por família de mensagem:
     {
       "nome": "mercado/ausencia-de-livro-e-declarada",
       "mensagem": "mercado",
-      "entrada": { "contrato": "1.1.0", "tipo": "mercado", "id": "m-1", "carga": { } },
+      "entrada": { "contrato": "1.2.0", "tipo": "mercado", "id": "m-1", "carga": { } },
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     }

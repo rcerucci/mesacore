@@ -1,5 +1,8 @@
 #!/usr/bin/env bun
-// A PORTA DE PROCESSO DA MESA: uma linha entra, uma linha sai. Nada mais.
+// A PORTA DE PROCESSO DA MESA: uma linha entra, uma linha sai. Nada mais - com UMA excepcao declarada:
+// em `encerrando` saem DUAS (a resposta e a pergunta do encerramento, FR-013 a FR-015), porque a resposta
+// diz o que mudou e a pergunta diz o que se espera do dono. Juntar as duas numa so obrigaria o contrato a
+// alargar o tipo de resposta com campos que so o encerramento usa.
 //
 // O que esta porta NAO faz, e por que:
 //
@@ -43,6 +46,8 @@ import { aplicar, verbosDeclarados } from "./estados/maquina.ts";
 import { haInibicao, lerMarcas } from "./estado/marcas.ts";
 import { motivoConhecido } from "./livro-de-motivos.ts";
 import { conferirMandatos, correrUmCiclo, lerOperacao } from "./ciclo/relogio.ts";
+import { cargaDaPergunta, NUMEROS_DA_CORRETORA, type NumerosDaCorretora } from "./ciclo/encerramento.ts";
+import { ultimaTransicaoPara } from "./estado/registo.ts";
 
 /** O contrato recusa a MENSAGEM; a mesa fala dos seus motivos. Nada atravessa sem nome de um dos dois. */
 export const TRADUCAO: Record<string, string> = {
@@ -108,6 +113,58 @@ function lerPortas(caminho: string | undefined): { passam: boolean; porta?: stri
   }
 }
 
+/**
+ * OS CINCO NUMEROS DA CORRETORA, do relato do venue que o conector traz na operacao (RN-V8).
+ *
+ * Devolve `null` quando o relato nao os traz - e `null` NAO e "nao sei": e "nao foi declarado", que e o que
+ * a guarda da tabela precisa de saber. Nao se completa nenhum numero: o resumo mostra os da corretora, e
+ * um numero estimado apresentado como facto seria pior do que nao perguntar.
+ */
+function lerNumerosDaCorretora(caminhoDaOperacao: string | undefined): NumerosDaCorretora | null {
+  if (caminhoDaOperacao === undefined) return null;
+  let operacao: any;
+  try { operacao = JSON.parse(readFileSync(caminhoDaOperacao, "utf8")); } catch { return null; }
+  const relato = operacao?.corretora;
+  if (relato === null || typeof relato !== "object") return null;
+  const numeros = {} as NumerosDaCorretora;
+  for (const nome of NUMEROS_DA_CORRETORA) {
+    if (typeof relato[nome] !== "string") return null;
+    numeros[nome] = relato[nome];
+  }
+  return numeros;
+}
+
+/**
+ * O PRAZO DE RESPOSTA DO DONO, da ficha (`setup.prazo_de_resposta_ms`).
+ *
+ * `null` quando nenhuma ficha o declara - e a mesa recusa, nao adivinha (RN-V9.1/RN-A3). Fichas que
+ * DISCORDAM valem o mesmo que nenhuma: escolher uma delas em silencio seria decidir pelo dono, e o prazo
+ * decide se a posicao volta a ficar defendida.
+ */
+function lerPrazoDoDono(caminhoDaConfig: string | undefined): number | null {
+  if (caminhoDaConfig === undefined) return null;
+  let config: any;
+  try { config = JSON.parse(readFileSync(caminhoDaConfig, "utf8")); } catch { return null; }
+  const declarados = new Set<number>();
+  for (const ficha of Object.values<any>(config?.fichas ?? {})) {
+    const p = ficha?.setup?.prazo_de_resposta_ms;
+    if (p === undefined) continue;
+    if (!Number.isInteger(p) || p <= 0) return null;
+    declarados.add(p);
+  }
+  if (declarados.size !== 1) return null;
+  return [...declarados][0]!;
+}
+
+/** A pergunta do encerramento, quando a mesa entrou em `encerrando`. */
+function pergunta(pedidoId: string, prazoMs: number, numeros: NumerosDaCorretora): string {
+  const carga = cargaDaPergunta(pedidoId, prazoMs, numeros);
+  // O `id` da pergunta DERIVA do pedido que a mandou abrir: quem recebe a pergunta e a decisao que a
+  // responde consegue liga-las sem uma tabela em memoria - e uma pergunta sem essa ligacao seria uma
+  // pergunta que ninguem sabe a que pedido pertence.
+  return JSON.stringify({ contrato: versaoVigente(), tipo: "pergunta_do_encerramento", id: `p-${pedidoId}`, carga });
+}
+
 /** A resposta do contrato, montada a partir do que a mesa decidiu. */
 function resposta(
   id: unknown,
@@ -169,7 +226,28 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
   const carga = envelope.carga as Record<string, unknown> | undefined;
   const pedidoId = typeof carga?.pedido_id === "string" ? carga.pedido_id : null;
 
-  // 2. o tipo: a porta so fala comando. Outro tipo e recusado, nao encaminhado em silencio.
+  // 2. A DECISAO DO ENCERRAMENTO (T034). Nao e verbo, nao entra pela tabela: e a resposta a uma pergunta,
+  // e quem a aplica e o encerramento do recorte 002. Sem pergunta em aberto a mesa RECUSA nomeado - aceitar
+  // faria a mesa mudar de estado por um pedido que ela nunca fez.
+  if (envelope.tipo === "decisao_do_encerramento") {
+    const respostaDoDono = (carga as { resposta?: unknown })?.resposta;
+    if (respostaDoDono !== "fechar_a_mercado" && respostaDoDono !== "manter") {
+      return resposta(envelope.id, pedidoId, estado, estado, instante, { motivo: "comando_com_tipo_invalido" });
+    }
+    const config = opcoes.caminhoDaConfig !== undefined ? JSON.parse(readFileSync(opcoes.caminhoDaConfig, "utf8")) : undefined;
+    const r = mesa.receberDecisaoDoEncerramento(respostaDoDono, {
+      instante_ms: instante,
+      posicao_viva: opcoes.posicaoViva,
+      prazo_de_resposta_ms: lerPrazoDoDono(opcoes.caminhoDaConfig) ?? undefined,
+      configuracao: config,
+    });
+    if (r.resultado !== "aceite") {
+      return resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, { motivo: r.motivo ?? "decisao_sem_pergunta" });
+    }
+    return resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, { efeito: r.efeito ?? undefined });
+  }
+
+  // 3. o tipo: a porta so fala comando (e a decisao, acima). Outro tipo e recusado, nao encaminhado em silencio.
   if (envelope.tipo !== "comando") {
     return resposta(envelope.id, pedidoId, estado, estado, instante, { motivo: "comando_com_tipo_invalido" });
   }
@@ -199,6 +277,17 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
   if (portas !== null) contexto.portas_do_arranque = portas;
   if (opcoes.posicaoViva !== undefined) contexto.posicao_viva = opcoes.posicaoViva;
 
+  // O ENCERRAMENTO (T033): a tabela recusa o `stop` se o resumo nao puder ser construido, e para isso
+  // precisa de saber se o veneno e o prazo foram D E C L A R A D O S. As duas leituras sao daqui (a mesa nao
+  // le configuracao - uma segunda leitura seria uma segunda verdade), e os dois campos so entram quando o
+  // verbo e o `stop`: noutro verbo nao ha resumo nenhum a construir.
+  const numerosDaCorretora = verbo === "stop" ? lerNumerosDaCorretora(opcoes.caminhoDaOperacao) : null;
+  const prazoDaFicha = verbo === "stop" ? lerPrazoDoDono(opcoes.caminhoDaConfig) : null;
+  if (verbo === "stop") {
+    contexto.numeros_da_corretora_ausentes = numerosDaCorretora === null;
+    contexto.prazo_de_resposta_nao_declarado = prazoDaFicha === null;
+  }
+
   const r = mesa.receber(carga, contexto);
   if (r.resultado !== "aceite") {
     const motivo = r.motivo && motivoConhecido(r.motivo) ? r.motivo : "comando_com_tipo_invalido";
@@ -209,7 +298,32 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
   let efeito: string | undefined;
   if (r.verbo === "reset") efeito = "reset_nao_toca_em_nada";
   else if (r.verbo === "nova_sessao") efeito = "sessao_nova_gravada";
-  return resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, { efeito });
+  const respostaDoComando = resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, { efeito });
+
+  // A SEGUNDA LINHA: em `encerrando` a mesa nao fica so com a resposta - ela PERGUNTA (FR-013 a FR-015). A
+  // pergunta vai identificada pelo `pedido_id` do `stop`, para a decisao que a responde poder ser ligada a
+  // ela. Aqui e o unico sitio da porta onde duas linhas saem: a resposta diz o que mudou, a pergunta diz o
+  // que se espera do dono, e juntar as duas numa so obrigaria o contrato a alargar.
+  if (r.verbo === "stop" && r.estado_novo === "encerrando") {
+    if (prazoDaFicha === null || numerosDaCorretora === null) {
+      // Inatingivel: as guardas da tabela recusam o `stop` sem prazo ou sem numeros. Se algum dia chegar
+      // aqui, e um defeito NOSSO e sai a gritar - aquietar com um valor por omissao seria apresentar ao dono
+      // um resumo com numeros que ninguem relatou.
+      throw new Error(
+        "a mesa entrou em `encerrando` sem prazo declarado ou sem os numeros da corretora: " +
+          "as guardas da tabela deviam ter recusado o stop",
+      );
+    }
+    const carga = cargaDaPergunta(pedidoId ?? "sem_pedido", prazoDaFicha, numerosDaCorretora);
+    const pergunta = JSON.stringify({
+      contrato: versaoVigente(),
+      tipo: "pergunta_do_encerramento",
+      id: `p-${pedidoId ?? "sem_pedido"}`,
+      carga,
+    });
+    return respostaDoComando + "\n" + pergunta;
+  }
+  return respostaDoComando;
 }
 
 async function main() {
@@ -245,6 +359,63 @@ async function main() {
     let ciclo = 0;
     relogio = setInterval(() => {
       if (mesa.estado === "parada") return; // sem operacao para defender, a volta nao decide
+
+      // EM `encerrando` ha DUAS coisas a fazer, e sao diferentes:
+      //
+      //   a LIQUIDACAO ja comecou (o dono escolheu fechar a mercado) -> a mesa LIQUIDA: a mesma volta do
+      //   ciclo, com a proposta `caixa` no lugar da do setup. A autoridade para essa proposta e a DECISAO do
+      //   dono - o `caixa` no encerramento nao e do setup, e dele. Quando o ciclo diz `sem_posicao_para_fechar`
+      //   a liquidacao esta cumprida, e so entao a mesa fica `parada`;
+      //
+      //   a LIQUIDACAO ainda nao comecou -> a mesa esta a espera do dono, e o que ela faz e cumprir o PRAZO
+      //   (T036/RN-V9.1): dentro dele espera, fora dele VOLTA A OPERAR - a abrir incluido - com o `stop`
+      //   arquivado como pendente.
+      if (mesa.estado === "encerrando") {
+        ciclo += 1;
+        const instante = Date.now();
+        const entrada = ultimaTransicaoPara("encerrando", opcoes.caminhoDoRegisto);
+        if (entrada?.motivo === "liquidacao_em_curso") {
+          const paraLiquidar = {
+            ...operacao,
+            instrumentos: Object.fromEntries(
+              // A proposta da liquidacao e a DO SETUP com o lado trocado por `caixa`: o `setup` (nome e
+              // versao) e o `relogio` do template continuam a ser os dele - so o LADO e que passa a ser a
+              // decisao do dono. Construir uma proposta de raiz perderia a assinatura do setup no registo,
+              // que e o que diz quem propoe (RN-S7).
+              Object.entries(operacao.instrumentos).map(([i, d]: [string, any]) => [
+                i,
+                { ...d, proposta: { ...(d.proposta ?? {}), lado: "caixa" } },
+              ]),
+            ),
+          };
+          const resultado = correrUmCiclo({
+            operacao: paraLiquidar as typeof operacao,
+            config,
+            marcas: mesa.marcas(),
+            estado: mesa.estado,
+            ciclo,
+            instante_ms: instante,
+            caminhoDoRegisto: opcoes.caminhoDoRegisto,
+          });
+          // LIQUIDACAO CUMPRIDA: TODOS os instrumentos dizem `sem_posicao_para_fechar` - nao ha posicao nossa
+          // para fechar em nenhum deles. E o MOTIVO que o diz, e nao a accao: `nada` tanto e "ja nao havia
+          // nada" (cumprida) como "havia e a condicao impediu" (nao cumprida). So agora a mesa fica parada -
+          // e a transicao vai para o registo, que e o unico sitio onde o desfecho fica.
+          const cumprida =
+            Object.keys(resultado.motivos).length > 0 &&
+            Object.values(resultado.motivos).every((m) => m === "sem_posicao_para_fechar");
+          if (cumprida) mesa.terminarLiquidacao({ instante_ms: instante });
+          return;
+        }
+        mesa.esperarPeloEncerramento({
+          instante_ms: instante,
+          posicao_viva: opcoes.posicaoViva,
+          prazo_de_resposta_ms: lerPrazoDoDono(opcoes.caminhoDaConfig) ?? undefined,
+          configuracao: config,
+        });
+        return;
+      }
+
       ciclo += 1;
       try {
         correrUmCiclo({

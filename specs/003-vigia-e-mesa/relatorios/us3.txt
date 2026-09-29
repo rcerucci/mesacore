@@ -1,0 +1,77 @@
+US3 — O ENCERRAMENTO E GRACIOSO E NAO DEIXA POSICAO SEM GOVERNO (T033-T039)
+
+As saidas estao cruas. Nao ha parafrase delas em sitio nenhum.
+
+  $ bash tools/verificar-maquina/provar.sh
+provar: 18 de 18 passaram — a maquina decide o que devia, e explica o que nao fez
+  $ bash tools/verificar-maquina/vigia.sh --arranque
+resumo: 51 verificacoes · 0 divergentes · 11 cenarios · vigia + mesa como processos
+  $ bash tools/verificar-maquina/vigia.sh --orfandade
+resumo: 11 verificacoes · 0 divergentes · 10 voltas com o vigia morto · 10 voltas contadas x 10 linhas
+  $ bash tools/verificar-maquina/vigia.sh --encerramento
+ok    cenario/prazo-expira · a mesa volta a `em_operacao` e o stop fica pendente nas marcas
+ok    cenario/manter · parada_com_posicao_viva · aviso no registro: Se escolher MANTER, a mesa fica parada e NADA ...
+ok    cenario/fechar-a-mercado · liquidacao decide `fechar` em 7 volta(s) e a mesa fica em `encerrando`
+ok    cenario/decisao-sem-pergunta · recusada: decisao_sem_pergunta
+ok    cenario/sem-numeros-da-corretora · recusada: numeros_da_corretora_ausentes
+ok    cenario/sem-prazo-do-dono · recusada: prazo_de_resposta_nao_declarado
+ok    cenario/liquidacao-cumprida · encerrando->parada (sem posicao nossa a fechar)
+
+resumo: 15 verificacoes · 0 divergentes · 7 cenarios (prazo, manter, fechar, decisao-sem-pergunta, sem-numeros, sem-prazo, liquidacao-cumprida)
+  $ bun run core/estados/provar.ts
+resumo: 32 casos · 13 aceites · 19 recusados · 0 divergentes · 0 recusas sem motivo
+  $ bun run tools/verificar-maquina/arranque.ts
+resumo: 35 verificacoes · 0 divergentes · 17 casos · 13 portas falhadas de proposito
+O QUE SE PROVOU, e o que nao se provou:
+
+  - `stop` com posicao viva NAO para nada: a mesa apresenta o resumo com os CINCO NUMEROS DA CORRETORA (posicao,
+    nocional, margem, distancia de liquidacao e resultado nao realizado), monta a pergunta e espera o dono;
+  - `manter` deixa a mesa `parada` com posicao viva - e o AVISO fica no registro do vigia, inteiro, para quem
+    ler depois ver o que foi dito ao dono ANTES de ele escolher;
+  - `fechar_a_mercado` comeca a liquidacao; a mesa so fica `parada` quando NAO HA posicao nossa para fechar em
+    instrumento nenhum (a volta que decide diz `sem_posicao_para_fechar`);
+  - o prazo CUMPRE-SE: sem resposta, a mesa volta a `em_operacao` - a abrir incluido - e o `stop` fica
+    arquivado como pendente nas marcas. Uma mesa congelada a espera de uma resposta que nao vem nao aparece em
+    sitio nenhum, e e isso que a bancada procura;
+  - uma decisao SEM PERGUNTA e recusada com o proprio nome (`decisao_sem_pergunta`), em vez de mudar o estado por
+    um pedido que a mesa nunca fez.
+
+A PERGUNTA E O CONTRATO. O resumo sai como mensagem propria (`pergunta_do_encerramento`), e isso faz a mesa
+falar DUAS vezes num comando: a resposta e a pergunta. Juntar as duas numa so obrigaria o tipo de RESPOSTA a
+ganhar campos que so o encerramento usa - e a porta do vigia passou a ler a segunda linha pelo que a primeira
+DIZ (a mesa entrou em `encerrando`), nunca por adivinhacao ou por tempo. O `pedido_id` da pergunta deriva do
+`stop` que a mandou abrir: quem recebe a pergunta e a decisao que a responde conseguem liga-las sem tabela.
+
+TRES NOMES NOVOS NO CONJUNTO FECHADO, e a versao do contrato de 1.1.0 para 1.2.0 (aditiva):
+
+  - `numeros_da_corretora_ausentes` - o resumo mostra os numeros DA CORRETORA e nenhum deles se recalcula por
+    aqui (RN-V8). Sem eles a mesa NAO pergunta: recusa, e a posicao fica governada. Uma estimativa apresentada
+    como facto seria pior do que nao perguntar;
+  - `prazo_de_resposta_nao_declarado` - a pergunta leva o prazo do dono (`setup.prazo_de_resposta_ms`); sem ele
+    a mesa nao inventa um tempo. Fichas que DISCORDAM valem o mesmo que nenhuma: escolher uma em silencio seria
+    decidir pelo dono, e o prazo decide se a posicao volta a ficar defendida;
+  - `decisao_sem_pergunta` - a decisao e resposta a uma pergunta, e sem pergunta em aberto nao ha a que responder.
+
+  (`liquidacao_em_curso` passou a figurar tambem entre os EFEITOS: ja existia no conjunto, como recusa de um
+  `start` durante a liquidacao, e o recorte 002 ja o usava como o efeito da decisao de fechar. Um unico nome
+  para o mesmo facto, declarado nos dois sitios.)
+
+AS GUARDAS DO ENCERRAMENTO TEM A POLARIDADE AO CONTRARIO das de permissao, e isso e deliberado: um contexto que
+NAO SABE se o prazo existe (ou se os numeros vieram) RECUSA, em vez de deixar passar. E a licao do D-006 na
+direccao certa - o desconhecido nao vira "sim" por omissao. Ha prova negativa: `stop` com posicao viva e
+contexto vazio recusa, e o caso di-lo.
+
+O QUE NAO SE PROVA AQUI: a corretora. Os numeros do resumo vem do relato do venue que o conector traz na
+operacao (`corretora`), e neste recorte esse relato e de DUBLE. O protocolo do conector (RN-E20) e a bateria por
+venue (RN-C6) sao os recortes dos plugins. Nada aqui toca numa corretora nem pede chave (RN-E24).
+
+DOIS DEFEITOS APANHADOS POR MEDICAO, um do produto e um meu:
+
+  - a volta do relogio que ESPERA escrevia uma transicao `encerrando -> encerrando` a cada volta. Isso enchia o
+    registo de ruido E reiniciava o prazo para sempre - o instante que data a pergunta e o da ultima transicao
+    para `encerrando`, e cada linha dessas empurrava-o para a frente. Medido: a mesa esperava indefinidamente.
+    Uma recusa de COMANDO transita X->X (T022) porque responder a um pedido e um acto; uma volta de relogio que
+    nada mudou, nao e acontecimento nenhum;
+  - na bancada, a proposta da liquidacao estava com a forma errada (`{nome, versao, lado}` em vez de
+    `{setup: {nome, versao}, lado}`): o ciclo recusava-a em SILENCIO, e a bancada via 199 voltas sem uma unica
+    decisao. O motivo estava na linha `nada` do registo - a linha que existe precisamente para isto.

@@ -23,8 +23,8 @@ campo novo, nenhum campo a menos. A versão é comparada por **igualdade exacta*
 ## 3. `comando`
 
 ```
-{"contrato":"1.1.0","tipo":"comando","id":"c-1","carga":{"verbo":"start","autor":"dono","pedido_id":"c-1"}}
-{"contrato":"1.1.0","tipo":"comando","id":"c-2","carga":{"verbo":"nova_sessao","autor":"dono","pedido_id":"c-2","motivo":"limite batido em dia de notícia"}}
+{"contrato":"1.2.0","tipo":"comando","id":"c-1","carga":{"verbo":"start","autor":"dono","pedido_id":"c-1"}}
+{"contrato":"1.2.0","tipo":"comando","id":"c-2","carga":{"verbo":"nova_sessao","autor":"dono","pedido_id":"c-2","motivo":"limite batido em dia de notícia"}}
 ```
 
 Validação (a que já existia, re-alojada — R1):
@@ -39,7 +39,7 @@ Validação (a que já existia, re-alojada — R1):
 ## 4. `resposta_de_comando`
 
 ```
-{"contrato":"1.1.0","tipo":"resposta_de_comando","id":"c-3","carga":{"pedido_id":"c-1","aceito":false,"motivo":"mesa_ja_em_operacao","transicao":{"de":"em_operacao","para":"em_operacao"},"instante_ms":1790628000000}}
+{"contrato":"1.2.0","tipo":"resposta_de_comando","id":"c-3","carga":{"pedido_id":"c-1","aceito":false,"motivo":"mesa_ja_em_operacao","transicao":{"de":"em_operacao","para":"em_operacao"},"instante_ms":1790628000000}}
 ```
 
 - **Recusa não é erro de protocolo:** é resposta. A mesa responde sempre, e o motivo vem do conjunto fechado.
@@ -50,7 +50,7 @@ Validação (a que já existia, re-alojada — R1):
 ## 5. `pergunta_do_encerramento`
 
 ```
-{"contrato":"1.1.0","tipo":"pergunta_do_encerramento","id":"p-1","carga":{"pedido_id":"p-1","opcoes":["fechar_a_mercado","manter"],"prazo_de_resposta_ms":<chave do dono — RN-A3>,"aviso_de_manter":"...","numeros":{"posicao":"...","nocional":"...","margem":"...","distancia_de_liquidacao":"...","resultado_nao_realizado":"..."}}}
+{"contrato":"1.2.0","tipo":"pergunta_do_encerramento","id":"p-1","carga":{"pedido_id":"p-1","opcoes":["fechar_a_mercado","manter"],"prazo_de_resposta_ms":<chave do dono — RN-A3>,"aviso_de_manter":"...","numeros":{"posicao":"...","nocional":"...","margem":"...","distancia_de_liquidacao":"...","resultado_nao_realizado":"..."}}}
 ```
 
 O `aviso_de_manter` é **campo**, não nota de rodapé: quem escolhe `manter` tem de ler **antes** que a posição
@@ -59,7 +59,7 @@ fica sem defesa. Os números são **da corretora** (RN-V8), nunca estimados por 
 ## 6. `decisao_do_encerramento`
 
 ```
-{"contrato":"1.1.0","tipo":"decisao_do_encerramento","id":"d-1","carga":{"pedido_id":"p-1","resposta":"fechar_a_mercado"}}
+{"contrato":"1.2.0","tipo":"decisao_do_encerramento","id":"d-1","carga":{"pedido_id":"p-1","resposta":"fechar_a_mercado"}}
 ```
 
 **Não é um verbo.** Os verbos do vigia são cinco (RN-V1) e o `verbo_desconhecido` diz, no próprio texto, que
@@ -67,18 +67,25 @@ um sexto não entra «por omissão nem por extensão». A decisão é a **respos
 identificada pela pergunta — `pedido_id`. Sem `pedido_id`, não se sabe a que resumo ela responde, e uma
 decisão sem pergunta é uma decisão sem contexto.
 
-## 7. A versão: **1.1.0**, aditiva
+## 7. A versão: **1.2.0**, aditiva (1.1.0 + o encerramento)
 
-Nada do que existia mudou de sentido: o que entra são **quatro tipos** e uma **família de motivos**. Quem não
-conhece o tipo recusa com `tipo_desconhecido` — comportamento declarado. A versão é comparada por igualdade
-exacta, logo **todos** os casos existentes migram: **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`), e a tarefa mede
-**zero** ocorrências de `1.0.0` fora do histórico no fim.
+A 1.1.0 trouxe os **quatro tipos** desta fronteira; a **1.2.0** traz o que a US3 obrigou a nomear. Nada do que
+existia mudou de sentido, e quem não conhece um tipo recusa com `tipo_desconhecido` — comportamento declarado.
+A versão é comparada por igualdade exacta, logo **todos** os casos existentes migram (a migração da 1.1.0 está
+medida em `relatorios/migracao-da-versao.txt`; a 1.2.0 é a mesma substituição, e o `provar.sh` confere-a).
 
-## 8. Os motivos que atravessam: **20 dos 42**
+**A mesa fala duas vezes num comando.** O `stop` que entra em `encerrando` sai como **resposta** (o que mudou) e
+como **`pergunta_do_encerramento`** (o que se espera do dono). A segunda linha só aparece neste caso, e quem a
+lê sabe que vem porque a primeira **diz** que o estado é `encerrando` — nunca por tempo. Juntar as duas numa só
+obrigaria o tipo de resposta a ganhar campos que só o encerramento usa.
 
-Os **15 de recusa** e os **5 de efeito** produzidos pelo interpretador de comando e pelo encerramento (a lista
+## 8. Os motivos que atravessam: **23 dos 45**
+
+Os **18 de recusa** e os **5 de efeito** produzidos pelo interpretador de comando e pelo encerramento (a lista
 completa está no `research.md`, R7). Os outros **22** são motivos de **ciclo, posição e reconciliação**: não
-são resposta a comando nenhum e ficam onde nascem (léem-se no ledger e nas marcas).
+são resposta a comando nenhum e ficam onde nascem (lêem-se no ledger e nas marcas). `liquidacao_em_curso` é o
+único nome que serve de **recusa e de efeito**: recusa um `start` durante a liquidação, e é o efeito da decisão
+do dono que a começou.
 
 **A conferência corre nas duas direcções, com o âmbito declarado:** motivo produzido pelo interpretador de
 comando (ou pelo encerramento) e **ausente** do vocabulário é falha; motivo do vocabulário **sem quem o

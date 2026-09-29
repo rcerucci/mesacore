@@ -17,7 +17,7 @@ export type RespostaDaMesaAoComando = {
   pedido_id: string;
   aceito: boolean;
   /**
-   * Motivo de RECUSA da mesa em resposta a um comando - espelho de vocabulario.json (a fonte e la). Sao 15 dos 42 motivos da mesa: os que o interpretador de comando produz. Os outros 22 nascem dentro de um ciclo e ficam onde nascem (research R7).
+   * Motivo de RECUSA da mesa em resposta a um comando - espelho de vocabulario.json (a fonte e la). Sao 18 dos 45 motivos da mesa: os que o interpretador de comando produz. Os outros 27 sao os 5 efeitos (que tambem cruzam) e os 22 que nascem dentro de um ciclo e ficam onde nascem (research R7).
    */
   motivo?:
     | "mesa_ja_em_operacao"
@@ -36,7 +36,10 @@ export type RespostaDaMesaAoComando = {
     | "comando_incompleto"
     | "comando_com_tipo_invalido"
     | "versao_do_contrato_divergente"
-    | "posicao_desconhecida";
+    | "posicao_desconhecida"
+    | "prazo_de_resposta_nao_declarado"
+    | "numeros_da_corretora_ausentes"
+    | "decisao_sem_pergunta";
   /**
    * So quando ha mais para dizer do que a transicao. Espelho de vocabulario.json.
    */
@@ -45,7 +48,8 @@ export type RespostaDaMesaAoComando = {
     | "reset_nao_toca_em_nada"
     | "resumo_do_encerramento_apresentado"
     | "stop_pendente_por_prazo"
-    | "parada_com_posicao_viva";
+    | "parada_com_posicao_viva"
+    | "liquidacao_em_curso";
   transicao: {
     /**
      * O eixo da mesa (docs/maquina-de-estados.md): so estes quatro. A condicao do instrumento e outra coisa e nao entra aqui.

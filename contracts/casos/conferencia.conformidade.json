@@ -7,7 +7,7 @@
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -67,7 +67,7 @@
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -105,7 +105,7 @@
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.1.0",
+      "versao": "1.2.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",

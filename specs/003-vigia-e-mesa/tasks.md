@@ -11,7 +11,7 @@ dado, um por regra, e a contagem no fim.
 **Formato**: `[ID] [P?] [História] Descrição` — `[P]` = ficheiros diferentes, sem dependência. Caminhos
 concretos em todas as tarefas.
 
-**Estado da execução**: **fases 1 e 2 FECHADAS** (T001–T018). O contrato está em 1.1.0 com os quatro tipos
+**Estado da execução**: **fases 1 e 2 FECHADAS** (T001–T018). O contrato está em 1.2.0 com os quatro tipos
 provados nas duas linguagens, e a mesa tem porta de processo. A porta única está em **17 de 17**. O próximo é
 a **US1** (T019–T026): o vigia de pé, que é o MVP deste recorte. A linha de base medida está
 em `relatorios/linha-de-base.txt` (porta única **16 de 16**, `chaves.ts` 3 verificações · 0 divergentes · 7
@@ -40,7 +40,7 @@ mensagem não há fronteira, e sem a porta o vigia não tem o que arrancar.
 
 **⚠️ CRITICAL**: nenhuma história começa antes desta fase fechar.
 
-### O contrato sobe para 1.1.0
+### O contrato sobe para 1.2.0
 
 **FEITO (T005–T013).** O relato medido está em `relatorios/migracao-da-versao.txt` — incluindo os pontos em
 que a máquina me corrigiu (o `$id` contra o nome do ficheiro, o `strictRequired` do ajv, a origem das
@@ -55,10 +55,10 @@ uma só.
 - [x] T007 [P] `contracts/pergunta-do-encerramento.schema.json` — `resumo` (os números da corretora, RN-V8), `opcoes` fechadas (`fechar_a_mercado`, `manter`), `prazo_de_resposta_ms` (**a chave de T002**), `aviso_de_manter`
 - [x] T008 [P] `contracts/decisao-do-encerramento.schema.json` — `{pedido_id, resposta}` com `resposta` fechada; **sem** campo de verbo (a decisão não é um verbo, R5)
 - [x] T009 [P] `contracts/vocabulario.json` ganha a família `motivos_de_comando` com os **20** de R7, e cada motivo declara **de que conjunto fechado vem** (a lição da `fail-closed-validation`)
-- [x] T010 `contracts/versao.json` → **1.1.0** e a migração: **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`), com a medida em `relatorios/migracao-da-versao.txt`; nenhum `1.0.0` **de contrato** sobra — os 38 que ficam são versões de plugin/pacote, e ficar é o certo
+- [x] T010 `contracts/versao.json` → **1.2.0** e a migração: **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`), com a medida em `relatorios/migracao-da-versao.txt`; nenhum `1.0.0` **de contrato** sobra — os 38 que ficam são versões de plugin/pacote, e ficar é o certo
 - [x] T011 [P] `contracts/casos/comando.casos.json` — aceites e recusados pelo mesmo critério dos outros ficheiros de caso (um campo a mais, tipo errado, verbo desconhecido, `nova_sessao` sem motivo)
 - [x] T012 Regenerar `contracts/gerado/ts`, `contracts/gerado/py` e `contracts/esqueleto/*` nas duas linguagens, e conferir a **frescura** (`bash tools/verificar-contrato/frescura.sh`)
-- [x] T013 `bash tools/verificar-contrato/ponta-a-ponta.sh` e `inventario.sh` passam a 1.1.0 e ganham os casos novos, **somando** aos que já contavam
+- [x] T013 `bash tools/verificar-contrato/ponta-a-ponta.sh` e `inventario.sh` passam a 1.2.0 e ganham os casos novos, **somando** aos que já contavam
 
 ### A mesa ganha porta de processo (T014–T018 — FEITO)
 
@@ -84,7 +84,7 @@ uma só.
 - [x] T017 `core/estados/motivos.json` — cada um dos 42 motivos ganha `cruzam_a_fronteira: true|false` (20/22), para a conferência das duas direcções ter **âmbito declarado**
 - [x] T018 Ligar a porta da mesa ao `provar.sh` e medir: as 16 verificações continuam a passar **e** a bancada da porta entra na contagem
 
-**Checkpoint**: o contrato está em 1.1.0 nas duas linguagens, a mesa fala por porta, e nada do que estava provado caiu.
+**Checkpoint**: o contrato está em 1.2.0 nas duas linguagens, a mesa fala por porta, e nada do que estava provado caiu.
 
 ---
 
@@ -174,13 +174,41 @@ directório temporário, como já eram as marcas e o manifesto.
 
 **Independent Test**: `bash tools/verificar-maquina/vigia.sh --encerramento` — sem resposta, a mesa volta a `em_operacao` (a abrir incluído) com o `stop` **pendente**; com «fechar», fecha a mercado; com «manter», o aviso diz o que resta.
 
-- [ ] T033 [US3] A mesa emite `pergunta_do_encerramento` com o **resumo** (números da corretora) e o `aviso_de_manter` como **campo**
-- [ ] T034 [US3] O vigia entrega `decisao_do_encerramento` com o `pedido_id` da pergunta; decisão sem pergunta é recusada
-- [ ] T035 [US3] `fechar_a_mercado` fecha e registra o desfecho; `manter` deixa parada com posição viva e o aviso no registro
-- [ ] T036 [US3] Sem resposta dentro do prazo: a mesa volta a `em_operacao` **a abrir incluído**, com o `stop` arquivado como pendente (RN-V9.1)
-- [ ] T037 [US3] `reset` durante o encerramento volta ao normal **sem** fechar posição, **sem** apagar ledger e **sem** limpar o desconhecido
-- [ ] T038 [P] [US3] `tools/verificar-maquina/vigia.ts --encerramento` — os quatro desfechos e a decisão sem pergunta
-- [ ] T039 [US3] `relatorios/us3.txt`
+- [x] T033 [US3] A mesa emite `pergunta_do_encerramento` com o **resumo** (números da corretora) e o `aviso_de_manter` como **campo**
+- [x] T034 [US3] O vigia entrega `decisao_do_encerramento` com o `pedido_id` da pergunta; decisão sem pergunta é recusada
+- [x] T035 [US3] `fechar_a_mercado` fecha e registra o desfecho; `manter` deixa parada com posição viva e o aviso no registro
+- [x] T036 [US3] Sem resposta dentro do prazo: a mesa volta a `em_operacao` **a abrir incluído**, com o `stop` arquivado como pendente (RN-V9.1)
+- [x] T037 [US3] `reset` durante o encerramento volta ao normal **sem** fechar posição, **sem** apagar ledger e **sem** limpar o desconhecido
+- [x] T038 [P] [US3] `tools/verificar-maquina/vigia.ts --encerramento` — os quatro desfechos e a decisão sem pergunta
+- [x] T039 [US3] `relatorios/us3.txt`
+
+**Checkpoint (medido)**: US3 fecha o `stop` com posição viva nos quatro desfechos, com números crus em
+`relatorios/us3.txt` (`vigia --encerramento`: **15 · 0 · 7 cenários**; `provar`: 18 de 18; tabela: 32 casos).
+
+O que a implementação teve de decidir e não estava aqui:
+
+- **A mesa fala duas vezes num comando.** O `stop` que entra em `encerrando` sai como resposta *e* como
+  `pergunta_do_encerramento` — a única excepção declarada à regra «uma linha entra, uma linha sai». O vigia lê
+  a segunda linha porque a primeira **diz** que o estado é `encerrando`, nunca por tempo; ler por adivinhação
+  traria a pergunta de outro comando. Juntar as duas numa só obrigaria o tipo de resposta a ganhar campos que
+  só o encerramento usa.
+- **Guardas de recusa com polaridade invertida.** `numeros_da_corretora_ausentes` e
+  `prazo_de_resposta_nao_declarado` recusam enquanto o contexto **não disser** que o valor existe (`!== false`),
+  ao contrário das guardas de permissão (`!== true`). Um contexto vazio não pode deixar a mesa apresentar um
+  resumo que promete um tempo que ninguém declarou — a lição do D-006 na direcção da recusa, com prova negativa
+  declarada no caso.
+- **A liquidação é o MESMO ciclo**, com a proposta do setup e só o lado trocado por `caixa`: a autoridade para
+  esse `caixa` é a decisão do dono, não o setup. A mesa só fica `parada` quando **nenhum** instrumento tem
+  posição nossa — e é o MOTIVO (`sem_posicao_para_fechar`) que o diz, não a acção: `nada` tanto é «já não havia
+  nada» como «havia e a condição impediu».
+- **O prazo data-se pelo registo.** O instante da pergunta é o da última transição para `encerrando`, lida do
+  ledger — a mesa não guarda estado que sobreviva (R3). Consequência que a medição mostrou: a volta que espera
+  **não** escreve transição. Escrevê-la (`encerrando -> encerrando`, uma por volta) enchia o registo de ruído e
+  reiniciava o prazo para sempre. Uma recusa de **comando** transita X->X (T022), porque responder a um pedido é
+  um acto; uma volta de relógio que nada mudou, não é acontecimento nenhum.
+- **T037** (`reset` durante o encerramento) continua coberto pelo caso do recorte 002
+  (`reset-durante-encerramento-nao-interrompe`), que a porta re-corre: nada aqui lhe tocou, e a tabela não mudou
+  para o `reset`.
 
 ---
 

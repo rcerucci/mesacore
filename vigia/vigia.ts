@@ -26,7 +26,7 @@ import { arrancar } from "../core/ciclo/arranque.ts";
 import { lerMarcas } from "../core/estado/marcas.ts";
 import { motivoConhecido } from "../core/livro-de-motivos.ts";
 import { inventarioASerio } from "../tools/verificar-maquina/inventario-do-arranque.ts";
-import { acrescentar, anotarLeitura, anotarProcesso, lerRegisto, type TransicaoDoVigia } from "./registro.ts";
+import { acrescentar, anotarLeitura, anotarProcesso, lerRegisto, type PerguntaRegistada, type TransicaoDoVigia } from "./registro.ts";
 
 const RAIZ = join(import.meta.dir, "..");
 
@@ -153,6 +153,15 @@ class MesaFilha {
   private proc: ChildProcess;
   private buffer = "";
   private espera: ((linha: string) => void) | null = null;
+  /**
+   * AS LINHAS JA CHEGADAS E AINDA NAO LIDAS.
+   *
+   * A mesa pode falar DUAS vezes para um comando (em `encerrando`: a resposta e a pergunta). Sem esta fila, a
+   * segunda linha chegava quando ninguem a esperava e era DESCARTADA - e o vigia ficava a olhar para a
+   * pergunta seguinte como se fosse a resposta do comando anterior. Medido antes de a fila existir: a
+   * resposta de um comando a chegar com o `pedido_id` do outro.
+   */
+  private pendentes: string[] = [];
 
   constructor(opcoes: Opcoes) {
     const args = [
@@ -185,17 +194,32 @@ class MesaFilha {
         const linha = this.buffer.slice(0, corte);
         this.buffer = this.buffer.slice(corte + 1);
         const quem = this.espera;
-        this.espera = null;
-        quem?.(linha);
+        if (quem) {
+          this.espera = null;
+          quem(linha);
+        } else {
+          this.pendentes.push(linha);
+        }
         corte = this.buffer.indexOf("\n");
       }
     });
   }
 
   enviar(linha: string): Promise<string> {
-    return new Promise((resolver) => {
-      this.espera = resolver;
-      this.proc.stdin!.write(linha + "\n");
+    this.proc.stdin!.write(linha + "\n");
+    return this.proxima();
+  }
+
+  /** A proxima linha da mesa: da fila, ou a espera dela. Com prazo - uma mesa muda nao pode pendurar isto. */
+  proxima(ms = 60000): Promise<string> {
+    const jaTem = this.pendentes.shift();
+    if (jaTem !== undefined) return Promise.resolve(jaTem);
+    return new Promise((resolver, rejeitar) => {
+      const relogio = setTimeout(() => {
+        this.espera = null;
+        rejeitar(new Error(`a mesa nao respondeu em ${ms}ms`));
+      }, ms);
+      this.espera = (l) => { clearTimeout(relogio); resolver(l); };
     });
   }
 
@@ -253,11 +277,18 @@ export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opc
     return respostaDoVigia(id, pedido ?? "sem_pedido", motivo);
   }
   const envelope = JSON.parse(linha) as { id?: unknown; tipo?: string; carga?: Record<string, unknown> };
-  if (envelope.tipo !== "comando") return respostaDoVigia(envelope.id, "sem_pedido", "comando_com_tipo_invalido");
+  // DOIS tipos atravessam este vigia (T034): o `comando` e a `decisao_do_encerramento`. Todo o resto e
+  // recusado - a porta do vigia nao se alarga sozinha.
+  const ehDecisao = envelope.tipo === "decisao_do_encerramento";
+  if (envelope.tipo !== "comando" && !ehDecisao) {
+    return respostaDoVigia(envelope.id, "sem_pedido", "comando_com_tipo_invalido");
+  }
 
   const carga = envelope.carga ?? {};
   const pedidoId = typeof carga.pedido_id === "string" ? carga.pedido_id : "sem_pedido";
-  const verbo = typeof carga.verbo === "string" ? carga.verbo : "(sem verbo)";
+  // A decisao nao e um verbo, e o registro diz o que o vigia SERVIL: por isso o campo leva o nome da decisao,
+  // e nao um sexto verbo - o contrato tem cinco, e um sexto nao entra nem por omissao nem por extensao.
+  const verbo = ehDecisao ? "decisao_do_encerramento" : (typeof carga.verbo === "string" ? carga.verbo : "(sem verbo)");
 
   let desfecho: ReturnType<typeof correrAsPortas> | null = null;
   let conectores: ChildProcess[] = [];
@@ -290,14 +321,43 @@ export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opc
       motivo_da_porta: null,
       detalhe_da_porta: null,
       portas_conferidas: [],
+      pergunta: null,
     };
     acrescentar(opcoes.caminhoDoRegisto, t);
     return respostaDoVigia(envelope.id, pedidoId, "mesa_ja_em_operacao", opcoes.estadoLido);
   }
 
   const linhaDaMesa = await mesa.enviar(linha);
+  // EM `encerrando` A MESA FALA DUAS VEZES: a resposta e a pergunta. A segunda linha so se le quando a
+  // primeira DIZ que a mesa entrou em `encerrando` - ler por adivinhacao ou por tempo traria a pergunta de
+  // outro comando, e uma pergunta trocada e um resumo do encerramento com numeros que nao sao deste momento.
+  let linhaDaPergunta: string | undefined;
+  try {
+    const transicao = (JSON.parse(linhaDaMesa) as { carga?: { transicao?: { para?: string } } }).carga?.transicao;
+    // A SEGUNDA LINHA SO VEM DE UM COMANDO QUE ABRE O ENCERRAMENTO. A decisao do dono que escolhe `fechar`
+    // tambem deixa a mesa em `encerrando` - mas nao ha pergunta nenhuma atras dela, e esperar por uma
+    // pendurava o vigia (medido: 60s de espera, e a resposta ao dono nunca chegava).
+    const abreEncerramento = verbo === "stop" && !ehDecisao && transicao?.para === "encerrando";
+    if (abreEncerramento) linhaDaPergunta = await mesa.proxima(10000);
+  } catch { /* a resposta nao se leu: o registro di-lo abaixo */ }
+  const brutoDaMesa = linhaDaPergunta ? linhaDaMesa + "\n" + linhaDaPergunta : linhaDaMesa;
   let c: Record<string, unknown> = {};
-  try { c = (JSON.parse(linhaDaMesa) as { carga?: Record<string, unknown> }).carga ?? {}; } catch { /* fica vazio */ }
+  try { c = (JSON.parse(linhaDaMesa ?? "") as { carga?: Record<string, unknown> }).carga ?? {}; } catch { /* fica vazio */ }
+  let pergunta: PerguntaRegistada | null = null;
+  if (linhaDaPergunta) {
+    try {
+      const p = JSON.parse(linhaDaPergunta) as { carga?: Record<string, unknown> };
+      if (p?.carga) {
+        pergunta = {
+          pedido_id: typeof p.carga.pedido_id === "string" ? p.carga.pedido_id : null,
+          prazo_de_resposta_ms: Number.isInteger(p.carga.prazo_de_resposta_ms) ? (p.carga.prazo_de_resposta_ms as number) : null,
+          aviso_de_manter: typeof p.carga.aviso_de_manter === "string" ? p.carga.aviso_de_manter : null,
+          opcoes: Array.isArray(p.carga.opcoes) ? (p.carga.opcoes as string[]) : [],
+          numeros: (p.carga.numeros as Record<string, string>) ?? null,
+        };
+      }
+    } catch { /* a segunda linha ilegivel nao se inventa; fica `null` e o registro di-lo */ }
+  }
   const transicao = (c.transicao ?? {}) as { de?: string; para?: string };
 
   const t: TransicaoDoVigia = {
@@ -314,9 +374,10 @@ export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opc
     motivo_da_porta: desfecho?.motivo ?? null,
     detalhe_da_porta: desfecho?.detalhe ?? null,
     portas_conferidas: desfecho?.conferidas ?? [],
+    pergunta,
   };
   acrescentar(opcoes.caminhoDoRegisto, t);
-  return linhaDaMesa;
+  return brutoDaMesa;
 }
 
 /**

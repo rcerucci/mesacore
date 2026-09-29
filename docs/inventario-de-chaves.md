@@ -168,6 +168,7 @@ chama e que sabe). Numa mesa manual este prazo e do **dono**. A chave passa a ex
 
 | Chave | Tipo | Unidade | Omissao | Significado |
 |---|---|---|---|---|
+| `corretora.posicao` · `corretora.nocional` · `corretora.margem` · `corretora.distancia_de_liquidacao` · `corretora.resultado_nao_realizado` | decimal textual | unidade do instrumento / moeda da conta | **venue** (o CONECTOR relata; a mesa não recalcula nenhum — RN-V8) | os cinco números do resumo do encerramento. Sem eles a mesa **recusa** o `stop` com posição viva (`numeros_da_corretora_ausentes`): um número estimado apresentado como facto é pior do que não perguntar |
 | `setup.prazo_de_resposta_ms` | inteiro positivo | milissegundos | **a ficha declara** (a omissao vai aqui quando o dono disser o valor; ate la, uma ficha sem ela **recusa**, nao adivinha) | quanto tempo a mesa espera pela resposta ao «fecho a mercado?» antes de voltar a operar com o `stop` pendente (RN-V9.1) |
 
 **A linha na tabela de cima entra na mesma tarefa que traz o leitor** (T036 do recorte 003), e nao antes: uma

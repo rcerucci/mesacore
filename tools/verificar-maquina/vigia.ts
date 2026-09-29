@@ -24,13 +24,13 @@ import { validar } from "../../contracts/esqueleto/framing.ts";
 import { fundir } from "./fundir.ts";
 
 const MODO = process.argv[2] ?? "";
-if (MODO !== "--arranque" && MODO !== "--orfandade") {
-  const tarefa = MODO === "--encerramento" ? "T038" : MODO === "--verbos" ? "T044" : "(desconhecido)";
+if (MODO !== "--arranque" && MODO !== "--orfandade" && MODO !== "--encerramento") {
+  const tarefa = MODO === "--verbos" ? "T044" : "(desconhecido)";
   console.log(`${MODO}: NAO IMPLEMENTADO (tarefa ${tarefa})`);
   process.exit(2);
 }
 
-const VERSAO = "1.1.0";
+const VERSAO = "1.2.0";
 const comando = (id: string, carga: Record<string, unknown>) =>
   JSON.stringify({ contrato: VERSAO, tipo: "comando", id, carga });
 
@@ -52,6 +52,7 @@ function conferir(nome: string, ok: boolean, detalhe = "") {
 // A ORFANDADE corre AQUI, e nao no topo: ela usa as definicoes partilhadas acima (`conferir`, `declarado`,
 // `manifestoDoFixture`), e chama-las antes de existirem seria ler `const` em zona morta.
 if (MODO === "--orfandade") await bancadaDaOrfandade();
+if (MODO === "--encerramento") await bancadaDoEncerramento();
 
 /** Escreve os tres ficheiros que o vigia le, a partir do padrao do arranque + a mudanca do caso. */
 function preparar(mudanca: Record<string, unknown>) {
@@ -152,6 +153,198 @@ A operacao e a configuracao NAO se inventam: a leitura vem do caso declarado em 
 (o primeiro caso) e o mandato vem da configuracao do arranque. Assim a decisao que o relogio toma e
 conferida contra a que a bateria do ciclo ja declara para a mesma leitura.
 */
+/* --------------------------------------------------------------- O ENCERRAMENTO (US3, T038)
+
+Os QUATRO desfechos do `stop` com posicao viva, mais as duas recusas que a T033 acrescentou e a decisao
+sem pergunta. Cada cenario corre o VIGIA a serio (processo, com a mesa filha), contra dubleis.
+
+O que se mede, e por que e esta a medida:
+  - sem resposta, o prazo CUMPRE-SE: a mesa volta a `em_operacao` (a abrir incluido) e o `stop` fica
+    ARCHIVADO como pendente. Prova-se pelo registo da MESA (a transicao com o motivo) e pelas marcas (o
+    pedido guardado) - uma mesa congelada a espera nao aparece em sitio nenhum, e e isso que se procura;
+  - com `manter`, a mesa fica `parada` com posicao viva E o aviso fica no registro do vigia: quem ler depois
+    tem de ver o que foi dito ao dono ANTES de escolher;
+  - com `fechar_a_mercado`, a liquidacao corre: a volta do relogio decide `fechar` (com boleta) e a mesa so
+    fica `parada` quando nao ha posicao nossa para fechar em instrumento nenhum;
+  - sem prazo na ficha ou sem os numeros da corretora, a mesa RECUSA o `stop` - e diz qual dos dois faltou.
+*/
+async function bancadaDoEncerramento() {
+  console.log("=== bancada do encerramento: os desfechos do `stop` com posicao viva (T038)\n");
+
+  const declaradoDoCiclo = JSON.parse(readFileSync(join(RAIZ_DO_REPO, "core/ciclo/ciclo.casos.json"), "utf8"));
+  const padraoDoCiclo = declaradoDoCiclo.padrao;
+  const comPosicao = declaradoDoCiclo.casos.find((c: any) => c.nome.startsWith("normal-proposta-caixa-com-posicao"));
+  const semPosicao = declaradoDoCiclo.casos.find((c: any) => c.nome.startsWith("normal-proposta-caixa-sem-posicao"));
+
+  const base = JSON.parse(JSON.stringify(declarado.padrao.config));
+  const comPrazo = (prazo: number | null) => {
+    const c = JSON.parse(JSON.stringify(base));
+    for (const ficha of Object.values<any>(c.fichas)) {
+      if (prazo === null) delete ficha.setup; else ficha.setup = { prazo_de_resposta_ms: prazo };
+    }
+    return c;
+  };
+  const operacao = (caso: any, comNumeros = true) => ({
+    nota: "duble de operacao do encerramento",
+    ligacao: "ligada",
+    ...(comNumeros
+      ? { corretora: { posicao: "0.25", nocional: "25000.00", margem: "1000.00", distancia_de_liquidacao: "0.081", resultado_nao_realizado: "-125.40" } }
+      : {}),
+    instrumentos: {
+      EURUSD: {
+        leitura: caso.leitura,
+        // A proposta e a do SETUP (um objecto `{nome, versao}`) com o lado do caso: `{nome, versao, lado}` no
+        // mesmo nivel nao e a forma do contrato, e o ciclo recusa-a em silencio (proposta ausente -> hold).
+        // Medido: 199 voltas sem uma unica decisao, e o motivo so aparecia na linha `nada` do registo.
+        proposta: { setup: padraoDoCiclo.proposta_setup, ...caso.proposta },
+        ficha: caso.ficha,
+        template: padraoDoCiclo.template,
+        marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? [],
+      },
+    },
+  });
+
+  /** Prepara um cenario e corre o vigia; devolve o que ele respondeu e o que ficou escrito. */
+  const correr = async (
+    nome: string,
+    linhas: string[],
+    quantasRespostas: number,
+    opcoesCenario: { config?: any; operacao?: any; espera?: number } = {},
+  ) => {
+    const dir = mkdtempSync(join(tmpdir(), `vigia-enc-${nome}-`));
+    const c = {
+      config: join(dir, "config.json"),
+      manifesto: join(dir, "manifesto.json"),
+      operacao: join(dir, "operacao.json"),
+      marcas: join(dir, "marcas.json"),
+      registo: join(dir, "vigia.json"),
+      portas: join(dir, "portas.json"),
+      ledger: join(dir, "ledger.jsonl"),
+    };
+    writeFileSync(c.config, JSON.stringify(opcoesCenario.config ?? comPrazo(600)));
+    writeFileSync(c.manifesto, JSON.stringify(manifestoDoFixture));
+    writeFileSync(c.operacao, JSON.stringify(opcoesCenario.operacao ?? operacao(comPosicao)));
+    writeFileSync(c.portas, JSON.stringify({ passam: true, portas_conferidas: ["conectores"] }));
+    const proc = spawn("bun", [
+      "run", join(RAIZ_DO_REPO, "vigia", "vigia.ts"),
+      "--config", c.config, "--manifesto", c.manifesto, "--marcas", c.marcas,
+      "--registo", c.registo, "--portas", c.portas, "--ledger", c.ledger,
+      "--operacao", c.operacao, "--posicao-viva", "true", "--tick", "150",
+    ], { stdio: ["pipe", "pipe", "pipe"] });
+    let bruto = "";
+    let erros = "";
+    proc.stdout!.setEncoding("utf8");
+    proc.stderr!.setEncoding("utf8");
+    proc.stderr!.on("data", (p: string) => { erros += p; });
+    const respostas = () => bruto.split("\n").filter((l) => l.trim() !== "");
+    const chegou = new Promise<void>((resolver) => {
+      const limite = setTimeout(resolver, 30000);
+      proc.stdout!.on("data", (p: string) => {
+        bruto += p;
+        if (respostas().length >= quantasRespostas) { clearTimeout(limite); resolver(); }
+      });
+    });
+    proc.stdin!.write(linhas.join("\n") + "\n");
+    await chegou;
+    if (opcoesCenario.espera) await new Promise((r) => setTimeout(r, opcoesCenario.espera));
+    const saida = respostas();
+    // O vigia nao sai sozinho com operacao nas maos: quem o termina e a bancada, e leva consigo os pids
+    // registados (a mesa e os conectores).
+    proc.kill("SIGKILL");
+    let registro: any = { transicoes: [], processos: [] };
+    try { registro = JSON.parse(readFileSync(c.registo, "utf8")); } catch { /* as provas reprovam */ }
+    for (const p of registro.processos ?? []) {
+      if (typeof p.pid === "number") { try { process.kill(p.pid, "SIGKILL"); } catch { /* ja morreu */ } }
+    }
+    const lerLedger = (caminho: string) => {
+      try { return readFileSync(caminho, "utf8").split("\n").filter((l) => l.trim() !== "").map((l) => JSON.parse(l)); }
+      catch { return []; }
+    };
+    const marcas = (() => { try { return JSON.parse(readFileSync(c.marcas, "utf8")); } catch { return null; } })();
+    const conferirCarga = (i: number) => JSON.parse(saida[i] ?? "{}")?.carga ?? {};
+    return { saida, registro, ledger: lerLedger(c.ledger), marcas, carga: conferirCarga, dir, erros };
+  };
+
+  const cmd = (id: string, verbo: string) => comando(id, { verbo, autor: "dono", pedido_id: id });
+  const decisao = (id: string, pedido: string, resposta: string) =>
+    JSON.stringify({ contrato: VERSAO, tipo: "decisao_do_encerramento", id, carga: { pedido_id: pedido, resposta } });
+
+  // 1. SEM RESPOSTA: o prazo cumpre-se e a mesa volta a operar com o `stop` pendente.
+  const a = await correr("prazo", [cmd("e1", "start"), cmd("e2", "stop")], 3, { espera: 1400 });
+  conferir("prazo: o `stop` entra em encerramento", a.carga(1).transicao?.para === "encerrando", `para=${a.carga(1).transicao?.para}`);
+  conferir("prazo: a pergunta sai com o prazo do dono", a.carga(2).prazo_de_resposta_ms === 600, `prazo=${a.carga(2).prazo_de_resposta_ms}`);
+  const voltou = a.ledger.filter((l: any) => l.tipo === "transicao" && l.motivo === "stop_pendente_por_prazo").at(-1);
+  conferir("prazo/RN-V9.1: passado o prazo a mesa VOLTA a operar", voltou?.de === "encerrando" && voltou?.para === "em_operacao",
+    `transicao=${voltou?.de}->${voltou?.para}`);
+  conferir("prazo: o `stop` fica ARCHIVADO como pendente nas marcas",
+    (a.marcas?.pedidos ?? []).some((p: any) => p.verbo === "stop" && p.motivo === "stop_pendente_por_prazo"),
+    `pedidos=${JSON.stringify(a.marcas?.pedidos)}`);
+
+  // 2. MANTER: parada com posicao viva, e o aviso no registro do vigia.
+  const b = await correr("manter", [cmd("m1", "start"), cmd("m2", "stop"), decisao("m3", "m2", "manter")], 4, { espera: 500 });
+  const tManter = b.registro.transicoes.find((t: any) => t.verbo === "stop");
+  conferir("manter/T035: a mesa fica `parada` com posicao viva", b.carga(3).efeito === "parada_com_posicao_viva",
+    `efeito=${b.carga(3).efeito}`);
+  conferir("manter: o aviso de manter fica no registro do vigia", typeof tManter?.pergunta?.aviso_de_manter === "string" && tManter.pergunta.aviso_de_manter.includes("NADA DEFENDE"),
+    `aviso=${String(tManter?.pergunta?.aviso_de_manter).slice(0, 40)}`);
+  conferir("manter: o registro guarda os numeros e o prazo que o dono viu",
+    Object.keys(tManter?.pergunta?.numeros ?? {}).length === 5 && tManter?.pergunta?.prazo_de_resposta_ms === 600,
+    `numeros=${Object.keys(tManter?.pergunta?.numeros ?? {}).length} prazo=${tManter?.pergunta?.prazo_de_resposta_ms}`);
+
+  // 3. FECHAR A MERCADO: a liquidacao corre, e a mesa so fica parada quando nao ha o que fechar.
+  const c = await correr("fechar", [cmd("f1", "start"), cmd("f2", "stop"), decisao("f3", "f2", "fechar_a_mercado")], 4, { espera: 900 });
+  conferir("fechar/T035: a decisao abre a liquidacao", c.carga(3).efeito === "liquidacao_em_curso", `efeito=${c.carga(3).efeito}`);
+  const fechou = c.ledger.filter((l: any) => l.tipo === "ciclo" && l.acao === "fechar");
+  conferir("fechar/T035: a liquidacao DECIDE fechar, com boleta", fechou.length > 0 && String(fechou[0].nota).includes("com boleta"),
+    `voltas com fechar=${fechou.length} · ciclos=${c.ledger.filter((l: any) => l.tipo === "ciclo").length} · stderr=${c.erros.trim().slice(0, 120)}`);
+  const aindaEncerrando = c.ledger.filter((l: any) => l.tipo === "transicao").at(-1);
+  conferir("fechar: com posicao viva a mesa NAO fica parada ainda", aindaEncerrando?.para === "encerrando",
+    `ultima transicao=${aindaEncerrando?.de}->${aindaEncerrando?.para}`);
+
+  // 4. DECISAO SEM PERGUNTA: recusada, e com o nome certo.
+  const d = await correr("sem-pergunta", [decisao("d1", "nada", "manter")], 1);
+  conferir("decisao/T034: decisao sem pergunta e RECUSADA nomeada", d.carga(0).motivo === "decisao_sem_pergunta",
+    `motivo=${d.carga(0).motivo}`);
+
+  // 5. SEM OS NUMEROS DA CORRETORA: o `stop` recusa, porque o resumo nao se estima (RN-V8).
+  const e = await correr("sem-numeros", [cmd("n1", "start"), cmd("n2", "stop")], 2, { operacao: operacao(comPosicao, false) });
+  conferir("numeros/RN-V8: sem os numeros da corretora a mesa RECUSA o stop", e.carga(1).motivo === "numeros_da_corretora_ausentes",
+    `motivo=${e.carga(1).motivo} para=${e.carga(1).transicao?.para}`);
+  const eUltima = e.ledger.filter((l: any) => l.tipo === "transicao").at(-1);
+  conferir("numeros: a posicao fica GOVERNADA (a mesa nao sai de `em_operacao`)", eUltima?.para === "em_operacao",
+    `ultima transicao=${eUltima?.para}`);
+
+  // 6. SEM O PRAZO DO DONO: idem, com o outro nome.
+  const f = await correr("sem-prazo", [cmd("p1", "start"), cmd("p2", "stop")], 2, { config: comPrazo(null) });
+  conferir("prazo-do-dono/RN-V9.1: sem prazo na ficha a mesa RECUSA o stop", f.carga(1).motivo === "prazo_de_resposta_nao_declarado",
+    `motivo=${f.carga(1).motivo}`);
+
+  // 7. LIQUIDACAO CUMPRIDA: a posicao ja fechou, e a mesa fica parada.
+  const g = await correr("cumprida", [cmd("g1", "start"), cmd("g2", "stop"), decisao("g3", "g2", "fechar_a_mercado")], 4,
+    { operacao: operacao(semPosicao), espera: 900 });
+  const gParou = g.ledger.filter((l: any) => l.tipo === "transicao" && l.para === "parada").at(-1);
+  conferir("cumprida/T035: sem posicao nossa a liquidacao termina e a mesa fica parada",
+    gParou?.de === "encerrando" && String(gParou?.nota).includes("liquidacao cumprida"),
+    `transicao=${gParou?.de}->${gParou?.para} nota=${String(gParou?.nota).slice(0, 40)}`);
+
+  for (const x of [a, b, c, d, e, f, g]) rmSync(x.dir, { recursive: true, force: true });
+
+  for (const falha of falhas) console.log("FALHA " + falha);
+  // Uma linha por cenario: o relatorio e a saida crua, e nao a leitura que alguem fez dela (T026).
+  console.log(`ok    cenario/prazo-expira · a mesa volta a \`em_operacao\` e o stop fica pendente nas marcas`);
+  console.log(`ok    cenario/manter · ${b.carga(3).efeito} · aviso no registro: ${String(tManter.pergunta?.aviso_de_manter).slice(0, 46)}...`);
+  console.log(`ok    cenario/fechar-a-mercado · liquidacao decide \`fechar\` em ${fechou.length} volta(s) e a mesa fica em \`encerrando\``);
+  console.log(`ok    cenario/decisao-sem-pergunta · recusada: ${d.carga(0).motivo}`);
+  console.log(`ok    cenario/sem-numeros-da-corretora · recusada: ${e.carga(1).motivo}`);
+  console.log(`ok    cenario/sem-prazo-do-dono · recusada: ${f.carga(1).motivo}`);
+  console.log(`ok    cenario/liquidacao-cumprida · ${gParou?.de}->${gParou?.para} (sem posicao nossa a fechar)`);
+  console.log(
+    `\nresumo: ${verificacoes} verificacoes · ${divergentes} divergentes · 7 cenarios ` +
+      "(prazo, manter, fechar, decisao-sem-pergunta, sem-numeros, sem-prazo, liquidacao-cumprida)",
+  );
+  process.exit(divergentes === 0 ? 0 : 1);
+}
+
 async function bancadaDaOrfandade() {
   console.log("=== bancada da orfandade: a mesa contra a morte do vigia (SC-001, T028, T029)\n");
 

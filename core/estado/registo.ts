@@ -10,7 +10,7 @@
 // acontecimentos da mesa. Quando o ledger tiver o seu recorte, as duas listas tem de ser
 // reconciliadas: uma delas ganha, e nao ha duas verdades sobre a mesma linha.
 
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tiposDeLinhaDoRegisto } from "../livro-de-motivos.ts";
 
@@ -104,6 +104,33 @@ export function registarCiclo(
     );
   }
   registar({ instante_ms, tipo: "ciclo", instrumento, acao, motivo, nota }, caminho);
+}
+
+/** Le as linhas do registo. Ficheiro ausente = nenhuma linha (e nao um erro). */
+export function lerRegisto(caminho: string = CAMINHO_DO_REGISTO): LinhaDoRegisto[] {
+  try {
+    return readFileSync(caminho, "utf8")
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .map((l) => JSON.parse(l) as LinhaDoRegisto);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * O instante em que a mesa entrou num estado, lido do PROPRIO registo.
+ *
+ * A mesa nao guarda estado em memoria que sobreviva (R3), mas o que ela ESCREVEU persiste - e o pedido de
+ * encerramento tem de ser datado para o prazo correr. `null` quando nao ha transicao para aquele estado:
+ * nesse caso nao ha pergunta datavel, e quem chama tem de recusar em vez de inventar um instante.
+ */
+export function ultimaTransicaoPara(estado: string, caminho?: string): LinhaDoRegisto | null {
+  return lerRegisto(caminho).filter((l) => l.tipo === "transicao" && l.para === estado).at(-1) ?? null;
+}
+
+export function instanteDaUltimaTransicaoPara(estado: string, caminho?: string): number | null {
+  return ultimaTransicaoPara(estado, caminho)?.instante_ms ?? null;
 }
 
 /** A reconstrucao: le um registo e devolve o estado final - sem ler codigo (SC-011). */

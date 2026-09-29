@@ -63,6 +63,9 @@ class MotivoDeComando(StrEnum):
     comando_com_tipo_invalido = 'comando_com_tipo_invalido'
     versao_do_contrato_divergente = 'versao_do_contrato_divergente'
     posicao_desconhecida = 'posicao_desconhecida'
+    prazo_de_resposta_nao_declarado = 'prazo_de_resposta_nao_declarado'
+    numeros_da_corretora_ausentes = 'numeros_da_corretora_ausentes'
+    decisao_sem_pergunta = 'decisao_sem_pergunta'
 
 
 class EfeitoDeComando(StrEnum):
@@ -71,6 +74,7 @@ class EfeitoDeComando(StrEnum):
     resumo_do_encerramento_apresentado = 'resumo_do_encerramento_apresentado'
     stop_pendente_por_prazo = 'stop_pendente_por_prazo'
     parada_com_posicao_viva = 'parada_com_posicao_viva'
+    liquidacao_em_curso = 'liquidacao_em_curso'
 
 
 class RespostaDoEncerramento(StrEnum):

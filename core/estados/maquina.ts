@@ -40,6 +40,10 @@ export interface Contexto {
   portas_do_arranque?: { passam: boolean; porta?: string; motivo?: string };
   liquidacao_em_curso?: boolean;
   posicao_viva?: boolean;
+  /** Faltam os numeros da corretora no resumo (o relato do venue nao os trouxe). */
+  numeros_da_corretora_ausentes?: boolean;
+  /** A ficha do dono nao declara o prazo de resposta do encerramento. */
+  prazo_de_resposta_nao_declarado?: boolean;
 }
 
 export interface Resposta {
@@ -91,6 +95,14 @@ export function guardaCasa(guarda: string, contexto: Contexto): boolean {
       return contexto.posicao_viva !== true;
     case "com_posicao_viva":
       return contexto.posicao_viva === true;
+    // As duas guardas de RECUSA do encerramento. A polaridade e deliberadamente o oposto das de permissao
+    // (`!== true`): aqui, o contexto VAZIO tem de RECUSAR. Um contexto que nao sabe se o prazo existe nao
+    // pode deixar a mesa apresentar um resumo que promete um tempo que ninguem declarou - e o mesmo para os
+    // numeros da corretora, que nunca se estimam (RN-V8).
+    case "prazo_de_resposta_nao_declarado":
+      return contexto.prazo_de_resposta_nao_declarado !== false;
+    case "numeros_da_corretora_ausentes":
+      return contexto.numeros_da_corretora_ausentes !== false;
     default:
       throw new Error(
         `guarda desconhecida: ${guarda}. Uma guarda que o interprete nao sabe ler nao pode ` +

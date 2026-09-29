@@ -7,7 +7,7 @@
 Pôr o **vigia** no ar como **processo** e governar a **mesa** por ele, com a fronteira entre os dois
 **contratada** (a única fronteira do sistema que ainda não tem mensagem no contrato) e os **dublês** a
 sustentar tudo. Três coisas nascem aqui: a **porta de processo da mesa** (medida: não existe), a **mensagem
-do comando** (contrato **1.1.0**) e o **dublê de mesa** (`contracts/mocks/mesa/`, Python, escrito do contrato),
+do comando** (contrato **1.2.0**) e o **dublê de mesa** (`contracts/mocks/mesa/`, Python, escrito do contrato),
 para que os plugins se construam sem a mesa real (RN-E24).
 
 ## Technical Context
@@ -49,7 +49,7 @@ para que os plugins se construam sem a mesa real (RN-E24).
 
 ## As cinco decisões deste plano
 
-### D1 — O comando é mensagem do contrato, e a versão sobe para **1.1.0** (aditiva)
+### D1 — O comando é mensagem do contrato, e a versão sobe para **1.2.0** (aditiva)
 
 A fronteira vigia↔mesa é uma fronteira de verdade: dois processos, uma língua que tem de ser neutra, e uma
 versão que ambos comparam (D7). O **D-005** já tinha nomeado a dívida. Duas alternativas foram consideradas e
@@ -60,13 +60,13 @@ recusadas:
 - **um segundo documento de contrato só para esta fronteira**: recusada — dois contratos com duas versões no
   mesmo sistema obrigam a duas comparações de versão na mesma mensagem, e a segunda seria esquecida.
 
-**Por que 1.1.0 e não 2.0.0:** nada que existia mudou de sentido; o que entra é **aditivo** (dois tipos de
+**Por que 1.2.0 e não 2.0.0:** nada que existia mudou de sentido; o que entra é **aditivo** (dois tipos de
 mensagem e vocabulário). Quem não conhece o tipo recusa-o com `tipo_desconhecido` — que é exactamente o
 comportamento declarado, e não um comportamento novo. E o envelope já leva a versão, logo a mudança é
 **detectada**, que é o que se quer (RN-C7: mudança detectada, não sofrida).
 
 **A migração é um acto com contagem:** a versão é comparada por igualdade exacta, logo **todos** os casos
-existentes passam a `1.1.0` — **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`), medidos em `relatorios/migracao-da-versao.txt`. A tarefa mede: antes, depois, **zero**
+existentes passam a `1.2.0` — **116 sítios em 19 ficheiros** (105 mensagens `contrato` + 11 manifestos `versao`), medidos em `relatorios/migracao-da-versao.txt`. A tarefa mede: antes, depois, **zero**
 ocorrências de `1.0.0` fora do histórico.
 
 ### D2 — A mesa ganha **porta de processo** (hoje não tem)
@@ -114,7 +114,7 @@ specs/003-vigia-e-mesa/
 ├── plan.md              # este ficheiro
 ├── research.md          # R1 a R9 — as decisões, com as alternativas recusadas
 ├── data-model.md        # as entidades novas (vigia, comando, transição, resumo, dublê)
-├── contracts/interface.md  # a mensagem do comando e a resposta, com o contrato 1.1.0
+├── contracts/interface.md  # a mensagem do comando e a resposta, com o contrato 1.2.0
 ├── quickstart.md        # como se corre e o que se vê
 ├── checklists/requirements.md
 ├── relatorios/          # o que se mediu, por tarefa (nasce com T001)
@@ -138,15 +138,15 @@ vigia/
 contracts/
 ├── comando.schema.json          (NOVO)
 ├── resposta-de-comando.schema.json (NOVO)
-├── versao.json                  (modificado) — 1.1.0
+├── versao.json                  (modificado) — 1.2.0
 ├── vocabulario.json             (modificado) — os __N_MOTIVOS__ motivos da mesa entram
 ├── casos/comando.casos.json     (NOVO) — aceites e recusados, pelo mesmo critério dos outros
-├── casos/*.json                 (migrados) — a versão 1.1.0
+├── casos/*.json                 (migrados) — a versão 1.2.0
 ├── gerado/ts, gerado/py, esqueleto (regenerados)
 └── mocks/mesa/                  (NOVO) — o dublê de mesa, em Python, com os seus casos
 
 tools/verificar-maquina/provar.sh  (modificado) — ganha a porta do vigia
-tools/verificar-contrato/*         (modificado) — a bateria do contrato passa a 1.1.0 e ganha os casos novos
+tools/verificar-contrato/*         (modificado) — a bateria do contrato passa a 1.2.0 e ganha os casos novos
 ```
 
 **O que este recorte NÃO toca:** `~/Projects/jev-trade-fusao` (nenhum ficheiro), o motor que opera a conta, e
@@ -167,7 +167,7 @@ o ledger (escreve-se nele como sempre; não se redesenha).
 - [x] Plano escrito (5 decisões) — e uma **correcção à spec**: a FR-005 dizia o contrário da RN-E21 (ver D4)
 - [x] `research.md` (R1 a R9) — com a lista dos **20 de 42** motivos que cruzam a fronteira
 - [x] `data-model.md` (6 entidades novas + o que muda nas existentes)
-- [x] `contracts/interface.md` (os quatro tipos de mensagem, no contrato 1.1.0)
+- [x] `contracts/interface.md` (os quatro tipos de mensagem, no contrato 1.2.0)
 - [x] `quickstart.md` (as três portas e a prova de cada história)
 - [x] **Reconferência da constituição depois do desenho** — nenhum dos 8 princípios ficou em falta: o desenho
       *acrescenta* prova (o dublê escrito do contrato) e *não* relaxa nenhuma (nenhum caminho novo de escrita

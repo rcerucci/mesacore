@@ -18,9 +18,9 @@ mudar a forma, para que a fronteira passe a ser a mesma coisa com contrato à vo
 bateria a reescrever, sem motivo; (b) argumentos de linha de comando por posição — não teria versão, não teria
 vocabulário e não teria recusa com motivo, ou seja, perderia as três coisas que este recorte vem comprar.
 
-## R2 — A versão do contrato sobe para **1.1.0**, e é aditiva
+## R2 — A versão do contrato sobe para **1.2.0**, e é aditiva
 
-**Decisão:** `contracts/versao.json` passa a `1.1.0`; entram **quatro** tipos de mensagem (R5) e a família de
+**Decisão:** `contracts/versao.json` passa a `1.2.0`; entram **quatro** tipos de mensagem (R5) e a família de
 motivos do comando (R7). Nada do que existia muda de sentido.
 
 **Razão:** a versão é comparada por **igualdade exacta** (D7 do recorte 001) — quem não conhece o tipo novo
