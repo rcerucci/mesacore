@@ -1,0 +1,86 @@
+# US5 — a mesma referencia nao cria segunda ordem (T041, T043) e a contagem no venue (T042)
+
+contrato: **1.4.0** (lido de `contracts/versao.json`) · medido em: 2026-09-29T15:45:47-03:00 · quem mediu: esta vaga, na hora
+
+Regra da casa: nenhum numero deste relatorio foi digitado.
+
+---
+
+## T041 — duas boletas com a mesma referencia: **uma** ordem, e o mesmo desfecho nas duas respostas
+
+**FECHADA COM PROVA, no duble do venue.** O duble faz de venue que JA TINHA a ordem daquela referencia e
+responde a MESMA ordem (o mesmo `oid`), sem criar segunda. Os dois casos, corridos a mao:
+
+Caso 1 — a boleta `b-0001` (`processo/aceite-mercado`), referencia `hl-0001`:
+
+```
+{"contrato":"1.4.0","tipo":"resolucao","id":"b-0001/resolucao","carga":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"}}
+{"contrato":"1.4.0","tipo":"desfecho","id":"b-0001","carga":{"classificacao":"aceite","resolucao":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"},"resposta_do_venue":{"estado":"filled","order_id":"8842","preenchido":"0.00166","preco_medio":"60000","origem_dos_numeros":"posicao_lida_depois_do_envio","bruto":{"totalSz":"0.00166","avgPx":"60000","oid":8842}}}}
+```
+
+```
+{"etapa": "boleta", "referencia_do_cliente": "hl-0001", "instrumento": "BTC"}
+{"etapa": "traducao", "cloid": "0xeab5b6f15977095eac958e351c6472e6", "quantidade": "0.00166", "nocional": "99.6", "tif": "Ioc"}
+{"etapa": "envio", "veredicto": "aceite", "preenchido": "0.00166", "preco_medio": "60000", "origem_dos_numeros": "posicao_lida_depois_do_envio"}
+```
+
+Caso 2 — a MESMA referencia (`hl-0001`), agora com o venue no papel de quem ja a tinha
+(`arranque/referencia-repetida-a-mesma-ordem`, `--venue duplicado`):
+
+```
+{"contrato":"1.4.0","tipo":"resolucao","id":"b-1001/resolucao","carga":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"}}
+{"contrato":"1.4.0","tipo":"desfecho","id":"b-1001","carga":{"classificacao":"aceite","resolucao":{"quantidade":"0.00166","nocional":"99.6","margem_empenhada":"19.92","alavancagem_efectiva":"5","preco_de_liquidacao":"48000"},"resposta_do_venue":{"estado":"filled","order_id":"8842","preenchido":"0.00166","preco_medio":"60000","origem_dos_numeros":"posicao_lida_depois_do_envio","bruto":{"totalSz":"0.00166","avgPx":"60000","oid":8842,"duplicado":true}}}}
+```
+
+```
+{"etapa": "boleta", "referencia_do_cliente": "hl-0001", "instrumento": "BTC"}
+{"etapa": "traducao", "cloid": "0xeab5b6f15977095eac958e351c6472e6", "quantidade": "0.00166", "nocional": "99.6", "tif": "Ioc"}
+{"etapa": "envio", "veredicto": "aceite", "preenchido": "0.00166", "preco_medio": "60000", "origem_dos_numeros": "posicao_lida_depois_do_envio"}
+```
+
+Leitura, numero a numero: o `cloid` derivado e **o mesmo** nas duas
+(`0xeab5b6f15977095eac958e351c6472e6`) e o `order_id` devolvido pelo venue e **o mesmo** (`8842`) — uma
+ordem, nao duas. A derivacao e pura e declarada (`sha256("mesacore/cloid/v1" + conta + instrumento +
+referencia)`, primeiros 16 bytes), e a bancada mede-a em 6 casos:
+
+```
+{"caso":"cloid/mesma-referencia-da-sempre-o-mesmo-cloid","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"cloid/referencia-com-barras-e-dois-pontos-nao-vai-crua","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"cloid/instrumento-diferente-da-cloid-diferente","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"cloid/referencia-com-espaco-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"cloid/instrumento-fora-da-forma-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"cloid/conta-nula-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+```
+
+E o caso da repeticao, na bancada (31 casos · 31 ok · 0 divergentes):
+
+```
+{"caso":"arranque/referencia-repetida-a-mesma-ordem","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:passou"}
+```
+
+**Achado do caminho, medido**: o bruto do duble traz `"duplicado": true` — e o duble a DIZER que ja tinha a
+ordem. E dado do caso, nao comportamento do venue.
+
+## T042 — BLOQUEADA PELA DECISAO DO DONO (SC-003, a contagem de idempotencia NO VENUE)
+
+O SC-003 pede a contagem **no venue**: a mesma referencia enviada duas vezes, **uma** ordem contada la. Isso
+exige **assinar e enviar** duas boletas a serio. **Nao foi corrido, e nao se corre sem a decisao do dono.**
+
+- **Comando que a correria** (depois de a decisao existir e de o envio ao vivo estar ligado):
+  `bun run brokers/hyperliquid/processo.ts --casos brokers/hyperliquid/casos/processo.casos.json --ficha
+  @config/contas/hl-teste-plugin.json --ao-vivo` com a **mesma** boleta (mesma `referencia_do_cliente`) duas
+  vezes, e a contagem das ordens no venue por `historicalOrders`/`openOrders` da conta.
+- **Porque nao se corre hoje, medido no proprio codigo** (nao e falta de vontade, e fail-closed declarado):
+  `brokers/hyperliquid/processo.ts` (porta de envio AO VIVO) responde
+  `"o envio AO VIVO nao esta implementado nesta porta de processo: exige ASSINAR, e assinar sem a bateria de
+  conformidade ter medido o venue seria encomendar as cegas. O envio esta provado contra o duble do venue"`.
+- **Razao**: enviar ordem ao venue a serio e decisao do DONO (RN-H17), e a prova exige chave e ordem real.
+  Nao e do agente.
+
+## T043 — commit
+
+Um commit desta vaga com o assunto `specs/004: T041/T043 (US5)` — o hash esta no `RESULTADO.md` (§ commit).
+
+## O que este relatorio NAO prova, e di-lo
+
+- O SC-003 **no venue** nao foi medido: o que esta medido e a idempotencia contra o DUBLE.
