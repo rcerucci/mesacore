@@ -1,0 +1,101 @@
+# US7 — a bateria de conformidade, o registo por versao e o que o venue nao publica (T055 a T058)
+
+contrato: **1.4.0** (lido de `contracts/versao.json`) · medido em: 2026-09-29T15:46:52-03:00 · quem mediu: esta vaga, na hora
+
+Regra da casa: nenhum numero deste relatorio foi digitado.
+
+---
+
+## T055 — o registo por versao e data  (FR-025, FR-026)
+
+**FECHADA COM PROVA — o registo existe, e diz a versao e a data.** O ficheiro e
+`brokers/hyperliquid/conformidade/1.4.0.txt` (o nome E a versao, lida de `contracts/versao.json`), escrito nesta
+corrida a partir da saida CRUA da bateria. O directório esta no `.gitignore` de propósito (D2/D3: e **estado**,
+nao forma) — e por isso `git status` fica limpo com ele la dentro.
+
+```
+$ bun tools/verificar-conector/conformidade.ts     # a corrida registada
+$ cat brokers/hyperliquid/conformidade/1.4.0.txt
+REGISTO DA BATERIA DE CONFORMIDADE DO CONECTOR HYPERLIQUID
+versao do conector registada: 0.1.0 (a do plugin, declarada em brokers/hyperliquid/processo.ts)
+versao do CONTRATO: 1.4.0  (lida de contracts/versao.json; nao ha versao escrita a mao aqui)
+data da corrida: 2026-09-29T15:46:52-03:00
+...
+conformidade: 9 de 9 passaram · 238 verificacoes · 0 divergentes
+```
+
+E a metade que o FR-026 exige (uma prova que nao corre deixa o resultado **INCOMPLETO**, nunca «passou») —
+linha do proprio registo, tal como a bateria a escreve:
+
+```
+venue (as OITO provas de SC-004, no ambiente de TESTE da corretora): INCOMPLETO — nao corre offline; esta bateria nao tem rede nem chave, e esse aceite e outra bateria (RN-C6, FR-025).
+```
+
+**O que fica dito, e nao escondido**: o registo foi escrito **a mao** nesta vaga a partir da saida crua; a
+bateria **nao se registra sozinha**. O plano (§D3) previa um `tools/verificar-conector/conformidade.sh` que
+escrevesse este ficheiro — esse script **nao existe** (o nome real da bateria e `conformidade.ts`, T050). Ou
+seja: o *registo* esta feito e provado; o *registador automatico* e trabalho por fazer, e fica declarado aqui.
+
+## T056 — onde a documentacao oficial nao for conclusiva: medir, e escrever no manifesto (FR-027)
+
+**FECHADA COM PROVA quanto ao MECANISMO** (o unico caminho por onde um numero que o venue nao deu pode entrar
+no manifesto e a declaracao da bateria), e com os tres casos de R9 ditos um a um:
+
+O mecanismo (`conector.ts`, `juntarBateria`) tem os comportamentos todos com caso medido:
+
+```
+{"caso":"arranque/bateria-nao-mediu","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:falhou"}
+{"caso":"arranque/bateria-mediu-cinco-de-seis","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:falhou"}
+{"caso":"arranque/bateria-contradiz-a-sonda","veredicto":"ok","esperado_ok":true,"portas":"ficha:passou > versao_do_contrato:passou > uma_conta:passou > ambiente_e_rede:passou > chave:passou > ligacao:passou > sonda_e_manifesto:falhou"}
+```
+
+Leitura: sem bateria e com campos por medir NAO ha manifesto (e o processo nomeia os que faltam); uma bateria a
+meias tambem nao faz manifesto; e uma bateria que contradiga um campo que a SONDA ja mediu e
+`campo_desconhecido` — o processo nao escolhe uma das duas verdades. No caminho feliz, a declaracao que faltou
+entra no manifesto e a lista dos campos usados aparece no diagnostico
+(`a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ...` — ver o bloco de `processo/aceite-mercado`
+em `us3.txt`).
+
+**Os tres casos de R9** (`research.md` §R9, as perguntas `[?]` de `docs/regra-de-negocio-conector.md` §9):
+
+1. **«O venue arredonda ou recusa um tamanho com casas a mais?»** — o conector **recusa antes de enviar** e
+   mede-se em `ordens/preco-com-casas-a-mais-do-que-o-tick-recusa` e em
+   `arranque/preco-do-venue-fora-da-regra` (bloco cru em `us2.txt`). **A medicao NO VENUE** (mandar a ordem a
+   serio e ver se ele arredonda ou recusa) **nao foi feita**: exige enviar — e a bateria de TESTE (**T057**).
+2. **«Qual `mark` serve de regua a distancia de liquidacao?»** — **MEDIDO**: a leitura declara a marca e a
+   origem dela, e o venue confirma-a. Do bloco cru da leitura real (`us6.txt`):
+   "marca_para_a_distancia": "info.activeAssetData({user,coin}).markPx — [V]".
+3. **«A cadencia da re-sondagem»** — a regra do recorte diz que o manifesto se le **a cada arranque** (FR-001),
+   e isso esta medido por caso: `manifesto/mudanca-no-venue-muda-o-manifesto` (a sonda muda e o manifesto
+   segue, sem uma linha de codigo mudar). **O que NAO existe** e uma chave de cadencia no inventario — nem no
+   dono nem em lado nenhum; o doc da regra (§9) ainda a chama *proposta*. Fica dito como lacuna, nao tapado com
+   um numero inventado.
+
+## T057 — BLOQUEADA PELA DECISAO DO DONO (SC-004: as 8 provas no ambiente de TESTE)
+
+**Nao foi corrida, e nao se corre sem a decisao do dono** — a bateria de conformidade que existe e OFFLINE e
+di-lo na ultima linha (`INCOMPLETO`). O SC-004 pede **8 de 8 no ambiente de teste do venue**, e isso exige
+**ASSINAR e ENVIAR** ordens a serio (as provas medem comportamento com ordem a serio: minimo, degrau,
+post-only, reduce-only, idempotencia).
+
+- **Comando que a correria** (com a decisao do dono e o envio ao vivo ligado) — o que existe hoje e o modo de
+  leitura, `--ao-vivo`, e a bateria medida entra pelo `--bateria`:
+  `bun run brokers/hyperliquid/processo.ts --casos brokers/hyperliquid/casos/processo.casos.json --ficha
+  @config/contas/hl-teste-plugin.json --ao-vivo --bateria bateria_ao_vivo`
+  — e, para cumprir o SC-004 como ele esta escrito, falta a **bateria de TESTE** (8 provas) ligada ao envio:
+  o `conformidade.ts` de hoje e offline, e o `conformidade.sh` que o plano (§D3) e o `quickstart.md` nomeiam
+  **nao existe**.
+- **A parede, medida no proprio codigo**: a porta de envio ao vivo responde que **nao esta implementada** —
+  «exige ASSINAR, e assinar sem a bateria de conformidade ter medido o venue seria encomendar as cegas»
+  (`brokers/hyperliquid/processo.ts`). E fail-closed de propósito, nao um esquecimento.
+- **Razao**: enviar ordens ao venue a serio e decisao do DONO (RN-H17). Nao e do agente.
+
+## T058 — commit
+
+Um commit desta vaga com o assunto `specs/004: T055/T056/T058 (US7)` — o hash esta em `RESULTADO.md` (§ commit).
+
+## O que este relatorio NAO prova, e di-lo
+
+- O **SC-004** (8 de 8 no ambiente de teste) **nao** foi medido. O que esta medido e a bateria offline
+  (9 de 9 · 238 verificacoes · 0 divergentes) — outra bateria, com outro alcance.
+- O **registo** existe, mas foi escrito a mao: o registador automatico nao existe.
