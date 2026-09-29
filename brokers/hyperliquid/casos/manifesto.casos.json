@@ -1,0 +1,230 @@
+{
+  "nota": "Casos da sonda e do manifesto (FR-001 a FR-005). A `sonda_base` e a resposta do venue como ela chega — o formato segue a resposta real (meta.universe com name/szDecimals/maxLeverage), e cada caso muda so o que quer medir. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que o manifesto afirma, e a versao do contrato vem de contracts/versao.json.",
+  "sonda_base": {
+    "venue": {
+      "nome": "hyperliquid",
+      "ambiente": "teste"
+    },
+    "versao_do_conector": "0.1.0",
+    "meta": {
+      "universe": [
+        {
+          "name": "BTC",
+          "szDecimals": 5,
+          "maxLeverage": 40
+        },
+        {
+          "name": "ETH",
+          "szDecimals": 4,
+          "maxLeverage": 25
+        }
+      ]
+    },
+    "instrumentos_pedidos": [
+      "BTC"
+    ],
+    "minimo_de_valor_por_ordem": "10",
+    "modos_de_margem": [
+      "cruzado",
+      "isolado"
+    ],
+    "tipos_de_ordem": [
+      "mercado",
+      "limite"
+    ],
+    "parcial_suportada": [
+      "o_que_der"
+    ],
+    "desvio_maximo": "0.5",
+    "reduce_only_suportado": true,
+    "stop_anexo": false,
+    "ajusta_alavancagem": true,
+    "profundidade_de_livro": 5,
+    "funding_publicado": true,
+    "relogio_de_fecho_de_barra": "continuo",
+    "idempotencia": true,
+    "marca_de_posse": "cloid",
+    "marca_liga_ordem_a_posicao": false,
+    "estado_do_mercado": true
+  },
+  "casos": [
+    {
+      "caso": "manifesto/sonda-completa-ok",
+      "esperadoOk": true,
+      "conferir": {
+        "conector.nome": "hyperliquid",
+        "versao": "1.3.0",
+        "instrumentos.0.simbolo": "BTC",
+        "instrumentos.0.passo": "0.00001",
+        "instrumentos.0.tick": "0.1",
+        "instrumentos.0.alavancagem_maxima": "40",
+        "teto_de_valor_por_ordem": "10",
+        "modelo_de_posicao": "netting",
+        "idempotencia": true,
+        "marca_de_posse": "cloid",
+        "marca_liga_ordem_a_posicao": false,
+        "stop_anexo": false,
+        "reduce_only_suportado": true,
+        "estado_do_mercado": true
+      }
+    },
+    {
+      "caso": "manifesto/mudanca-no-venue-muda-o-manifesto",
+      "esperadoOk": true,
+      "conferir": {
+        "instrumentos.0.alavancagem_maxima": "40"
+      },
+      "segunda_sonda": {
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 20
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25
+            }
+          ]
+        }
+      },
+      "conferir_na_segunda": {
+        "instrumentos.0.alavancagem_maxima": "20"
+      }
+    },
+    {
+      "caso": "manifesto/instrumento-inexistente-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "sonda": {
+        "instrumentos_pedidos": [
+          "BTC",
+          "SOL"
+        ]
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-nao-declarada-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "reduce_only_suportado": null
+      }
+    },
+    {
+      "caso": "manifesto/minimo-do-venue-ausente-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sonda": {
+        "minimo_de_valor_por_ordem": null
+      }
+    },
+    {
+      "caso": "manifesto/marca-fora-do-conjunto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "sonda": {
+        "marca_de_posse": "nonce"
+      }
+    },
+    {
+      "caso": "manifesto/tipo-de-ordem-fora-do-conjunto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "sonda": {
+        "tipos_de_ordem": [
+          "mercado",
+          "iceberg"
+        ]
+      }
+    },
+    {
+      "caso": "manifesto/unidade-do-instrumento-nao-declarada-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sonda": {
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "maxLeverage": 40
+            }
+          ]
+        }
+      }
+    },
+    {
+      "caso": "manifesto/sem-alavancagem-maxima-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sonda": {
+        "meta": {
+          "universe": [
+            {
+              "name": "BTC",
+              "szDecimals": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-ajusta-alavancagem",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "ajusta_alavancagem": null
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-reduce-only-suportado",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "reduce_only_suportado": null
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-stop-anexo",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "stop_anexo": null
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-funding-publicado",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "funding_publicado": null
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-idempotencia",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "idempotencia": null
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-marca-liga-ordem-a-posicao",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "marca_liga_ordem_a_posicao": null
+      }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-estado-do-mercado",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "estado_do_mercado": null
+      }
+    }
+  ]
+}

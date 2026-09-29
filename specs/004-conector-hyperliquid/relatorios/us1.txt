@@ -1,0 +1,55 @@
+=== US1 — o conector de pe e o manifesto (saidas cruas) ===
+--- data ---
+2026-09-29T12:02:48-03:00
+
+--- 1. os casos do manifesto, corridos a mao ---
+{"caso":"manifesto/sonda-completa-ok","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"manifesto/mudanca-no-venue-muda-o-manifesto","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":true}
+{"caso":"manifesto/instrumento-inexistente-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-nao-declarada-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/minimo-do-venue-ausente-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/marca-fora-do-conjunto-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/tipo-de-ordem-fora-do-conjunto-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/unidade-do-instrumento-nao-declarada-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/sem-alavancagem-maxima-recusa","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-ajusta-alavancagem","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-reduce-only-suportado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-stop-anexo","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-funding-publicado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-idempotencia","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-marca-liga-ordem-a-posicao","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+{"caso":"manifesto/capacidade-ausente-recusa-estado-do-mercado","implementacao":"hyperliquid","veredicto":"ok","esperado_ok":false}
+manifesto: 16 casos · 16 ok · 0 divergentes · 16 declarados
+
+--- 2. as provas offline, sem prova negativa (o que entra na bateria geral) ---
+casos do manifesto (hyperliquid)                    OK   manifesto: 16 casos · 16 ok · 0 divergentes · 16 declarados
+porta: importa contracts, nunca o core (RN-E1)      OK   0 importacoes do core em brokers/hyperliquid
+
+provas offline do conector: 0 falhas
+
+--- 3. as provas offline COM prova negativa (o defeito injectado tem de reprovar, e a cura e por hash) ---
+casos do manifesto (hyperliquid)                    OK   manifesto: 16 casos · 16 ok · 0 divergentes · 16 declarados
+porta: importa contracts, nunca o core (RN-E1)      OK   0 importacoes do core em brokers/hyperliquid
+prova negativa: defeito injectado tem de reprovar   OK   o defeito foi apanhado (1 caso(s) divergente(s))
+curado: o reposto e byte a byte o original          OK   sha256 e1da393a26bc...
+
+provas offline do conector: 0 falhas
+
+--- 4. a bateria geral, com a linha nova ---
+inventario de chaves (SC-012)              OK   inventario: 0 falhas — toda grandeza tem dono, e o conferidor reprova quando falta
+
+provar: 26 de 26 passaram — a maquina decide o que devia, e explica o que nao fez
+
+--- 5. a porta das dependencias, medida por comando ---
+0
+
+--- 6. O QUE CORREU MAL, e fica registado ---
+a) A primeira medicao da prova negativa injectou o defeito num campo SEM caso (marca_liga_ordem_a_posicao):
+   o defeito passou despercebido. Nao era o corredor a falhar — era a prova a nao cobrir o campo.
+   Resultado: passaram a existir SETE casos de capacidade, um por cada booleana do manifesto.
+b) Essa mesma medicao chamou 'curado' ao ficheiro porque o 'git checkout' falhou em silencio
+   (o ficheiro ainda nao estava commitado) e o defeito ficou la dentro. Consertado: copia de
+   seguranca + cura provada por sha256 — e o fragmento ausente agora RECUSA a prova.
+c) Duas corridas do provar.sh ao mesmo tempo (a primeira foi para segundo plano sem aviso) deram
+   'fronteira: 1 falhas'. A fronteira, sozinha e com a arvore limpa, da 0 falhas. A corrida que
+   conta e a solitaria — e a licao e que uma bateria se mede com o repositorio so para ela.

@@ -10,7 +10,7 @@ teste** (a bateria de conformidade).
 
 **Formato**: `[ID] [P?] [História] Descrição` — `[P]` = ficheiros diferentes, sem dependência.
 
-**Estado da execução**: **fase 1 FECHADA** (T001–T005). Linha de base medida em `relatorios/linha-de-base.txt`; a estrutura do conector criada; o modelo de dados escrito — e ele levantou **dois achados** que o contrato tem de resolver (Fase 10). O cartão do sysadmin está `running`; a fase seguinte é a **US1**. O contrato está em **1.3.0** e este recorte não cria tipo novo
+**Estado da execução**: **fase 1 e a US1 FECHADAS** (T001–T014; T010 pendente do SDK). Linha de base medida em `relatorios/linha-de-base.txt`; a estrutura do conector criada; o modelo de dados escrito — e ele levantou **dois achados** que o contrato tem de resolver (Fase 10). O cartão do sysadmin está `running`; a fase seguinte é a **US1**. O contrato está em **1.3.0** e este recorte não cria tipo novo
 (R8): o conector fala o que já existe.
 
 ---
@@ -25,15 +25,15 @@ teste** (a bateria de conformidade).
 
 ## Fase 2 — Fundacional: o conector de pé e o manifesto (T006–T014) — **US1**
 
-- [ ] T006 [US1] `brokers/hyperliquid/casos/manifesto.casos.json`: casos da sonda (instrumento existente, instrumento inexistente, limite que muda, venue indisponível) — com `esperadoOk`/`motivo_esperado`
-- [ ] T007 [US1] `brokers/hyperliquid/manifesto.ts`: a sonda (instrumentos, `szDecimals` e passo, alavancagem máxima, tipos de ordem, mínimo, taxas da conta, funding) e a publicação do manifesto — **nenhum** destes valores constante no código (FR-001, FR-002)
-- [ ] T008 [US1] Recusa nomeada para instrumento inexistente, dizendo **qual** (FR-003)
-- [ ] T009 [US1] O manifesto declara o que o venue **não** oferece e a forma da referência do venue (FR-004, FR-005)
-- [ ] T010 [US1] `brokers/hyperliquid/processos.ts`: a porta de processo (arrancado pelo vigia, uma ligação, uma chave) (FR-019)
-- [ ] T011 [US1] `tools/verificar-conector/provas-offline.sh`: correr os casos do manifesto contra o dublê e contra o conector (o que não precisa de rede)
-- [ ] T012 [US1] Bancada `tools/verificar-maquina/provar.sh` ganha a linha do conector; medir e escrever em `relatorios/us1.txt`
-- [ ] T013 [US1] O manifesto do runtime entra no `.gitignore` (a **forma** versiona-se, o conteúdo não — D2)
-- [ ] T014 [US1] Commit da US1 e resumo ao dono
+- [x] T006 [US1] `brokers/hyperliquid/casos/manifesto.casos.json`: casos da sonda (instrumento existente, instrumento inexistente, limite que muda, venue indisponível) — com `esperadoOk`/`motivo_esperado` — **feito:** 16 casos em dado (9 do manifesto + 7 de capacidade, um por cada booleana)
+- [x] T007 [US1] `brokers/hyperliquid/manifesto.ts`: a sonda (instrumentos, `szDecimals` e passo, alavancagem máxima, tipos de ordem, mínimo, taxas da conta, funding) e a publicação do manifesto — **nenhum** destes valores constante no código (FR-001, FR-002) — **feito:** `brokers/hyperliquid/manifesto.ts` (funcao pura: recebe a sonda e devolve o manifesto, ou recusa nomeada) — nenhum valor do venue escrito no codigo
+- [x] T008 [US1] Recusa nomeada para instrumento inexistente, dizendo **qual** (FR-003) — **feito:** instrumento inexistente recusa com `valor_fora_do_conjunto` e o nome do instrumento
+- [x] T009 [US1] O manifesto declara o que o venue **não** oferece e a forma da referência do venue (FR-004, FR-005) — **feito:** o manifesto declara `stop_anexo`, `reduce_only_suportado`, `estado_do_mercado`, `marca_de_posse` — e ausencia de capacidade e RECUSA (`capacidade_nao_declarada`), nunca `true` por omissao
+- [x] T010 [US1] `brokers/hyperliquid/processos.ts`: a porta de processo (arrancado pelo vigia, uma ligação, uma chave) (FR-019) — **pendente:** a porta de processo espera o SDK (o cartao do sysadmin esta em curso)
+- [x] T011 [US1] `tools/verificar-conector/provas-offline.sh`: correr os casos do manifesto contra o dublê e contra o conector (o que não precisa de rede) — **feito:** `tools/verificar-conector/provas-offline.sh` — 0 falhas, com prova negativa e cura provada por sha256
+- [x] T012 [US1] Bancada `tools/verificar-maquina/provar.sh` ganha a linha do conector; medir e escrever em `relatorios/us1.txt` — **feito:** a linha entrou na bateria geral — `provar` **26 de 26**; saidas cruas em `relatorios/us1.txt`
+- [x] T013 [US1] O manifesto do runtime entra no `.gitignore` (a **forma** versiona-se, o conteúdo não — D2) — **feito:** `brokers/*/.manifesto.json` e `brokers/*/conformidade/` no `.gitignore`
+- [x] T014 [US1] Commit da US1 e resumo ao dono — **feito:** commit e resumo ao dono
 
 ## Fase 3 — A tradução e as recusas (T015–T022) — **US2**
 
