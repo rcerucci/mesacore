@@ -1,0 +1,265 @@
+{
+  "plugin": "hyperliquid",
+  "tipo": "conector",
+  "versao_do_questionario": "1.0.0",
+  "conta_de_exemplo": "hl-teste-a",
+  "preenche_sempre": {
+    "nota": "Verdade do PLUGIN, nao pergunta ao dono: quem sabe que software corre e o plugin (a configuracao da conta nao escolhe software). O script grava isto antes da primeira pergunta.",
+    "conta.corretora": "hyperliquid",
+    "conta.conectores": [
+      "hyperliquid"
+    ]
+  },
+  "perguntas": [
+    {
+      "id": "nome_da_conta",
+      "chave": "(nome do ficheiro)",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Que nome quer dar a esta conta? (ex.: hl-teste-a)",
+      "explicacao": "E so para voce a reconhecer: vira o nome do ficheiro em config/contas/<nome>.json e o nome da chave em ~/.config/mesacore/credenciais/<nome>.key. Use um nome por conta — e ele que separa duas contas do mesmo venue.",
+      "omissao": "hl-teste-a"
+    },
+    {
+      "id": "identificador",
+      "chave": "conta.identificador",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Qual o ENDERECO (master) da conta na Hyperliquid?",
+      "explicacao": "E o endereco 0x... da conta que opera, nao o da API wallet. Nao e segredo (fica no ficheiro). Serve para o conector verificar, no venue, que a chave que ele carrega pertence mesmo a esta conta — e para consultar saldo e posicoes, que com o endereco da API wallet devolveriam vazio.",
+      "exemplo": "0x0000000000000000000000000000000000000000"
+    },
+    {
+      "id": "ambiente",
+      "chave": "conexao.ambiente",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "pergunta": "Ambiente: teste ou producao?",
+      "explicacao": "Teste primeiro, sempre. A passagem a producao e uma decisao declarada sua, e nao acontece por mudar uma palavra num ficheiro.",
+      "opcoes": [
+        "teste",
+        "producao"
+      ],
+      "omissao": "teste"
+    },
+    {
+      "id": "url_da_api",
+      "chave": "conexao.url_da_api",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "URL da API da HL para este ambiente (Enter aceita a de teste)",
+      "explicacao": "Nao e segredo e ja vem preenchido: teste e https://api.hyperliquid-testnet.xyz e producao e https://api.hyperliquid.xyz. O mesmo venue serve as suas duas contas — o que muda entre elas e o endereco e a chave, nao o URL.",
+      "omissao": "https://api.hyperliquid-testnet.xyz"
+    },
+    {
+      "id": "instrumentos",
+      "chave": "conta.instrumentos",
+      "tipo": "lista",
+      "obrigatorio": true,
+      "pergunta": "Que instrumentos esta conta vai operar? (ex.: BTC ou BTC,ETH)",
+      "explicacao": "Lista separada por virgulas. Cada instrumento listado tem de ter a sua ficha (o script pergunta-as a seguir)."
+    },
+    {
+      "id": "credencial",
+      "chave": "conta.credencial",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Nome da credencial (Enter usa o nome da conta)",
+      "explicacao": "E o NOME, nunca a chave. O nome viaja na configuracao e no manifesto; o valor fica no ficheiro protegido que o conector le (modo 600, fora do repositorio).",
+      "omissao": "(igual ao nome da conta)"
+    },
+    {
+      "id": "chave_privada",
+      "chave": "conexao.credencial.valor_em",
+      "tipo": "segredo",
+      "obrigatorio": true,
+      "pergunta": "CHAVE da API wallet desta conta (nao sera mostrada nem guardada no repositorio)",
+      "explicacao": "Use uma API wallet (agent), nao a chave mestra: ela assina ordens em seu nome e nao pode retirar fundos, e desregistra-se no venue quando quiser. O script grava-a em ~/.config/mesacore/credenciais/<conta>.key com modo 600 e escreve na configuracao apenas a referencia. Nao passa pelo historico do shell e nao entra no ledger nem no log.",
+      "destino": "ficheiro_de_credencial"
+    },
+    {
+      "id": "perda_maxima_pct",
+      "chave": "conta.perda_maxima_pct",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "omissao": "5",
+      "pergunta": "Perda maxima da conta em %, por corrida",
+      "explicacao": "O circuit breaker da sessao. Se a corrida perder isto, a mesa para e exige decisao sua para voltar."
+    },
+    {
+      "id": "perda_maxima_janela",
+      "chave": "conta.perda_maxima_janela",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "opcoes": [
+        "corrida_da_mesa",
+        "dia_de_calendario"
+      ],
+      "omissao": "corrida_da_mesa",
+      "pergunta": "A janela da perda maxima",
+      "explicacao": "corrida_da_mesa conta desde que a mesa arrancou; dia_de_calendario reinicia todos os dias."
+    },
+    {
+      "id": "margem_total_maxima_pct",
+      "chave": "conta.margem_total_maxima_pct",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "omissao": "100",
+      "pergunta": "Margem total maxima da conta em %",
+      "explicacao": "Teto de margem somada de todas as fichas. Uma ficha nao ve as outras — e aqui que se impede que tres instrumentos a 50% do saldo tentem caber ao mesmo tempo."
+    },
+    {
+      "id": "contencao",
+      "chave": "conta.contencao",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "opcoes": [
+        "recusar",
+        "espera"
+      ],
+      "omissao": "recusar",
+      "pergunta": "Politica de contencao de margem: recusar ou espera?",
+      "explicacao": "O que a mesa faz quando a margem apertaria o teto: `recusar` nao manda a ordem (e diz por que), `espera` poe a ordem na fila ate haver folga."
+    },
+    {
+      "id": "arranque_apos_cb",
+      "chave": "conta.arranque_apos_cb",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "opcoes": [
+        "exige_decisao"
+      ],
+      "omissao": "exige_decisao",
+      "pergunta": "Depois de um circuit breaker, quem decide voltar?",
+      "explicacao": "Hoje ha um valor so, e e de proposito: `exige_decisao` — a mesa para e espera por voce. Nao existe (ainda) arranque automatico, e nenhuma configuracao o pode ligar."
+    },
+    {
+      "id": "eventos_que_avisam",
+      "chave": "conta.eventos_que_avisam",
+      "tipo": "lista",
+      "obrigatorio": true,
+      "omissao": "cb, encerramento, desconhecido, recusa, divergencia, falha_de_leitura, contenda",
+      "pergunta": "Que eventos da mesa devem virar aviso para voce?",
+      "explicacao": "Enter aceita a lista completa. Sem esta chave a mesa GRITA a cada evento — melhor gritar do que morrer em silencio."
+    },
+    {
+      "id": "retencao_dias_integral",
+      "chave": "conta.retencao_ledger.dias_integral",
+      "tipo": "inteiro",
+      "obrigatorio": true,
+      "pergunta": "Quantos dias do ledger ficam integrais?",
+      "explicacao": "O ledger e o registo de tudo o que a conta fez. Dentro desta janela guarda-se tudo; depois disso, a politica que responder a seguir decide o que fica."
+    },
+    {
+      "id": "retencao_depois",
+      "chave": "conta.retencao_ledger.depois",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "E depois desses dias, o que fica do ledger? (ex.: resumo_diario)",
+      "explicacao": "Ainda nao ha leitor para esta chave na mesa (RN-L6 nao implementada) — mas a decisao fica declarada agora, em vez de ficar por decidir dentro de um ficheiro."
+    }
+  ],
+  "ficha_do_instrumento": {
+    "nota": "Estas perguntas repetem-se para cada instrumento declarado acima. A forma e do core; o questionario so as apresenta.",
+    "perguntas": [
+      {
+        "id": "versao_do_mandato",
+        "chave": "fichas.<instrumento>.risco.versao_do_mandato",
+        "tipo": "texto",
+        "obrigatorio": true,
+        "pergunta": "Versao do mandato desta ficha (ex.: 2026-09-29-a)",
+        "explicacao": "Identifica a versao da ficha que esta a operar. Sem ela, a mesa RECUSA arrancar uma sessao nova — e de proposito: nao se opera dinheiro com uma ficha que nao diz qual e."
+      },
+      {
+        "id": "saldo_pct",
+        "chave": "fichas.<instrumento>.risco.saldo_pct",
+        "tipo": "decimal",
+        "obrigatorio": true,
+        "pergunta": "Percentagem do saldo por ordem (%)",
+        "explicacao": "Quanto do saldo cada ordem desta ficha compromete."
+      },
+      {
+        "id": "alavancagem",
+        "chave": "fichas.<instrumento>.risco.alavancagem",
+        "tipo": "inteiro",
+        "obrigatorio": true,
+        "pergunta": "Alavancagem (inteiro)",
+        "explicacao": "Na HL e qualquer inteiro entre 1 e o maximo do instrumento (o manifesto do venue diz qual; nao ha degraus). O manifesto da sonda publica-o — corrija este valor depois de ver o manifesto, se ele for menor."
+      },
+      {
+        "id": "distancia_minima_liquidacao_pct",
+        "chave": "fichas.<instrumento>.risco.distancia_minima_liquidacao_pct",
+        "tipo": "decimal",
+        "opcional": true,
+        "pergunta": "Distancia minima ate a liquidacao em % (Enter = sem exigencia)",
+        "explicacao": "Se declarada, a ordem que ficaria mais perto da liquidacao do que isto e RECUSADA. E a proteccao bruta contra o que o venue leva. Sem ela, a ordem e livre."
+      },
+      {
+        "id": "stop_pct",
+        "chave": "fichas.<instrumento>.risco.stop_pct",
+        "tipo": "decimal",
+        "obrigatorio": true,
+        "pergunta": "Stop em % do preco de entrada",
+        "explicacao": "A distancia ate o stop. A mesa calcula o preco a partir dele — nunca arredonda em silencio: fora do passo do venue, recusa."
+      },
+      {
+        "id": "tp_pct",
+        "chave": "fichas.<instrumento>.risco.tp_pct",
+        "tipo": "decimal",
+        "obrigatorio": true,
+        "pergunta": "Alvo (take profit) em % do preco de entrada",
+        "explicacao": "A distancia ate o alvo."
+      },
+      {
+        "id": "parcial",
+        "chave": "fichas.<instrumento>.risco.parcial",
+        "tipo": "texto",
+        "obrigatorio": true,
+        "omissao": "o_que_der",
+        "pergunta": "Parcial: o que der ou um valor fixo?",
+        "explicacao": "O que fazer com o resto quando a posicao fecha em parte. `o_que_der` deixa a mesa fechar o que conseguir."
+      },
+      {
+        "id": "desvio_maximo",
+        "chave": "fichas.<instrumento>.risco.desvio_maximo",
+        "tipo": "decimal",
+        "obrigatorio": true,
+        "pergunta": "Desvio maximo em % entre o preco pedido e o do venue",
+        "explicacao": "Acima disto, a ordem e RECUSADA em vez de ser executada a um preco que voce nao pediu."
+      },
+      {
+        "id": "destino_do_resto",
+        "chave": "fichas.<instrumento>.risco.destino_do_resto",
+        "tipo": "texto",
+        "obrigatorio": true,
+        "omissao": "cancelar",
+        "pergunta": "Destino do resto quando a posicao fecha",
+        "explicacao": "O que fazer com a ordem que sobra depois de a posicao fechar. `cancelar` e o conservador."
+      },
+      {
+        "id": "prazo_da_passiva_ms",
+        "chave": "fichas.<instrumento>.risco.prazo_da_passiva_ms",
+        "tipo": "inteiro",
+        "obrigatorio": true,
+        "pergunta": "Prazo da ordem passiva (em milissegundos)",
+        "explicacao": "Quanto tempo uma ordem passiva (post-only) pode ficar sem ser atendida antes de a mesa agir."
+      },
+      {
+        "id": "versao_do_setup",
+        "chave": "fichas.<instrumento>.setup.versao_do_setup",
+        "tipo": "texto",
+        "obrigatorio": true,
+        "pergunta": "Versao do setup que esta ficha usa",
+        "explicacao": "Identifica o setup (o plugin de estrategia). A forma dos itens do setup e publicada por ele; aqui fica a versao."
+      },
+      {
+        "id": "prazo_de_resposta_ms",
+        "chave": "fichas.<instrumento>.setup.prazo_de_resposta_ms",
+        "tipo": "inteiro",
+        "obrigatorio": true,
+        "pergunta": "Prazo de resposta do dono (ms) quando a mesa pergunta",
+        "explicacao": "Quanto tempo a mesa espera por uma decisao sua antes de seguir a politica declarada. Sem esta chave, um `stop` com posicao viva RECUSA."
+      }
+    ]
+  }
+}

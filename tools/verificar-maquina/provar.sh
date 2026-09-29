@@ -66,6 +66,7 @@ declarar "chaves do core (SC-012)"       bun run tools/verificar-maquina/chaves.
 declarar "porteiro do estado (script)"   bash tools/verificar-maquina/porteiro-do-estado.sh
 declarar "marcas sobrevivem ao reinicio" bash tools/verificar-maquina/reiniciar.sh
 declarar "porta da mesa (T014-T016)"      bun run tools/verificar-maquina/servidor.ts
+declarar "preparar contas (script + questionario)" bash tools/preparar-contas/provas.sh
 declarar "conector hyperliquid (offline, US1)" bash tools/verificar-conector/provas-offline.sh
 
 # As bancadas da camada de OPERACAO (003): correm processos a serio (vigia + mesa), por isso ficam na porta

@@ -1,0 +1,111 @@
+#!/bin/sh
+# As provas do preparar-contas. Quatro coisas que ele promete, medidas uma a uma:
+#   1. o ficheiro que ele escreve PASSA no conferidor;
+#   2. a chave fica num ficheiro com modo 600, FORA do repositorio;
+#   3. o valor da chave NAO aparece na configuracao (nem em ficheiro versionado nenhum) — o que
+#      aparece e a REFERENCIA;
+#   4. um questionario que declare um segredo sem destino de credencial e RECUSADO — e esta regra
+#      que impede alguem escrever um questionario que guarde a chave no ficheiro de conta.
+#
+# Corre sempre, sem rede, contra um directorio temporario (TMPDIR). Nenhum segredo real entra aqui:
+# a «chave» de prova e uma string inventada que nao existe em ficheiro versionado nenhum.
+
+set -u
+AQUI=$(cd "$(dirname "$0")" && pwd)
+RAIZ=$(cd "$AQUI/../.." && pwd)
+CASA=$(mktemp -d "${TMPDIR:-/tmp}/preparar-contas-prova.XXXXXX") || exit 2
+FALHAS=0
+CHAVE_FALSA="0xf0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f"
+
+limpar() { rm -rf "$CASA"; }
+trap limpar EXIT
+
+prova() { printf '%-62s' "$1"; }
+ok()    { printf 'OK   %s\n' "$1"; }
+falhou(){ printf 'FALHOU  %s\n' "$1"; FALHAS=$((FALHAS+1)); }
+
+ESPERADO="$RAIZ/brokers/hyperliquid/questionario.json"
+cat > "$CASA/respostas.json" <<EOF
+{
+  "_questionario": "$ESPERADO",
+  "nome_da_conta": "conta-de-prova",
+  "identificador": "0x1111111111111111111111111111111111111111",
+  "ambiente": "teste",
+  "url_da_api": "https://api.hyperliquid-testnet.xyz",
+  "credencial": "conta-de-prova",
+  "chave_privada": "$CHAVE_FALSA",
+  "perda_maxima_pct": "5",
+  "perda_maxima_janela": "corrida_da_mesa",
+  "margem_total_maxima_pct": "100",
+  "contencao": "recusar",
+  "arranque_apos_cb": "exige_decisao",
+  "eventos_que_avisam": "cb,encerramento,desconhecido,recusa,divergencia,falha_de_leitura,contenda",
+  "retencao_dias_integral": "90",
+  "retencao_depois": "resumo_diario",
+  "instrumentos": "BTC",
+  "versao_do_mandato": "2026-09-29-a",
+  "saldo_pct": "1",
+  "alavancagem": "3",
+  "stop_pct": "1.5",
+  "tp_pct": "3",
+  "parcial": "o_que_der",
+  "desvio_maximo": "0.5",
+  "destino_do_resto": "cancelar",
+  "prazo_da_passiva_ms": "30000",
+  "versao_do_setup": "2026-09-29",
+  "prazo_de_resposta_ms": "600000"
+}
+EOF
+
+CFG="$CASA/config"
+CRED="$CASA/credenciais"
+SAIDA=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas.json" --config-dir "$CFG" --credenciais "$CRED" 2>&1)
+CODIGO=$?
+
+prova "1. o script corre e o conferidor aprova o ficheiro"
+if [ "$CODIGO" -eq 0 ] && printf '%s' "$SAIDA" | grep -q "conferidor: aprovado"; then
+  ok "$(printf '%s' "$SAIDA" | grep 'conferidor:' | tail -1)"
+else
+  falhou "exit=$CODIGO"; printf '%s\n' "$SAIDA" | tail -6
+fi
+
+prova "2. a chave ficou fora do repositorio, com modo 600"
+if [ -f "$CRED/conta-de-prova.key" ] && [ "$(stat -c '%a' "$CRED/conta-de-prova.key")" = "600" ] && [ "$(cat "$CRED/conta-de-prova.key")" = "$CHAVE_FALSA" ]; then
+  ok "modo $(stat -c '%a' "$CRED/conta-de-prova.key") · pasta $(stat -c '%a' "$CRED") · $CRED"
+else
+  falhou "ficheiro ausente, modo errado, ou conteudo diferente"
+fi
+
+prova "3. a configuracao traz a REFERENCIA, nunca o valor"
+if [ -f "$CFG/conta-de-prova.json" ] && grep -q '"ficheiro:' "$CFG/conta-de-prova.json" && ! grep -q "$CHAVE_FALSA" "$CFG/conta-de-prova.json"; then
+  if git -C "$RAIZ" grep -qF "$CHAVE_FALSA" -- . 2>/dev/null; then
+    falhou "o valor da chave aparece num ficheiro VERSIONADO do repositorio"
+  else
+    ok "referencia presente, valor ausente da configuracao e do repositorio"
+  fi
+else
+  falhou "a configuracao nao traz a referencia, ou traz o valor"
+fi
+
+prova "4. questionario com segredo sem destino e RECUSADO"
+cat > "$CASA/mau-questionario.json" <<'EOF'
+{
+  "plugin": "teste", "tipo": "conector", "versao_do_questionario": "1.0.0",
+  "perguntas": [
+    { "id": "chave_privada", "chave": "conexao.credencial.valor", "tipo": "segredo", "obrigatorio": true,
+      "pergunta": "Cole a chave aqui", "explicacao": "um questionario assim guardaria a chave no ficheiro de conta" }
+  ]
+}
+EOF
+cat > "$CASA/respostas-mau.json" <<EOF
+{ "_questionario": "$CASA/mau-questionario.json", "chave_privada": "$CHAVE_FALSA" }
+EOF
+SAIDA_MAU=$(sh "$AQUI/preparar-contas.sh" --sem-perguntas --respostas "$CASA/respostas-mau.json" --config-dir "$CASA/config2" --credenciais "$CASA/cred2" 2>&1)
+if printf '%s' "$SAIDA_MAU" | grep -q "RECUSADO" && [ ! -f "$CASA/config2/teste.json" ]; then
+  ok "$(printf '%s' "$SAIDA_MAU" | grep 'RECUSADO' | head -1 | cut -c1-90)"
+else
+  falhou "o questionario mau passou"; printf '%s\n' "$SAIDA_MAU" | tail -3
+fi
+
+printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"
+[ "$FALHAS" -eq 0 ] || exit 1
