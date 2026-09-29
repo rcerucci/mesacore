@@ -1,8 +1,18 @@
 // A CONTENDA: quando as fichas somam mais do que o tecto, QUEM fica de fora.
 //
-// A regra e FIFO pelo RELOGIO DO VENUE (emenda do dono, 28 set 2026) - nao uma lista declarada, que
-// envelhece em silencio, e nao o alfabeto, que nao tem nada a ver com quem pediu primeiro. Ordem de
-// chegada e a unica que o dono consegue explicar a outra pessoa sem consultar o ficheiro de config.
+// A regra e FIFO (emenda do dono, 28 set 2026) - nao uma lista declarada, que envelhece em silencio, e
+// nao o alfabeto, que nao tem nada a ver com quem pediu primeiro. Ordem de chegada e a unica que o dono
+// consegue explicar a outra pessoa sem consultar o ficheiro de config.
+//
+// O RELOGIO E O DA MESA, e nao o do venue. Esta fila e feita de INTENCOES que chegam a mesa - o venue
+// nunca as viu, logo nao tem instante nenhum para lhes dar. E o instante de chegada tem de ser o NOSSO,
+// medido quando o pedido e recebido: aceitar o instante que o pedido traz seria deixar quem chama escolher
+// o lugar na fila, e um plugin (ou uma ponta com pressa) passaria a frente de todos.
+//
+// O relogio do venue serve para outra coisa, e essa e outra pergunta: casar a NOSSA ordem com o que o
+// venue respondeu. Sao dois tempos diferentes, e mistura-los e o erro classico - o carimbo do venue diz
+// quando o preco existiu; a idade de chegada diz ha quanto tempo nao ouvimos nada. Aqui so entra o
+// segundo.
 //
 // Tres coisas que esta funcao NAO faz, e sao a razao de ela ser assim:
 //   1. NAO deixa passar quem chegou depois enquanto o da frente espera. Se o primeiro nao cabe, a fila
@@ -18,8 +28,14 @@ export type CriterioDaContenda = "fifo" | "fifo_desempatado_por_simbolo";
 export interface PedidoDeContenda {
   instrumento: string;
   saldo_pct: string;
-  /** O instante do PEDIDO no relogio do venue. Ausente = nao se sabe quando chegou. */
-  instante_no_venue_ms?: number | null;
+  /**
+   * O instante em que a MESA recebeu o pedido, no relogio da propria mesa (monotonico).
+   *
+   * Ausente = o pedido nao foi carimbado. Nao se inventa um instante para ele: entra no grupo dos que
+   * chegaram ao mesmo tempo, e o criterio registado diz que foi o simbolo a desempatar. O instante que o
+   * pedido traga de fora NAO e usado - quem escolhe o lugar na fila e quem recebe, nao quem pede.
+   */
+  instante_de_chegada_ms?: number | null;
 }
 
 export interface Contenda {
@@ -41,11 +57,11 @@ export function somarSaldos(pedidos: PedidoDeContenda[]): { total: bigint; casas
   return { total: pedidos.reduce((acc, p) => acc + escalar(p.saldo_pct, c), 0n), casas: c };
 }
 
-/** A ordem de atendimento: instante do venue, e o simbolo so quando os instantes coincidem (ou faltam). */
+/** A ordem de atendimento: chegada na mesa, e o simbolo so quando os instantes coincidem (ou faltam). */
 function ordenarFifo(pedidos: PedidoDeContenda[]): PedidoDeContenda[] {
   return [...pedidos].sort((a, b) => {
-    const ia = a.instante_no_venue_ms ?? null;
-    const ib = b.instante_no_venue_ms ?? null;
+    const ia = a.instante_de_chegada_ms ?? null;
+    const ib = b.instante_de_chegada_ms ?? null;
     if (ia !== null && ib !== null && ia !== ib) return ia - ib;
     if (ia !== null && ib === null) return -1;
     if (ia === null && ib !== null) return 1;
@@ -82,7 +98,7 @@ export function resolverContenda(pedidos: PedidoDeContenda[], tectoPct: string):
   // de fora, e e isso que o dono precisa de ler para saber a quem perguntar.
   const ultimoDentro = ordenados[admitidos.length - 1] ?? null;
   const primeiroFora = ordenados[admitidos.length] ?? null;
-  const instante = (p: PedidoDeContenda | null) => p?.instante_no_venue_ms ?? null;
+  const instante = (p: PedidoDeContenda | null) => p?.instante_de_chegada_ms ?? null;
   // Sem corte, ninguem foi decidido pelo alfabeto: a fila foi servida por ordem de chegada e chegou para
   // todos. So quando o CORTE cai dentro de um empate (ou de instantes que faltam) e que o desempate
   // decidiu alguma coisa - e e isso que o criterio tem de dizer, porque e isso que o dono vai ler.
@@ -112,7 +128,7 @@ export function resolverContenda(pedidos: PedidoDeContenda[], tectoPct: string):
       deFora.length === 0
         ? `As fichas somam ${emTexto(total)}% e o tecto e ${emTexto(tecto)}%: entram todas.`
         : `As fichas somam ${emTexto(total)}% e o tecto e ${emTexto(tecto)}%. Ordem de atendimento: ` +
-          `${ordenados.map((p) => p.instrumento).join(" -> ")} (${criterio === "fifo" ? "FIFO pelo relogio do venue" : "FIFO com empate desempatado pelo simbolo"}). ` +
+          `${ordenados.map((p) => p.instrumento).join(" -> ")} (${criterio === "fifo" ? "FIFO pela hora de chegada na mesa" : "FIFO com empate desempatado pelo simbolo"}). ` +
           `Entram ${admitidos.join(", ") || "nenhuma"}; ficam de fora ${deFora.join(", ")}.`,
   };
 }

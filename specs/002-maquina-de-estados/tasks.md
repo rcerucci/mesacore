@@ -318,7 +318,7 @@ depois.
 
 - [x] T064 [US2] A condição `dado_velho` passa a ser alimentada pelo **estado da ligação** (facto declarado); o limiar de idade sai do caminho da decisão. Par de casos com o mesmo dado: ligado / desligado — **feito**: a condição passou a chamar-se `sem_ligacao` (o nome diz o que se sabe) e a fonte é `ligacao` no runtime; `limite_de_idade_ms` saiu do `EntradaDoInstrumento`, dos casos e das quatro bancadas. O par de controle é `ligado-e-o-mesmo-dado-e-normal` / `sem-ligacao-nao-abre-e-pode-fechar` — **mesmo dado**, só a ligação muda. Os dois casos do limiar morreram (testavam um número que deixou de decidir). SC-003 medido de novo: **0 de 1** aberturas e **1 de 1** fechos legítimos
 - [x] T065 [US2] Substituir o gatilho do contador de inválidos pela **tabela por motivo** (*repetir com atraso* · *recusar e registar* · *parar e reconciliar*), com o caso de controlo: sem confirmação, **reconciliar primeiro** — repetir às cegas abre uma segunda posição
-- [x] T066 [US4] A porta da contenda passa a **FIFO** (instante do pedido no relógio do venue) com desempate alfabético; registrar o critério (`fifo` | `fifo_desempatado_por_simbolo`). A ordem decide quem fica de fora, nunca a ordem de execução
+- [x] T066 [US4] A porta da contenda passa a **FIFO** (hora de chegada à mesa, no relógio da própria mesa) com desempate alfabético; registrar o critério (`fifo` | `fifo_desempatado_por_simbolo`). A ordem decide quem fica de fora, nunca a ordem de execução
 - [x] T067 [US4] Declarar no manifesto do conector as três obrigações novas — reportar a ligação pelo protocolo, reler o preço no envio, devolver a resolução — e **nomear como defeito** a conferência da resolução contra a banda que hoje não existe (é trabalho do recorte do conector)
 
 ---

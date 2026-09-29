@@ -1,5 +1,5 @@
 {
-  "nota": "A contenda decidida por FIFO pelo relogio do venue (T066). Cada caso e um par de controle quando faz sentido: o mesmo conjunto com uma coisa trocada, para a conclusao nao poder vir de outra coisa.",
+  "nota": "A contenda decidida por FIFO pela hora de chegada na mesa (o relogio e o da mesa: o venue nunca viu estas intencoes) (T066). Cada caso e um par de controle quando faz sentido: o mesmo conjunto com uma coisa trocada, para a conclusao nao poder vir de outra coisa.",
   "tecto_padrao": "100",
   "casos": [
     {
@@ -9,12 +9,12 @@
         {
           "instrumento": "EURUSD",
           "saldo_pct": "40",
-          "instante_no_venue_ms": 100
+          "instante_de_chegada_ms": 100
         },
         {
           "instrumento": "XAUUSD",
           "saldo_pct": "50",
-          "instante_no_venue_ms": 200
+          "instante_de_chegada_ms": 200
         }
       ],
       "criterio_esperado": "fifo",
@@ -22,7 +22,8 @@
         "EURUSD",
         "XAUUSD"
       ],
-      "de_fora_esperados": []
+      "de_fora_esperados": [],
+      "nota": ""
     },
     {
       "nome": "estourou e o INSTANTE decide quem fica de fora",
@@ -31,17 +32,17 @@
         {
           "instrumento": "EURUSD",
           "saldo_pct": "60",
-          "instante_no_venue_ms": 100
+          "instante_de_chegada_ms": 100
         },
         {
           "instrumento": "XAUUSD",
           "saldo_pct": "60",
-          "instante_no_venue_ms": 200
+          "instante_de_chegada_ms": 200
         },
         {
           "instrumento": "GBPUSD",
           "saldo_pct": "10",
-          "instante_no_venue_ms": 300
+          "instante_de_chegada_ms": 300
         }
       ],
       "criterio_esperado": "fifo",
@@ -51,7 +52,8 @@
       "de_fora_esperados": [
         "XAUUSD",
         "GBPUSD"
-      ]
+      ],
+      "nota": ""
     },
     {
       "nome": "os MESMOS numeros com os instantes trocados - fica de fora o outro",
@@ -60,17 +62,17 @@
         {
           "instrumento": "EURUSD",
           "saldo_pct": "60",
-          "instante_no_venue_ms": 300
+          "instante_de_chegada_ms": 300
         },
         {
           "instrumento": "XAUUSD",
           "saldo_pct": "60",
-          "instante_no_venue_ms": 200
+          "instante_de_chegada_ms": 200
         },
         {
           "instrumento": "GBPUSD",
           "saldo_pct": "10",
-          "instante_no_venue_ms": 100
+          "instante_de_chegada_ms": 100
         }
       ],
       "criterio_esperado": "fifo",
@@ -90,12 +92,12 @@
         {
           "instrumento": "XAUUSD",
           "saldo_pct": "60",
-          "instante_no_venue_ms": 100
+          "instante_de_chegada_ms": 100
         },
         {
           "instrumento": "EURUSD",
           "saldo_pct": "60",
-          "instante_no_venue_ms": 100
+          "instante_de_chegada_ms": 100
         }
       ],
       "criterio_esperado": "fifo_desempatado_por_simbolo",
@@ -104,7 +106,8 @@
       ],
       "de_fora_esperados": [
         "XAUUSD"
-      ]
+      ],
+      "nota": ""
     },
     {
       "nome": "sem instante nenhum (o arranque: as fichas chegam todas ao mesmo tempo)",
@@ -126,7 +129,7 @@
       "de_fora_esperados": [
         "XAUUSD"
       ],
-      "nota": "E o que acontece hoje no arranque: as fichas vem da config e nao trazem relogio do venue. O criterio fica registado como desempate - nao se disfarca de FIFO."
+      "nota": "E o que acontece hoje no arranque: as fichas vem da config, ninguem as pediu, e nao ha hora de chegada para carimbar. O criterio fica registado como desempate por simbolo - nao se disfarca de FIFO."
     },
     {
       "nome": "o primeiro que nao cabe para a fila inteira (nao ha ultrapassagem)",
@@ -135,17 +138,17 @@
         {
           "instrumento": "EURUSD",
           "saldo_pct": "90",
-          "instante_no_venue_ms": 100
+          "instante_de_chegada_ms": 100
         },
         {
           "instrumento": "XAUUSD",
           "saldo_pct": "90",
-          "instante_no_venue_ms": 200
+          "instante_de_chegada_ms": 200
         },
         {
           "instrumento": "GBPUSD",
           "saldo_pct": "5",
-          "instante_no_venue_ms": 300
+          "instante_de_chegada_ms": 300
         }
       ],
       "criterio_esperado": "fifo",
@@ -165,12 +168,12 @@
         {
           "instrumento": "EURUSD",
           "saldo_pct": "0.1",
-          "instante_no_venue_ms": 100
+          "instante_de_chegada_ms": 100
         },
         {
           "instrumento": "XAUUSD",
           "saldo_pct": "0.2",
-          "instante_no_venue_ms": 200
+          "instante_de_chegada_ms": 200
         }
       ],
       "criterio_esperado": "fifo",

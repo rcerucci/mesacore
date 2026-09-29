@@ -174,10 +174,12 @@ function portaDaContenda(
   const fichas = (config.fichas ?? {}) as Record<string, Ficha>;
   // A soma e feita em inteiros escalados, dentro do resolver: quem entra e quem espera nao pode depender
   // de uma casa decimal que ninguem escreveu (`0.1 + 0.2 > 0.3` em ponto flutuante).
+  // As fichas vem da CONFIGURACAO: ninguem as pediu, logo nao tem hora de chegada. Vao para a fila sem
+  // instante, e o criterio registado diz que foi o simbolo a desempatar - em vez de inventar uma ordem de
+  // chegada que nao existe (D-003).
   const pedidos: PedidoDeContenda[] = Object.entries(fichas).map(([instrumento, f]) => ({
     instrumento,
     saldo_pct: String((f as Ficha).saldo_pct ?? "0"),
-    instante_no_venue_ms: (f as any).instante_no_venue_ms ?? null,
   }));
   const contenda = resolverContenda(pedidos, String(config.margem_total_maxima_pct ?? "0"));
 

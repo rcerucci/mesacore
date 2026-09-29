@@ -191,8 +191,15 @@ uma vez, ao carregar:
 
 ### 8.2 O passo que faltava (achado desta revisão)
 
-A mesa **não pode mandar executar sem conferir a resolução contra a banda do mandato**. Sem esse passo,
-passar o cálculo para o plugin passa também o **limite**: o plugin decide tamanho e ninguém verifica.
+A mesa **não pode ficar sem conferir a conta que a corretora devolve contra a banda do mandato**. Sem esse
+passo, passar o cálculo para o plugin passa também o **limite**: o plugin decide tamanho e ninguém verifica.
+
+São **dois momentos**, e não se confundem (corrigido em 28 set 2026, a partir da pergunta do dono): **antes
+de enviar**, onde o venue deixar perguntar (cotação/estimativa) a mesa confere e não envia; e **sobre a
+resolução**, no caso geral de uma ordem **a mercado**, em que o venue calcula ao executar — aí não há nada
+para conferir antes, e a resposta da mesa é **reduzir** (reduzir é sempre permitido) e **registrar a
+divergência**. Para isto ser possível, a resolução tem de trazer **números** (quantidade na unidade dele,
+margem exigida, alavancagem efectiva, preço de liquidação) e não um veredicto — «executou» não se confere.
 Fica registado como obrigação do recorte do conector — e como **defeito declarado** enquanto não existir.
 
 ### 8.3 Estado desta emenda (28 set 2026, mesmo dia)
@@ -204,10 +211,10 @@ T067, e o recorte voltou a fechar (**67 de 67**):
 |---|---|---|
 | a idade sai, a ligação fica | `core/ciclo/condicoes.json` (condição `sem_ligacao`) e `EntradaDoInstrumento.ligacao` | `bun run core/ciclo/provar.ts` — par de controle com o **mesmo dado** e a ligação trocada |
 | o contador de erros sai, a tabela fica | `core/ciclo/acoes.json` + `acoes.ts` | idem — 21 motivos com acção, os 16 do contrato cobertos, prova negativa da repetição |
-| a fila é FIFO | `core/ciclo/contenda.ts` (relógio do venue; soma em `BigInt`) | `bun run tools/verificar-maquina/contenda.ts` — 7 casos, com os instantes trocados |
+| a fila é FIFO | `core/ciclo/contenda.ts` (hora de chegada à mesa; soma em `BigInt`) | `bun run tools/verificar-maquina/contenda.ts` — 7 casos, com os instantes trocados |
 | o prazo de resposta do encerramento | `setup.prazo_de_resposta_ms` (entra na §3) | par de casos em `pausa.casos.json` (US6/US7) |
 
 **Porta única:** `bash tools/verificar-maquina/provar.sh` → **16 de 16**. Os três defeitos que esta
 emenda deixa declarados (a conferência da resolução contra a banda, a casa das obrigações no manifesto,
-e o relógio do venue na fila) estão em
+e a hora de chegada na fila) estão em
 `specs/002-maquina-de-estados/relatorios/DEFEITOS.md`, cada um com o número que prova que falta.

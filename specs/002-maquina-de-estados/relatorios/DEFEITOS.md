@@ -12,12 +12,29 @@ e é por isso que fica escrito.
 
 ---
 
-## D-001 — A mesa pode mandar executar sem conferir a conta que a corretora devolve
+## D-001 — A banda do mandato não é conferida em lado nenhum
 
-**O que devia acontecer.** O plugin manda valores universais (nocional, lado, tipo); a corretora calcula
-(quantidade na unidade dela, margem exigida, alavancagem efectiva, preço de liquidação) e **devolve a
-conta**; a mesa confere-a contra a banda do mandato **antes** de mandar executar. Se não couber, recusa —
-e a recusa é dela, não da corretora.
+**O que devia acontecer — e são DOIS momentos, que não se podem confundir:**
+
+1. **Antes de enviar**, e só quando o venue deixa perguntar: quando há cotação/estimativa (ou um modo de
+   ordem que a devolva antes de executar), a mesa confere a estimativa contra a banda e **não envia** se
+   não couber. Aqui a conferência é mesmo antes, e a recusa é dela.
+2. **Depois de o venue responder**, que é o caso geral de uma ordem **a mercado**: o venue calcula
+   quantidade e margem **ao executar** — antes de executar não há número nenhum para conferir, porque quem
+   calcula é ele. A conferência é então sobre a **resolução**: quantidade na unidade da corretora, margem
+   exigida, alavancagem efectiva, preço de liquidação. E, se os números caírem **fora** da banda, a
+   resposta da mesa não é "recusar" (já está executado): é **reduzir** — fechar/reduzir é sempre permitido,
+   mesmo sem leitura e mesmo sem ligação — e **registrar a divergência**, sem abrir risco novo naquele
+   instrumento até ela estar explicada.
+
+A primeira versão deste defeito dizia só "antes de mandar executar". Estava errada para ordem a mercado, e
+é a vossa pergunta que a corrige: `antes` só existe onde o venue deixa perguntar.
+
+**O que a resolução tem de trazer para isto ser possível.** Números, não veredicto. Se o plugin devolver
+apenas «executou» ou «falhou + motivo», **não há nada para a mesa conferir** — e então quem passa a
+garantir a banda é o plugin, o que é uma decisão diferente e mais fraca: as duas pontas existem para
+traduzir e transportar, não para interpretar. A obrigação 3 (§8.1 do inventário) nomeia os quatro números
+por essa razão exacta.
 
 **O que há.** O contrato tem a mensagem (`contracts/resolucao.schema.json`, com 9 casos em
 `contracts/casos/resolucao.casos.json`) e a bateria do recorte 001 valida-lhe a forma nas duas
@@ -34,18 +51,16 @@ instrumento), não código que leia coisa nenhuma. Confirmado por leitura da lin
 **A consequência.** O `saldo_pct`/nocional sai da mesa e o tamanho passa a ser calculado do outro lado.
 Quem calcula é quem decide, e não há quem confira: uma corretora que arredonde para cima, que aplique
 outra alavancagem, ou que liquide mais perto do que o mandato permite, transforma a banda declarada numa
-intenção. A mesa continuaria a achar que mandou dentro do mandato — e é exactamente o modo de falha que
-esta arquitectura existe para não ter (o número que decide não está onde o dono o escreveu).
+intenção — e a mesa continuaria a achar que mandou dentro do mandato. É exactamente o modo de falha que
+esta arquitectura existe para não ter: o número que decide não está onde o dono o escreveu.
 
 **Onde se conserta.** No recorte do **conector** (a volta: envio → desfecho → resolução → conferência).
 Não é trabalho do 002: o 002 pára na boleta (R5 — a máquina decide, não envia).
 
 **Como se saberá que está fechado.** Com o par de controle, na bateria do conector: (a) resolução com
-nocional **acima** da banda → a mesa recusa **antes** de mandar executar, com o motivo dela; (b) o mesmo
-com a resolução **dentro** da banda → segue. Sem a metade (b), "recusou" podia ser o código a recusar
-tudo; sem a metade (a), a conferência podia estar a aceitar tudo.
-
----
+nocional **acima** da banda → a mesa reduz e registra a divergência, com o motivo dela; (b) o mesmo com a
+resolução **dentro** da banda → segue, e **não** reduz. Sem a metade (b), "reduziu" podia ser o código a
+reduzir tudo; sem a metade (a), a conferência podia estar a aceitar tudo.
 
 ## D-002 — As três obrigações do conector não têm casa no manifesto
 
@@ -75,23 +90,25 @@ três não está declarada, e um caso de controle em que as três estão e o arr
 
 ---
 
-## D-003 — A fila da contenda não tem relógio do venue no arranque
+## D-003 — A fila da contenda não tem hora de chegada no arranque
 
-**O que devia acontecer.** A fila ordena por instante do pedido no relógio do venue; o símbolo só
-desempata.
+**O que devia acontecer.** A fila ordena pela **hora de chegada à mesa** (o relógio é o da mesa: o venue
+nunca viu estas intenções, e o instante que o pedido traga de fora não é usado — quem escolhe o lugar na
+fila é quem recebe, não quem pede). O símbolo só desempata.
 
-**O que há.** No arranque de hoje as fichas vêm da **configuração** — chegam todas ao mesmo tempo e sem
-instante nenhum. O ramo FIFO está implementado e **medido** (`tools/verificar-maquina/contenda.ts`, 7
+**O que há.** No arranque de hoje as fichas vêm da **configuração**: ninguém as pediu, logo não têm hora
+de chegada nenhuma. O ramo FIFO está implementado e **medido** (`tools/verificar-maquina/contenda.ts`, 7
 casos, incluindo o par de controle com os instantes trocados), mas quem o alimenta ainda não existe: o
 arranque usa sempre o desempate por símbolo, e **diz que o usou** (`criterio:
 "fifo_desempatado_por_simbolo"`) em vez de se chamar FIFO.
 
-**A consequência.** Nenhuma ordem errada acontece — mas a fila não sabe quem pediu primeiro porque
-ninguém lhe disse. Não é um número inventado; é um pedido sem relógio.
+**A consequência.** Nenhuma ordem errada acontece — mas a fila não sabe quem pediu primeiro porque ninguém
+lhe disse. Não é um número inventado; é um pedido que não existiu.
 
-**Onde se conserta.** Quando o arranque for pedido por **pedidos** (com instante do venue) e não por um
-ficheiro de configuração — trabalho do recorte do conector, que é quem fala com o venue.
+**Onde se conserta.** Quando o arranque for disparado por **pedidos** (a web a ligar um instrumento, o dono
+a carregar num botão) em vez de por um ficheiro de configuração: nesse momento a mesa carimba a hora de
+chegada no seu próprio relógio e a fila passa a ter ordem. Não é trabalho do conector — é da superfície.
 
-**Como se saberá que está fechado.** Um caso em que dois pedidos com instantes distintos disparam o
-arranque e **o primeiro a chegar fica com o lugar** — com a metade de controle: os mesmos dois com os
-instantes trocados, e o lugar vai para o outro.
+**Como se saberá que está fechado.** Um caso em que dois pedidos com horas de chegada distintas disparam o
+arranque e **o primeiro a chegar fica com o lugar** — com a metade de controle: os mesmos dois com as horas
+trocadas, e o lugar vai para o outro.

@@ -2,9 +2,9 @@
 //
 // A porta da contenda vive no arranque, mas a ORDEM nao - ela e uma funcao pura, e e aqui que ela e
 // exercitada com instantes que o arranque ainda nao tem. Isto e dito em voz alta de proposito: no
-// arranque de hoje as fichas chegam todas ao mesmo tempo (vem da config, sem relogio do venue), logo o
-// criterio registado e sempre o desempate por simbolo. O ramo FIFO fica medido e pronto para quando os
-// pedidos trouxerem o relogio do venue - que e trabalho do recorte do conector.
+// arranque: as fichas vem da config, ninguem as pediu, e nao ha hora de chegada para carimbar. O criterio
+// registado e sempre o desempate por simbolo. O ramo FIFO fica medido e pronto para quando os pedidos
+// chegarem a mesa carimbados no relogio DELA - que e trabalho da superficie, nao do conector.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
