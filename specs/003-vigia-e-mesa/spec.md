@@ -211,7 +211,7 @@ acrescenta comportamento: só o guarda.
 - **FR-002**: O vigia DEVE obedecer a **cinco** verbos determinísticos: `start`, `stop`, `pause`, `reset`, `nova_sessao` — e a nenhum outro.
 - **FR-003**: Cada transição DEVE ser registrada com **autor, instante, verbo** e **estado anterior e posterior**, de modo que o vigia seja auditável por leitura do seu registro.
 - **FR-004**: O vigia **NÃO** DEVE validar mandato nem substituir o porteiro: se o arranque for recusado, a **recusa é o resultado** (RN-V5).
-- **FR-005**: O vigia **NÃO** DEVE arrancar os conectores nem os setups (RN-E21): quem os monta é a camada de operação, e a mesa recusa arrancar se um conector que a sua configuração nomeia não estiver de pé — dizendo qual.
+- **FR-005**: O vigia DEVE **arrancar os conectores** que a configuração da mesa nomeia — ele **é** a camada de operação (RN-E21) — e a mesa DEVE recusar arrancar se um deles não estiver de pé, **dizendo qual**. A hospedagem do **setup** (dentro do processo da mesa ou processo próprio) NÃO se decide neste recorte: é decisão da spec do setup.
 - **FR-006**: Uma mesa em operação **NUNCA** DEVE depender de o vigia estar vivo (RN-V6).
 - **FR-007**: O `start` numa mesa já em operação, e o `stop` numa mesa já parada, DEVEM ser recusados com o motivo da mesa, nunca em silêncio.
 - **FR-008**: A costura vigia↔mesa DEVE ter **um só escritor**: um segundo canal é recusado.
