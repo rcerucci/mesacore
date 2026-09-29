@@ -156,7 +156,7 @@ E o proprio. As saidas cruas estao acima, cada uma com o comando que a produziu.
 
 ## T030 — commit
 
-Um commit desta vaga com o assunto `specs/004: T029/T030 (US3)` — o hash esta no `RESULTADO.md` (§ commit).
+Um commit desta vaga, no caso de uso US3, com o assunto `specs/004: T023-T030 (US3) - a resolucao antes do envio e o desfecho com os numeros do venue` — o hash esta no `RESULTADO.md` (§ commit).
 
 ## O que este relatorio NAO prova, e di-lo
 

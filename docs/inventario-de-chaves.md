@@ -286,3 +286,39 @@ T067, e o recorte voltou a fechar (**67 de 67**):
 emenda deixa declarados (a conferência da resolução contra a banda, a casa das obrigações no manifesto,
 e a hora de chegada na fila) estão em
 `specs/002-maquina-de-estados/relatorios/DEFEITOS.md`, cada um com o número que prova que falta.
+
+## 9. As chaves que o recorte 004 (o conector) passou a ler — 29 set 2026
+
+O conector real (Hyperliquid) **não inventou chave nenhuma** e **não lê valor de credencial nenhum**: lê a
+**referência** e vai buscar o valor a um sítio declarado **fora do repositório**. Fica escrito **quem as lê**,
+porque uma chave que o código lê e que ninguém declarou é um valor ajustável que ninguém sabe onde ajustar
+(RN-A1) — a mesma regra do §7.
+
+| Chave | Quem a lê agora | Para que |
+|---|---|---|
+| `conta.credencial` | `brokers/hyperliquid/processo.ts` (`resolverFicha`, com `--ficha @config/contas/*.json`) e `brokers/hyperliquid/credencial.ts` | o **nome** da credencial. O valor nunca entra na ficha, na mensagem, no log nem no registo (FR-023, RN-E14); faltando ela, a recusa é **nomeada** |
+| `conexao.credencial.valor_em` | idem (`credencial.ts`) | **de onde o valor entra**: `ficheiro:<caminho>` (exige modo 600) ou `env:<VARIAVEL>` — nunca um valor escrito no repositório |
+| `conexao.ambiente` | `brokers/hyperliquid/processo.ts` (porta `ambiente_e_rede`) | `teste` ou `producao`. **Produção recusa**: a passagem a dinheiro real é decisão declarada do dono (RN-H17) |
+| `conexao.url_da_api` | idem (porta `ambiente_e_rede`) | o endereço do venue, conferido contra o ambiente declarado |
+| `conta.identificador` | idem (ficha → leituras da conta e sonda) | o endereço **master** da conta (a armadilha da documentação: com o endereço do agente o venue devolve vazio). Uma ligação, uma chave, uma conta |
+| `conta.corretora` | idem (ficha) | o nome do venue falado (`hyperliquid`) |
+| `conta.conectores[]` | idem (ficha: o primeiro nome) | o nome do conector do processo — o mesmo que a configuração declara |
+
+Nenhuma destas chaves é nova: todas já estavam declaradas neste inventário (§1). O que é novo é **quem as lê**
+e **em que momento** (o arranque do processo, antes de qualquer ordem).
+
+### 9.1 Lacunas que a leitura do conector revelou
+
+1. **`instrumentos` (raiz da config) ≠ `conta.instrumentos[]`.** O `resolverFicha` do conector lê
+   `c.instrumentos` — uma chave de **raiz** — e, quando ela falta, usa **`["BTC"]` escrito no código**; o §1
+   deste inventário declara `conta.instrumentos[]` como a chave do mandato. Consequências, medidas: (a) uma
+   configuração do dono **sem** `instrumentos` faz o conector conferir o mandato errado (BTC) sem o dizer; (b)
+   é um **valor por omissão dentro do código** (RN-A1). Não se corrigiu nesta vaga — fica declarado.
+2. **O prazo do silêncio (`--prazo-do-venue-ms`).** A spec diz que o prazo que separa `espera` de
+   `desconhecido` é **do dono, declarado na configuração**; hoje ele entra como **parâmetro da linha de
+   comando**, com omissão `3000` ms escrita em `brokers/hyperliquid/conector.ts`. **`[falta]`** no inventário:
+   a chave tem de existir antes de o valor poder ser do dono (RN-A3) — e o valor continua a ser dele.
+3. **A cadência da re-sondagem.** O §9 de `docs/regra-de-negocio-conector.md` ainda a chama **proposta**. O que
+   está medido é que a sonda lê o venue **a cada arranque** (FR-001) e que o manifesto segue a sonda **sem uma
+   linha de código mudar** (caso `manifesto/mudanca-no-venue-muda-o-manifesto`). Fica dito como lacuna, não
+   tapado com um número inventado.

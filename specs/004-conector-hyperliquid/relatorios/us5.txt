@@ -79,7 +79,7 @@ exige **assinar e enviar** duas boletas a serio. **Nao foi corrido, e nao se cor
 
 ## T043 — commit
 
-Um commit desta vaga com o assunto `specs/004: T041/T043 (US5)` — o hash esta no `RESULTADO.md` (§ commit).
+Um commit desta vaga, no caso de uso US5, com o assunto `specs/004: T041/T043 (US5) - a mesma referencia nao cria segunda ordem (medido no duble); T042 bloqueada` — o hash esta no `RESULTADO.md` (§ commit).
 
 ## O que este relatorio NAO prova, e di-lo
 

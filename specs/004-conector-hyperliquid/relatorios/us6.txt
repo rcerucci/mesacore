@@ -219,8 +219,8 @@ texto de mensagem). Escrever casos para um comportamento inexistente seria inven
 
 ## T049 — commit
 
-Um commit desta vaga com o assunto `specs/004: T047-T049/T059/T060 (US6)` — o hash esta em `RESULTADO.md`
-(§ commit).
+Um commit desta vaga, no caso de uso US6, com o assunto `specs/004: T059 (US6) - as bordas de leitura e o
+historico que nao existe` — o hash esta em `RESULTADO.md` (§ commit).
 
 ## O que este relatorio NAO prova, e di-lo
 

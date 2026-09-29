@@ -92,7 +92,7 @@ post-only, reduce-only, idempotencia).
 
 ## T058 — commit
 
-Um commit desta vaga com o assunto `specs/004: T055/T056/T058 (US7)` — o hash esta em `RESULTADO.md` (§ commit).
+Um commit desta vaga, no caso de uso US7, com o assunto `specs/004: T055/T056/T058 (US7) - o registo da bateria por versao e o que o venue nao publica` — o hash esta em `RESULTADO.md` (§ commit).
 
 ## O que este relatorio NAO prova, e di-lo
 
