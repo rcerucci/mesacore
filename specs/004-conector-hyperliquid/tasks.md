@@ -118,3 +118,10 @@ renumerar 65 tarefas — renumerar reescreveria o ficheiro e não muda nada do q
 - [ ] T068 [Fase 4] `preco_de_liquidacao` passa a admitir um **valor neutro** do conjunto fechado (o precedente é `relogio_de_fecho_de_barra`, com `desconhecido` no enum) — zero continua a significar «1x», nunca «não sei»
 - [ ] T069 [Fase 4] Os mesmos casos novos nos **dois** runners do contrato (a igualdade das duas linguagens é a prova de que a emenda é aditiva e não uma segunda verdade)
 - [ ] T070 [Fase 4] Correr `provar.sh` + a conferência dos casos e registar a contagem antes/depois em `relatorios/us3.txt` (o que já corria não se perde)
+
+- [ ] T071 Ler o saldo nas DUAS carteiras do venue (perpetuo e spot) — e nunca confundir uma com a outra
+      Porque (medido no venue, 29 set): a conta de teste respondeu `clearinghouseState.accountValue = 0.0`
+      enquanto tinha **998.464965 USDC no spot** (`spotClearinghouseState`). Quem so le o perpetuo conclui
+      «conta sem fundos» e recusa operar — com o dinheiro la dentro. A leitura tem de declarar a carteira de
+      cada valor, e o manifesto tem de declarar que este venue tem duas. Sem isto, a porta que julga a margem
+      fecha por engano, e um engano que fecha e tao mau como um que abre.
