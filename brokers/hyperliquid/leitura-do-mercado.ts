@@ -30,11 +30,12 @@ import {
   type PosicaoDaLeitura,
 } from "./leitura.ts";
 import type { PortaDeLeitura } from "./sonda.ts";
+import { readFileSync, existsSync } from "node:fs";
 
 /** A porta que esta leitura consome: a da conta e as leituras publicas do mercado. */
 export type PortaDaLeituraDeMercado = {
   conta: PortaDeConta;
-  leitura: Pick<PortaDeLeitura, "livro" | "velas" | "estadoDaExchange">;
+  leitura: Pick<PortaDeLeitura, "livro" | "velas" | "estadoDaExchange" | "execucoes">;
 };
 
 /** O cliente do venue, na forma ESTRUTURAL que esta porta consome (o SDK oficial encaixa aqui). */
@@ -44,6 +45,7 @@ export type ClienteDaLeituraDeMercado = {
   activeAssetData(p: { user: string; coin: string }): Promise<unknown>;
   extraAgents(p: { user: string }): Promise<unknown>;
   openOrders(p: { user: string }): Promise<unknown>;
+  userFills(p: { user: string }): Promise<unknown>;
   l2Book(p: { coin: string }): Promise<unknown>;
   candleSnapshot(p: { coin: string; interval: string; startTime: number }): Promise<unknown>;
   exchangeStatus(): Promise<unknown>;
@@ -64,6 +66,8 @@ export function portaDoCliente(cliente: ClienteDaLeituraDeMercado): PortaDaLeitu
       livro: (coin) => cliente.l2Book({ coin }),
       velas: (coin, inicioMs) => cliente.candleSnapshot({ coin, interval: "1h", startTime: inicioMs }),
       estadoDaExchange: () => cliente.exchangeStatus(),
+      // AS EXECUCOES da conta: e' por elas que uma posicao se atribui a uma marca nossa (RN-T16.1).
+      execucoes: (conta) => cliente.userFills({ user: conta }),
     },
   };
 }
@@ -163,6 +167,44 @@ function ultimoDaVela(velas: unknown): { ultimo?: string; quantas: number } {
  *
  * Uma resposta que nao seja lista RECUSA. Uma lista VAZIA nao: ela diz "perguntei, e nao ha' nenhuma".
  */
+/**
+ * O MAPA DE MARCAS (RN-T16.1): `cloid` -> marca, lido do ficheiro que o operador mantem quando envia uma ordem.
+ * O caminho vem do ambiente (`MARCAS_DA_CONTA`), porque quem o escreve e' o operador e quem o le' e' esta porta.
+ * Sem caminho declarado nao ha mapa — e sem mapa uma posicao vai sem dono, que e' diferente de a declarar nossa.
+ */
+function mapaDeMarcas(): { cloid: string; marca: number }[] {
+  const caminho = process.env.MARCAS_DA_CONTA;
+  if (caminho === undefined || caminho === "") return [];
+  if (!existsSync(caminho)) return [];
+  const linhas = readFileSync(caminho, "utf8").split("\n").filter((l) => l.trim() !== "");
+  const mapa: { cloid: string; marca: number }[] = [];
+  for (const l of linhas) {
+    let o: any;
+    try {
+      o = JSON.parse(l);
+    } catch {
+      throw new Error(`o mapa de marcas (${caminho}) tem uma linha ilegivel: a posse nao se decide com um mapa furado`);
+    }
+    if (typeof o?.cloid === "string" && typeof o?.marca === "number") mapa.push({ cloid: o.cloid, marca: o.marca });
+  }
+  return mapa;
+}
+
+/** O `cloid` do preenchimento MAIS RECENTE deste instrumento, ou `undefined` se o venue nao mostrou nenhum. */
+function preenchimentoMaisRecente(execucoes: unknown, instrumento: string): string | undefined {
+  if (!Array.isArray(execucoes)) return undefined;
+  let melhor: { t: number; cloid: string } | undefined;
+  for (const e of execucoes) {
+    const o = objecto(e);
+    if (o === undefined || String(o.coin) !== instrumento) continue;
+    if (typeof o.cloid !== "string" || o.cloid === "") continue;
+    const t = Number(o.time);
+    if (!Number.isFinite(t)) continue;
+    if (melhor === undefined || t > melhor.t) melhor = { t, cloid: o.cloid };
+  }
+  return melhor?.cloid;
+}
+
 function lerOrdensVivas(
   bruto: unknown,
   instrumento: string,
@@ -205,6 +247,7 @@ export function montarMercado(
     estado: unknown;
     velas: unknown;
     ordens: unknown;
+    execucoes: unknown;
   },
   pedido: PedidoDaLeituraDeMercado,
   /** As leituras que nem chegaram a ser tentadas (a porta falhou): entram como falha, nao como ausencia. */
@@ -300,6 +343,20 @@ const lidas = lerOrdensVivas(bruto.ordens, pedido.instrumento);
   if (bid === undefined) ausentes.push("mercado.bid (o lado das compras do livro veio vazio)");
   if (ask === undefined) ausentes.push("mercado.ask (o lado das vendas do livro veio vazio)");
 
+  // A MARCA DE POSSE DA POSICAO (RN-T16.1, D-008): a posicao vem do venue SEM marca — a marca viaja no `cloid`
+  // das ordens. Aqui cruza-se o que o venue publica (as execucoes da conta) com o MAPA das marcas que nos
+  // enviamos: se o preenchimento mais recente deste instrumento trouxer um `cloid` que esta' no mapa, a posicao
+  // e' NOSSA e leva a marca que a mesa compoe (o inteiro — o mapa converte-a numa so' direccao).
+  //
+  // Sem mapa, ou sem cloid conhecido, a posicao vai SEM marca — e uma posicao sem marca e' tratada pela mesa
+  // como ALHEIA (relata e nao gere). Nao se inventa dono: e' a mesma disciplina da RN-D4.
+  if (posicao !== undefined) {
+    const mapa = mapaDeMarcas();
+    const cloidDoVenue = preenchimentoMaisRecente(bruto.execucoes, pedido.instrumento);
+    const nossa = cloidDoVenue !== undefined ? mapa.find((m) => m.cloid.toLowerCase() === cloidDoVenue.toLowerCase()) : undefined;
+    if (nossa !== undefined && typeof nossa.marca === "number") carga.posicao_marca_de_posse = nossa.marca;
+  }
+
   // AS ORDENS VIVAS DA CONTA, neste instrumento (contrato 1.9.0): OBRIGATORIAS e SEMPRE — a conta pode estar
   // plana e ter ordens vivas (ou nenhuma), e a lista vazia diz "perguntei e nao ha' nenhuma". Estavam dentro do
   // `if (posicao !== undefined)` e a conta de teste, por estar PLANA, fazia sair um mercado sem elas: medido na
@@ -384,7 +441,7 @@ export async function lerMercadoNoVenue(
     }
   };
 
-  const [conta, livro, estado, velas, ordens] = await Promise.all([
+  const [conta, livro, estado, velas, ordens, execucoes] = await Promise.all([
     tentar("conta", () => lerDoVenueDaConta(porta.conta, { conta: pedido.conta, instrumento: pedido.instrumento })),
     tentar("livro", () => porta.leitura.livro(pedido.instrumento)),
     tentar("estado", () => porta.leitura.estadoDaExchange()),
@@ -392,6 +449,8 @@ export async function lerMercadoNoVenue(
     // As ORDENS VIVAS sao OBRIGATORIAS (1.9.0): quem nao conseguiu perguntar nao produz leitura — uma lista
     // vazia inventada faria a mesa achar a conta limpa quando ela nao esta'.
     tentar("ordens", () => porta.conta.ordensDaConta(pedido.conta)),
+    // AS EXECUCOES da conta: sem elas a posicao nao tem como ser atribuida a uma marca nossa.
+    tentar("execucoes", () => porta.leitura.execucoes(pedido.conta)),
   ]);
 
   const falhas: { leitura: string; motivo: string; porque: string }[] = [];
@@ -399,6 +458,7 @@ export async function lerMercadoNoVenue(
   if (!livro.ok) falhas.push(livro.falha);
   if (!estado.ok) falhas.push(estado.falha);
   if (!ordens.ok) falhas.push(ordens.falha);
+  if (!execucoes.ok) falhas.push(execucoes.falha);
   // As VELAS nao entram nas obrigatorias: elas dao o `ultimo`, que e' um campo aditivo. O que o venue nao
   // publicou fica ausente e DITO — nao se recusa o mercado inteiro por causa de um campo que o contrato
   // declara opcional. As outras tres sao a conta, o livro e o estado, e sem qualquer uma delas nao ha leitura.
@@ -411,13 +471,14 @@ export async function lerMercadoNoVenue(
         estado: (estado as { valor: unknown }).valor,
         velas: velas.ok ? velas.valor : [],
         ordens: (ordens as { valor: unknown }).valor,
+        execucoes: (execucoes as { valor: unknown }).valor,
       },
       pedido,
     );
   }
   // As ordens tambem vao por preencher, e de proposito: com `falhas` obrigatorias, `montarMercado` RECUSA antes
   // de olhar para qualquer um destes valores — nao ha' caminho em que um vazio chegue a mesa como leitura.
-  return montarMercado({ conta: {}, livro: undefined, estado: undefined, velas: [], ordens: undefined }, pedido, falhasDasObrigatorias);
+  return montarMercado({ conta: {}, livro: undefined, estado: undefined, velas: [], ordens: undefined, execucoes: undefined }, pedido, falhasDasObrigatorias);
 }
 
 // ---------------------------------------------------------------------------------------------------------

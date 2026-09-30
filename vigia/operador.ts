@@ -33,9 +33,10 @@
 // operador só serve setups diferentes em pares diferentes da mesma conta.
 
 import { spawn } from "node:child_process";
-import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, appendFileSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { validar } from "../contracts/esqueleto/framing.ts";
+import { validar, versaoVigente } from "../contracts/esqueleto/framing.ts";
+import { derivarCloid } from "../brokers/hyperliquid/cloid.ts";
 
 const RAIZ = join(import.meta.dir, "..");
 const argv = process.argv.slice(2);
@@ -91,13 +92,38 @@ interface Ficha {
  * silêncio, e é exactamente o género de mentira que não se vê no registo.
  */
 /**
- * As marcas de posse que esta conta conhece — o mapa marca -> ficha (RN-T16.1).
+ * O MAPA DE MARCAS — cloid -> marca -> ficha (RN-T16.1, D-008). FICHEIRO, append-only, ao lado da operacao.
  *
- * NAO EXISTE AINDA (D-008), e por isso devolve a lista vazia: e' a verdade, e nao uma omissao. O dia em que o
- * mapa existir, e' aqui que ele se le', e mais nada muda.
+ * Cada linha e' uma ordem NOSSA que o venue aceitou: o `cloid` que seguiu, a marca que a mesa compunha, a
+ * referencia e o instrumento. E' daqui que sai `marcas_nossas_conhecidas` — a resposta a' pergunta "esta posicao
+ * e' nossa?" — e e' isto que faz a mesa reconhecer e GERIR a posicao que ela propria abriu.
+ *
+ * Append-only de proposito: e' um registo de auditoria, e um registo que se reescreve deixa de o ser. Uma linha
+ * ilegivel RECUSA a leitura do mapa (nao se salta por cima dela: um mapa com buracos diz "esta posicao nao e'
+ * nossa" com a mesma cara com que diz a verdade).
  */
-function marcasConhecidasDaConta(): number[] {
-  return [];
+function caminhoDasMarcas(): string {
+  return join(dirname(para), `marcas-${nomeDaConta}.jsonl`);
+}
+function lerMarcas(): { cloid: string; marca: number; referencia: string; instrumento: string; quando: string }[] {
+  const caminho = caminhoDasMarcas();
+  if (!existsSync(caminho)) return [];
+  const linhas = readFileSync(caminho, "utf8").split("\n").filter((l) => l.trim() !== "");
+  return linhas.map((l) => {
+    try {
+      return JSON.parse(l) as { cloid: string; marca: number; referencia: string; instrumento: string; quando: string };
+    } catch {
+      morrer(`o mapa de marcas (${caminho}) tem uma linha ilegivel: um mapa com buracos decide a posse por engano`);
+    }
+  });
+}
+/** As marcas que esta conta conhece PARA ESTE INSTRUMENTO: e' o que a operacao leva a mesa. */
+function marcasConhecidasDaConta(instrumento: string): number[] {
+  return [...new Set(lerMarcas().filter((m) => m.instrumento === instrumento).map((m) => m.marca))];
+}
+function apontarMarca(m: { cloid: string; marca: number; referencia: string; instrumento: string }): void {
+  const linha = JSON.stringify({ ...m, quando: new Date().toISOString() }) + "\n";
+  appendFileSync(caminhoDasMarcas(), linha);
 }
 
 function lerFichasDaConta(nome: string): Ficha[] {
@@ -113,7 +139,7 @@ function lerFichasDaConta(nome: string): Ficha[] {
       if (f?.cabecalho === undefined || f?.constantes === undefined) {
         morrer(`${pasta}/${ficheiro} nao tem cabecalho e constantes: um ficheiro por par, com o cabecalho padrao primeiro`);
       }
-      for (const campo of ["conta", "instrumento", "relogio", "run", "setup"] as const) {
+      for (const campo of ["conta", "instrumento", "relogio", "run", "setup", "enviar"] as const) {
         if (f.cabecalho[campo] === undefined) morrer(`${pasta}/${ficheiro} nao declara \`${campo}\` no cabecalho`);
       }
       if (f.cabecalho.conta !== nome) continue;   // ficha de outra conta: nao e' desta corrida
@@ -312,6 +338,61 @@ async function main(): Promise<void> {
     "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(tickMs)],
     { cwd: RAIZ, env: process.env });
 
+  // ---- O CARTEIRO: a mao que aperta o gatilho --------------------------------------------------------
+  //
+  // A mesa decide e escreve a BOLETA na linha do ciclo do registo (que e' append-only). Quem a leva ao conector
+  // e' este processo, que ja' tem o `stdin` dele. E so' a leva se a FICHA daquele par o autorizar: o cabecalho
+  // traz `enviar: true|false`, e nada sai por omissao — sem essa autorizacao a boleta fica no registo e
+  // REGISTA-SE por que' nao saiu. Nao ha caminho em que uma ordem saia sem o dono a ter escrito numa ficha.
+  const envios = new Map<string, { marca: number; referencia: string; instrumento: string; recusado: boolean }>();
+  let posicaoNoRegisto = 0;
+  const caminhoDoRegisto = join(dirname(para), "registo.jsonl");
+  const caminhoDosDesfechos = join(dirname(para), `desfechos-${nomeDaConta}.jsonl`);
+
+  function levarBoletas(): void {
+    if (!existsSync(caminhoDoRegisto)) return;
+    const texto = readFileSync(caminhoDoRegisto, "utf8");
+    if (texto.length <= posicaoNoRegisto) return;
+    const novas = texto.slice(posicaoNoRegisto).split("\n").filter((l) => l.trim() !== "");
+    posicaoNoRegisto = texto.length;
+    for (const l of novas) {
+      let o: any;
+      try {
+        o = JSON.parse(l);
+      } catch {
+        continue; // linha a meio de escrita: le'-se na volta seguinte
+      }
+      if (o?.tipo !== "ciclo" || o?.boleta === null || o?.boleta === undefined) continue;
+      const instrumento = String(o.instrumento);
+      const boleta = o.boleta as Record<string, unknown>;
+      // A REFERENCIA E' OBRIGATORIA: sem ela nao ha cloid a derivar, nem ordem a reconciliar depois. Uma boleta
+      // que nao a traga e' um defeito NOSSO (a mesa compoe-a sempre) e diz-se, em vez de se inventar uma chave.
+      const referenciaBruta = boleta.referencia_do_cliente;
+      if (referenciaBruta === undefined || referenciaBruta === null || String(referenciaBruta) === "") {
+        dizer({ etapa: "carteiro", instrumento, enviei: false,
+                porque: "a boleta do registo veio sem `referencia_do_cliente`: sem referencia nao ha ordem a levar" });
+        continue;
+      }
+      const referencia = String(referenciaBruta);
+      if (referencia === "" || envios.has(referencia)) continue; // sem referencia nao ha ordem; e nao se repete
+      const ficha = ligadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
+      const autorizado = ficha !== undefined && ficha.cabecalho.enviar === true;
+      const marca = Number(boleta.marca_de_posse);
+      envios.set(referencia, { marca, referencia, instrumento, recusado: !autorizado });
+      if (!autorizado) {
+        dizer({ etapa: "carteiro", instrumento, referencia, enviei: false,
+                porque: ficha === undefined
+                  ? `o par ${instrumento} nao esta' ligado: a boleta fica no registo`
+                  : `a ficha de ${instrumento} diz \`enviar: ${JSON.stringify(ficha.cabecalho.enviar)}\`: a boleta fica no registo` });
+        continue;
+      }
+      const linha = JSON.stringify({ contrato: versaoVigente(), tipo: "boleta", id: referencia, carga: boleta });
+      conector.stdin.write(linha + "\n");
+      dizer({ etapa: "carteiro", instrumento, referencia, enviei: true, marca });
+    }
+  }
+  const carteiro = setInterval(levarBoletas, 5000);
+
   const dec = new TextDecoder();
   let buffer = "";
   let voltas = 0;
@@ -373,6 +454,20 @@ async function main(): Promise<void> {
       if (msg?.tipo !== "mercado") {
         // O conector tambem fala pelo STDOUT (as `etapa` do diagnostico), e isso nao e' leitura. Imprime-se:
         // foi por nao o fazer que uma leitura de outro nome passou despercebida esta noite. (D-019, segunda metade.)
+        // O DESFECHO DA ORDEM QUE SAIU: registado num ficheiro proprio do operador (o registo da mesa tem um
+        // vocabulario fechado e um desfecho NAO e' uma linha da mesa — quem enviou foi o carteiro).
+        const o = (() => {
+          try { return JSON.parse(linha); } catch { return null; }
+        })();
+        const id = o?.id === undefined ? "" : String(o.id);
+        if (envios.has(id) && (o?.tipo === "desfecho" || o?.tipo === "resolucao")) {
+          const envio = envios.get(id)!;
+          const derivado = derivarCloid(String(nomeDaConta), envio.instrumento, envio.referencia);
+          appendFileSync(caminhoDosDesfechos, JSON.stringify({ quando: new Date().toISOString(), ...envio, desfecho: o.carga }) + "\n");
+          if (derivado.ok && o?.tipo === "desfecho" && (o.carga?.classificacao === "aceita" || o.carga?.classificacao === "preenchida")) {
+            apontarMarca({ cloid: derivado.cloid, marca: envio.marca, referencia: envio.referencia, instrumento: envio.instrumento });
+          }
+        }
         console.error(`[conector] ${linha.slice(0, 300)}`);
         continue;
       }
@@ -383,7 +478,7 @@ async function main(): Promise<void> {
       const agoraLigadas = lerFichasDaConta(nomeDaConta).filter(
         (f) => f.cabecalho.run === true && (soOPar === null || f.cabecalho.instrumento === soOPar),
       );
-      const ficha = agoraLigadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
+      const ficha = ligadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
       if (ficha === undefined) {
         // Par que o conector leu e a conta nao tem ligado: nao serve. E se isto se repetir, os pares ligados
         // que ninguem le' ficam a espera de nada — o prazo corta isso.
@@ -470,7 +565,7 @@ async function main(): Promise<void> {
           // uma posicao que apareca na conta le-se como ALHEIA — e' a verdade do sistema enquanto o mapa nao
           // existir, e e' por isso que ela nao se gere sozinha. Declarado, nao omitido: a mesa RECUSA a operacao
           // que nao traga este campo, exactamente para nao voltar a haver um `?? []` a decidir isto por baixo.
-          marcas_nossas_conhecidas: marcasConhecidasDaConta(),
+          marcas_nossas_conhecidas: marcasConhecidasDaConta(nome),
           // O RELOGIO DA FICHA: e' ele que define a barra, e sem barra a mesa nao tem como travar uma segunda
           // entrada na mesma (D-021). O relogio da config manda na ordem.
           relogio: String(f.cabecalho.relogio),

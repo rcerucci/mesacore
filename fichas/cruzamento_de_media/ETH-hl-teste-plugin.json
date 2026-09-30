@@ -30,7 +30,8 @@
     "maximo": "10"
    }
   },
-  "prazo_de_resposta_ms": 5000
+  "prazo_de_resposta_ms": 5000,
+  "enviar": false
  },
  "constantes": {
   "parametros_rapida": 5,

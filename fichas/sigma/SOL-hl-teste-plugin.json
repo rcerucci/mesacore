@@ -31,7 +31,8 @@
    }
   },
   "prazo_de_resposta_ms": 5000,
-  "nome_do_par": "SOL-USDC"
+  "nome_do_par": "SOL-USDC",
+  "enviar": false
  },
  "constantes": {
   "ma_len": 24,
