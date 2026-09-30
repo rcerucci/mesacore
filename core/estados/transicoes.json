@@ -17,9 +17,11 @@
     "sempre": "Verdadeira. Tem de existir como ULTIMA linha de cada par (de, verbo) - e o que garante que nenhum par cai num vazio nao declarado.",
     "com_inibicao": "A marca inibicao_cb esta presente.",
     "sem_inibicao": "A marca inibicao_cb NAO esta presente.",
-    "portas_do_arranque_falham": "Pelo menos uma das sete portas do arranque recusa (conectores, manifesto, mandato, contenda, inventario, versao, sessao).",
+    "portas_do_arranque_falham": "Pelo menos uma das sete portas do arranque recusa (conectores, manifesto, mandato, contenda, inventario, versao, sessao) — SABE-SE que falharam (`passam === false`).",
+    "portas_do_arranque_nao_conferidas": "D-006: o contexto NAO diz se as portas do arranque passaram (`passam === undefined`). Nao e o mesmo que saber que falharam, e nao pode valer como «passaram»: recusa na linha propria, e a porta do motivo sai nomeada «(nao conferidas)».",
     "com_liquidacao_em_curso": "A liquidacao a mercado do encerramento ja comecou.",
-    "sem_posicao_viva": "Nenhum instrumento esta em abrindo, aberta ou fechando, e nenhuma marca desconhecido bloqueia.",
+    "sem_posicao_viva": "SABE-SE que nenhum instrumento esta em abrindo, aberta ou fechando (`posicao_viva === false`), e nenhuma marca desconhecido bloqueia.",
+    "posicao_viva_desconhecida": "D-006: o contexto NAO diz se ha posicao viva (`posicao_viva === undefined`). Nao pode valer como «nao ha»: e a linha que recusa, no lugar de parar uma mesa que tem posicao aberta sem perguntar.",
     "prazo_de_resposta_nao_declarado": "A posicao esta viva e a ficha do dono NAO declara `setup.prazo_de_resposta_ms` (ou as fichas discordam entre si). Polaridade: ao contrario das guardas de PERMISSAO, esta RECUSA enquanto o contexto nao disser que o prazo existe (`!== false`) - um contexto vazio nao pode deixar passar um resumo que promete um tempo que ninguem declarou.",
     "numeros_da_corretora_ausentes": "A posicao esta viva e o relato da corretora nao traz os cinco numeros que o resumo exige. Mesma polaridade: recusa enquanto o contexto nao disser que os numeros vieram.",
     "com_posicao_viva": "Algum instrumento esta em abrindo, aberta ou fechando.",
@@ -40,6 +42,13 @@
       "guarda": "portas_do_arranque_falham",
       "recusa": "porta_do_arranque_falhou",
       "nota": "FR-031, FR-032 - o motivo especifico da porta vai no campo proprio da resposta."
+    },
+    {
+      "de": "parada",
+      "verbo": "start",
+      "guarda": "portas_do_arranque_nao_conferidas",
+      "recusa": "porta_do_arranque_falhou",
+      "nota": "D-006 - o contexto NAO trouxe o resultado das portas do arranque. Nao saber que passaram nao e passar: a mesa recusa e nomeia a porta «(nao conferidas)», em vez de arrancar sem ter conferido nada."
     },
     {
       "de": "parada",
@@ -128,6 +137,13 @@
     {
       "de": "em_operacao",
       "verbo": "stop",
+      "guarda": "posicao_viva_desconhecida",
+      "recusa": "posicao_desconhecida",
+      "nota": "D-006 - a mesa NAO sabe se ha posicao viva. Nao para (seria parar sem perguntar, por cima de uma posicao possivelmente aberta) nem entra em `encerrando` (seria montar um resumo com o que nao se leu): RECUSA, e o motivo di-lo."
+    },
+    {
+      "de": "em_operacao",
+      "verbo": "stop",
       "guarda": "numeros_da_corretora_ausentes",
       "recusa": "numeros_da_corretora_ausentes",
       "nota": "T033/RN-V8 - o resumo mostra os numeros DA CORRETORA e nao os estima; sem eles a mesa nao pergunta, RECUSA, e a posicao fica governada. Vem antes do prazo: sem factos nao ha resumo para prazo nenhum."
@@ -152,6 +168,13 @@
       "guarda": "sem_posicao_viva",
       "para": "parada",
       "nota": "FR-012."
+    },
+    {
+      "de": "pausada",
+      "verbo": "stop",
+      "guarda": "posicao_viva_desconhecida",
+      "recusa": "posicao_desconhecida",
+      "nota": "D-006 - idem ao `em_operacao`: a pausa suspende ABRIR e mais nada (RN-V2.1), e por isso parar a partir dela precisa da mesma certeza sobre a posicao."
     },
     {
       "de": "pausada",

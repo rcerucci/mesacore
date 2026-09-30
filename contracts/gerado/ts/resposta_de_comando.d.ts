@@ -17,7 +17,7 @@ export type RespostaDaMesaAoComando = {
   pedido_id: string;
   aceito: boolean;
   /**
-   * Motivo de RECUSA da mesa em resposta a um comando - espelho de vocabulario.json (a fonte e la). Sao 20 dos 47 motivos da mesa: os que o interpretador de comando produz. Os outros 27 sao os 5 efeitos (que tambem cruzam) e os 22 que nascem dentro de um ciclo e ficam onde nascem (research R7).
+   * Motivo de RECUSA da mesa em resposta a um comando - espelho de vocabulario.json (a fonte e la). Sao 22 dos 50 motivos da mesa: os que o interpretador de comando produz. Os outros: os 6 efeitos (que tambem cruzam - um deles, `liquidacao_em_curso`, e recusa E efeito) e os 24 que nascem dentro de um ciclo e ficam onde nascem (research R7). Cruzam a fronteira 26 dos 50.
    */
   motivo?:
     | "mesa_ja_em_operacao"

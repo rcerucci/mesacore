@@ -23,6 +23,8 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 |---|---|---|
 | A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **27 de 27 passaram** (numa cópia com a árvore gravada — ver §4) |
 | A **conferência da banda** (D-001, fechado hoje) | `bun run core/ciclo/provar.ts` | **90 verificações · 0 divergentes** — 12 de condição · 27 de ciclo · 10 de desfecho · **15 de banda** · 6 de reconciliação |
+| A **tabela de transições** (D-006, fechado hoje) | `bun run core/estados/provar.ts` + `bun run tools/verificar-maquina/tabela.ts` | **38 casos · 13 aceites · 25 recusados · 0 divergentes** (eram 35) + **36 linhas · 0 falhas nos 7 invariantes** |
+| A **fronteira** vigia ↔ mesa (motivos) | `uv run python tools/verificar-contrato/py/fronteira.py --motivos` | **0 falhas** — livro **50** motivos · **26** cruzam · 24 ficam · **1** excepção da porta |
 | O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **40** · leitura 14 · histórico **26** |
 | **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** |
 | A conformidade do conector | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 241 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
@@ -32,9 +34,14 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 
 ## 3. O que NÃO existe (e não é «espera» — é falta)
 
+- **Uma regra que não corre: D-007** (declarado hoje, ao fechar o D-006). A recusa `liquidacao_em_curso`
+  (FR-013) está escrita na tabela e **funciona quando o contexto a declara** — mas **ninguém a declara**:
+  medido por grep, **0 atribuições** desse campo em todo o repositório. Numa corrida a sério, `encerrando +
+  start` cai sempre na linha `sempre` e volta a `em_operacao`. A decisão (trazer o estado da liquidação ao
+  contexto, ou assumir que `start` durante `encerrando` é sempre «não feche») é do desenho.
 - **A medição do envio contra o venue.** O envio **existe** desde hoje — o conector assina e submete (T072), com
   a régua conferida e a porta `identidade` a travar quem não é agente desta conta (T073) — e está provado em
-  bancada: **36 casos · 0 divergentes**. O que **não** existe é uma ordem a sério: nenhuma foi enviada, e a
+  bancada: **38 casos · 0 divergentes** (eram 36 antes da emenda 1.7.0). O que **não** existe é uma ordem a sério: nenhuma foi enviada, e a
   conta continua sem posição (ver §6). Enviar é **decisão sua**, um de cada vez.
 - **A superfície web** — só o `README.md` com as regras.
 - **O registador automático da bateria** — o `conformidade.sh` que o `plan.md` §D3 e o `quickstart.md` nomeiam
@@ -54,15 +61,21 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
    declara `ligacao_por_protocolo`, `releitura_de_preco_ao_enviar` e `devolve_a_resolucao`, cada uma **medida**
    pela sonda no arranque, e a mesa **não arranca** sem elas — ausente recusa o contrato, presente e `false`
    recusa a porta `manifesto` da mesa **nomeando qual**. **FECHADO** (`relatorios/emenda-1.7.0.txt`).
-4. A banda da moeda passou a ser a medida (contrato 1.6.0, `^[A-Za-z0-9]{1,11}$`) — e o número `1400 trazem
+4. **A tabela deixou de tratar «não sei» como «não há»** (defeito **D-006**): as guardas da posição viva e das
+   portas do arranque passaram a distinguir os **três** casos, cada desconhecido tem guarda e linha próprias, e
+   a mesa **recusa** (`posicao_desconhecida`, `porta_do_arranque_falhou` nomeando `(nao conferidas)`) em vez de
+   parar sem perguntar ou arrancar sem conferir. **FECHADO** — e um chamador que **dependia** do defeito foi
+   apanhado pela bancada (o dia do `registo.ts`).‌
+5. A banda da moeda passou a ser a medida (contrato 1.6.0, `^[A-Za-z0-9]{1,11}$`) — e o número `1400 trazem
    dígito`, que estava no esquema, na porta e no `versao.json`, foi **corrigido para 72** (contava também nomes
    de *pares* de spot, que não são moedas).
-5. O *stash* que estava parado foi **aplicado** e não há nada em stash: o trabalho vinha com **3 casos
+6. O *stash* que estava parado foi **aplicado** e não há nada em stash: o trabalho vinha com **3 casos
    divergentes**, e um deles era sério (o do ponto 2).
 
-Os dois primeiros itens estão no commit `af70d46`; o terceiro é o desta vaga. `provar.sh` dá **27 de 27** com
-a árvore **gravada** — no repositório, a única porta que fica vermelha antes de gravar é a **prova negativa da
-frescura**, e por uma razão mecânica e dita: ela exige `contracts/gerado` **limpo em git** antes de correr.
+Os dois primeiros itens estão no commit `af70d46`; o terceiro no `905fc03`; o quarto é o desta vaga.
+`provar.sh` dá **27 de 27** com a árvore **gravada** — no repositório, a única porta que fica vermelha antes de
+gravar é a **prova negativa da frescura**, e por uma razão mecânica e dita: ela exige `contracts/gerado`
+**limpo em git** antes de correr.
 
 As três tarefas abertas do recorte 004 pedem todas **enviar** ao venue: **T042** (SC-003, a contagem de
 idempotência lá), **T048** (SC-007, os cinco números com posição viva), **T057** (SC-004, as 8 provas no

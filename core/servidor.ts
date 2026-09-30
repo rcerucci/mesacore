@@ -21,13 +21,19 @@
 //   1. AS SEIS PORTAS DO ARRANQUE. Elas precisam da configuracao, do manifesto, do registo de operacao e
 //      do conferidor de inventario - quarto coisas que nao nascem dentro desta porta. Enquanto o vigia
 //      nao as trouxer na lingua das portas (T021), entram por `--portas <ficheiro.json>`. SEM esse
-//      ficheiro o `start` RECUSA, nomeando a porta "(nao conferidas)": a tabela trata "nao sei" como "as
-//      portas passaram" (`portas_do_arranque_falham` exige `passam === false`), e por isso o desconhecido
-//      NAO pode chegar la como vazio.
+//      ficheiro o `start` RECUSA, nomeando a porta "(nao conferidas)".
+//      ATE 29/09/2026 esta recusa era o PALIATIVO de um buraco da tabela (a guarda `portas_do_arranque_falham`
+//      exigia `passam === false`, e o vazio valia como "as portas passaram"). Fechado o D-006, a TABELA tem
+//      guarda propria para o desconhecido (`portas_do_arranque_nao_conferidas`) e recusa-o ela mesma; a
+//      porta continua a recusar mais cedo - e' ela que tem o ficheiro - e ja nao e' a unica que segura isto.
 //   2. A POSICAO VIVA. Ela le-se da corretora, e as marcas nao tem posicao de propositio (RN-T16.1). Por
 //      `--posicao-viva true|false`: e o unico jeito de a mesa saber. Sem ela, ou com `true`, o `stop`
 //      RECUSA com `posicao_desconhecida` - porque o caminho `encerrando` (o resumo e a pergunta) e o US3,
 //      e entrar em `encerrando` sem perguntar seria pior do que nao parar.
+//      A SONDA DA TABELA (logo abaixo, na decisao) e a mesma coisa pela outra ponta: pergunta-se a tabela
+//      com os DOIS valores e recusa-se so quando a resposta MUDA. Desde 29/09/2026 (D-006) a tabela tem
+//      linha propria para o desconhecido (`posicao_viva_desconhecida`), e e por isso que a sonda passou a
+//      ser redundante - fica porque nao mente, e porque a porta nao delega uma decisao que sabe fazer.
 //
 // O RELOGIO. A mesa NAO vive da costura: uma mesa em operacao continua a operar com o vigia morto
 // (FR-006/RN-V6), e por isso tem um relogio proprio (`--tick`), armado no arranque e NAO desligado pelo fim
@@ -104,7 +110,8 @@ function lerArgumentos(argv: string[]): Opcoes {
 }
 
 /** O desfecho das sete portas, como quem as correu o escreveu. Nao se le: RECUSA - e a unica leitura
- *  honesta, porque a tabela trata "nao sei" como "as portas passaram". */
+ *  honesta (desde 29/09/2026 a TABELA recusa o desconhecido por guarda propria; a porta recusa mais cedo
+ *  porque e' ela que tem o ficheiro, e nao porque o vazio valha como "passaram"). */
 function lerPortas(caminho: string | undefined): { passam: boolean; porta?: string; motivo?: string } | null {
   if (caminho === undefined) return null;
   try {

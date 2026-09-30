@@ -74,9 +74,20 @@ uma só.
 2. **Duas verdades entram por argumento, não por campo na mensagem**: `--portas` e `--posicao-viva`. O
    `comando` não tem contexto e não pode ter (campo a mais recusa) — foi essa a razão de o desconhecido
    ganhar nome próprio (`posicao_desconhecida`, que **vem da porta**, não do livro).
+   > **Nota de 29/09/2026:** deixou de vir **só** da porta. Fechado o **D-006**, o desconhecido da posição
+   > passou a ter linha própria na **tabela** (`posicao_viva_desconhecida`, que recusa por si), e por isso
+   > `posicao_desconhecida` passou a ser motivo do **livro** (`core/estados/motivos.json`) — quem o produz é
+   > a tabela, e o que a tabela produz é motivo do livro. A porta continua a recusar mais cedo; já não é a
+   > única que segura isto.
 3. **D-006**: as guardas `sem_posicao_viva` e `portas_do_arranque_falham` tratam «não sei» como «não há» — a
    mesa arrancaria sem conferir e pararia sem perguntar. A porta fecha-o por fora (recusando); a correcção
    dentro da tabela é do US3.
+   > **Nota de 29/09/2026 — FECHADO na TABELA, e não no US3** (o `specs/002/relatorios/DEFEITOS.md` tem o
+   > fecho com os números e as provas negativas): as duas guardas distinguem agora os três casos, cada
+   > desconhecido tem guarda própria (`portas_do_arranque_nao_conferidas`, `posicao_viva_desconhecida`) e as
+   > três linhas de recusa estão na tabela — `parada + start`, `em_operacao + stop` e `pausada + stop`. E a
+   > bancada mostrou que o defeito não era teórico: o dia de `tools/verificar-maquina/registo.ts` parava a
+   > mesa com o contexto calado, e passou a ser preciso declarar `posicao_viva: false`.
 
 - [x] T014 `core/servidor.ts` — a porta: lê **uma linha** JSON, entrega ao intérprete da mesa, escreve **uma** linha. Não decide, não tem log próprio, não lê configuração que a mesa já lê
 - [x] T015 `core/estados/comando.ts` — a validação re-alojada na **mensagem do contrato** (não numa forma própria ao lado): os mesmos três motivos, agora com versão conferida
@@ -272,6 +283,9 @@ O que a implementação teve de decidir e não estava aqui:
 - **O âmbito da conferência passou a estar em dado.** As duas exceções da porta (`versao_do_contrato_divergente`,
   `posicao_desconhecida`) estavam só na prosa do `de_onde_vem` — e um conferidor que leia prosa não consegue
   reprovar sem inventar. Passaram a `conjuntos_do_vigia.excecoes_da_porta`.
+  > **Nota de 29/09/2026:** passaram a ser **uma**. `posicao_desconhecida` saiu da lista ao fechar o **D-006**
+  > (a tabela recusa agora por linha própria, e o nome passou a ser do livro); ficou só
+  > `versao_do_contrato_divergente`, que é do CONTRATO e não da mesa.
 - **As contagens declaradas no livro conferem-se contra a verdade.** Foi isto que apanhou o contador da
   fronteira parado em 20 desde a 1.2.0 quando a verdade já era 23.
 - **A medida dos campos é a declaração lida do produto, ao correr o módulo** (`CAMPOS_DO_COMANDO`), não um grep

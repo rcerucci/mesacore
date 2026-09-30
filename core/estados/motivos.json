@@ -80,6 +80,12 @@
       "regra": "FR-031, FR-032",
       "porque": "Manifesto, mandato, contenda, inventario, versao e sessao: a mesa nao arranca pela metade, e nao corrige nada para conseguir entrar. O motivo especifico da porta vai na resposta."
     },
+    "posicao_desconhecida": {
+      "cruzam_a_fronteira": true,
+      "quando": "stop (em_operacao ou pausada) sem o contexto dizer se ha posicao viva",
+      "regra": "FR-012, D-006",
+      "porque": "Nao se para uma mesa sem saber se ha posicao aberta (parar sem perguntar e o oposto do que o encerramento existe para fazer) e nao se monta o resumo sobre o que nao se leu: RECUSA, e o motivo di-lo. Deixou de ser excecao da PORTA em 29/09/2026 (D-006): quem o produz agora e uma LINHA DA TABELA, com guarda propria para o desconhecido - e o que a tabela produz e motivo do livro."
+    },
     "liquidacao_em_curso": {
       "cruzam_a_fronteira": true,
       "quando": "start durante o encerramento com a liquidacao ja a correr",
@@ -301,8 +307,8 @@
     "o motivo mais especifico primeiro: sessao_inibida antes de porta_do_arranque_falhou, liquidacao_em_curso antes de retomar"
   ],
   "fronteira": {
-    "de_onde_vem": "`cruzam_a_fronteira` e o ambito da conferencia das duas direcoes (recorte 003, T017): `true` = este motivo pode sair numa resposta ao vigia; `false` = nasce e morre dentro de um ciclo. Os nomes marcados `true` tem de existir no conjunto fechado `conjuntos_do_vigia` de contracts/vocabulario.json, e o inverso tambem: o conjunto nao pode ter nome que o livro nao conheca (as duas excecoes - versao_do_contrato_divergente e posicao_desconhecida - vem da porta e estao declaradas la).",
-    "cruzam": 25,
+    "de_onde_vem": "`cruzam_a_fronteira` e o ambito da conferencia das duas direcoes (recorte 003, T017): `true` = este motivo pode sair numa resposta ao vigia; `false` = nasce e morre dentro de um ciclo. Os nomes marcados `true` tem de existir no conjunto fechado `conjuntos_do_vigia` de contracts/vocabulario.json, e o inverso tambem: o conjunto nao pode ter nome que o livro nao conheca (a excecao e' o que estiver declarado como vindo da PORTA - hoje so `versao_do_contrato_divergente`, porque quem recusa e' o CONTRATO e a porta relata-o tal e qual). ATE 29/09/2026 havia duas excecoes: `posicao_desconhecida` saiu da lista ao fechar o D-006 - quem o produz passou a ser uma linha da TABELA, e um nome que a tabela produz e' motivo do livro.",
+    "cruzam": 26,
     "nao_cruzam": 24
   }
 }

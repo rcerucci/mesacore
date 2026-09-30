@@ -91,12 +91,20 @@ export function guardaCasa(guarda: string, contexto: Contexto): boolean {
       return contexto.inibicao_cb === true;
     case "sem_inibicao":
       return contexto.inibicao_cb !== true;
+    // D-006. Estas duas guardas decidiam por AUSENCIA: `passam === false` e `posicao_viva !== true` faziam
+    // o desconhecido valer, respectivamente, «as portas passaram» e «nao ha posicao». As duas passam a
+    // distinguir os TRES casos, e o desconhecido tem guarda propria - que so casa com ele (nao com o falso),
+    // para as duas linhas nao dependerem da ORDEM em que estao escritas.
     case "portas_do_arranque_falham":
       return contexto.portas_do_arranque?.passam === false;
+    case "portas_do_arranque_nao_conferidas":
+      return contexto.portas_do_arranque?.passam === undefined;
     case "com_liquidacao_em_curso":
       return contexto.liquidacao_em_curso === true;
     case "sem_posicao_viva":
-      return contexto.posicao_viva !== true;
+      return contexto.posicao_viva === false;
+    case "posicao_viva_desconhecida":
+      return contexto.posicao_viva === undefined;
     case "com_posicao_viva":
       return contexto.posicao_viva === true;
     // As duas guardas de RECUSA do encerramento. A polaridade e deliberadamente o oposto das de permissao
@@ -182,11 +190,19 @@ export function aplicar(
       motivo: linha.recusa,
       nota: linha.nota,
     };
-    if (linha.recusa === "porta_do_arranque_falhou" && contexto.portas_do_arranque?.porta) {
-      resposta.motivo_da_porta = {
-        porta: contexto.portas_do_arranque.porta,
-        motivo: contexto.portas_do_arranque.motivo ?? "porta recusou sem motivo declarado",
-      };
+    if (linha.recusa === "porta_do_arranque_falhou") {
+      // A porta que falhou, quando ela se conhece. SEM ela o desconhecido nao pode sair em silencio: quem
+      // recebe a recusa tem de ler que o que falta e' o RESULTADO DAS PORTAS - nao um veredicto delas.
+      resposta.motivo_da_porta = contexto.portas_do_arranque?.porta
+        ? {
+            porta: contexto.portas_do_arranque.porta,
+            motivo: contexto.portas_do_arranque.motivo ?? "porta recusou sem motivo declarado",
+          }
+        : {
+            porta: "(nao conferidas)",
+            motivo:
+              "o contexto nao trouxe o resultado das portas do arranque: nao saber que passaram nao e passar (D-006)",
+          };
     }
     return resposta;
   }

@@ -52,7 +52,11 @@ const caminhoDoRegisto = `${process.env.TMPDIR ?? "/tmp"}/mesacore-registo-${pro
 rmSync(caminhoDoRegisto, { force: true });
 
 const mesa = new Mesa({ caminhoDasMarcas: `${caminhoDoRegisto}.marcas`, caminhoDoRegisto: caminhoDoRegisto });
-const ctx = { instante_ms: 1790628000000, inibicao_cb: false, portas_do_arranque: { passam: true } };
+// O DIA DESTE CASO E' O DE UMA MESA SEM POSICAO VIVA - e a partir de 29/09/2026 (D-006) isso tem de ser
+// DECLARADO. Antes, o contexto calava-se e a tabela lia o silencio como «nao ha posicao»: este caso
+// parava a mesa por uma posicao que ninguem tinha ido ver. Declarado `false`, o dia e o mesmo e o
+// registo reconstroi-se como sempre; sem a declaracao, a mesa RECUSA (`posicao_desconhecida`).
+const ctx = { instante_ms: 1790628000000, inibicao_cb: false, portas_do_arranque: { passam: true }, posicao_viva: false };
 
 function decidir(leitura: any, proposta: any, ciclo: number, extra: any = {}) {
   const entradas = lerParaOCiclo(leitura, proposta === null ? null : { setup: padrao.proposta_setup, ...proposta }, ciclo);

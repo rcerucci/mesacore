@@ -7,11 +7,15 @@
       "nome": "start-em-parada-arranca",
       "de": "parada",
       "verbo": "start",
-      "contexto": {},
+      "contexto": {
+        "portas_do_arranque": {
+          "passam": true
+        }
+      },
       "resultado_esperado": "aceite",
       "estado_esperado": "em_operacao",
       "motivo_esperado": null,
-      "historico": "US1 cenario 1"
+      "historico": "D-006 (29/09/2026): o contexto passou a DECLARAR as portas. Antes deste dia este caso tinha contexto VAZIO - e era isso o defeito: o vazio valia como «as portas passaram». E' o par de CONTROLE de `start-em-parada-com-as-portas-nao-conferidas-recusa`, que tem o MESMO contexto vazio e recusa."
     },
     {
       "nome": "start-em-parada-com-inibicao-recusa",
@@ -442,6 +446,40 @@
       "estado_esperado": "encerrando",
       "motivo_esperado": "mesa_em_encerramento",
       "historico": "FR-011"
+    },
+    {
+      "nome": "start-em-parada-com-as-portas-nao-conferidas-recusa",
+      "de": "parada",
+      "verbo": "start",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "parada",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "porta_da_recusa_esperada": {
+        "porta": "(nao conferidas)",
+        "motivo": "o contexto nao trouxe o resultado das portas do arranque: nao saber que passaram nao e passar (D-006)"
+      },
+      "historico": "D-006: o contexto vazio valia como «as portas passaram» e a mesa arrancava sem conferir nada. Agora RECUSA - e nomeia a porta como «(nao conferidas)», porque nao saber e' um facto que se diz."
+    },
+    {
+      "nome": "stop-sem-posicao-sabida-recusa-e-nao-para-a-mesa",
+      "de": "em_operacao",
+      "verbo": "stop",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "em_operacao",
+      "motivo_esperado": "posicao_desconhecida",
+      "historico": "D-006: com o contexto vazio a mesa PARAVA (a guarda `sem_posicao_viva` valia `!== true`, e o desconhecido caia la). Uma mesa que para sem saber se tem posicao aberta para sem perguntar - o oposto do que a linha `encerrando` existe para fazer. Agora recusa. CONTROLES: `stop-sem-posicao-vai-direto-a-parada` (declarado `false`) e `stop-com-posicao-vai-a-encerrando` (declarado `true`)."
+    },
+    {
+      "nome": "stop-da-pausa-com-posicao-nao-sabida-recusa",
+      "de": "pausada",
+      "verbo": "stop",
+      "contexto": {},
+      "resultado_esperado": "recusado",
+      "estado_esperado": "pausada",
+      "motivo_esperado": "posicao_desconhecida",
+      "historico": "D-006: o mesmo buraco no par da pausa. CONTROLE: `stop-da-pausa-sem-posicao-vai-a-parada`."
     }
   ]
 }

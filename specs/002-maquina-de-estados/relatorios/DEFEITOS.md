@@ -259,6 +259,63 @@ reconciliar (RN-V6), com a transição registrada.
 
 ## D-006 — A tabela trata «não sei» como «não há»
 
+> **FECHADO — 29/09/2026.** As duas guardas passam a distinguir os **três** casos, e o desconhecido ganha
+> linha própria de recusa na tabela:
+>
+> - `sem_posicao_viva` passou a `posicao_viva === false` (só o que se **sabe** não haver), e nasceu
+>   `posicao_viva_desconhecida` (`=== undefined`) — guarda **disjunta**, para o significado das duas linhas
+>   não depender da ordem em que estão escritas;
+> - `portas_do_arranque_falham` (que já exigia `passam === false`) ganhou a irmã
+>   `portas_do_arranque_nao_conferidas` (`=== undefined`).
+>
+> Linhas novas: `parada + start` (portas não conferidas → recusa `porta_do_arranque_falhou`, e a resposta
+> **nomeia a porta «(nao conferidas)»** com o motivo `não saber que passaram não é passar`),
+> `em_operacao + stop` e `pausada + stop` (posição desconhecida → recusa `posicao_desconhecida`). O motivo
+> `posicao_desconhecida` **deixou de ser excepção da porta** e passou a motivo do **livro**
+> (`core/estados/motivos.json`), porque quem o produz agora é uma linha da tabela; a lista
+> `conjuntos_do_vigia.excecoes_da_porta` do contrato foi de **2 para 1** (`versao_do_contrato_divergente`).
+> O livro passou de 49 para **50** motivos, e a fronteira de 25 para **26** nomes que cruzam.
+>
+> Comandos e números: `bun run core/estados/provar.ts` → **38 casos · 13 aceites · 25 recusados · 0
+> divergentes** (eram 35); `bun run tools/verificar-maquina/tabela.ts` → **36 linhas · 0 falhas nos 7
+> invariantes**; `uv run python tools/verificar-contrato/py/fronteira.py --motivos` → **0 falhas** (livro 50 ·
+> 26 cruzam · 24 ficam); `bash tools/verificar-maquina/provar.sh` → **27 de 27** com a árvore gravada.
+>
+> **Casos (as três letras do «como se saberá»):** (a) três casos novos — `start-em-parada-com-as-portas-nao-
+> conferidas-recusa`, `stop-sem-posicao-sabida-recusa-e-nao-para-a-mesa`, `stop-da-pausa-com-posicao-nao-
+> sabida-recusa` — e os **CONTROLES**: `start-em-parada-arranca` (o MESMO contexto vazio, agora com as portas
+> declaradas `passam: true`), `stop-sem-posicao-vai-direto-a-parada` (`false` → para) e
+> `stop-com-posicao-vai-a-encerrando` (`true` → `encerrando`); (b) idem; (c) as provas negativas abaixo.
+>
+> **Um chamador DEPENDIA do defeito** — e foi a bancada que o apanhou: `tools/verificar-maquina/registo.ts`
+> corria o dia com o contexto calado, e a mesa parava sem ninguém ter ido ver se havia posição. Com a tabela
+> corrigida, esse dia passou a **recusar** (`posicao_desconhecida`) e a bancada ficou vermelha; o dia
+> declara agora `posicao_viva: false`. É a medida de que o defeito **não era teórico**: havia, no
+> repositório, um dia que andava por cima dele.
+>
+> **Provas negativas** (cópia; reposição dos 7 ficheiros da vaga conferida por `sha256` — todos iguais, e a
+> cópia reposta volta a `38 · 0` e `0 falhas nos 7 invariantes`):
+> (1) repor a guarda antiga (`!== true`) → **2 divergentes** (os dois casos novos do `stop`);
+> (2) arrancar a linha `posicao_viva_desconhecida` da tabela → **2 divergentes** (o desconhecido cai na linha
+> de baixo e recusa pelo motivo errado — é a diferença entre recusar por saber e recusar por acaso);
+> (3) arrancar a linha `portas_do_arranque_nao_conferidas` → **1 divergente**: com o contexto vazio a mesa
+> **arranca sem conferir as portas** (é o defeito original, de volta);
+> (4) tirar `posicao_desconhecida` do livro → o intérprete **levanta** («motivo de recusa fora do conjunto
+> fechado») e nenhum caso corre;
+> (5) deixar de preencher a porta «(nao conferidas)» → **1 divergente**, com as duas linhas da resposta que
+> faltam;
+> (6) uma linha com guarda não declarada → o conferidor da tabela reprova no invariante 0 **e** no 6.
+>
+> **O que ficou deliberadamente como estava, e por quê.** Ficaram três guardas que também decidem por
+> ausência: `com_inibicao`, `com_liquidacao_em_curso` e `com_posicao_viva`. A distinção não é de gosto:
+> a **inibição** e a **liquidação** são factos **da mesa sobre si mesma**, e a mesa lê-os do seu próprio
+> livro de marcas antes de consultar a tabela (`core/mesa.ts:243`); nas duas, ausência é ausência
+> **declarada**, não desconhecimento. A **posição** e as **portas** são factos **do mundo** que ninguém
+> local lê — e é por isso que são estas duas, e não as outras, que tinham de mudar. No par
+> `parada + nova_sessao`, o desconhecido da posição cai na guarda seguinte (`equity_de_partida_nao_lido`),
+> que recusa com o nome dela: fica **fail-closed**, ainda que com outro nome — e isso está dito aqui para
+> não se ler como descuido.
+
 **Encontrado a construir a porta de processo da mesa** (recorte 003, T014). Não é um defeito novo do código:
 é um **buraco na tabela**, que ninguém tinha exercido porque as bancadas sempre passaram o contexto inteiro.
 
@@ -294,3 +351,39 @@ corretora, pela marca de posse (RN-T16.1).
 mesmo caso com `false` que para — os dois na bateria `tabela.ts`, não só na porta; (b) o `stop` com posição
 declarada a entrar em `encerrando` com o resumo apresentado; (c) a prova negativa: repor a guarda antiga e
 exigir o vermelho.
+
+<!-- FIM DO FICHEIRO — o defeito abaixo foi declarado ao fechar o D-006, e não é o mesmo defeito. -->
+
+## D-007 — A recusa por liquidação em curso não é alcançável pela porta (declarado 29/09/2026)
+
+**Encontrado ao fechar o D-006** — a mesma família, mas é outro defeito, e por isso fica declarado em vez de
+resolvido à socapa.
+
+**O que existe.** A tabela tem a linha `encerrando + start` com a guarda `com_liquidacao_em_curso`
+(`=== true`) → recusa `liquidacao_em_curso` (FR-013: «uma vez começada a liquidação, não se interrompe a
+meio»). A linha **funciona**: o caso `start-durante-liquidacao-recusa` declara `liquidacao_em_curso: true` e
+recebe a recusa certa.
+
+**A medida.** Ninguém **põe** esse campo num contexto. Medido com
+`grep -rn 'liquidacao_em_curso\s*:' --include=*.ts --include=*.json core vigia tools brokers` →
+**0 atribuições** em todo o repositório. As cinco ocorrências que existem são outras coisas: a declaração do
+campo e a leitura da guarda (`core/estados/maquina.ts:41,102`), o **efeito** que a decisão do dono produz
+(`core/ciclo/encerramento.ts:156`), a leitura do motivo de uma linha do registo
+(`core/servidor.ts:454`) e uma conferência do efeito na bancada do vigia.
+
+**A consequência.** Numa corrida a sério, `encerrando + start` cai **sempre** na linha `sempre` → volta a
+`em_operacao`. Isto é o caminho querido do US7 («o dono responde “não feche” com `start`») **enquanto a
+liquidação não começou**; depois de ter começado, a mesa não tem como saber, e a regra do FR-013 fica escrita
+numa linha que já não corre. Uma regra que só existe no papel é pior do que uma regra ausente: quem lê a
+tabela julga-a cumprida.
+
+**As duas saídas** (a decisão é do desenho, não de quem fecha isto): **(i)** o estado da liquidação passa a
+chegar ao contexto — é o mesmo caminho do `--posicao-viva`, uma verdade que a mesa não tira de si e que o
+vigia/registo tem de trazer (T021 é a porta por onde essas verdades entram); **(ii)** assume-se que o
+`start` durante `encerrando` é sempre «não feche», apaga-se a linha e a guarda, e o FR-013 passa a estar
+cumprido por outra via (a liquidação, uma vez começada, fecha as ordens antes de qualquer `start`; nesse caso
+tem de haver onde isso esteja medido).
+
+**Como se saberá que está fechado.** Um caso, na porta (não só na tabela), em que a mesa está `encerrando`
+**com a liquidação a correr** e o `start` é recusado — e a prova negativa de que, sem a liquidação declarada,
+o mesmo `start` cancela a pergunta (o caminho do US7 continua a existir).
