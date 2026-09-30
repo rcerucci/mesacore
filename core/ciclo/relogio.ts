@@ -25,12 +25,17 @@ import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
 import type { Marcas } from "../estado/marcas.ts";
 import type { Estado } from "../estados/maquina.ts";
 import type { Mandato, Template } from "./decisao.ts";
-import { decidirInstrumento } from "./ciclo.ts";
+import { decidirInstrumento, decidirSemLeitura } from "./ciclo.ts";
 
 /** O que a operacao declara de um instrumento: o que o conector e o setup reportam, e a ficha em vigor. */
 export interface InstrumentoDaOperacao {
-  /** A leitura compacta do instrumento (a porta de leitura valida-a contra o contrato). */
-  leitura: LeituraCompacta;
+  /**
+   * A leitura compacta do instrumento (a porta de leitura valida-a contra o contrato).
+   *
+   * AUSENTE = o conector nao entregou leitura NESTA volta. Nao e' «a mesma de antes» nem «sem posicao»: e'
+   * nao se leu, e o ciclo trata isso como `sem_leitura` (nao abre, nao fecha, e diz) — RN-D7.
+   */
+  leitura?: LeituraCompacta;
   /** A proposta do setup, ou `null` quando ele nada propos - que NAO e o mesmo que `hold`. */
   proposta?: { lado?: unknown; setup?: unknown; relogio?: unknown } | null;
   /** O nome da ficha em vigor (o par risco+setup do lado do setup). */
@@ -117,9 +122,35 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
   let linhas = 0;
 
   for (const [instrumento, decl] of Object.entries(operacao.instrumentos)) {
-    const entradas = lerParaOCiclo(decl.leitura, decl.proposta ?? null, ciclo);
     const mandato = (config.fichas as Record<string, Mandato>)[instrumento]!;
     const marcaDesconhecida = (marcas.desconhecido ?? []).find((d) => d.instrumento === instrumento) ?? null;
+
+    // A LEITURA QUE NAO CHEGOU (RN-D7). Quem escreve a operacao deixa o campo AUSENTE quando o conector nao
+    // entregou leitura nesta volta — e ausente nao e' «a mesma de antes» nem «sem posicao»: e' nao se leu.
+    // A partir daqui o instrumento NAO decide: entra `sem_leitura`, que impede abrir e fechar, e a linha do
+    // registo diz o motivo. Seguir com uma leitura velha seria decidir sobre um mercado que ja nao existe.
+    if (decl.leitura === undefined || decl.leitura === null) {
+      const decisao = decidirSemLeitura({
+        instrumento,
+        ligacao: operacao.ligacao ?? "ligada",
+        config,
+        desconhecido: marcaDesconhecida,
+      });
+      registarCiclo(
+        instante_ms,
+        instrumento,
+        decisao.acao,
+        decisao.motivo,
+        `ciclo ${ciclo}, condicao ${decisao.condicao} (leitura ausente na operacao)`,
+        fontes.caminhoDoRegisto,
+      );
+      acoes[instrumento] = decisao.acao;
+      motivos[instrumento] = decisao.motivo;
+      linhas += 1;
+      continue;
+    }
+
+    const entradas = lerParaOCiclo(decl.leitura, decl.proposta ?? null, ciclo);
 
     const decisao = decidirInstrumento({
       mercado: entradas.mercado,

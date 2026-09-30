@@ -1,0 +1,385 @@
+#!/usr/bin/env bun
+// A LEITURA DO MERCADO — o objecto de factos que a mesa consome a cada volta (RN-D1, RN-D5).
+//
+// PORQUE EXISTE. Medido (29/09/2026): a mesa le a operacao (`core/servidor.ts --operacao f.json`) e o campo
+// `instrumentos.<i>.leitura` e por onde a leitura entra no ciclo. O `mercado` — o tipo do CONTRATO que
+// carrega esses factos — so era produzido nas FIXTURES das bancadas: em operacao, ninguem o produzia, e o
+// setup nao tinha com que calcular as suas features. Esta peca e o produtor que faltava, do lado de quem
+// conhece o venue.
+//
+// AS DUAS LEITURAS, e porque sao duas:
+//   * a CONTA (equity, posicoes, instante do venue) — `brokers/hyperliquid/leitura.ts`, a porta que ja
+//     existia, com os seus motivos nomeados. Reutiliza-se: uma segunda leitura da conta seria uma segunda
+//     verdade sobre o mesmo dinheiro.
+//   * o MERCADO (bid, ask, ultimo, estado da exchange) — aqui, com as leituras publicas do venue.
+//
+// O QUE ESTA PECA NAO FAZ, e diz-se:
+//   * NAO decide nada e nao julga risco: devolve factos do venue, com a ORIGEM de cada um nomeada (RN-C11);
+//   * NAO inventa um numero que o venue nao deu. Um campo que o venue nao publicou fica AUSENTE (RN-D4), e o
+//     que impede o `mercado` de sair e' a FALHA de uma leitura obrigatoria — nunca um valor por omissao;
+//   * NAO le a chave: o `info` do venue e' publico, e esta leitura nao move dinheiro nenhum.
+//
+// Uso (bancada e estudo):
+//   bun run brokers/hyperliquid/leitura-do-mercado.ts --instrumento BTC [--agora <ms>] [--json]
+
+import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
+import {
+  lerConta,
+  lerDoVenueDaConta,
+  type PortaDeConta,
+  type PosicaoDaLeitura,
+} from "./leitura.ts";
+import type { PortaDeLeitura } from "./sonda.ts";
+
+/** A porta que esta leitura consome: a da conta e as leituras publicas do mercado. */
+export type PortaDaLeituraDeMercado = {
+  conta: PortaDeConta;
+  leitura: Pick<PortaDeLeitura, "livro" | "velas" | "estadoDaExchange">;
+};
+
+/** O cliente do venue, na forma ESTRUTURAL que esta porta consome (o SDK oficial encaixa aqui). */
+export type ClienteDaLeituraDeMercado = {
+  clearinghouseState(p: { user: string }): Promise<unknown>;
+  spotClearinghouseState(p: { user: string }): Promise<unknown>;
+  activeAssetData(p: { user: string; coin: string }): Promise<unknown>;
+  extraAgents(p: { user: string }): Promise<unknown>;
+  l2Book(p: { coin: string }): Promise<unknown>;
+  candleSnapshot(p: { coin: string; interval: string; startTime: number }): Promise<unknown>;
+  exchangeStatus(): Promise<unknown>;
+};
+
+export function portaDoCliente(cliente: ClienteDaLeituraDeMercado): PortaDaLeituraDeMercado {
+  return {
+    conta: {
+      contaPerpetuo: (conta) => cliente.clearinghouseState({ user: conta }),
+      contaSpot: (conta) => cliente.spotClearinghouseState({ user: conta }),
+      activoDaConta: (conta, coin) => cliente.activeAssetData({ user: conta, coin }),
+      agentesDaConta: (conta) => cliente.extraAgents({ user: conta }),
+    },
+    leitura: {
+      livro: (coin) => cliente.l2Book({ coin }),
+      velas: (coin, inicioMs) => cliente.candleSnapshot({ coin, interval: "1h", startTime: inicioMs }),
+      estadoDaExchange: () => cliente.exchangeStatus(),
+    },
+  };
+}
+
+export type PedidoDaLeituraDeMercado = {
+  /** O endereco da conta MASTER (a armadilha da documentacao: com o do agente o venue devolve vazio). */
+  conta: string;
+  instrumento: string;
+  /** O instante do NOSSO relogio, para medir a idade do dado. Declarado como nosso: a idade e' uma medida. */
+  agora_ms: number;
+  /** A janela das velas, para o `ultimo`. Por omissao: 2 barras de 1h atras. */
+  desde_ms?: number;
+};
+
+export type MercadoLido = {
+  /** A carga do `mercado`, ja validada contra o contrato — pronta a entrar num envelope. */
+  carga: Record<string, unknown>;
+  /** A ORIGEM de cada grandeza (RN-C11): a chamada de onde ela veio, e nao "o venue" em geral. */
+  origens: Record<string, string>;
+  /** O que o venue nao publicou, dito (RN-D4) — ausencia declarada, nunca um valor neutro. */
+  ausentes: string[];
+};
+
+export type ResultadoDaLeituraDeMercado =
+  | { ok: true; mercado: MercadoLido }
+  | { ok: false; motivo: string; porque: string };
+
+const DECIMAL_POSITIVO = /^(0*\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\.[0-9]+)?)$/;
+const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
+
+function objecto(v: unknown): Record<string, unknown> | undefined {
+  return typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+}
+
+function texto(v: unknown): string | undefined {
+  return typeof v === "string" && v !== "" ? v : undefined;
+}
+
+function numero(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+/**
+ * O MELHOR NIVEL do livro, num lado. O venue publica `levels[0]` (bids, do melhor para baixo) e
+ * `levels[1]` (asks). Um lado VAZIO nao vira zero: fica ausente — um bid a zero seria um preco publicado, e
+ * nenhum venue publica isso.
+ */
+function melhorNivel(livro: unknown, lado: 0 | 1): string | undefined {
+  const raiz = objecto(livro);
+  const niveis = raiz?.levels;
+  if (!Array.isArray(niveis) || !Array.isArray(niveis[lado])) return undefined;
+  const primeiro = objecto((niveis[lado] as unknown[])[0]);
+  const px = primeiro !== undefined ? texto(primeiro.px) : undefined;
+  return px !== undefined && DECIMAL_POSITIVO.test(px) ? px : undefined;
+}
+
+/** O ESTADO DO MERCADO, do protocolo do venue: a lista de estados especiais VAZIA (`null`) e' `aberto`. */
+function estadoDoMercado(bruto: unknown): { estado: "aberto" | "fechado"; porque: string } | { erro: string } {
+  const raiz = objecto(bruto);
+  if (raiz === undefined) return { erro: "a resposta de `exchangeStatus` nao trouxe um objecto de estado" };
+  if (!Object.prototype.hasOwnProperty.call(raiz, "specialStatuses")) {
+    return { erro: "a resposta de `exchangeStatus` nao trouxe `specialStatuses`: `null` de uma chave ausente nao e' um valor" };
+  }
+  const especiais = raiz.specialStatuses;
+  if (especiais === null) {
+    return { estado: "aberto", porque: "`exchangeStatus().specialStatuses` veio `null` (nenhum estado especial em vigor)" };
+  }
+  return {
+    estado: "fechado",
+    porque: "`exchangeStatus().specialStatuses` declara estados especiais em vigor: " + JSON.stringify(especiais),
+  };
+}
+
+/** O ULTIMO preco publicado na vela mais recente (`candleSnapshot[].c`) — um numero DO VENUE, nao um calculo. */
+function ultimoDaVela(velas: unknown): { ultimo?: string; quantas: number } {
+  if (!Array.isArray(velas)) return { quantas: 0 };
+  const ultima = objecto(velas[velas.length - 1]);
+  const c = ultima !== undefined ? texto(ultima.c) : undefined;
+  return { ...(c !== undefined && DECIMAL_POSITIVO.test(c) ? { ultimo: c } : {}), quantas: velas.length };
+}
+
+/**
+ * O `mercado` a partir do que o venue respondeu. PURA: nao vai a rede, e por isso se prova em dado.
+ *
+ * `falhas` traz as leituras que nao se conseguiram fazer, com a razao delas: qualquer uma das obrigatorias
+ * que falte RECUSA — um `mercado` sem equity e' um mercado que a mesa nao pode usar, e servi-lo seria
+ * decidir sobre um vazio.
+ */
+export function montarMercado(
+  bruto: {
+    conta: Parameters<typeof lerConta>[0];
+    livro: unknown;
+    estado: unknown;
+    velas: unknown;
+  },
+  pedido: PedidoDaLeituraDeMercado,
+  /** As leituras que nem chegaram a ser tentadas (a porta falhou): entram como falha, nao como ausencia. */
+  falhas: { leitura: string; motivo: string; porque: string }[] = [],
+): ResultadoDaLeituraDeMercado {
+  if (falhas.length > 0) {
+    const primeira = falhas[0]!;
+    return {
+      ok: false,
+      motivo: `${primeira.leitura}_nao_lida`,
+      porque:
+        `a leitura \`${primeira.leitura}\` do venue falhou (${primeira.motivo}): ${primeira.porque}. ` +
+        (falhas.length > 1 ? `Falharam ${falhas.length} leituras: ${falhas.map((f) => f.leitura).join(", ")}. ` : "") +
+        "Um `mercado` a que falte um facto obrigatorio nao se entrega: a mesa decidiria sobre um vazio.",
+    };
+  }
+
+  const lido = lerConta(bruto.conta, { conta: pedido.conta, instrumento: pedido.instrumento });
+  if (!lido.ok) {
+    return {
+      ok: false,
+      motivo: `conta_nao_lida:${lido.motivo}`,
+      porque: lido.porque,
+    };
+  }
+  const leituraDaConta = lido.leitura;
+  const carteira = leituraDaConta.carteiras.perpetuo;
+  if (carteira.estado !== "lida") {
+    return {
+      ok: false,
+      motivo: "conta_nao_lida",
+      porque:
+        `a carteira do perpetuo nao se leu (${carteira.motivo}): ${carteira.porque}. O equity e' o numero do ` +
+        "circuit breaker (RN-M3) e nao se estima",
+    };
+  }
+
+  const estado = estadoDoMercado(bruto.estado);
+  if ("erro" in estado) {
+    return { ok: false, motivo: "estado_nao_lido", porque: estado.erro };
+  }
+
+  const tempo = numero(leituraDaConta.instante_do_venue_ms);
+  if (tempo === undefined) {
+    return {
+      ok: false,
+      motivo: "tempo_do_venue_nao_lido",
+      porque:
+        "a resposta da conta trouxe a carteira mas nao o instante do venue (`clearinghouseState.time`): a idade " +
+        "do dado mede-se contra o relogio DELE (RN-D2), e com o nosso relogio seria outra grandeza",
+    };
+  }
+
+  const bid = melhorNivel(bruto.livro, 0);
+  const ask = melhorNivel(bruto.livro, 1);
+  if (bid === undefined && ask === undefined) {
+    return {
+      ok: false,
+      motivo: "livro_nao_lido",
+      porque: "nem o melhor bid nem o melhor ask do livro se leram: sem um preco publicado nao ha mercado a entregar",
+    };
+  }
+
+  // A POSICAO (RN-T16.1): le-se do VENUE. Quando ela existe e a marca de posse nao esta no livro da conta, a
+  // posicao vai SEM marca — e quem a le (a mesa) trata uma posicao sem marca como ALHEIA: relata e nao gere.
+  // Inventar uma marca aqui seria dizer que a posicao e' nossa sem o venue o dizer.
+  const posicao: PosicaoDaLeitura | undefined = leituraDaConta.posicoes.find(
+    (p) => p.instrumento === pedido.instrumento,
+  );
+
+  const carga: Record<string, unknown> = {
+    instrumento: pedido.instrumento,
+    tempo_do_venue_ms: tempo,
+    idade_do_dado_ms: Math.max(0, pedido.agora_ms - tempo),
+    estado: estado.estado,
+    equity: carteira.equity,
+  };
+  if (bid !== undefined) carga.bid = bid;
+  if (ask !== undefined) carga.ask = ask;
+
+  const { ultimo, quantas } = ultimoDaVela(bruto.velas);
+  const ausentes: string[] = [];
+  if (ultimo !== undefined) carga.ultimo = ultimo;
+  else ausentes.push("mercado.ultimo (o venue nao publicou a vela mais recente)");
+  if (bid === undefined) ausentes.push("mercado.bid (o lado das compras do livro veio vazio)");
+  if (ask === undefined) ausentes.push("mercado.ask (o lado das vendas do livro veio vazio)");
+
+  if (posicao !== undefined) {
+    // A marca de posse NAO vem na leitura da conta: o venue guarda-a no `cloid` da ordem, e o mapa
+    // marca -> ficha (RN-T16.1) e' item por fazer. Sem ela, a posicao vai declarada e sem dono — e isso e'
+    // a informacao que a mesa precisa para NAO a gerir.
+    carga.posicao = {
+      lado: posicao.lado,
+      unidades: posicao.unidades,
+      preco_medio: posicao.preco_medio,
+    };
+    ausentes.push(
+      "mercado.posicao.marca_de_posse (a marca vive no `cloid` da ordem no venue; o mapa marca -> ficha e' RN-T16.1, por fazer)",
+    );
+  }
+
+  const origens: Record<string, string> = {
+    "mercado.instrumento": "pedido do vigia (a leitura e' por instrumento)",
+    "mercado.tempo_do_venue_ms": "clearinghouseState.time (o relogio DO VENUE — RN-D2)",
+    "mercado.idade_do_dado_ms": `medida: agora (${pedido.agora_ms}) - tempo_do_venue (${tempo})`,
+    "mercado.estado": `${estado.porque} — ` + "`specialStatuses: null` significa nenhum estado especial em vigor",
+    "mercado.equity": "clearinghouseState.marginSummary.accountValue (com nao realizado — RN-M3)",
+    ...(bid !== undefined ? { "mercado.bid": "l2Book.levels[0][0].px" } : {}),
+    ...(ask !== undefined ? { "mercado.ask": "l2Book.levels[1][0].px" } : {}),
+    ...(ultimo !== undefined ? { "mercado.ultimo": `candleSnapshot().c da vela mais recente (${quantas} vela(s) lidas)` } : {}),
+    ...(posicao !== undefined
+      ? { "mercado.posicao": "clearinghouseState.assetPositions[].position (coin/szi/entryPx)" }
+      : {}),
+  };
+
+  // O CONTRATO confere o `mercado` ANTES de ele servir de alguma coisa: um objecto que o contrato recusaria
+  // nao chega a ser uma leitura (D4/D5).
+  const mensagem = JSON.stringify({
+    contrato: versaoVigente(),
+    tipo: "mercado",
+    id: `mercado/${pedido.instrumento}`,
+    carga,
+  });
+  const decisao = validar(mensagem);
+  if (decisao.veredicto !== "aceite") {
+    return {
+      ok: false,
+      motivo: `mercado_recusado_pelo_contrato:${decisao.motivo ?? "?"}`,
+      porque: `o mercado montado no venue nao passou o contrato (${decisao.veredicto}): ${JSON.stringify(carga)}`,
+    };
+  }
+
+  if (!DECIMAL.test(carteira.equity)) {
+    return {
+      ok: false,
+      motivo: "equity_ilegivel",
+      porque: `o equity lido (${carteira.equity}) nao e' decimal da forma do contrato`,
+    };
+  }
+
+  return { ok: true, mercado: { carga, origens, ausentes } };
+}
+
+/**
+ * A leitura AO VIVO: faz as chamadas ao venue e entrega o resultado a `montarMercado`.
+ *
+ * As quatro leituras vao em paralelo, e cada uma falha SOZINHA: uma que cai nao apaga as outras — o que ela
+ * faz e' tornar o `mercado` impossivel, com o nome dela e a razao. Uma leitura que falha nunca devolve o
+ * valor anterior (FR-017).
+ */
+export async function lerMercadoNoVenue(
+  porta: PortaDaLeituraDeMercado,
+  pedido: PedidoDaLeituraDeMercado,
+): Promise<ResultadoDaLeituraDeMercado> {
+  const desde = pedido.desde_ms ?? pedido.agora_ms - 2 * 3600 * 1000;
+
+  const tentar = async (nome: string, f: () => Promise<unknown>) => {
+    try {
+      return { ok: true as const, valor: await f() };
+    } catch (e) {
+      return { ok: false as const, falha: { leitura: nome, motivo: "resposta_do_venue", porque: e instanceof Error ? e.message : String(e) } };
+    }
+  };
+
+  const [conta, livro, estado, velas] = await Promise.all([
+    tentar("conta", () => lerDoVenueDaConta(porta.conta, { conta: pedido.conta, instrumento: pedido.instrumento })),
+    tentar("livro", () => porta.leitura.livro(pedido.instrumento)),
+    tentar("estado", () => porta.leitura.estadoDaExchange()),
+    tentar("velas", () => porta.leitura.velas(pedido.instrumento, desde)),
+  ]);
+
+  const falhas: { leitura: string; motivo: string; porque: string }[] = [];
+  if (!conta.ok) falhas.push(conta.falha);
+  if (!livro.ok) falhas.push(livro.falha);
+  if (!estado.ok) falhas.push(estado.falha);
+  // As VELAS nao entram nas obrigatorias: elas dao o `ultimo`, que e' um campo aditivo. O que o venue nao
+  // publicou fica ausente e DITO — nao se recusa o mercado inteiro por causa de um campo que o contrato
+  // declara opcional. As outras tres sao a conta, o livro e o estado, e sem qualquer uma delas nao ha leitura.
+  const falhasDasObrigatorias = falhas.filter((f) => f.leitura !== "velas");
+  if (falhasDasObrigatorias.length === 0) {
+    return montarMercado(
+      {
+        conta: (conta as { valor: Parameters<typeof lerConta>[0] }).valor,
+        livro: (livro as { valor: unknown }).valor,
+        estado: (estado as { valor: unknown }).valor,
+        velas: velas.ok ? velas.valor : [],
+      },
+      pedido,
+    );
+  }
+  return montarMercado({ conta: {}, livro: undefined, estado: undefined, velas: [] }, pedido, falhasDasObrigatorias);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// O CLI — a bancada e o estudo (a mesma leitura, de fora).
+
+async function principal(): Promise<void> {
+  const argv = process.argv.slice(2);
+  const argumento = (nome: string): string | undefined => {
+    const i = argv.indexOf(nome);
+    return i < 0 ? undefined : argv[i + 1];
+  };
+  const instrumento = argumento("--instrumento");
+  const conta = argumento("--conta") ?? process.env.MESACORE_CONTA ?? "";
+  const ambiente = (argumento("--ambiente") ?? "teste") as "teste" | "producao";
+  if (instrumento === undefined || conta === "") {
+    console.error(
+      "uso: bun run brokers/hyperliquid/leitura-do-mercado.ts --instrumento BTC --conta 0x... [--ambiente teste|producao] [--agora <ms>] [--json]",
+    );
+    process.exit(2);
+  }
+  const modulo = await import("@nktkas/hyperliquid");
+  const transporte = new modulo.HttpTransport({ isTestnet: ambiente !== "producao" });
+  const info = new modulo.InfoClient({ transport: transporte });
+  const porta = portaDoCliente(info as unknown as ClienteDaLeituraDeMercado);
+  const agora = Number(argumento("--agora") ?? String(Date.now()));
+  const r = await lerMercadoNoVenue(porta, { conta, instrumento, agora_ms: agora });
+  if (!r.ok) {
+    console.log(JSON.stringify({ veredicto: "recusado", motivo: r.motivo, porque: r.porque }, null, 1));
+    process.exit(1);
+  }
+  if (argv.includes("--json")) {
+    console.log(JSON.stringify({ veredicto: "lido", ...r.mercado }, null, 1));
+    return;
+  }
+  console.log(JSON.stringify(r.mercado.carga));
+}
+
+if (import.meta.main) await principal();

@@ -79,7 +79,12 @@ export interface EntradaDoInstrumento {
 export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   const { mercado, proposta } = entrada;
   const posicao = mercado.posicao ?? null;
-  const nossa = posicao !== null && entrada.marcas_nossas_conhecidas.includes(posicao.marca_de_posse);
+  // A MARCA DE POSSE e' o que diz de quem e' a posicao (RN-T16.1). Quando o venue a nao da (a leitura vinda
+  // do venue vai sem marca: o mapa marca -> ficha e' item por fazer), uma posicao NAO e' nossa — e uma
+  // posicao que nao e' nossa relata-se e nao se gere. `includes(undefined)` diria a mesma coisa por acidente;
+  // a guarda diz a intencao.
+  const marca = posicao !== null && typeof posicao.marca_de_posse === "number" ? posicao.marca_de_posse : null;
+  const nossa = marca !== null && entrada.marcas_nossas_conhecidas.includes(marca);
   const alheia = posicao !== null && !nossa;
 
   // Uma posicao que nao e nossa E uma divergencia: a mesa esperava outra coisa (ou nada).
@@ -295,4 +300,42 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
 /** Nome curto da condicao para o registo, com todos os impedimentos (o que travou, e nao so o primeiro). */
 export function descricaoDaCondicao(condicao: NomeDeCondicao, impedimentos: NomeDeCondicao[]): string {
   return impedimentos.length === 0 ? condicao : `${condicao} (${impedimentos.join("+")})`;
+}
+
+/**
+ * A DECISAO QUANDO A LEITURA NAO CHEGOU (RN-D7, FR-002 a FR-016) — e o caminho que faltava.
+ *
+ * PORQUE EXISTE. Medido (29/09/2026): ninguem produzia o ficheiro de operacao em producao, e o conector podia
+ * estar morto enquanto a mesa ciclava sobre o que tivesse em memoria. A condicao `sem_leitura` estava escrita
+ * e conferida no livro (`condicoes.json`) desde o recorte 002 — mas NINGUEM a levantava: a leitura ausente nem
+ * chegava ao ciclo (rebentava antes, ou decidia-se com o que la estivesse). Era o mesmo vicio do D-007: uma
+ * trava declarada e sem quem a accione.
+ *
+ * O QUE ESTA FUNCAO FAZ, E O QUE NAO FAZ. Nao julga o mercado: nao ha mercado para julgar. Monta a situacao
+ * com a leitura em `null` — o que activa `sem_leitura` — e devolve a decisao de NAO FAZER, com o motivo
+ * nomeado. Quem abre e fecha le a condicao: `sem_leitura` impede as duas, e e' por isso que a mesa nao abre
+ * risco novo nem fecha as cegas (fechar sem saber o que existe e' adivinhar).
+ *
+ * A AVISA vem da lista do dono (FR-042), como em qualquer outra decisao: `sem_leitura` levanta o evento
+ * `falha_de_leitura`, e quem diz se ele acorda alguem e' `conta.eventos_que_avisam[]`.
+ */
+export function decidirSemLeitura(entrada: {
+  instrumento: string;
+  ligacao: "ligada" | "sem_ligacao";
+  config: ConfiguracaoDaConta;
+  /** A marca `desconhecido` deste instrumento, quando existe (a divida da mesa consigo propria). */
+  desconhecido?: { motivo: string; instante_ms: number } | null;
+}): Decisao {
+  const situacao = situacaoDoInstrumento(null, entrada.ligacao, {}, false, entrada.config);
+  return {
+    instrumento: entrada.instrumento,
+    acao: "nada",
+    motivo: "leitura_ausente_no_ciclo",
+    condicao: situacao.condicao,
+    impedimentos: situacao.impedimentos,
+    avisa: situacao.alarma,
+    boleta: null,
+    motivo_do_contrato: null,
+    desconhecido: entrada.desconhecido ?? null,
+  };
 }

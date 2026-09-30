@@ -79,7 +79,15 @@ export interface Situacao {
 }
 
 export function situacaoDoInstrumento(
-  leitura: { idade_do_dado_ms: number; estado_do_mercado: "aberto" | "fechado" },
+  /**
+   * As medidas da leitura DESTE instrumento — ou `null` quando ela NAO chegou (RN-D7).
+   *
+   * `null` e' o caso da leitura AUSENTE, e nao se confunde com «tudo normal»: sem leitura nao se sabe a idade
+   * nem o estado do mercado, e as duas condicoes que dependem deles ficam por julgar. O que se sabe — e chega
+   * para travar — e' que NAO SE LEU: `sem_leitura` entra activa, e por ela nao se abre nem se fecha. Inventar
+   * uma idade ou um estado para poder julgar o resto seria decidir sobre um numero que ninguem mediu.
+   */
+  leitura: { idade_do_dado_ms: number; estado_do_mercado: "aberto" | "fechado" } | null,
   /**
    * O estado da ligacao, reportado pelo conector pelo protocolo dele - `ligada` ou `sem_ligacao`.
    *
@@ -96,10 +104,14 @@ export function situacaoDoInstrumento(
   const livro = livroDeCondicoes();
   const activas = new Set<NomeDeCondicao>(["normal"]);
 
+  // A leitura que NAO chegou e' uma falha declarada por quem a leu (D-007 do ciclo): o caminho da operacao
+  // entrega `null`, e aqui isso vale o mesmo que `falhas.leitura === true` — uma so porta para a mesma trava.
+  if (leitura === null) falhas = { ...falhas, leitura: true };
+
   if (falhas.leitura === true) activas.add("sem_leitura");
   if (falhas.setup_respondeu === false) activas.add("congelada");
   if (divergente) activas.add("divergente");
-  if (leitura.estado_do_mercado === "fechado") activas.add("mercado_fechado");
+  if (leitura !== null && leitura.estado_do_mercado === "fechado") activas.add("mercado_fechado");
 
   // Sem ligacao: a mesa esta cega. O que se sabe e que nao ha ligacao - nao que o dado envelheceu.
   if (ligacao === "sem_ligacao") activas.add("sem_ligacao");
