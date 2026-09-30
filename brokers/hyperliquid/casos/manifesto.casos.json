@@ -60,7 +60,10 @@
     "idempotencia": true,
     "marca_de_posse": "cloid",
     "marca_liga_ordem_a_posicao": false,
-    "estado_do_mercado": true
+    "estado_do_mercado": true,
+    "ligacao_por_protocolo": true,
+    "releitura_de_preco_ao_enviar": true,
+    "devolve_a_resolucao": true
   },
   "casos": [
     {
@@ -68,7 +71,7 @@
       "esperadoOk": true,
       "conferir": {
         "conector.nome": "hyperliquid",
-        "versao": "1.6.0",
+        "versao": "1.7.0",
         "instrumentos.0.simbolo": "BTC",
         "instrumentos.0.passo": "0.00001",
         "instrumentos.0.tick": "0.1",
@@ -83,7 +86,10 @@
         "minimo_de_valor_por_ordem": "10",
         "instrumentos.0.funding_intervalo_horas": 1,
         "instrumentos.0.alavancagem_por_escalao.0.de": "0.0",
-        "instrumentos.0.alavancagem_por_escalao.2.maxima": "10"
+        "instrumentos.0.alavancagem_por_escalao.2.maxima": "10",
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "nota": "A sonda inteira: o manifesto confere contra o esquema do contrato e declara o piso de valor por ordem (nome da 1.4.0), a cadencia do funding e os escaloes do venue tal como ele os da."
     },
@@ -234,7 +240,10 @@
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
       "sonda": {
-        "marca_liga_ordem_a_posicao": null
+        "marca_liga_ordem_a_posicao": null,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       }
     },
     {
@@ -408,6 +417,33 @@
           ]
         }
       }
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-ligacao-por-protocolo",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "ligacao_por_protocolo": null
+      },
+      "nota": "D-002 / contrato 1.7.0: a sonda NAO mediu `ligacao_por_protocolo`. O manifesto nao sai com uma capacidade nao declarada (fail-closed), e a recusa nomeia-a: a mesa nao arranca sobre uma promessa."
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-releitura-de-preco-ao-enviar",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "releitura_de_preco_ao_enviar": null
+      },
+      "nota": "D-002 / contrato 1.7.0: a sonda NAO mediu `releitura_de_preco_ao_enviar`. O manifesto nao sai com uma capacidade nao declarada (fail-closed), e a recusa nomeia-a: a mesa nao arranca sobre uma promessa."
+    },
+    {
+      "caso": "manifesto/capacidade-ausente-recusa-devolve-a-resolucao",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "sonda": {
+        "devolve_a_resolucao": null
+      },
+      "nota": "D-002 / contrato 1.7.0: a sonda NAO mediu `devolve_a_resolucao`. O manifesto nao sai com uma capacidade nao declarada (fail-closed), e a recusa nomeia-a: a mesa nao arranca sobre uma promessa."
     }
   ]
 }

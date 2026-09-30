@@ -91,7 +91,10 @@
         "funding_publicado": true,
         "idempotencia": true,
         "marca_liga_ordem_a_posicao": false,
-        "estado_do_mercado": true
+        "estado_do_mercado": true,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       }
     },
     {
@@ -103,12 +106,15 @@
         "ajusta_alavancagem": true,
         "stop_anexo": false,
         "idempotencia": true,
-        "marca_liga_ordem_a_posicao": false
+        "marca_liga_ordem_a_posicao": false,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "conferir": {
         "conector.nome": "hyperliquid",
         "conector.versao": "0.1.0",
-        "versao": "1.6.0",
+        "versao": "1.7.0",
         "instrumentos.0.simbolo": "BTC",
         "instrumentos.0.passo": "0.00001",
         "instrumentos.0.minimo": "0.00001",
@@ -131,7 +137,10 @@
         "sabe_ajustar_alavancagem": true,
         "idempotencia": true,
         "estado_do_mercado": true,
-        "minimo_de_valor_por_ordem": "10"
+        "minimo_de_valor_por_ordem": "10",
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       }
     },
     {
@@ -147,7 +156,10 @@
         "ajusta_alavancagem": true,
         "stop_anexo": false,
         "idempotencia": true,
-        "marca_liga_ordem_a_posicao": false
+        "marca_liga_ordem_a_posicao": false,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "conferir": {
         "instrumentos.0.simbolo": "BTC",
@@ -169,7 +181,10 @@
         "ajusta_alavancagem": true,
         "stop_anexo": false,
         "idempotencia": true,
-        "marca_liga_ordem_a_posicao": false
+        "marca_liga_ordem_a_posicao": false,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "conferir": {
         "instrumentos.0.alavancagem_maxima": "40"
@@ -203,7 +218,10 @@
         "ajusta_alavancagem": true,
         "stop_anexo": false,
         "idempotencia": true,
-        "marca_liga_ordem_a_posicao": false
+        "marca_liga_ordem_a_posicao": false,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "conferir": {
         "profundidade_de_livro": 20
@@ -226,7 +244,10 @@
         "stop_anexo": false,
         "idempotencia": true,
         "marca_liga_ordem_a_posicao": false,
-        "profundidade_de_livro": null
+        "profundidade_de_livro": null,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       }
     },
     {
@@ -240,7 +261,10 @@
         "stop_anexo": false,
         "idempotencia": true,
         "marca_liga_ordem_a_posicao": false,
-        "meta": null
+        "meta": null,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       }
     },
     {
@@ -257,7 +281,10 @@
         "ajusta_alavancagem": true,
         "stop_anexo": false,
         "idempotencia": true,
-        "marca_liga_ordem_a_posicao": false
+        "marca_liga_ordem_a_posicao": false,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       }
     },
     {
@@ -269,7 +296,10 @@
         "ajusta_alavancagem": false,
         "stop_anexo": false,
         "idempotencia": true,
-        "marca_liga_ordem_a_posicao": false
+        "marca_liga_ordem_a_posicao": false,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "conferir": {
         "sabe_ajustar_alavancagem": false,
@@ -320,7 +350,10 @@
               "fundingIntervalHours": 8
             }
           ]
-        }
+        },
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "conferir": {
         "instrumentos.0.funding_intervalo_horas": 1,
@@ -337,7 +370,10 @@
         "ajusta_alavancagem": true,
         "stop_anexo": false,
         "idempotencia": true,
-        "marca_liga_ordem_a_posicao": false
+        "marca_liga_ordem_a_posicao": false,
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       },
       "conferir": {
         "instrumentos.0.alavancagem_por_escalao.0.de": "0.0",
@@ -398,7 +434,10 @@
               "isDelisted": true
             }
           ]
-        }
+        },
+        "ligacao_por_protocolo": true,
+        "releitura_de_preco_ao_enviar": true,
+        "devolve_a_resolucao": true
       }
     }
   ]

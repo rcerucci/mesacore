@@ -92,6 +92,41 @@ reduzir tudo; sem a metade (a), a conferência podia estar a aceitar tudo.
 
 ## D-002 — As três obrigações do conector não têm casa no manifesto
 
+> **FECHADO — 29/09/2026** (contrato **1.6.0 → 1.7.0**, emenda `emenda-1.7.0.txt`). As três são agora
+> **três campos OBRIGATÓRIOS do manifesto**, e cada uma **medida** — não prometida: `ligacao_por_protocolo`
+> (o venue respondeu o **próprio** estado, `exchangeStatus`), `releitura_de_preco_ao_enviar` (a marca do
+> activo está publicada, `activeAssetData.markPx` — é ela a régua relida ao enviar) e `devolve_a_resolucao`
+> (o venue publica os números da execução, `userFills`). Nenhuma leitura nova foi precisa: as três saem das
+> leituras que a sonda já fazia no arranque.
+>
+> **A recusa tem duas metades, e as duas estão fixadas:** campo **ausente** → é o **contrato** que recusa
+> (`campo_obrigatorio_ausente`; o esquema é fechado, os três entraram em `required`); campo presente e
+> **`false`** → é a **porta do arranque da mesa** que recusa (`core/ciclo/arranque.ts`, porta `manifesto`,
+> `porta_do_arranque_falhou`) e o `porque` **nomeia qual** — porque um conector que declara não cumprir é
+> pior do que um conector que não arranca. E se a **sonda não conseguiu medir**, o manifesto **não sai**
+> (`capacidade_nao_declarada`): a mesa não inventa a declaração pelo conector.
+>
+> Comandos e números desta vaga: `bun tools/verificar-conector/porta-do-contrato.ts` → **0 falhas** (contrato
+> **1.7.0** · **131 casos** nos dois motores); `bun run brokers/hyperliquid/processo.ts --bancada` → **38
+> casos · 38 ok · 0 divergentes · 262 verificações · 8 portas**; `bun brokers/hyperliquid/casos/correr.ts` →
+> **24 casos · 24 ok**; `bash tools/verificar-maquina/provar.sh` → **27 de 27** (com a árvore gravada).
+>
+> **Casos novos:** 4 no contrato (3 ausências + 1 não-booleana), **4** na mesa (uma obrigação a `false` para
+> cada uma das três, com o caso `todas-as-portas-passam` como **controle**, + a ausente recusada pelo
+> contrato), **3** no conector (sonda sem medição) e **2** no processo (o venue cala o **próprio estado**; o
+> venue cala o **histórico de execução**).
+>
+> **Prova negativa sobre o artefacto** (cópia do repositório; reposição dos 6 ficheiros da vaga conferida por
+> `sha256`): a porta **deixa de conferir** as três → **4 divergentes**; a porta **só recusa a ausente** (aceita
+> `false`) → **4 divergentes**; o esquema **deixa de exigir** `devolve_a_resolucao` → **183 falhas** na porta
+> do contrato nos dois motores; a sonda **deixa de medir** `devolve_a_resolucao` → **21 divergentes** no
+> processo; e a sonda **deixa de recusar o estado calado** → **21 divergentes** (era um defeito sem caso: a
+> prova não reprovava nada antes desta vaga).
+>
+> **Nota de honestidade:** o fail-closed da obrigação **3** ao nível do *processo* é nomeado por outro motivo
+> — um venue que cala `userFills` tira primeiro o `parcial_suportada` (que também se mede por esse histórico),
+> e o processo nomeia a primeira falta. Fica dito no caso e em `emenda-1.7.0.txt`.
+
 **As obrigações** (emenda do dono, 28 set 2026 — `docs/inventario-de-chaves.md` §8.1):
 
 1. reportar a ligação **pelo protocolo** (não por silêncio de tick, nem por limiar de idade);

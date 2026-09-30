@@ -1,5 +1,5 @@
 {
-  "contrato": "1.6.0",
+  "contrato": "1.7.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",

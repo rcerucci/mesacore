@@ -203,6 +203,15 @@ Decididas na revisão dos quatro botões que este recorte declarava e **não lig
 
 ### 8.1 O que passa a ser obrigação declarada do conector (manifesto)
 
+> **CUMPRIDO — 29/09/2026** (contrato **1.6.0 → 1.7.0**; relatório `specs/004-conector-hyperliquid/
+> relatorios/emenda-1.7.0.txt`; defeito **D-002 FECHADO** em `specs/002-maquina-de-estados/relatorios/
+> DEFEITOS.md`). Os itens **1, 2 e 3** abaixo deixaram de ser prosa e são **campos obrigatórios** do
+> manifesto — `ligacao_por_protocolo`, `releitura_de_preco_ao_enviar`, `devolve_a_resolucao` — e cada um é
+> **medido** pela sonda no arranque (o `exchangeStatus` que o venue responde; a marca `activeAssetData.markPx`
+> que é a régua relida ao enviar; o `userFills` com os números da execução). Ausente quem recusa é o contrato;
+> presente e `false`, quem recusa é a **porta do arranque da mesa** e ela **nomeia qual**. O item **4** (a
+> forma da marca de posse) já era campo obrigatório desde a 1.0.0.
+
 Deixou de ser trabalho da mesa e passou a ser **capacidade que o conector declara** — e o manifesto é lido
 uma vez, ao carregar:
 

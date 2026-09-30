@@ -696,6 +696,60 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
       "isso e a forma DECLARADA, nao uma medicao nesta conta; quem o mede e a bateria",
   );
 
+  // ---- 10-bis. AS TRES OBRIGACOES DO CONECTOR (contrato 1.7.0, D-002) ------------------------------
+  //
+  // A emenda do dono de 28 set 2026 escreveu-as em prosa (`docs/inventario-de-chaves.md` §8.1) e a prosa
+  // nao as conferia: nao havia onde perguntar. Agora sao CONTRATO, e cada uma e MEDIDA no que o venue
+  // publicou neste arranque — nao e uma promessa do conector sobre si proprio.
+  //
+  //   (1) ligacao PELO PROTOCOLO. O venue respondeu o PROPRIO estado operacional: e o protocolo, e nao o
+  //       silencio de tick nem um limiar de idade, a dizer se a ligacao esta viva (RN-D3).
+  //   (2) RELEITURA DO PRECO AO ENVIAR. A marca do activo esta publicada: e ela a regua que o conector
+  //       RELÊ no instante do envio, e de que o desvio declarado na boleta e medido (RN-B11, RN-E20).
+  //   (3) DEVOLVE A RESOLUCAO. O venue publica os numeros da execucao (`userFills`: quantidade, preco,
+  //       taxa): e de onde a resolucao de depois do envio se compoe (RN-C10).
+  const textoDaFalha = (r: Resposta | undefined, nome: string) =>
+    razaoDaFalha(r, nome) ?? `a resposta de \`${nome}\` nao veio`;
+  if (estado === undefined) {
+    desconhecido("ligacao_por_protocolo", textoDaFalha(respostas.estado_da_exchange, "exchangeStatus"));
+  } else {
+    medido(
+      "ligacao_por_protocolo",
+      true,
+      "info.exchangeStatus()",
+      "o venue responde o PROPRIO estado pelo protocolo — e assim que a ligacao e' reportada, e nao por " +
+        "silencio de tick nem por limiar de idade (RN-D3)",
+    );
+  }
+  const activoDaObrigacao = objecto(veio(respostas.activo_da_conta));
+  const marcaDaObrigacao = activoDaObrigacao === undefined ? undefined : texto(activoDaObrigacao["markPx"]);
+  if (marcaDaObrigacao === undefined) {
+    desconhecido(
+      "releitura_de_preco_ao_enviar",
+      textoDaFalha(respostas.activo_da_conta, "activeAssetData") +
+        " (sem marca publicada nao ha regua viva para reler ao enviar)",
+    );
+  } else {
+    medido(
+      "releitura_de_preco_ao_enviar",
+      true,
+      "info.activeAssetData({user,coin}).markPx",
+      `a marca do activo esta publicada (${marcaDaObrigacao}): e' ela a regua RELIDA no instante do envio, de ` +
+        "que o desvio declarado na boleta e' medido (RN-B11, RN-E20)",
+    );
+  }
+  if (execucoes === undefined) {
+    desconhecido("devolve_a_resolucao", textoDaFalha(respostas.execucoes, "userFills"));
+  } else {
+    medido(
+      "devolve_a_resolucao",
+      true,
+      "info.userFills({user})",
+      `o venue publica os numeros da execucao (${execucoes.length} execucao(oes) lidas: quantidade, preco e ` +
+        "taxa de cada uma) — e' de onde a resolucao de depois do envio se compoe (RN-C10)",
+    );
+  }
+
   // ---- 11. A SONDA --------------------------------------------------------------------------------
   const porCampo = new Map(campos.map((c) => [c.campo, c]));
   const sonda: Sonda = {
@@ -718,6 +772,10 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
     marca_de_posse: porCampo.get("marca_de_posse")?.valor as string | undefined,
     marca_liga_ordem_a_posicao: porCampo.get("marca_liga_ordem_a_posicao")?.valor as boolean | undefined,
     estado_do_mercado: porCampo.get("estado_do_mercado")?.valor as boolean | undefined,
+    // As TRES OBRIGACOES (contrato 1.7.0, D-002): medidas acima, secao 10-bis.
+    ligacao_por_protocolo: porCampo.get("ligacao_por_protocolo")?.valor as boolean | undefined,
+    releitura_de_preco_ao_enviar: porCampo.get("releitura_de_preco_ao_enviar")?.valor as boolean | undefined,
+    devolve_a_resolucao: porCampo.get("devolve_a_resolucao")?.valor as boolean | undefined,
   };
 
   return { sonda, campos, nao_medidos };

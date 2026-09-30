@@ -147,3 +147,15 @@ class ManifestoDoConector(BaseModel):
         ...,
         description='Se o venue sabe dizer se o mercado esta aberto (RN-D8). Sem isto, mercado fechado so se detecta pela ausencia de leitura.',
     )
+    ligacao_por_protocolo: bool = Field(
+        ...,
+        description='OBRIGACAO DO CONECTOR, 1 de 3 (aditiva na 1.7.0; emenda do dono de 28 set 2026, `docs/inventario-de-chaves.md` §8.1): o estado da ligacao e reportado PELO PROTOCOLO do venue — nunca por silencio de tick, nunca por limiar de idade. Em varejo o silencio do tick nao distingue mercado calmo de ligacao morta, e por isso o facto tem de vir do protocolo. E o que alimenta a condicao `sem_ligacao`, que trava ABRIR (RN-D3); sem esta declaracao verdadeira a mesa recusa o arranque, em vez de ficar sem saber se o venue esta vivo.',
+    )
+    releitura_de_preco_ao_enviar: bool = Field(
+        ...,
+        description='OBRIGACAO DO CONECTOR, 2 de 3 (aditiva na 1.7.0): o conector RELE o preco ao enviar e mede o desvio a partir da regua RELIDA — e nao de uma marca guardada do ciclo. E o que faz o `desvio_maximo` da boleta significar alguma coisa no instante em que a ordem sai (RN-B11, RN-E20), e o que a accao publicada declara em `preco_de_referencia`. Sem esta declaracao verdadeira a mesa recusa o arranque: a boleta declara um desvio, e sem regua viva nao ha contra o que o medir.',
+    )
+    devolve_a_resolucao: bool = Field(
+        ...,
+        description='OBRIGACAO DO CONECTOR, 3 de 3 (aditiva na 1.7.0): o conector devolve a RESOLUCAO — quantidade, nocional, margem empenhada, alavancagem efectiva e preco de liquidacao (RN-C10; `contracts/resolucao.schema.json`). Sem esta declaracao verdadeira a mesa recusa o arranque: sem os numeros da corretora, quem garante a banda declarada e o conector, e a conferencia da banda (D-001) nao tem o que conferir.',
+    )

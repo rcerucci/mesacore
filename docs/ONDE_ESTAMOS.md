@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **29/09/2026, 19:52 (-03)** · `HEAD dc617f4` · árvore **limpa** · contrato vigente **1.5.0**
+medido em **29/09/2026, 23:20 (-03)** · `HEAD af70d46` + a vaga do item 3 (por gravar) · contrato vigente **1.7.0**
 
 Este é o documento que se abre primeiro. Cada número aqui foi medido nesta hora — o comando vem ao lado — e o
 que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo substitui um número.
@@ -23,10 +23,10 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 |---|---|---|
 | A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **27 de 27 passaram** (numa cópia com a árvore gravada — ver §4) |
 | A **conferência da banda** (D-001, fechado hoje) | `bun run core/ciclo/provar.ts` | **90 verificações · 0 divergentes** — 12 de condição · 27 de ciclo · 10 de desfecho · **15 de banda** · 6 de reconciliação |
-| O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto 21 · ordens+cloid **40** · leitura 14 · histórico **26** |
-| **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **36 casos · 36 ok · 0 divergentes · 250 verificações · 8 portas** |
-| A conformidade do conector | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 238 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
-| O contrato nas duas linguagens | `bun tools/verificar-conector/porta-do-contrato.ts` | **0 falhas** — contrato **1.6.0** · **127 casos** nos dois motores · 23 sondas da emenda |
+| O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **40** · leitura 14 · histórico **26** |
+| **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** |
+| A conformidade do conector | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 241 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
+| O contrato nas duas linguagens | `bun tools/verificar-conector/porta-do-contrato.ts` | **0 falhas** — contrato **1.7.0** · **131 casos** nos dois motores · 23 sondas da emenda |
 | As tarefas dos recortes | `grep -c '^- \[x\]' specs/*/tasks.md` | 001 **59/59** · 002 **67/67** · 003 **63/63** · 004 **71 fechadas · 3 abertas** |
 | O tamanho do que é nosso | `git ls-files` + `wc -l` | **17.895+** linhas de TypeScript · 2.980 de Python · 3.499 de shell |
 
@@ -41,22 +41,28 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
   não existe; o registo `brokers/hyperliquid/conformidade/1.4.0.txt` foi escrito **à mão**.
 - **A bateria de TESTE do venue** (as 8 provas do SC-004) — a que existe é offline e declara-se incompleta.
 
-## 4. O que mudou nesta vaga (medido, e nada está gravado no git)
+## 4. O que mudou nesta vaga — os três itens (medido, e o terceiro gravado agora)
 
-1. **O envio passou a existir** (`brokers/hyperliquid/ordens.ts` deriva o preço de envio do desvio declarado;
-   `processo.ts` assina e submete em quatro passos; `identidade.ts` é a 8ª porta do arranque).
-2. **A banda da moeda passou a ser a medida** (contrato **1.6.0**, `^[A-Za-z0-9]{1,11}$`) — e o número
-   `1400 trazem dígito`, que estava no esquema, na porta e no `versao.json`, foi **corrigido para 72** (contava
-   também nomes de *pares* de spot, que não são moedas).
-3. **A conferência da banda** (D-001) entrou na mesa (§2).
-4. O *stash* que estava parado foi **aplicado** — não há nada parado em stash; o que se seguiu foi consertado e
-   está dito: o trabalho vinha com **3 casos divergentes**, e a causa de um deles era séria — a régua (a marca
-   do venue) deixara de ser conferida, e uma marca estragada ia ao envio em vez de recusar.
+1. **A conferência da banda** (defeito **D-001**) passou a existir: `core/ciclo/banda.ts` confere a resolução
+   contra a banda do mandato, em três comparações, e liga-a nos dois sítios onde a resolução e a acção vivem.
+   O que **não se consegue conferir** não vira «cabe»: é `nao_conferivel` e **trava a abertura**. **FECHADO.**
+2. **O envio passou a existir** (`brokers/hyperliquid/ordens.ts` deriva o preço de envio do desvio declarado,
+   com a régua (a marca) conferida **antes** de o preço ser quantizado — a ordem do defeito estava trocada, e
+   era isso que deixava uma marca estragada ir ao envio; `processo.ts` assina e submete; `identidade.ts` é a
+   8ª porta do arranque, que trava quem não é agente desta conta). **FECHADO.**
+3. **As três obrigações do conector** (defeito **D-002**) passaram de prosa a **contrato 1.7.0**: o manifesto
+   declara `ligacao_por_protocolo`, `releitura_de_preco_ao_enviar` e `devolve_a_resolucao`, cada uma **medida**
+   pela sonda no arranque, e a mesa **não arranca** sem elas — ausente recusa o contrato, presente e `false`
+   recusa a porta `manifesto` da mesa **nomeando qual**. **FECHADO** (`relatorios/emenda-1.7.0.txt`).
+4. A banda da moeda passou a ser a medida (contrato 1.6.0, `^[A-Za-z0-9]{1,11}$`) — e o número `1400 trazem
+   dígito`, que estava no esquema, na porta e no `versao.json`, foi **corrigido para 72** (contava também nomes
+   de *pares* de spot, que não são moedas).
+5. O *stash* que estava parado foi **aplicado** e não há nada em stash: o trabalho vinha com **3 casos
+   divergentes**, e um deles era sério (o do ponto 2).
 
-`provar.sh` dá **27 de 27** numa cópia com a árvore **gravada**. No repositório, a única porta que fica vermelha
-é a **prova negativa da frescura**, e por uma razão mecânica e dita: ela exige `contracts/gerado` **limpo em
-git** antes de correr, e o trabalho desta vaga (e das duas anteriores) ainda **não está gravado** — 2 ficheiros
-novos e ~55 modificados. Gravar fecha-a.
+Os dois primeiros itens estão no commit `af70d46`; o terceiro é o desta vaga. `provar.sh` dá **27 de 27** com
+a árvore **gravada** — no repositório, a única porta que fica vermelha antes de gravar é a **prova negativa da
+frescura**, e por uma razão mecânica e dita: ela exige `contracts/gerado` **limpo em git** antes de correr.
 
 As três tarefas abertas do recorte 004 pedem todas **enviar** ao venue: **T042** (SC-003, a contagem de
 idempotência lá), **T048** (SC-007, os cinco números com posição viva), **T057** (SC-004, as 8 provas no

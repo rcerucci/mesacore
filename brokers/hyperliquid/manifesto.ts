@@ -61,6 +61,17 @@ export type Sonda = {
   marca_de_posse?: string;
   marca_liga_ordem_a_posicao?: boolean;
   estado_do_mercado?: boolean;
+  /**
+   * AS TRES OBRIGACOES DO CONECTOR (contrato 1.7.0). Sao factos que a sonda MEDE, e nao promessas: a mesa
+   * depende deles em tres regras suas, e por isso a porta do manifesto do arranque recusa o arranque quando
+   * qualquer uma vem ausente ou `false`.
+   */
+  /** (1) o estado da ligacao reporta-se PELO PROTOCOLO — medido: o venue responde o proprio estado. */
+  ligacao_por_protocolo?: boolean;
+  /** (2) o conector RELE o preco ao enviar — medido: a marca do activo esta publicada, e e ela a regua. */
+  releitura_de_preco_ao_enviar?: boolean;
+  /** (3) o conector devolve a RESOLUCAO — medido: o venue publica os numeros da execucao. */
+  devolve_a_resolucao?: boolean;
 };
 
 export type Recusa = { ok: false; motivo: string; porque: string };
@@ -160,6 +171,11 @@ export function construirManifesto(sonda: Sonda): Resultado {
     ["idempotencia", sonda.idempotencia],
     ["marca_liga_ordem_a_posicao", sonda.marca_liga_ordem_a_posicao],
     ["estado_do_mercado", sonda.estado_do_mercado],
+    // As TRES OBRIGACOES (contrato 1.7.0, D-002): a mesa nao arranca sem as tres, e por isso uma que a
+    // sonda nao tenha conseguido medir RECUSA aqui — e nao sai um manifesto a dizer que sim.
+    ["ligacao_por_protocolo", sonda.ligacao_por_protocolo],
+    ["releitura_de_preco_ao_enviar", sonda.releitura_de_preco_ao_enviar],
+    ["devolve_a_resolucao", sonda.devolve_a_resolucao],
   ];
   for (const [nome, valor] of capacidades) {
     if (valor !== true && valor !== false) {
@@ -269,6 +285,10 @@ export function construirManifesto(sonda: Sonda): Resultado {
     marca_de_posse: sonda.marca_de_posse,
     marca_liga_ordem_a_posicao: sonda.marca_liga_ordem_a_posicao,
     estado_do_mercado: sonda.estado_do_mercado,
+    // As TRES OBRIGACOES (contrato 1.7.0, D-002), declaradas como FACTOS medidos pela sonda:
+    ligacao_por_protocolo: sonda.ligacao_por_protocolo,
+    releitura_de_preco_ao_enviar: sonda.releitura_de_preco_ao_enviar,
+    devolve_a_resolucao: sonda.devolve_a_resolucao,
   };
   return { ok: true, manifesto };
 }

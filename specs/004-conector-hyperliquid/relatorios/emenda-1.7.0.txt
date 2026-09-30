@@ -1,0 +1,151 @@
+EMENDA 1.7.0 — AS TRES OBRIGACOES DO CONECTOR passam de PROSA a CONTRATO
+=========================================================================
+
+De: 1.6.0  Para: 1.7.0  (aditiva: tres campos novos em `required`; nenhum campo
+antigo muda de sentido, e nada e' removido)
+
+O QUE A EMENDA RESOLVE, EM UMA LINHA: a emenda do dono de 28/09/2026 (oito itens,
+`docs/inventario-de-chaves.md` §8.1) escreveu TRES obrigacoes do conector em prosa — e prosa
+nao recusa nada; a partir de agora sao tres campos OBRIGATORIOS do manifesto, e a mesa nao
+arranca sem elas.
+
+AS TRES OBRIGACOES, e onde cada uma e' MEDIDA (nao prometida)
+--------------------------------------------------------------
+
+  (1) `ligacao_por_protocolo`   o estado da ligacao reporta-se PELO PROTOCOLO da corretora —
+                                nunca por silencio de tick nem por limiar de idade.
+      medicao: `info.exchangeStatus()` respondeu o proprio estado operacional do venue
+               (`brokers/hyperliquid/sonda.ts`, secao 10-bis) → `true`
+      sem ela: a condicao `sem_ligacao` da mesa (RN-D3) fica sem fonte, e ABRIR nao se trava
+
+  (2) `releitura_de_preco_ao_enviar`   o conector RELÊ o preco no instante de enviar e mede o
+                                desvio a partir DESSA regua (nao de uma marca guardada)
+      medicao: a marca do activo esta publicada (`info.activeAssetData({user,coin}).markPx`)
+               → `true`
+      sem ela: o `desvio_maximo` declarado na boleta seria medido contra uma marca do ciclo,
+               e nao contra o preco do instante do envio (RN-B11, RN-E20)
+
+  (3) `devolve_a_resolucao`     o conector devolve a RESOLUCAO (a conta da corretora) com
+                                NUMEROS, para a mesa conferir contra a sua banda
+      medicao: o venue publica os numeros da execucao (`info.userFills({user})`: quantidade,
+               preco e taxa de cada uma) → `true`
+      sem ela: a conferencia da banda (D-001) nao tem o que conferir — e quem garante a banda
+               declarada passa a ser o conector
+
+AS MEDICOES DO VENUE (sondas ja existentes, agora com estas tres a mais)
+-----------------------------------------------------------------------
+
+  `sonda.ts` passou de 6 para 9 declaracoes medidas no arranque (as tres novas mais as seis de
+  antes), e a bateria de conformidade passou de **238 para 241 verificacoes** — as tres
+  obrigacoes acrescentam tres verificacoes, e nenhuma das 9 provas mudou de veredicto. As tres
+  novas sairam de leituras que a sonda JA fazia no arranque — nao foi preciso leitura nova
+  nenhuma:
+    - `exchangeStatus`          → o estado pelo protocolo
+    - `activeAssetData.markPx`  → a marca que serve de regua viva
+    - `userFills`               → os numeros da execucao
+  A 3 e' a unica com uma parte que a sonda nao le: a resolucao compoe-se tambem com a POSICAO
+  (`brokers/hyperliquid/conector.ts`), que e' da porta `conta`. O manifesto declara o que o
+  VENUE publica; a posicao e leitura de outra porta, e esta dito no comentario do campo.
+
+O QUE A RECUSA FAZ (as duas metades da mesma regra)
+---------------------------------------------------
+
+  AUSENTE  -> quem recusa e' o CONTRATO. `campo_obrigatorio_ausente` (o esquema e fechado,
+              `additionalProperties: false`, e os tres entraram em `required`).
+  PRESENTE e `false` -> quem recusa e' a PORTA DO ARRANQUE da mesa
+              (`core/ciclo/arranque.ts`, porta `manifesto`) com `porta_do_arranque_falhou`,
+              e o `porque` NOMEIA qual das tres — porque um conector que declara nao cumprir
+              e pior do que um conector que nao arranca.
+  NAO MEDIDA pela sonda -> o manifesto nem sai: `capacidade_nao_declarada` nomeando o campo
+              (fail-closed; a mesa nao inventa a declaracao pelo conector).
+
+  A mesa MANTEM-SE a decidir: ela nao passa a confiar no conector — passa a poder RECUSA-LO.
+
+OS CASOS QUE FIXAM ISTO (todos novos nesta emenda)
+--------------------------------------------------
+
+  contrato (`contracts/casos/manifesto.casos.json`, lido pelos DOIS motores): 22 casos (eram 18)
+    manifesto/sem-a-ligacao-por-protocolo            -> campo_obrigatorio_ausente
+    manifesto/sem-a-releitura-de-preco-ao-enviar     -> campo_obrigatorio_ausente
+    manifesto/sem-devolver-a-resolucao               -> campo_obrigatorio_ausente
+    manifesto/ligacao-por-protocolo-nao-booleana     -> tipo_invalido  (`"sim"` nao e `true`)
+
+  mesa (`core/ciclo/arranque.casos.json`): 21 casos (eram 17)
+    obrigacao-nao-cumprida-recusa-a-abertura (D-002, obrigacao 1, 2 e 3)
+        o mesmo fixture do caso `todas-as-portas-passam` (o CONTROLE) com uma obrigacao a
+        `false` -> nao arranca, porta `manifesto`, `porta_do_arranque_falhou`
+    obrigacao-ausente-e-o-contrato-que-recusa (D-002, obrigacao 3)
+        sem o campo -> `campo_obrigatorio_ausente` do contrato; as duas metades no mesmo lugar
+
+  conector (`brokers/hyperliquid/casos/manifesto.casos.json`): 24 casos (eram 21)
+    manifesto/capacidade-ausente-recusa-ligacao-por-protocolo
+    manifesto/capacidade-ausente-recusa-releitura-de-preco-ao-enviar
+    manifesto/capacidade-ausente-recusa-devolve-a-resolucao
+        a sonda nao mediu -> nao ha manifesto (`capacidade_nao_declarada`)
+
+  processo (`brokers/hyperliquid/casos/processo.casos.json`): 38 casos (eram 36)
+    arranque/sem-o-estado-do-venue-nao-ha-manifesto (obrigacao 1)
+        venue que responde TUDO menos o proprio estado -> a sonda nao mede a obrigacao 1 e o
+        manifesto recusa com `capacidade_nao_declarada` (porta `sonda_e_manifesto`, 7 portas)
+    arranque/sem-o-historico-de-execucao-nao-ha-manifesto (obrigacao 3)
+        venue que cala `userFills` -> a recusa vem do `parcial_suportada`
+        (`campo_obrigatorio_ausente`), porque a politica de parcial tambem se mede por esse
+        historico: a calada tira DUAS coisas e o processo nomeia a primeira que falta. O
+        fail-closed da propria obrigacao 3 esta provado ao nivel da sonda (caso acima) e pela
+        prova negativa 4 abaixo.
+
+DUAS CASAS QUE MENTIRAM, E FORAM APANHADAS POR UM PORTAO
+--------------------------------------------------------
+
+  1. O duple da bateria declarava as tres novas nos `bateria` de `processo.casos.json` E a
+     sonda passou a medi-las: campo declarado duas vezes. A porta `sonda_e_manifesto` recusou
+     com `campo_desconhecido` — «duas declaracoes do mesmo campo, e o processo nao escolhe
+     uma» — em 23 dos 36 casos. Corrigido: as tres sairam dos blocos `bateria` (a bateria
+     declara o que a sonda NAO mede).
+  2. O proprio autor (eu) escreveu `ligacao-por-protocolo` (com hifen, do nome do caso) como
+     chave da sonda, em vez de `ligacao_por_protocolo`: os tres casos passavam sem medir nada.
+     Apanhado porque o caso dizia «recusa» e a bancada deu `ok` — e' o que a bancada serve
+     para fazer.
+
+PROVAS NEGATIVAS (sobre COPIA do repositorio; reposicao conferida por `sha256`)
+------------------------------------------------------------------------------
+
+  ficheiros da vaga: `core/ciclo/arranque.ts`, `contracts/manifesto.schema.json`,
+  `brokers/hyperliquid/sonda.ts`, `core/ciclo/arranque.casos.json`,
+  `contracts/casos/manifesto.casos.json`, `brokers/hyperliquid/casos/manifesto.casos.json`
+  (6 ficheiros; repostos byte a byte, `sha256` igual, e o arranque na copia volta a `rc=0`)
+
+  (1) a porta deixa de conferir as tres obrigacoes          -> **4 divergentes** (as 3
+      obrigacoes a `false` e a SC-006: 3 arranques com porta falhada, tem de ser 0)
+  (2) a porta so recusa a AUSENTE (aceita `false`)          -> **4 divergentes** (as mesmas):
+      e' o que separa «nao declarou» de «declarou que nao»
+  (3) o esquema deixa de EXIGIR `devolve_a_resolucao`       -> **183 falhas** na porta do
+      contrato nos DOIS motores (os casos do campo removido deixam de ter o veredicto que
+      declaram)
+  (4) a sonda deixa de MEDIR `devolve_a_resolucao`          -> **21 divergentes** no processo
+      (36 casos); no processo a sonda corre a serio sobre o duple, e a medicao em falta para
+      o manifesto todo
+  (5) a sonda deixa de recusar quando o venue cala o proprio estado (aceita sempre)
+                                                            -> **21 divergentes**: e' o caso
+      novo do `exchangeStatus` calado que a apanha (antes desta vaga, esta prova nao reprovava
+      nada — o defeito estava LA e nao tinha caso)
+
+O QUE ESTA EMENDA NAO RESOLVE (dito, para nao se ler mais do que o que esta)
+---------------------------------------------------------------------------
+
+  - `docs/ONDE_ESTAMOS.md` §"o que NAO existe": o ciclo (`desfecho`/`ciclo`) ainda NAO e
+    chamado pelo servidor (`core/servidor.ts` corre comandos e as sete portas, nao voltas de
+    ciclo). As tres obrigacoes ficam conferidas no ARRANQUE; a ligacao entre arranque e volta
+    de ciclo e' trabalho da mesa, nao desta emenda.
+  - D-006 (a tabela trata «nao sei» como «nao ha», `core/estados/maquina.ts:94,98`) segue
+    ABERTO, e e' o proximo item.
+
+COMO SE REPRODUZ
+----------------
+
+  $ bun tools/verificar-conector/porta-do-contrato.ts      # contrato 1.7.0, os dois motores
+  $ bun run brokers/hyperliquid/processo.ts --bancada      # as 8 portas do arranque
+  $ bun brokers/hyperliquid/casos/correr.ts                # a sonda e o manifesto
+  $ bun tools/verificar-conector/conformidade.ts           # a bateria offline (9 provas)
+  $ bun run core/ciclo/provar.ts                           # a mesa: banda, ciclo, desfecho
+  $ bash tools/verificar-maquina/provar.sh                 # tudo, 27 provas

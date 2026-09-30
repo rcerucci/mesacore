@@ -1,13 +1,17 @@
 {
   "mensagem": "processo",
-  "contrato_vigente": "1.6.0",
+  "contrato_vigente": "1.7.0",
   "nota_do_contrato": "A versao do contrato que este ficheiro declara. A bancada confere-a contra contracts/versao.json e CAI se o contrato subir sem este ficheiro subir: uma versao escrita a mao num ficheiro de dados envelhece em silencio, e passaria a medir outra coisa sem o dizer.",
   "nota": "Casos da PORTA DE PROCESSO do conector hyperliquid (FR-019/T010). Este ficheiro serve DOIS leitores, e di-lo: (1) o duble da mesa (contracts/mocks/mesa/main.py --papel conector --casos <este>), que arranca o processo como PLUGIN e confere a ultima linha contra o envelope; (2) a bancada da propria porta (bun run brokers/hyperliquid/processo.ts --bancada), que arranca UM processo por caso, confere as linhas, a ORDEM das portas do arranque e o diagnostico. Os casos de `arranque.casos` so a bancada os corre: o duble da mesa arranca o processo com UMA ficha e UM duble do venue (o comando do plugin e fixo), e estes casos precisam de variantes.",
   "dono": "os casos e o duble do venue sao DADO desta bancada. Nenhum numero do venue foi medido AQUI: os valores sao o que o duble responde, com a mesma FORMA do venue real. O que se mede e o processo: a ordem das portas, as recusas, a resolucao e o desfecho.",
   "enderecos_do_venue": {
     "nota": "Os enderecos do venue, por ambiente. Vivem em DADO (RN-C1: nenhum valor do venue no codigo) e sao o que a porta `ambiente_e_rede` confere contra a ficha.",
-    "teste": ["https://api.hyperliquid-testnet.xyz"],
-    "producao": ["https://api.hyperliquid.xyz"]
+    "teste": [
+      "https://api.hyperliquid-testnet.xyz"
+    ],
+    "producao": [
+      "https://api.hyperliquid.xyz"
+    ]
   },
   "credencial_do_duble": {
     "nota": "O duble da credencial: a bancada DEFINE esta variavel no ambiente dos processos que arranca, com um valor GERADO em execucao. O valor nunca se escreve em ficheiro nenhum — se estivesse escrito num ficheiro versionado, a propria porta `chave` recusava o arranque (FR-023/RN-E14), que e exactamente o que ela deve fazer.",
@@ -21,7 +25,7 @@
     "base": {
       "nota": "A ficha do processo, para o duble: UMA conta, UMA credencial por referencia, os instrumentos que o mandato nomeia. O endereco e um endereco de TESTE do duble — nao e a conta do dono.",
       "conector": "hyperliquid",
-      "contrato": "1.6.0",
+      "contrato": "1.7.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -33,7 +37,9 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "sem_contrato": {
       "nota": "A ficha nao declara a versao do contrato que fala.",
@@ -49,12 +55,14 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "sem_conta": {
       "nota": "A ficha nao declara com que conta se fala: sem conta nao ha um processo por (corretora, conta).",
       "conector": "hyperliquid",
-      "contrato": "1.6.0",
+      "contrato": "1.7.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -65,7 +73,9 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "versao_a_frente": {
       "nota": "A ficha declara uma versao que NAO e a vigente (a versao do contrato e conferida por igualdade EXACTA, nunca por «compativel» — D7); o numero fica fora de qualquer serie plausivel para o caso nao envelhecer quando o contrato subir.",
@@ -82,12 +92,14 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "duas_contas": {
       "nota": "A ficha traz `contas` (uma lista): o contrato desta ponta e UMA conta por processo — uma ligacao, uma chave (FR-019).",
       "conector": "hyperliquid",
-      "contrato": "1.6.0",
+      "contrato": "1.7.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -102,12 +114,14 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "producao": {
       "nota": "Ambiente de producao, com o endereco de producao: o recorte corre em TESTE (RN-H17), e a passagem a producao e decisao do dono.",
       "conector": "hyperliquid",
-      "contrato": "1.6.0",
+      "contrato": "1.7.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -119,12 +133,14 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "endereco_trocado": {
       "nota": "Ambiente declarado de teste e endereco de producao: a rede nao bate com o ambiente, e nao se corrige em silencio.",
       "conector": "hyperliquid",
-      "contrato": "1.6.0",
+      "contrato": "1.7.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -136,12 +152,14 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "chave_sem_referencia": {
       "nota": "A credencial nao diz de onde vem: falta de credencial e uma recusa NOMEADA (FR-023).",
       "conector": "hyperliquid",
-      "contrato": "1.6.0",
+      "contrato": "1.7.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -153,12 +171,14 @@
         "referencia": "duble-do-conector",
         "valor_em": ""
       },
-      "instrumentos": ["BTC"]
+      "instrumentos": [
+        "BTC"
+      ]
     },
     "instrumento_inexistente": {
       "nota": "O mandato nomeia SOL e o venue nao o oferece: a sonda e o manifesto RECUSAM, dizendo QUAL (FR-003/US1.3).",
       "conector": "hyperliquid",
-      "contrato": "1.6.0",
+      "contrato": "1.7.0",
       "versao_do_conector": "0.1.0",
       "venue": {
         "nome": "hyperliquid",
@@ -170,7 +190,9 @@
         "referencia": "duble-do-conector",
         "valor_em": "env:MESACORE_DUBLE_CREDENCIAL"
       },
-      "instrumentos": ["SOL"]
+      "instrumentos": [
+        "SOL"
+      ]
     }
   },
   "venues": {
@@ -187,65 +209,193 @@
       "sonda": {
         "meta": {
           "universe": [
-            { "name": "BTC", "szDecimals": 5, "maxLeverage": 40, "marginMode": "strictIsolated" },
-            { "name": "ETH", "szDecimals": 4, "maxLeverage": 25 }
+            {
+              "name": "BTC",
+              "szDecimals": 5,
+              "maxLeverage": 40,
+              "marginMode": "strictIsolated"
+            },
+            {
+              "name": "ETH",
+              "szDecimals": 4,
+              "maxLeverage": 25
+            }
           ]
         },
         "meta_e_ctxs": [
           {
             "universe": [
-              { "name": "BTC", "szDecimals": 5, "maxLeverage": 40 },
-              { "name": "ETH", "szDecimals": 4, "maxLeverage": 25 }
+              {
+                "name": "BTC",
+                "szDecimals": 5,
+                "maxLeverage": 40
+              },
+              {
+                "name": "ETH",
+                "szDecimals": 4,
+                "maxLeverage": 25
+              }
             ]
           },
-          [{ "funding": "0.0000125" }, { "funding": "0.0000100" }]
+          [
+            {
+              "funding": "0.0000125"
+            },
+            {
+              "funding": "0.0000100"
+            }
+          ]
         ],
         "livro": {
           "coin": "BTC",
           "levels": [
             [
-              ["59999.5", "1.2"],
-              ["59999", "0.8"],
-              ["59998.5", "2.0"],
-              ["59998", "0.4"],
-              ["59997.5", "3.1"]
+              [
+                "59999.5",
+                "1.2"
+              ],
+              [
+                "59999",
+                "0.8"
+              ],
+              [
+                "59998.5",
+                "2.0"
+              ],
+              [
+                "59998",
+                "0.4"
+              ],
+              [
+                "59997.5",
+                "3.1"
+              ]
             ],
             [
-              ["60000.5", "1.1"],
-              ["60001", "0.9"],
-              ["60001.5", "2.2"],
-              ["60002", "0.5"],
-              ["60002.5", "3.3"]
+              [
+                "60000.5",
+                "1.1"
+              ],
+              [
+                "60001",
+                "0.9"
+              ],
+              [
+                "60001.5",
+                "2.2"
+              ],
+              [
+                "60002",
+                "0.5"
+              ],
+              [
+                "60002.5",
+                "3.3"
+              ]
             ]
           ]
         },
         "velas": [
-          { "t": 1759003200000, "c": "59900" },
-          { "t": 1759006800000, "c": "59920" },
-          { "t": 1759010400000, "c": "59940" },
-          { "t": 1759014000000, "c": "59960" },
-          { "t": 1759017600000, "c": "59980" },
-          { "t": 1759021200000, "c": "60000" },
-          { "t": 1759024800000, "c": "60020" },
-          { "t": 1759028400000, "c": "60040" },
-          { "t": 1759032000000, "c": "60060" },
-          { "t": 1759035600000, "c": "60080" },
-          { "t": 1759039200000, "c": "60100" },
-          { "t": 1759042800000, "c": "60080" },
-          { "t": 1759046400000, "c": "60060" },
-          { "t": 1759050000000, "c": "60040" },
-          { "t": 1759053600000, "c": "60020" },
-          { "t": 1759057200000, "c": "60000" },
-          { "t": 1759060800000, "c": "59980" },
-          { "t": 1759064400000, "c": "59960" },
-          { "t": 1759068000000, "c": "59940" },
-          { "t": 1759071600000, "c": "59920" },
-          { "t": 1759075200000, "c": "59900" },
-          { "t": 1759078800000, "c": "59920" },
-          { "t": 1759082400000, "c": "59940" },
-          { "t": 1759086000000, "c": "59960" }
+          {
+            "t": 1759003200000,
+            "c": "59900"
+          },
+          {
+            "t": 1759006800000,
+            "c": "59920"
+          },
+          {
+            "t": 1759010400000,
+            "c": "59940"
+          },
+          {
+            "t": 1759014000000,
+            "c": "59960"
+          },
+          {
+            "t": 1759017600000,
+            "c": "59980"
+          },
+          {
+            "t": 1759021200000,
+            "c": "60000"
+          },
+          {
+            "t": 1759024800000,
+            "c": "60020"
+          },
+          {
+            "t": 1759028400000,
+            "c": "60040"
+          },
+          {
+            "t": 1759032000000,
+            "c": "60060"
+          },
+          {
+            "t": 1759035600000,
+            "c": "60080"
+          },
+          {
+            "t": 1759039200000,
+            "c": "60100"
+          },
+          {
+            "t": 1759042800000,
+            "c": "60080"
+          },
+          {
+            "t": 1759046400000,
+            "c": "60060"
+          },
+          {
+            "t": 1759050000000,
+            "c": "60040"
+          },
+          {
+            "t": 1759053600000,
+            "c": "60020"
+          },
+          {
+            "t": 1759057200000,
+            "c": "60000"
+          },
+          {
+            "t": 1759060800000,
+            "c": "59980"
+          },
+          {
+            "t": 1759064400000,
+            "c": "59960"
+          },
+          {
+            "t": 1759068000000,
+            "c": "59940"
+          },
+          {
+            "t": 1759071600000,
+            "c": "59920"
+          },
+          {
+            "t": 1759075200000,
+            "c": "59900"
+          },
+          {
+            "t": 1759078800000,
+            "c": "59920"
+          },
+          {
+            "t": 1759082400000,
+            "c": "59940"
+          },
+          {
+            "t": 1759086000000,
+            "c": "59960"
+          }
         ],
-        "estado_da_exchange": { "specialStatuses": null },
+        "estado_da_exchange": {
+          "specialStatuses": null
+        },
         "ordens_historicas": [
           {
             "order": {
@@ -270,17 +420,43 @@
             }
           }
         ],
-        "execucoes": [{ "oid": 8841, "coin": "BTC", "sz": "0.001" }],
+        "execucoes": [
+          {
+            "oid": 8841,
+            "coin": "BTC",
+            "sz": "0.001"
+          }
+        ],
         "fundings_previstos": [
-          ["BTC", [{ "HlPerp": { "fundingRate": "0.0000125", "nextFundingTime": 1759092000000, "fundingIntervalHours": 1 } }]]
+          [
+            "BTC",
+            [
+              {
+                "HlPerp": {
+                  "fundingRate": "0.0000125",
+                  "nextFundingTime": 1759092000000,
+                  "fundingIntervalHours": 1
+                }
+              }
+            ]
+          ]
         ],
         "activo_da_conta": {
           "user": "0x1111111111111111111111111111111111111111",
           "coin": "BTC",
-          "leverage": { "type": "cross", "value": 5 },
+          "leverage": {
+            "type": "cross",
+            "value": 5
+          },
           "markPx": "60000",
-          "maxTradeSzs": ["0.5", "0.5"],
-          "availableToTrade": ["900", "900"]
+          "maxTradeSzs": [
+            "0.5",
+            "0.5"
+          ],
+          "availableToTrade": [
+            "900",
+            "900"
+          ]
         }
       },
       "conta": {
@@ -296,15 +472,31 @@
           "time": 1759090000000
         },
         "spot": {
-          "balances": [{ "coin": "USDC", "total": "250", "hold": "0", "entryNtl": "250" }]
+          "balances": [
+            {
+              "coin": "USDC",
+              "total": "250",
+              "hold": "0",
+              "entryNtl": "250"
+            }
+          ]
         },
         "activo": {
           "user": "0x1111111111111111111111111111111111111111",
           "coin": "BTC",
-          "leverage": { "type": "cross", "value": 5 },
+          "leverage": {
+            "type": "cross",
+            "value": 5
+          },
           "markPx": "60000",
-          "maxTradeSzs": ["0.5", "0.5"],
-          "availableToTrade": ["900", "900"]
+          "maxTradeSzs": [
+            "0.5",
+            "0.5"
+          ],
+          "availableToTrade": [
+            "900",
+            "900"
+          ]
         },
         "agentes": [
           {
@@ -337,7 +529,10 @@
                   "positionValue": "99.6",
                   "marginUsed": "19.92",
                   "liquidationPx": "48000",
-                  "leverage": { "type": "cross", "value": 5 },
+                  "leverage": {
+                    "type": "cross",
+                    "value": 5
+                  },
                   "unrealizedPnl": "0"
                 }
               }
@@ -346,7 +541,10 @@
           },
           "activo": {
             "coin": "BTC",
-            "leverage": { "type": "cross", "value": 5 },
+            "leverage": {
+              "type": "cross",
+              "value": 5
+            },
             "markPx": "60000"
           }
         },
@@ -368,14 +566,24 @@
                   "positionValue": "24.6",
                   "marginUsed": "6.15",
                   "liquidationPx": "48000",
-                  "leverage": { "type": "cross", "value": 5 },
+                  "leverage": {
+                    "type": "cross",
+                    "value": 5
+                  },
                   "unrealizedPnl": "0"
                 }
               }
             ],
             "time": 1759090005000
           },
-          "activo": { "coin": "BTC", "leverage": { "type": "cross", "value": 5 }, "markPx": "60000" }
+          "activo": {
+            "coin": "BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 5
+            },
+            "markPx": "60000"
+          }
         },
         "hl-1001": {
           "perpetuo": {
@@ -395,14 +603,24 @@
                   "positionValue": "99.6",
                   "marginUsed": "19.92",
                   "liquidationPx": "48000",
-                  "leverage": { "type": "cross", "value": 5 },
+                  "leverage": {
+                    "type": "cross",
+                    "value": 5
+                  },
                   "unrealizedPnl": "0"
                 }
               }
             ],
             "time": 1759090005000
           },
-          "activo": { "coin": "BTC", "leverage": { "type": "cross", "value": 5 }, "markPx": "60000" }
+          "activo": {
+            "coin": "BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 5
+            },
+            "markPx": "60000"
+          }
         },
         "hl-1100": {
           "nota": "A ordem em repouso NAO cria posicao: a leitura depois do envio nao encontra posicao nenhuma neste instrumento.",
@@ -424,29 +642,65 @@
           "status": "ok",
           "response": {
             "type": "order",
-            "data": { "statuses": [{ "filled": { "totalSz": "0.00166", "avgPx": "60000", "oid": 8842 } }] }
+            "data": {
+              "statuses": [
+                {
+                  "filled": {
+                    "totalSz": "0.00166",
+                    "avgPx": "60000",
+                    "oid": 8842
+                  }
+                }
+              ]
+            }
           }
         },
         "hl-0101": {
           "status": "ok",
           "response": {
             "type": "order",
-            "data": { "statuses": [{ "filled": { "totalSz": "0.00041", "avgPx": "60000", "oid": 8843 } }] }
+            "data": {
+              "statuses": [
+                {
+                  "filled": {
+                    "totalSz": "0.00041",
+                    "avgPx": "60000",
+                    "oid": 8843
+                  }
+                }
+              ]
+            }
           }
         },
         "hl-0200": {
           "status": "ok",
           "response": {
             "type": "order",
-            "data": { "statuses": [{ "error": "Order value below $10 minimum" }] }
+            "data": {
+              "statuses": [
+                {
+                  "error": "Order value below $10 minimum"
+                }
+              ]
+            }
           }
         },
-        "hl-0300": { "sem_resposta": true },
+        "hl-0300": {
+          "sem_resposta": true
+        },
         "hl-1100": {
           "status": "ok",
           "response": {
             "type": "order",
-            "data": { "statuses": [{ "resting": { "oid": 8844 } }] }
+            "data": {
+              "statuses": [
+                {
+                  "resting": {
+                    "oid": 8844
+                  }
+                }
+              ]
+            }
           }
         }
       }
@@ -461,7 +715,14 @@
             "type": "order",
             "data": {
               "statuses": [
-                { "filled": { "totalSz": "0.00166", "avgPx": "60000", "oid": 8842, "duplicado": true } }
+                {
+                  "filled": {
+                    "totalSz": "0.00166",
+                    "avgPx": "60000",
+                    "oid": 8842,
+                    "duplicado": true
+                  }
+                }
               ]
             }
           }
@@ -474,7 +735,10 @@
       "conta": {
         "activo": {
           "coin": "BTC",
-          "leverage": { "type": "cross", "value": 5 },
+          "leverage": {
+            "type": "cross",
+            "value": 5
+          },
           "markPx": "60000.1234"
         }
       }
@@ -483,26 +747,42 @@
       "nota": "O arranque le a conta (porta `ligacao` passa); a leitura que antecede o envio FALHA. Sem leitura da conta o conector nao manda ordem que aumente exposicao (FR-021) — e diz que nao leu, em vez de servir o valor anterior.",
       "herda": "base",
       "conta_apos_o_pedido": {
-        "perpetuo": { "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 502" },
-        "spot": { "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 502" }
+        "perpetuo": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 502"
+        },
+        "spot": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 502"
+        }
       }
     },
     "venue_calado_no_arranque": {
       "nota": "O venue nao responde NADA no arranque: a porta `ligacao` nao consegue ler a conta e recusa — silencio e `desconhecido`, nunca `ligada` (FR-020).",
       "herda": "base",
       "conta": {
-        "perpetuo": { "__erro__": "o duble foi declarado a falhar esta leitura: sem resposta no arranque" },
-        "spot": { "__erro__": "o duble foi declarado a falhar esta leitura: sem resposta no arranque" }
+        "perpetuo": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: sem resposta no arranque"
+        },
+        "spot": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: sem resposta no arranque"
+        }
       }
     },
     "sonda_calada": {
       "nota": "A conta responde e as leituras PUBLICAS da sonda falham: a porta `sonda_e_manifesto` recusa, porque sem meta nao ha universo e sem universo nao se sabe que instrumentos existem.",
       "herda": "base",
       "sonda": {
-        "meta": { "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503" },
-        "meta_e_ctxs": { "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503" },
-        "livro": { "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503" },
-        "velas": { "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503" }
+        "meta": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503"
+        },
+        "meta_e_ctxs": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503"
+        },
+        "livro": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503"
+        },
+        "velas": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: HTTP 503"
+        }
       }
     },
     "bateria_ao_vivo": {
@@ -515,8 +795,13 @@
         "stop_anexo": false,
         "idempotencia": true,
         "marca_liga_ordem_a_posicao": false,
-        "tipos_de_ordem": ["mercado", "limite"],
-        "parcial_suportada": ["o_que_der"],
+        "tipos_de_ordem": [
+          "mercado",
+          "limite"
+        ],
+        "parcial_suportada": [
+          "o_que_der"
+        ],
         "reduce_only_suportado": true,
         "marca_de_posse": "cloid"
       }
@@ -583,6 +868,24 @@
       "nota": "O duble NAO declara o endereco do agente que assina: a porta `identidade` fica `nao_corrida`. E' a prova de que ela NAO vira «conferida» por omissao — um duble (ou uma porta ao vivo) que nao diga quem assina deixa a pergunta ABERTA, e o caso diz isso em vez de a esconder.",
       "herda": "base",
       "identidade": {}
+    },
+    "estado_da_exchange_calado": {
+      "nota": "O venue responde tudo MENOS o proprio estado operacional (`exchangeStatus`): sem ele o estado da ligacao nao se reporta PELO PROTOCOLO, e a obrigacao 1 do conector (D-002) fica por medir — o manifesto RECUSA, e nao sai um manifesto a dizer que sim.",
+      "herda": "base",
+      "sonda": {
+        "estado_da_exchange": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: o venue nao respondeu ao estado operacional"
+        }
+      }
+    },
+    "execucoes_caladas": {
+      "nota": "O venue responde tudo MENOS o historico de execucao (`userFills`): sem ele nao se sabe se o venue publica os numeros da execucao, e a obrigacao 3 do conector (D-002) fica por medir.",
+      "herda": "base",
+      "sonda": {
+        "execucoes": {
+          "__erro__": "o duble foi declarado a falhar esta leitura: o venue nao respondeu ao historico de execucao"
+        }
+      }
     }
   },
   "arranque": {
@@ -721,7 +1024,7 @@
         "ficha": "base",
         "venue": "preco_fora_da_regra",
         "boleta": {
-          "contrato": "1.6.0",
+          "contrato": "1.7.0",
           "tipo": "boleta",
           "id": "b-preco",
           "carga": {
@@ -740,7 +1043,10 @@
           }
         },
         "linhas_esperadas": 1,
-        "desfecho_esperado": { "classificacao": "recusado", "motivo": "valor_fora_da_banda" }
+        "desfecho_esperado": {
+          "classificacao": "recusado",
+          "motivo": "valor_fora_da_banda"
+        }
       },
       {
         "nome": "arranque/conta-nao-lida-antes-do-envio",
@@ -748,7 +1054,7 @@
         "ficha": "base",
         "venue": "conta_nao_lida_antes_do_envio",
         "boleta": {
-          "contrato": "1.6.0",
+          "contrato": "1.7.0",
           "tipo": "boleta",
           "id": "b-sem-leitura",
           "carga": {
@@ -767,7 +1073,10 @@
           }
         },
         "linhas_esperadas": 1,
-        "desfecho_esperado": { "classificacao": "recusado", "motivo": "campo_obrigatorio_ausente" }
+        "desfecho_esperado": {
+          "classificacao": "recusado",
+          "motivo": "campo_obrigatorio_ausente"
+        }
       },
       {
         "nome": "arranque/referencia-repetida-a-mesma-ordem",
@@ -775,7 +1084,7 @@
         "ficha": "base",
         "venue": "duplicado",
         "boleta": {
-          "contrato": "1.6.0",
+          "contrato": "1.7.0",
           "tipo": "boleta",
           "id": "b-1001",
           "carga": {
@@ -794,7 +1103,9 @@
           }
         },
         "linhas_esperadas": 2,
-        "desfecho_esperado": { "classificacao": "aceite" },
+        "desfecho_esperado": {
+          "classificacao": "aceite"
+        },
         "mesmo_order_id_que": "processo/aceite-mercado",
         "mesmo_cloid_que": "processo/aceite-mercado"
       },
@@ -804,7 +1115,7 @@
         "ficha": "base",
         "venue": "base",
         "boleta": {
-          "contrato": "1.6.0",
+          "contrato": "1.7.0",
           "tipo": "boleta",
           "id": "b-1100",
           "carga": {
@@ -823,8 +1134,13 @@
           }
         },
         "linhas_esperadas": 2,
-        "desfecho_esperado": { "classificacao": "desconhecido" },
-        "resposta_do_venue_exige": { "estado": "resting", "order_id": "8844" }
+        "desfecho_esperado": {
+          "classificacao": "desconhecido"
+        },
+        "resposta_do_venue_exige": {
+          "estado": "resting",
+          "order_id": "8844"
+        }
       },
       {
         "nome": "arranque/identidade-o-agente-que-assina-e-DA-CONTA",
@@ -866,7 +1182,27 @@
         "ficha": "base",
         "venue": "sem_identidade_declarada",
         "portas_esperadas": 8,
-        "portas_nao_corridas": ["identidade"]
+        "portas_nao_corridas": [
+          "identidade"
+        ]
+      },
+      {
+        "nome": "arranque/sem-o-estado-do-venue-nao-ha-manifesto (obrigacao 1)",
+        "nota": "O venue cala o PROPRIO estado: a sonda nao mede `ligacao_por_protocolo`, e o manifesto recusa com `capacidade_nao_declarada` nomeando-a. Sem esta declaracao a condicao `sem_ligacao` ficaria sem fonte (D-002).",
+        "ficha": "base",
+        "venue": "estado_da_exchange_calado",
+        "porta_que_falha": "sonda_e_manifesto",
+        "motivo_esperado": "capacidade_nao_declarada",
+        "portas_esperadas": 7
+      },
+      {
+        "nome": "arranque/sem-o-historico-de-execucao-nao-ha-manifesto (obrigacao 3)",
+        "nota": "O venue cala o historico de execucao (`userFills`). A recusa vem ANTES da obrigacao 3: a politica de parcial (`parcial_suportada`) tambem se mede por esse historico, e ela e' campo obrigatorio — a calada tira DUAS coisas e nomeia a primeira que falta. O fail-closed da obrigacao 3, ele, esta provado ao nivel da sonda: `manifesto/capacidade-ausente-recusa-devolve-a-resolucao` (a sonda nao a mediu -> `capacidade_nao_declarada`), e a prova negativa sobre o artefacto (tirar a medicao da sonda reprova 21 casos do processo).",
+        "ficha": "base",
+        "venue": "execucoes_caladas",
+        "porta_que_falha": "sonda_e_manifesto",
+        "motivo_esperado": "campo_obrigatorio_ausente",
+        "portas_esperadas": 7
       }
     ]
   },
@@ -898,7 +1234,7 @@
         "origem_dos_numeros": "posicao_lida_depois_do_envio"
       },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0001",
         "carga": {
@@ -919,7 +1255,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0001",
         "carga": {
@@ -937,7 +1273,11 @@
             "preenchido": "0.00166",
             "preco_medio": "60000",
             "origem_dos_numeros": "posicao_lida_depois_do_envio",
-            "bruto": { "totalSz": "0.00166", "avgPx": "60000", "oid": 8842 }
+            "bruto": {
+              "totalSz": "0.00166",
+              "avgPx": "60000",
+              "oid": 8842
+            }
           }
         }
       }
@@ -969,7 +1309,7 @@
         "origem_dos_numeros": "posicao_lida_depois_do_envio"
       },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0101",
         "carga": {
@@ -990,7 +1330,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0101",
         "carga": {
@@ -1008,7 +1348,11 @@
             "preenchido": "0.00041",
             "preco_medio": "60000",
             "origem_dos_numeros": "posicao_lida_depois_do_envio",
-            "bruto": { "totalSz": "0.00041", "avgPx": "60000", "oid": 8843 }
+            "bruto": {
+              "totalSz": "0.00041",
+              "avgPx": "60000",
+              "oid": 8843
+            }
           }
         }
       }
@@ -1027,7 +1371,7 @@
         "palavra_do_venue": "Order value below $10 minimum"
       },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0200",
         "carga": {
@@ -1048,7 +1392,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0200",
         "carga": {
@@ -1057,7 +1401,9 @@
           "resposta_do_venue": {
             "erro": "Order value below $10 minimum",
             "palavra_do_venue": "Order value below $10 minimum",
-            "bruto": { "error": "Order value below $10 minimum" }
+            "bruto": {
+              "error": "Order value below $10 minimum"
+            }
           }
         }
       }
@@ -1076,7 +1422,7 @@
         "origem_dos_numeros": "calculo_antes_do_envio"
       },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0300",
         "carga": {
@@ -1097,7 +1443,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0300",
         "carga": {
@@ -1126,9 +1472,12 @@
       "venue": "base",
       "prazo_de_resposta_ms": 6000,
       "linhas_esperadas": 1,
-      "desfecho_esperado": { "classificacao": "recusado", "motivo": "instrumento_desconhecido_no_manifesto" },
+      "desfecho_esperado": {
+        "classificacao": "recusado",
+        "motivo": "instrumento_desconhecido_no_manifesto"
+      },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0400",
         "carga": {
@@ -1149,7 +1498,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0400",
         "carga": {
@@ -1167,9 +1516,12 @@
       "venue": "base",
       "prazo_de_resposta_ms": 6000,
       "linhas_esperadas": 1,
-      "desfecho_esperado": { "classificacao": "recusado", "motivo": "capacidade_nao_declarada" },
+      "desfecho_esperado": {
+        "classificacao": "recusado",
+        "motivo": "capacidade_nao_declarada"
+      },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0500",
         "carga": {
@@ -1191,7 +1543,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0500",
         "carga": {
@@ -1209,9 +1561,12 @@
       "venue": "base",
       "prazo_de_resposta_ms": 6000,
       "linhas_esperadas": 1,
-      "desfecho_esperado": { "classificacao": "recusado", "motivo": "minimo_do_instrumento_acima_da_banda" },
+      "desfecho_esperado": {
+        "classificacao": "recusado",
+        "motivo": "minimo_do_instrumento_acima_da_banda"
+      },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0600",
         "carga": {
@@ -1232,7 +1587,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0600",
         "carga": {
@@ -1250,7 +1605,10 @@
       "venue": "base",
       "prazo_de_resposta_ms": 6000,
       "linhas_esperadas": 1,
-      "desfecho_esperado": { "classificacao": "recusado", "motivo": "versao_do_contrato_divergente" },
+      "desfecho_esperado": {
+        "classificacao": "recusado",
+        "motivo": "versao_do_contrato_divergente"
+      },
       "boleta": {
         "contrato": "1.2.0",
         "tipo": "boleta",
@@ -1273,7 +1631,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0700",
         "carga": {
@@ -1291,9 +1649,12 @@
       "venue": "base",
       "prazo_de_resposta_ms": 6000,
       "linhas_esperadas": 1,
-      "desfecho_esperado": { "classificacao": "recusado", "motivo": "parcial_nao_declarada" },
+      "desfecho_esperado": {
+        "classificacao": "recusado",
+        "motivo": "parcial_nao_declarada"
+      },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0800",
         "carga": {
@@ -1313,7 +1674,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0800",
         "carga": {
@@ -1331,9 +1692,12 @@
       "venue": "base",
       "prazo_de_resposta_ms": 6000,
       "linhas_esperadas": 1,
-      "desfecho_esperado": { "classificacao": "recusado", "motivo": "campo_em_unidade_de_corretora" },
+      "desfecho_esperado": {
+        "classificacao": "recusado",
+        "motivo": "campo_em_unidade_de_corretora"
+      },
       "boleta": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "boleta",
         "id": "b-0900",
         "carga": {
@@ -1355,7 +1719,7 @@
       "veredicto_esperado": "aceite",
       "motivo_esperado": null,
       "resposta_do_plugin": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "desfecho",
         "id": "b-0900",
         "carga": {
@@ -1372,7 +1736,7 @@
       {
         "nome": "provocacao/classificacao-fora-do-conjunto",
         "entrada": {
-          "contrato": "1.6.0",
+          "contrato": "1.7.0",
           "tipo": "desfecho",
           "id": "prov-1",
           "carga": {
@@ -1393,10 +1757,13 @@
       {
         "nome": "provocacao/recusado-sem-motivo",
         "entrada": {
-          "contrato": "1.6.0",
+          "contrato": "1.7.0",
           "tipo": "desfecho",
           "id": "prov-2",
-          "carga": { "classificacao": "recusado", "resposta_do_venue": {} }
+          "carga": {
+            "classificacao": "recusado",
+            "resposta_do_venue": {}
+          }
         },
         "veredicto_esperado": "recusado",
         "motivo_esperado": "campo_obrigatorio_ausente"
@@ -1404,7 +1771,7 @@
       {
         "nome": "provocacao/numero-em-virgula-flutuante",
         "entrada": {
-          "contrato": "1.6.0",
+          "contrato": "1.7.0",
           "tipo": "desfecho",
           "id": "prov-3",
           "carga": {

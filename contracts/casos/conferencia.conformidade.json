@@ -7,7 +7,7 @@
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.6.0",
+      "versao": "1.7.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -63,14 +63,17 @@
       "marca_de_posse": "comment",
       "marca_liga_ordem_a_posicao": false,
       "estado_do_mercado": true,
-      "maximo_de_valor_por_ordem": "50000.00"
+      "maximo_de_valor_por_ordem": "50000.00",
+      "ligacao_por_protocolo": true,
+      "releitura_de_preco_ao_enviar": true,
+      "devolve_a_resolucao": true
     },
     "com_reduce_only": {
       "conector": {
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.6.0",
+      "versao": "1.7.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -101,14 +104,17 @@
       "idempotencia": true,
       "marca_de_posse": "comment",
       "marca_liga_ordem_a_posicao": false,
-      "estado_do_mercado": true
+      "estado_do_mercado": true,
+      "ligacao_por_protocolo": true,
+      "releitura_de_preco_ao_enviar": true,
+      "devolve_a_resolucao": true
     },
     "so_eurusd_sem_parcial_e_sem_marca": {
       "conector": {
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.6.0",
+      "versao": "1.7.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -139,14 +145,17 @@
       "idempotencia": false,
       "marca_de_posse": "nenhuma",
       "marca_liga_ordem_a_posicao": false,
-      "estado_do_mercado": false
+      "estado_do_mercado": false,
+      "ligacao_por_protocolo": true,
+      "releitura_de_preco_ao_enviar": true,
+      "devolve_a_resolucao": true
     },
     "com_instrumento_deslistado": {
       "conector": {
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.6.0",
+      "versao": "1.7.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -191,14 +200,17 @@
       "marca_de_posse": "comment",
       "marca_liga_ordem_a_posicao": false,
       "estado_do_mercado": true,
-      "maximo_de_valor_por_ordem": "50000.00"
+      "maximo_de_valor_por_ordem": "50000.00",
+      "ligacao_por_protocolo": true,
+      "releitura_de_preco_ao_enviar": true,
+      "devolve_a_resolucao": true
     },
     "escaloes_a_partir_de_501": {
       "conector": {
         "nome": "mock_conector",
         "versao": "1.0.0"
       },
-      "versao": "1.6.0",
+      "versao": "1.7.0",
       "instrumentos": [
         {
           "simbolo": "EURUSD",
@@ -247,7 +259,10 @@
       "idempotencia": true,
       "marca_de_posse": "comment",
       "marca_liga_ordem_a_posicao": false,
-      "estado_do_mercado": true
+      "estado_do_mercado": true,
+      "ligacao_por_protocolo": true,
+      "releitura_de_preco_ao_enviar": true,
+      "devolve_a_resolucao": true
     }
   },
   "casos": [

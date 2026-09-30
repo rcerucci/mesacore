@@ -6,7 +6,7 @@
       "nome": "manifesto/completo",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "completo",
         "carga": {
@@ -14,7 +14,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -70,7 +70,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "aceite",
@@ -81,7 +84,7 @@
       "nome": "manifesto/marca-nenhuma-e-declaracao-valida",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "marca-nenhuma-e-declarac",
         "carga": {
@@ -89,7 +92,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -121,7 +124,10 @@
           "idempotencia": false,
           "marca_de_posse": "nenhuma",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "aceite",
@@ -132,7 +138,7 @@
       "nome": "manifesto/idempotencia-nao-booleana",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "idempotencia-nao-boolean",
         "carga": {
@@ -140,7 +146,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -196,7 +202,10 @@
           "idempotencia": "sim",
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -206,7 +215,7 @@
       "nome": "manifesto/campo-desconhecido",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "campo-desconhecido",
         "carga": {
@@ -214,7 +223,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -271,7 +280,10 @@
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
           "estado_do_mercado": true,
-          "taxa_de_corretagem": "0.0002"
+          "taxa_de_corretagem": "0.0002",
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -281,7 +293,7 @@
       "nome": "manifesto/instrumento-sem-passo-declarado",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "instrumento-sem-passo-de",
         "carga": {
@@ -289,7 +301,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -344,7 +356,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -354,7 +369,7 @@
       "nome": "manifesto/modelo-de-posicao-invalido",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "modelo-de-posicao-invali",
         "carga": {
@@ -362,7 +377,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -418,7 +433,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -428,7 +446,7 @@
       "nome": "manifesto/sem-minimo-de-valor-por-ordem",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "sem-minimo-de-valor-por-",
         "carga": {
@@ -436,7 +454,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -491,7 +509,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -502,7 +523,7 @@
       "nome": "manifesto/teto-de-valor-por-ordem-nao-existe-mais",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "teto-de-valor-por-ordem-",
         "carga": {
@@ -510,7 +531,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -567,7 +588,10 @@
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
           "estado_do_mercado": true,
-          "teto_de_valor_por_ordem": "10.00"
+          "teto_de_valor_por_ordem": "10.00",
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -578,7 +602,7 @@
       "nome": "manifesto/escalao-com-ate-nao-existe-mais",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "escalao-com-ate-nao-exis",
         "carga": {
@@ -586,7 +610,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -638,7 +662,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -649,7 +676,7 @@
       "nome": "manifesto/escalao-de-zero-e-valido",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "escalao-de-zero-e-valido",
         "carga": {
@@ -657,7 +684,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -709,7 +736,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "aceite",
@@ -720,7 +750,7 @@
       "nome": "manifesto/escalao-de-negativo-recusa",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "escalao-de-negativo-recu",
         "carga": {
@@ -728,7 +758,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -780,7 +810,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -790,7 +823,7 @@
       "nome": "manifesto/escalao-com-campo-a-mais-recusa",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "escalao-com-campo-a-mais",
         "carga": {
@@ -798,7 +831,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -851,7 +884,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -862,7 +898,7 @@
       "nome": "manifesto/funding-intervalo-horas-zero-recusa",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "funding-intervalo-horas-",
         "carga": {
@@ -870,7 +906,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -926,7 +962,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -937,7 +976,7 @@
       "nome": "manifesto/funding-intervalo-horas-nao-inteiro-recusa",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "funding-intervalo-horas-",
         "carga": {
@@ -945,7 +984,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -1001,7 +1040,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -1011,7 +1053,7 @@
       "nome": "manifesto/instrumento-deslistado-e-declaracao-valida",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "instrumento-deslistado-e",
         "carga": {
@@ -1019,7 +1061,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -1075,7 +1117,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "aceite",
@@ -1086,7 +1131,7 @@
       "nome": "manifesto/deslistado-nao-booleano-recusa",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "deslistado-nao-booleano-",
         "carga": {
@@ -1094,7 +1139,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -1150,7 +1195,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -1160,7 +1208,7 @@
       "nome": "manifesto/campo-a-mais-no-instrumento-recusa",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "campo-a-mais-no-instrume",
         "carga": {
@@ -1168,7 +1216,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -1225,7 +1273,10 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
@@ -1236,7 +1287,7 @@
       "nome": "manifesto/minimo-de-valor-zero-recusa",
       "mensagem": "manifesto",
       "entrada": {
-        "contrato": "1.6.0",
+        "contrato": "1.7.0",
         "tipo": "manifesto",
         "id": "minimo-de-valor-zero-rec",
         "carga": {
@@ -1244,7 +1295,7 @@
             "nome": "mock_conector",
             "versao": "1.0.0"
           },
-          "versao": "1.6.0",
+          "versao": "1.7.0",
           "instrumentos": [
             {
               "simbolo": "EURUSD",
@@ -1300,12 +1351,324 @@
           "idempotencia": true,
           "marca_de_posse": "comment",
           "marca_liga_ordem_a_posicao": false,
-          "estado_do_mercado": true
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
         }
       },
       "veredicto_esperado": "recusado",
       "motivo_esperado": "formato_invalido",
       "nota": "Um piso de valor por ordem ZERO nao e um piso: `minimo_de_valor_por_ordem` e decimal_positivo."
+    },
+    {
+      "nome": "manifesto/sem-a-ligacao-por-protocolo",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.7.0",
+        "tipo": "manifesto",
+        "id": "sem-a-ligacao-por-protocolo",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.7.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true,
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "D-002 / 1.7.0: a obrigacao 1 e' OBRIGATORIA (a condicao `sem_ligacao` trava abrir, e ela nao se inventa). Um manifesto sem ela recusa, e nao passa por omissao."
+    },
+    {
+      "nome": "manifesto/sem-a-releitura-de-preco-ao-enviar",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.7.0",
+        "tipo": "manifesto",
+        "id": "sem-a-releitura-de-preco-ao-enviar",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.7.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "devolve_a_resolucao": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "D-002 / 1.7.0: a obrigacao 2 e' OBRIGATORIA — sem regua viva, o `desvio_maximo` da boleta nao se mede."
+    },
+    {
+      "nome": "manifesto/sem-devolver-a-resolucao",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.7.0",
+        "tipo": "manifesto",
+        "id": "sem-devolver-a-resolucao",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.7.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": true,
+          "releitura_de_preco_ao_enviar": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "D-002 / 1.7.0: a obrigacao 3 e' OBRIGATORIA — sem os numeros da corretora a conferencia da banda nao tem o que conferir."
+    },
+    {
+      "nome": "manifesto/ligacao-por-protocolo-nao-booleana",
+      "mensagem": "manifesto",
+      "entrada": {
+        "contrato": "1.7.0",
+        "tipo": "manifesto",
+        "id": "ligacao-por-protocolo-nao-booleana",
+        "carga": {
+          "conector": {
+            "nome": "mock_conector",
+            "versao": "1.0.0"
+          },
+          "versao": "1.7.0",
+          "instrumentos": [
+            {
+              "simbolo": "EURUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.00001",
+              "alavancagem_maxima": "30",
+              "alavancagem_por_escalao": [
+                {
+                  "de": "0",
+                  "maxima": "30"
+                },
+                {
+                  "de": "50000",
+                  "maxima": "20"
+                }
+              ],
+              "funding_intervalo_horas": 8,
+              "deslistado": false
+            },
+            {
+              "simbolo": "XAUUSD",
+              "minimo": "0.01",
+              "passo": "0.01",
+              "tick": "0.01",
+              "alavancagem_maxima": "100"
+            }
+          ],
+          "sabe_ajustar_alavancagem": true,
+          "modos_de_margem": [
+            "cruzado",
+            "isolado"
+          ],
+          "minimo_de_valor_por_ordem": "10.00",
+          "maximo_de_valor_por_ordem": "50000.00",
+          "modelo_de_posicao": "netting",
+          "tipos_de_ordem": [
+            "mercado",
+            "limite",
+            "stop",
+            "stop_limite"
+          ],
+          "parcial_suportada": [
+            "o_que_der",
+            "tudo_ou_nada"
+          ],
+          "desvio_maximo": "0.5",
+          "reduce_only_suportado": false,
+          "stop_anexo": false,
+          "profundidade_de_livro": 10,
+          "funding": true,
+          "relogio_de_fecho_de_barra": "horario",
+          "idempotencia": true,
+          "marca_de_posse": "comment",
+          "marca_liga_ordem_a_posicao": false,
+          "estado_do_mercado": true,
+          "ligacao_por_protocolo": "sim",
+          "releitura_de_preco_ao_enviar": true,
+          "devolve_a_resolucao": true
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "tipo_invalido",
+      "nota": "A obrigacao e' um FACTO booleano: `\"sim\"` nao e' `true`. A forma recusa antes de a mesa ter de acreditar."
     }
   ]
 }

@@ -2,16 +2,33 @@
   "nota": "Casos da TRADUCAO DE ORDENS e do CLOID (FR-006 a FR-011; RN-H4 a RN-H9). A boleta e o manifesto entram como DADO, e os dois numeros que so o conector tem (saldo e preco) entram como DADO tambem — por isso isto corre offline, sem rede e sem chave. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que a traducao AFIRMA. Os casos adversarios (preco fora da regra, alavancagem fora do intervalo, abaixo do minimo, capacidade nao declarada) valem tanto como os felizes: um conector que so sabe dizer sim prova a fiacao, nao o comportamento.",
   "conta_de_teste": "0x00000000000000000000000000000000000000ab",
   "manifesto_base": {
-    "conector": { "nome": "hyperliquid", "versao": "0.1.0" },
+    "conector": {
+      "nome": "hyperliquid",
+      "versao": "0.1.0"
+    },
     "instrumentos": [
-      { "simbolo": "BTC", "minimo": "0.00001", "passo": "0.00001", "tick": "0.1", "alavancagem_maxima": "40" }
+      {
+        "simbolo": "BTC",
+        "minimo": "0.00001",
+        "passo": "0.00001",
+        "tick": "0.1",
+        "alavancagem_maxima": "40"
+      }
     ],
     "sabe_ajustar_alavancagem": true,
-    "modos_de_margem": ["cruzado", "isolado"],
+    "modos_de_margem": [
+      "cruzado",
+      "isolado"
+    ],
     "minimo_de_valor_por_ordem": "10",
     "modelo_de_posicao": "netting",
-    "tipos_de_ordem": ["mercado", "limite"],
-    "parcial_suportada": ["o_que_der"],
+    "tipos_de_ordem": [
+      "mercado",
+      "limite"
+    ],
+    "parcial_suportada": [
+      "o_que_der"
+    ],
     "desvio_maximo": "0.5",
     "reduce_only_suportado": true,
     "stop_anexo": false,
@@ -21,7 +38,10 @@
     "idempotencia": true,
     "marca_de_posse": "cloid",
     "marca_liga_ordem_a_posicao": false,
-    "estado_do_mercado": true
+    "estado_do_mercado": true,
+    "ligacao_por_protocolo": true,
+    "releitura_de_preco_ao_enviar": true,
+    "devolve_a_resolucao": true
   },
   "boleta_base": {
     "instrumento": "BTC",
@@ -62,7 +82,9 @@
     {
       "caso": "ordens/limite-post-only-aceite-e-preco-exacto",
       "esperadoOk": true,
-      "boleta": { "tipo": "limite" },
+      "boleta": {
+        "tipo": "limite"
+      },
       "preco": "1234.5",
       "conferir": {
         "tipo": "limite",
@@ -75,72 +97,116 @@
     {
       "caso": "ordens/mercado-VENDA-o-preco-e-o-PISO-da-banda-declarada",
       "esperadoOk": true,
-      "boleta": { "lado": "sell" },
-      "conferir": { "tipo": "mercado", "tif": "Ioc", "preco": "59700", "preco_de_referencia": "60000", "desvio_maximo": "0.5" }
+      "boleta": {
+        "lado": "sell"
+      },
+      "conferir": {
+        "tipo": "mercado",
+        "tif": "Ioc",
+        "preco": "59700",
+        "preco_de_referencia": "60000",
+        "desvio_maximo": "0.5"
+      }
     },
     {
       "caso": "ordens/mercado-preco-quantizado-POR-DENTRO-da-banda-do-venue",
       "esperadoOk": true,
       "preco": "83867.0",
-      "conferir": { "preco": "84286", "preco_de_referencia": "83867.0", "desvio_maximo": "0.5" }
+      "conferir": {
+        "preco": "84286",
+        "preco_de_referencia": "83867.0",
+        "desvio_maximo": "0.5"
+      }
     },
     {
       "caso": "ordens/mercado-desvio-de-1-por-cento-aceite-e-o-preco-segue-o-desvio",
       "esperadoOk": true,
-      "boleta": { "desvio_maximo": "1" },
-      "manifesto": { "desvio_maximo": "1" },
-      "conferir": { "preco": "60600", "desvio_maximo": "1" }
+      "boleta": {
+        "desvio_maximo": "1"
+      },
+      "manifesto": {
+        "desvio_maximo": "1"
+      },
+      "conferir": {
+        "preco": "60600",
+        "desvio_maximo": "1"
+      }
     },
     {
       "caso": "ordens/limite-NAO-usa-o-desvio-o-preco-sai-exacto",
       "esperadoOk": true,
-      "boleta": { "tipo": "limite" },
+      "boleta": {
+        "tipo": "limite"
+      },
       "preco": "59000",
-      "conferir": { "tipo": "limite", "tif": "Alo", "preco": "59000", "preco_de_referencia": "59000" }
+      "conferir": {
+        "tipo": "limite",
+        "tif": "Alo",
+        "preco": "59000",
+        "preco_de_referencia": "59000"
+      }
     },
     {
       "caso": "ordens/mercado-desvio-ACIMA-do-que-o-manifesto-declara-recusa",
       "esperadoOk": false,
       "motivo_esperado": "valor_fora_da_banda",
-      "boleta": { "desvio_maximo": "0.6" }
+      "boleta": {
+        "desvio_maximo": "0.6"
+      }
     },
     {
       "caso": "ordens/mercado-sem-desvio-na-boleta-recusa",
       "esperadoOk": false,
       "motivo_esperado": "campo_obrigatorio_ausente",
-      "sem": ["boleta.desvio_maximo"]
+      "sem": [
+        "boleta.desvio_maximo"
+      ]
     },
     {
       "caso": "ordens/mercado-desvio-zero-na-boleta-recusa",
       "esperadoOk": false,
       "motivo_esperado": "formato_invalido",
-      "boleta": { "desvio_maximo": "0" }
+      "boleta": {
+        "desvio_maximo": "0"
+      }
     },
     {
       "caso": "ordens/mercado-desvio-que-nao-chega-para-cruzar-recusa",
       "esperadoOk": false,
       "motivo_esperado": "valor_fora_da_banda",
-      "boleta": { "desvio_maximo": "0.001" }
+      "boleta": {
+        "desvio_maximo": "0.001"
+      }
     },
     {
       "caso": "ordens/preco-inteiro-de-6-algarismos-aceite",
       "esperadoOk": true,
-      "boleta": { "tipo": "limite" },
+      "boleta": {
+        "tipo": "limite"
+      },
       "preco": "123456",
-      "conferir": { "preco": "123456", "quantidade": "0.00405", "nocional": "499.9968" }
+      "conferir": {
+        "preco": "123456",
+        "quantidade": "0.00405",
+        "nocional": "499.9968"
+      }
     },
     {
       "caso": "ordens/preco-com-6-algarismos-significativos-recusa",
       "esperadoOk": false,
       "motivo_esperado": "valor_fora_da_banda",
-      "boleta": { "tipo": "limite" },
+      "boleta": {
+        "tipo": "limite"
+      },
       "preco": "12345.6"
     },
     {
       "caso": "ordens/preco-com-casas-a-mais-do-que-o-tick-recusa",
       "esperadoOk": false,
       "motivo_esperado": "valor_fora_da_banda",
-      "boleta": { "tipo": "limite" },
+      "boleta": {
+        "tipo": "limite"
+      },
       "preco": "1.2345"
     },
     {
@@ -152,50 +218,79 @@
     {
       "caso": "ordens/alavancagem-1-aceite",
       "esperadoOk": true,
-      "boleta": { "alavancagem": "1" },
-      "conferir": { "alavancagem": "1", "quantidade": "0.00166", "nocional": "100.098" }
+      "boleta": {
+        "alavancagem": "1"
+      },
+      "conferir": {
+        "alavancagem": "1",
+        "quantidade": "0.00166",
+        "nocional": "100.098"
+      }
     },
     {
       "caso": "ordens/alavancagem-2-aceite",
       "esperadoOk": true,
-      "boleta": { "alavancagem": "2" },
-      "conferir": { "alavancagem": "2" }
+      "boleta": {
+        "alavancagem": "2"
+      },
+      "conferir": {
+        "alavancagem": "2"
+      }
     },
     {
       "caso": "ordens/alavancagem-17-aceite-nao-e-degrau-nenhum",
       "esperadoOk": true,
-      "boleta": { "alavancagem": "17" },
-      "conferir": { "alavancagem": "17" }
+      "boleta": {
+        "alavancagem": "17"
+      },
+      "conferir": {
+        "alavancagem": "17"
+      }
     },
     {
       "caso": "ordens/alavancagem-no-maximo-do-instrumento-aceite",
       "esperadoOk": true,
-      "boleta": { "alavancagem": "40" },
-      "conferir": { "alavancagem": "40", "quantidade": "0.06666", "nocional": "4019.598" }
+      "boleta": {
+        "alavancagem": "40"
+      },
+      "conferir": {
+        "alavancagem": "40",
+        "quantidade": "0.06666",
+        "nocional": "4019.598"
+      }
     },
     {
       "caso": "ordens/alavancagem-acima-do-maximo-recusa-e-nomeia-o-maximo",
       "esperadoOk": false,
       "motivo_esperado": "valor_fora_da_banda",
-      "boleta": { "alavancagem": "41" }
+      "boleta": {
+        "alavancagem": "41"
+      }
     },
     {
       "caso": "ordens/alavancagem-nao-inteira-recusa",
       "esperadoOk": false,
       "motivo_esperado": "formato_invalido",
-      "boleta": { "alavancagem": "2.5" }
+      "boleta": {
+        "alavancagem": "2.5"
+      }
     },
     {
       "caso": "ordens/alavancagem-zero-recusa",
       "esperadoOk": false,
       "motivo_esperado": "formato_invalido",
-      "boleta": { "alavancagem": "0" }
+      "boleta": {
+        "alavancagem": "0"
+      }
     },
     {
       "caso": "ordens/ordem-abaixo-do-minimo-de-10-usd-recusa",
       "esperadoOk": false,
       "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
-      "boleta": { "saldo_pct": "1", "alavancagem": "1" },
+      "boleta": {
+        "saldo_pct": "1",
+        "alavancagem": "1"
+      },
       "saldo": "100",
       "preco": "60000"
     },
@@ -203,46 +298,65 @@
       "caso": "ordens/quantidade-abaixo-do-passo-recusa",
       "esperadoOk": false,
       "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
-      "boleta": { "saldo_pct": "0.001", "alavancagem": "1" },
+      "boleta": {
+        "saldo_pct": "0.001",
+        "alavancagem": "1"
+      },
       "saldo": "1000",
       "preco": "60000"
     },
     {
       "caso": "ordens/reduce-only-pedido-e-honrado",
       "esperadoOk": true,
-      "boleta": { "reduce_only": true },
-      "conferir": { "reduce_only": true }
+      "boleta": {
+        "reduce_only": true
+      },
+      "conferir": {
+        "reduce_only": true
+      }
     },
     {
       "caso": "ordens/reduce-only-nao-declarado-no-manifesto-recusa",
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
-      "boleta": { "reduce_only": true },
-      "manifesto": { "reduce_only_suportado": false }
+      "boleta": {
+        "reduce_only": true
+      },
+      "manifesto": {
+        "reduce_only_suportado": false
+      }
     },
     {
       "caso": "ordens/tipo-de-ordem-nao-declarado-recusa",
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
-      "boleta": { "tipo": "stop" }
+      "boleta": {
+        "tipo": "stop"
+      }
     },
     {
       "caso": "ordens/parcial-nao-suportada-recusa",
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
-      "boleta": { "parcial": "tudo_ou_nada" }
+      "boleta": {
+        "parcial": "tudo_ou_nada"
+      }
     },
     {
       "caso": "ordens/instrumento-fora-do-manifesto-recusa",
       "esperadoOk": false,
       "motivo_esperado": "instrumento_desconhecido_no_manifesto",
-      "boleta": { "instrumento": "ETH" }
+      "boleta": {
+        "instrumento": "ETH"
+      }
     },
     {
       "caso": "ordens/lado-fora-de-buy-sell-recusa",
       "esperadoOk": false,
       "motivo_esperado": "valor_fora_do_conjunto",
-      "boleta": { "lado": "hold" }
+      "boleta": {
+        "lado": "hold"
+      }
     },
     {
       "caso": "ordens/saldo-nulo-recusa",
@@ -254,25 +368,33 @@
       "caso": "ordens/preco-ausente-recusa",
       "esperadoOk": false,
       "motivo_esperado": "campo_obrigatorio_ausente",
-      "sem": ["preco"]
+      "sem": [
+        "preco"
+      ]
     },
     {
       "caso": "ordens/referencia-fora-da-forma-do-contrato-recusa",
       "esperadoOk": false,
       "motivo_esperado": "formato_invalido",
-      "boleta": { "referencia_do_cliente": "referencia com espaco" }
+      "boleta": {
+        "referencia_do_cliente": "referencia com espaco"
+      }
     },
     {
       "caso": "ordens/marca-de-posse-que-nao-e-cloid-recusa",
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
-      "manifesto": { "marca_de_posse": "comment" }
+      "manifesto": {
+        "marca_de_posse": "comment"
+      }
     },
     {
       "caso": "ordens/venue-sem-verbo-de-alavancagem-recusa",
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
-      "manifesto": { "sabe_ajustar_alavancagem": false }
+      "manifesto": {
+        "sabe_ajustar_alavancagem": false
+      }
     }
   ],
   "checagens_de_cloid": [

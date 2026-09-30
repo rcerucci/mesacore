@@ -150,6 +150,40 @@ function portaDoManifesto(manifesto: any, config: ConfiguracaoDaConta): Recusa |
       porque: `O manifesto nao declara as unidades de ${faltam.join(", ")} - e sem unidade declarada nao ha resolucao possivel (RN-M1).`,
     };
   }
+
+  // As TRES OBRIGACOES DO CONECTOR (contrato 1.7.0, D-002). A mesa depende delas em TRES regras suas, e por
+  // isso uma obrigacao em falta (ou declarada `false`) RECUSA o arranque — nomeando qual. Nao e zelo: sem (1)
+  // a condicao `sem_ligacao` nao tem fonte (RN-D3) e a mesa nao sabe se o venue esta vivo; sem (2) o
+  // `desvio_maximo` da boleta seria medido contra uma regua guardada do ciclo, e nao contra o preco do
+  // instante do envio (RN-B11); sem (3) a conferencia da banda (D-001) nao tem numeros para conferir, e quem
+  // garante a banda declarada passa a ser o conector.
+  const obrigacoes: [string, unknown, string][] = [
+    [
+      "ligacao_por_protocolo",
+      (manifesto as any).ligacao_por_protocolo,
+      "a condicao `sem_ligacao` trava ABRIR, e sem a ligacao reportada PELO PROTOCOLO a mesa nao distingue mercado calmo de ligacao morta",
+    ],
+    [
+      "releitura_de_preco_ao_enviar",
+      (manifesto as any).releitura_de_preco_ao_enviar,
+      "o `desvio_maximo` da boleta seria medido contra uma marca guardada, e nao contra a regua RELIDA no instante do envio",
+    ],
+    [
+      "devolve_a_resolucao",
+      (manifesto as any).devolve_a_resolucao,
+      "sem os numeros da corretora a conferencia da banda nao tem o que conferir (D-001) — e quem garante a banda declarada passa a ser o conector",
+    ],
+  ];
+  for (const [nome, valor, porque] of obrigacoes) {
+    if (valor !== true) {
+      return {
+        porta: "manifesto",
+        motivo: "porta_do_arranque_falhou",
+        motivo_do_contrato: null,
+        porque: `o manifesto nao declara ${nome} == true (veio ${JSON.stringify(valor ?? null)}): ${porque}. O conector nao arranca por uma obrigacao de que a mesa depende (D-002, contrato 1.7.0).`,
+      };
+    }
+  }
   return null;
 }
 

@@ -432,6 +432,51 @@
         "conectores"
       ],
       "historico": "T027 / FR-005 / RN-E21 - o vigia arranca os conectores; a mesa recusa sem eles, e diz qual"
+    },
+    {
+      "nome": "obrigacao-nao-cumprida-recusa-a-abertura (D-002, obrigacao 1)",
+      "manifesto_mudanca": {
+        "ligacao_por_protocolo": false
+      },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "manifesto",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "D-002 / contrato 1.7.0: o conector DECLARA nao cumprir a obrigacao 1 (`ligacao_por_protocolo` = false). A mesa nao arranca sobre uma promessa — e a recusa nomeia qual. O CONTROLE e' o caso 'todas-as-portas-passam', com o MESMO fixture e as tres a `true`."
+    },
+    {
+      "nome": "obrigacao-nao-cumprida-recusa-a-abertura (D-002, obrigacao 2)",
+      "manifesto_mudanca": {
+        "releitura_de_preco_ao_enviar": false
+      },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "manifesto",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "D-002 / contrato 1.7.0: o conector DECLARA nao cumprir a obrigacao 2 (`releitura_de_preco_ao_enviar` = false). A mesa nao arranca sobre uma promessa — e a recusa nomeia qual. O CONTROLE e' o caso 'todas-as-portas-passam', com o MESMO fixture e as tres a `true`."
+    },
+    {
+      "nome": "obrigacao-nao-cumprida-recusa-a-abertura (D-002, obrigacao 3)",
+      "manifesto_mudanca": {
+        "devolve_a_resolucao": false
+      },
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "manifesto",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "historico": "D-002 / contrato 1.7.0: o conector DECLARA nao cumprir a obrigacao 3 (`devolve_a_resolucao` = false). A mesa nao arranca sobre uma promessa — e a recusa nomeia qual. O CONTROLE e' o caso 'todas-as-portas-passam', com o MESMO fixture e as tres a `true`."
+    },
+    {
+      "nome": "obrigacao-ausente-e-o-contrato-que-recusa (D-002, obrigacao 3)",
+      "manifesto_remover": [
+        "devolve_a_resolucao"
+      ],
+      "arrancou_esperado": false,
+      "estado_esperado": "parada",
+      "porta_esperada": "manifesto",
+      "motivo_esperado": "porta_do_arranque_falhou",
+      "motivo_do_contrato_esperado": "campo_obrigatorio_ausente",
+      "historico": "As duas metades da mesma regra: AUSENTE e' o CONTRATO que recusa (`campo_obrigatorio_ausente`); presente e `false` e' a PORTA que recusa. Em nenhum dos casos a mesa arranca."
     }
   ]
 }
