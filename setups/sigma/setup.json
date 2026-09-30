@@ -1,0 +1,89 @@
+{
+ "nome": "sigma",
+ "versao": "0.1.0",
+ "linguagem": "typescript",
+ "comando": [
+  "bun",
+  "run",
+  "plugin.ts"
+ ],
+ "nota": "O `sign(mid - MA) + ZZ` do Pine, automatico. A conta esta' em `sinal.ts` (funcao pura, rebobinavel); este manifesto diz o que o setup publica e o que ele NAO usa.",
+ "template": {
+  "relogio": {
+   "tipo": "texto",
+   "omissao": "1h",
+   "nota": "vem da ficha do par"
+  },
+  "ma_len": {
+   "tipo": "inteiro",
+   "omissao": 24
+  },
+  "ma_tipo": {
+   "tipo": "escolha",
+   "opcoes": [
+    "EMA",
+    "SMA"
+   ],
+   "omissao": "EMA"
+  },
+  "src_ma": {
+   "tipo": "escolha",
+   "opcoes": [
+    "hl2",
+    "close"
+   ],
+   "omissao": "hl2"
+  },
+  "src_sinal": {
+   "tipo": "escolha",
+   "opcoes": [
+    "hl2",
+    "close"
+   ],
+   "omissao": "hl2"
+  },
+  "usar_banda": {
+   "tipo": "booleano",
+   "omissao": true
+  },
+  "banda_atr": {
+   "tipo": "texto",
+   "omissao": "0.25"
+  },
+  "usar_zz": {
+   "tipo": "booleano",
+   "omissao": true
+  },
+  "zz_atr": {
+   "tipo": "texto",
+   "omissao": "2.0"
+  },
+  "atr_len": {
+   "tipo": "inteiro",
+   "omissao": 14
+  },
+  "politica_de_execucao": {
+   "tipo": "escolha",
+   "opcoes": [
+    "mercado"
+   ],
+   "omissao": "mercado"
+  },
+  "aumentos": {
+   "tipo": "escolha",
+   "opcoes": [
+    "nao"
+   ],
+   "omissao": "nao",
+   "nota": "o indicador nunca aumenta: ou esta' de um lado, ou vira. Um lado que ja' e' o nosso nao se reforca."
+  },
+  "protecao": {
+   "tipo": "escolha",
+   "opcoes": [
+    "nenhuma"
+   ],
+   "omissao": "nenhuma",
+   "nota": "O INDICADOR NAO TEM STOP. A unica saida e' a viragem (ou o dono desligar o par, e entao a ficha manda fechar). E' por isto que a RN-M4.12 - o travao de risco por ordem - faz falta aqui mais do que em qualquer outro setup: sem ele, o unico travao e' o tamanho (D-015)."
+  }
+ }
+}

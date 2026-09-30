@@ -708,3 +708,36 @@ mesa e uma posição enorme é o **tamanho** — `saldo_pct × alavancagem`, que
 **Consequência prática, declarada:** na conta real, `saldo_pct` baixo (10%) e `alavancagem` 1 são o travão
 inteiro. Não há segundo. Enquanto RN-M4.12 não estiver implementada, isto tem de ser dito ao dono em cada
 abertura em conta real — não uma vez.
+
+---
+
+## D-016 — a leitura ao vivo nao traz a posicao (e sem ela o setup do Pine nao abre)
+
+**Declarado em 30/09/2026.** O contrato TEM o campo (`mercado.posicao`: lado, unidades, preco_medio,
+marca_de_posse) e o produtor `brokers/hyperliquid/leitura-do-mercado.ts` **ja' o publica**. Mas o caminho
+**ao vivo** (`brokers/hyperliquid/processo.ts`, que e' o que o operador consome) **nao o emite**: as leituras
+medidas trazem instrumento, tempo, idade, estado, equity, bid, ask, ultimo — e mais nada.
+
+**Porque e' bloqueante para o primeiro setup:** o indicador do dono nao tem estado plano nem aumentos. Para
+propor um lado e' preciso saber se ja' estamos nesse lado; sem a posicao, o setup `sigma` propoe `hold` e di-lo
+("sem saber se ja' estou dentro, abrir seria empilhar"). E' deliberado: abrir as cegas por cima de uma posicao
+viva e' empilhar, e a alternativa — adivinhar — era pior. **Enquanto este campo nao viajar ao vivo, o plugin
+do Pine nunca abre.**
+
+**O que falta:** ligar a posicao da conta a' mensagem `mercado` do modo ao vivo, reutilizando
+`leitura-do-mercado.ts` (que ja' a sabe montar) em vez de a reescrever.
+
+---
+
+## D-017 — o operador espera para sempre por uma leitura que nao vem
+
+**Declarado em 30/09/2026.** Medido: com uma ficha ligada (`run: true`) cujo instrumento a conta do conector
+nao le — o caso do SOL na conta de teste, que declarava so' BTC — o operador fica a' espera
+**indefinidamente** e nao escreve operacao nenhuma. Duas corridas de 240 s cada, sem ficheiro.
+
+**Porque e' um defeito e nao uma espera legitima:** os outros pares ficam sem operacao escrita por causa de um,
+e o dono nao distingue "ainda nao chegou dado" de "nunca vai chegar". A leitura em falta tem nome no contrato
+(`sem_leitura`, RN-D7) — o operador devia escreve-la, com o motivo, em vez de silencio.
+
+**O que falta:** um limite de espera por par ligado; passado ele, a operacao e' escrita com os pares que tem
+leitura e os outros entram sem `leitura` (o mesmo caminho do ETH na prova do multipar).
