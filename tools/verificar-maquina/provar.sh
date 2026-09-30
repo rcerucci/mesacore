@@ -69,6 +69,10 @@ declarar "marcas sobrevivem ao reinicio" bash tools/verificar-maquina/reiniciar.
 declarar "porta da mesa (T014-T016)"      bun run tools/verificar-maquina/servidor.ts
 declarar "preparar contas (script + questionario)" bash tools/preparar-contas/provas.sh
 declarar "conector hyperliquid (offline, US1)" bash tools/verificar-conector/provas-offline.sh
+# O CAMINHO DO ENVIO faltava na porta unica: as 38 provas da porta de processo do conector (tradutor, precos,
+# assinatura, as 8 portas do arranque) so corriam quando alguem se lembrava de as chamar. Um caminho que mexe
+# em dinheiro fora do portao e um caminho que pode regredir sem ninguem dar por isso (medido 29/09/2026).
+declarar "envio do conector (38 casos)"   bun run brokers/hyperliquid/processo.ts --bancada
 
 # As bancadas da camada de OPERACAO (003): correm processos a serio (vigia + mesa), por isso ficam na porta
 # completa - a `--rapido` e a que se corre a cada passo.

@@ -21,14 +21,14 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 
 | Bancada | Comando | Número medido (29/09, 19:39–21:2x) |
 |---|---|---|
-| A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **28 de 28 passaram** (numa cópia com a árvore gravada — ver §4) |
+| A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **29 de 29 passaram** (o envio do conector entrou hoje na porta — ver §4) |
 | O **ciclo** e as bandas (D-001 e D-008) | `bun run core/ciclo/provar.ts` | **99 verificações · 0 divergentes** — 12 de condição · **36 de ciclo** (eram 27) · 10 de desfecho · 15 de banda · 6 de reconciliação |
 | A **tabela de transições** (D-006, fechado hoje) | `bun run core/estados/provar.ts` + `bun run tools/verificar-maquina/tabela.ts` | **38 casos · 13 aceites · 25 recusados · 0 divergentes** (eram 35) + **36 linhas · 0 falhas nos 7 invariantes** |
 | A **fronteira** vigia ↔ mesa (motivos) | `uv run python tools/verificar-contrato/py/fronteira.py --motivos` | **0 falhas** — livro **50** motivos · **26** cruzam · 24 ficam · **1** excepção da porta |
 | A **retenção do ledger** (RN-L6, leitor novo) | `bun run core/estado/retencao.prova.ts` | **14 casos · 7 declarações aceites · 7 recusadas · 0 divergentes** |
 | A **conta na linha do registo** (D-004, fechado hoje) | `bun run tools/verificar-maquina/registo.ts` | **12 verificações · 0 divergentes** — duas contas, reconstrução **por conta**, e a troca como controle |
 | O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **40** · leitura 14 · histórico **26** |
-| **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** |
+| **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** — **dentro da porta única desde hoje** (antes só corria à mão) |
 | A conformidade do conector | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 241 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
 | O contrato nas duas linguagens | `bun tools/verificar-conector/porta-do-contrato.ts` | **0 falhas** — contrato **1.7.0** · **131 casos** nos dois motores · 23 sondas da emenda |
 | As tarefas dos recortes | `grep -c '^- \[x\]' specs/*/tasks.md` | 001 **59/59** · 002 **67/67** · 003 **63/63** · 004 **71 fechadas · 3 abertas** |
@@ -99,7 +99,7 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
     flutuante arredonda-o e diria «cabe»). Fechar/reduzir continua a passar — o outro lado, também em caso.
 
 Os dois primeiros itens estão no commit `af70d46`; o terceiro no `905fc03`; o quarto no `e08e6d3`; o quinto e o
-sexto nas duas vagas de hoje. `provar.sh` dá **28 de 28** com a árvore **gravada** — no repositório, a única porta que fica
+sexto nas duas vagas de hoje. `provar.sh` dá **29 de 29** com a árvore **gravada** — no repositório, a única porta que fica
 vermelha antes de gravar é a **prova negativa da frescura**, e por uma razão mecânica e dita: ela exige
 `contracts/gerado` **limpo em git** antes de correr.
 
@@ -160,6 +160,7 @@ Ficam **de fora**, como decidiu: as ordens dimensionadas por percentagem de sald
 
 E há uma coisa que continua pendente e não é do conector: **nada deste trabalho está gravado em git** — 2
 ficheiros novos e ~55 modificados, com o `provar.sh` a fechar 28 de 28 só numa cópia onde a árvore está gravada.
+> (E o portão passou a **29 de 29** quando o caminho do envio entrou nele — a linha acima é o retrato de 19:52.)
 Diga-me se gravo, e o repositório fica com a vaga inteira num commit.
 
 > **Nota de 29/09/2026, 21:5x — GRAVADO.** O parágrafo acima é o retrato de 19:52 e fica por ser auditável. A
