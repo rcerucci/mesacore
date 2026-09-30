@@ -221,3 +221,37 @@ registada, e a boleta nao e' enviada — o caminho mesa -> conector (a mao que a
 fechado, e um gatilho a meio nao se improvisa (P16: uma ordem de ~400x o equity encheu na testnet).
 
 Parar: `kill $(cat <dir>/operacao-em-observacao.pid)` e, se sobrar, matar os filhos por nome.
+
+
+## 30/09/2026 — o lado do PLUGIN esta' fechado e provado; falta a mao
+
+### Fechado hoje, com o numero que o prova
+
+| O que | Como se prova |
+|---|---|
+| A conta le **SOL** (e so' SOL), 4 voltas seguidas | `operador.log`: 4 leituras, todas `SOL`; o `["BTC"]` por omissao **morreu** |
+| O plugin propoe **uma vez por barra** | 1 proposta em 4 voltas, com o preco a mexer-se |
+| A mesa **trava a segunda entrada na mesma barra** (D-021) | registo: `CICLO SOL: abrir x1` + `nada (entrada_ja_feita_nesta_barra) x2` |
+| Sem o relogio da ficha a mesa **recusa** | `a operacao nao declara o relogio de SOL (veio undefined)` |
+| Sem fallbacks no que decide | `fallbacks (nenhum novo) OK` — linha de base **173**, so' desce |
+| A catraca morde o proprio autor | reprovou um fallback meu (`?? ""`, 174 contra 173) minutos depois de nascer |
+| Portao | **30 de 30** · tipos 0 erros em 6 directorios · fronteira 0 falhas |
+
+### O que falta para o dinheiro andar: A MAO (mesa -> conector)
+
+O **plugin** nao precisa de mais nada para operar: calcula o sinal, propoe uma vez por barra, respeita o
+relogio da ficha e recusa quando lhe falta ambiente. Quem nao esta' fechado e' a **mao** — e ela e' da mesa,
+nao do plugin. Desenho fixado (para nao se improvisar, P16):
+
+1. a mesa **emite a boleta** numa linha do registo (`tipo: "boleta"`, forma `PedidoDeBoleta`,
+   `core/ciclo/decisao.ts:44`) — hoje compoe-a e **deita-a fora** (medido: a linha do ciclo nao tem boleta);
+2. um **carteiro** (no operador, que ja' tem o `stdin` do conector) le a linha, entrega a boleta ao conector,
+   que assina e submete (essa parte esta' provada: a bateria do venue correu 21 passos);
+3. o conector devolve a `resolucao`; o carteiro escreve a linha `desfecho` (forma `DesfechoDaOrdem`) e a
+   **marca** que seguiu na boleta;
+4. as marcas passam a viajar na operacao (`marcas_nossas_conhecidas`), e com isso uma posicao que apareca na
+   conta e' reconhecida como NOSSA (D-008/RN-T16.1) — sem isto, a mesa trata-a como alheia e nao a gere;
+5. so' entao a viragem de mao (RN-B5: fechar e abrir, em dois passos) fica possivel.
+
+Ordem de risco: testnet primeiro, tamanho minimo, e o registo a dizer o que saiu antes de sair. Na conta real
+de pequeno valor so' depois de a mao estar fechada em testnet e o desfecho classificado.
