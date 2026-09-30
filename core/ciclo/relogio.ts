@@ -25,7 +25,7 @@ import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
 import type { Marcas } from "../estado/marcas.ts";
 import type { Estado } from "../estados/maquina.ts";
 import type { Mandato, Template } from "./decisao.ts";
-import { decidirInstrumento, decidirSemLeitura } from "./ciclo.ts";
+import { decidirInstrumento, decidirSemLeitura, type Falhas } from "./ciclo.ts";
 
 /** O que a operacao declara de um instrumento: o que o conector e o setup reportam, e a ficha em vigor. */
 export interface InstrumentoDaOperacao {
@@ -44,6 +44,10 @@ export interface InstrumentoDaOperacao {
   template: Template;
   /** As marcas de posse que este lado conhece - e por elas que a posse se reconhece. */
   marcas_nossas_conhecidas?: number[];
+  /** As falhas que a LEITURA trouxe (ditas por quem leu). Ausente = recusa: nao saber nao e' nao haver. */
+  falhas?: Falhas;
+  /** Se a leitura divergiu do esperado. Ausente = recusa: o ausente nao e' "nao divergente". */
+  divergente?: boolean;
 }
 
 export interface Operacao {
@@ -186,6 +190,25 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       ficha: decl.ficha,
       ciclo,
       ligacao: operacao.ligacao,
+      // AS FALHAS E A DIVERGENCIA VEM DA OPERACAO, e o ciclo NAO as inventa: `?? {}` e `?? false` diziam «sem
+      // falhas» e «nao divergente» a quem nunca o declarou — e o defeito ficou escondido 12 horas.
+      falhas: (() => {
+        if (decl.falhas === undefined) {
+          throw new Error(
+            `a operacao nao declara as falhas da leitura de ${instrumento} (\`falhas\`): quem leu sabe-o, e ` +
+              "tratar o ausente como vazio e' decidir a bem de uma leitura que ninguem conferiu",
+          );
+        }
+        return decl.falhas;
+      })(),
+      divergente: (() => {
+        if (typeof decl.divergente !== "boolean") {
+          throw new Error(
+            `a operacao nao declara se a leitura de ${instrumento} divergiu (\`divergente\`): o ausente nao e' "nao divergente"`,
+          );
+        }
+        return decl.divergente;
+      })(),
       mandato,
       template: decl.template,
       // AS MARCAS: sem esta lista TODA a posicao passa a ser alheia (a mesa relata e nao gere), e uma posicao

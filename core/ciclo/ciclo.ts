@@ -12,6 +12,7 @@
 import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
 import { cabeNaBanda, type ConferenciaDaBanda } from "./banda.ts";
 import { situacaoDoInstrumento, type Falhas, type NomeDeCondicao } from "./condicoes.ts";
+export type { Falhas };
 import { montarBoleta, type Decisao, type Mandato, type Template } from "./decisao.ts";
 
 const LADOS = ["buy", "sell", "hold", "caixa"] as const;

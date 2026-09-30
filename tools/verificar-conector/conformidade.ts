@@ -718,6 +718,9 @@ async function prova6_mesa_sem_vigia(): Promise<void> {
             ficha: casoDoCiclo.ficha,
             template: declarado.padrao.template,
             marcas_nossas_conhecidas: [],
+            // A LEITURA DECLARA O QUE NAO TROUXE E SE DIVERGIU (a mesa ja' nao aceita a omissao em silencio).
+            falhas: { leitura: false, setup_respondeu: true },
+            divergente: false,
           },
         },
       },

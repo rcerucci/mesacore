@@ -425,8 +425,10 @@ async function main(): Promise<void> {
           ...(eOGueFalou ? { leitura } : {}),
           // AS FALHAS: ou o conector disse que nao houve nenhuma ausencia (mapa sem entrada = leitura completa,
           // e o operador nao a inventa), ou vao as que ele declarou. Sem leitura, sem falhas.
-          ...(eOGueFalou ? { falhas: { conector: ausentesDoMercado.get(nome) ?? [] } } : {}),
-          ...(eOGueFalou ? { divergente: false } : {}),
+          // AS FALHAS, na forma do contrato: a leitura que existe nao falhou; o setup respondeu se respondeu.
+          // O par sem leitura declara a falha dela — e' isso que faz o ciclo decidir `sem_leitura` com nome.
+          falhas: eOGueFalou ? { leitura: false, setup_respondeu: proposta !== null } : { leitura: true },
+          divergente: eOGueFalou ? false : false,
           ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
           template: resolverTemplate(manifestoDe(f), f),
           parametros: f.constantes,
