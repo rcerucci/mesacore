@@ -805,3 +805,24 @@ Uma peca que fala e nao e' ouvida nao e' uma peca de um sistema: e' uma caixa.
 
 **O que muda daqui para a frente:** com o D-019 fechado, o conector passa a ser ouvido. O primeiro passo e'
 repetir a corrida e **ler o que ele diz** — e nao voltar a tentar as cegas.
+
+---
+
+## D-021 — a mesa le a operacao UMA VEZ, e por isso o relogio da ficha nao a trava
+
+**Declarado em 30/09/2026, medido em operacao.** O setup passou a propor **uma vez por barra fechada** (o
+relogio da ficha manda na entrada) — e isso esta' provado: em 4 voltas do operador, **1 proposta**. Mas o
+registo mostra a mesa a decidir `abrir` **em todos os ciclos**: `CICLO SOL: abrir x3` em 3 ciclos.
+
+**A causa, lida no codigo:** `relogio.ts` le a operacao **uma vez**, no arranque (`lerOperacao(...)`, com o
+comentario a dize-lo: "a operacao nao muda debaixo dos pes do processo (e lida uma vez)"). O ficheiro e' reescrito
+pelo operador a cada volta, mas a mesa fica com o primeiro — o que tinha a proposta. O silencio do setup nas
+voltas seguintes nao chega a' mesa, e o travao por barra nao existe do lado de quem decide.
+
+**Porque isto e' grave se a mao fechar:** com o envio ligado, `abrir` a cada ciclo e' uma posicao nova a cada
+minuto — exactamente as 731 de ontem, agora com nome. A regra "uma entrada por barra" tem de existir **na mesa**,
+que e' quem aperta o gatilho, e nao so' no setup.
+
+**O que falta:** a mesa (a) reler a operacao a cada volta, ou (b) guardar o instante da ultima entrada por
+instrumento e recusar uma segunda na mesma barra. A (b) e' a que não depende do ficheiro estar fresco — e e' a
+que fica: o travao do lado de quem manda.

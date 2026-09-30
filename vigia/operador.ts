@@ -90,6 +90,16 @@ interface Ficha {
  * conta: um ficheiro renomeado (ou copiado de outra conta sem lhe mudar o cabeçalho) passaria a mentir em
  * silêncio, e é exactamente o género de mentira que não se vê no registo.
  */
+/**
+ * As marcas de posse que esta conta conhece — o mapa marca -> ficha (RN-T16.1).
+ *
+ * NAO EXISTE AINDA (D-008), e por isso devolve a lista vazia: e' a verdade, e nao uma omissao. O dia em que o
+ * mapa existir, e' aqui que ele se le', e mais nada muda.
+ */
+function marcasConhecidasDaConta(): number[] {
+  return [];
+}
+
 function lerFichasDaConta(nome: string): Ficha[] {
   const raiz = join(RAIZ, "fichas");
   if (!existsSync(raiz)) morrer(`nao existe a pasta de fichas (${raiz}): um par sem ficha nao e' operado`);
@@ -427,6 +437,12 @@ async function main(): Promise<void> {
           // e o operador nao a inventa), ou vao as que ele declarou. Sem leitura, sem falhas.
           // AS FALHAS, na forma do contrato: a leitura que existe nao falhou; o setup respondeu se respondeu.
           // O par sem leitura declara a falha dela — e' isso que faz o ciclo decidir `sem_leitura` com nome.
+          // AS MARCAS DE POSSE QUE A MESA CONHECE. Hoje e' a lista VAZIA, e a razao e' medida: o mapa
+          // marca -> ficha (RN-T16.1) nao existe em ficheiro nenhum (D-008). A consequencia e' real e fica dita:
+          // uma posicao que apareca na conta le-se como ALHEIA — e' a verdade do sistema enquanto o mapa nao
+          // existir, e e' por isso que ela nao se gere sozinha. Declarado, nao omitido: a mesa RECUSA a operacao
+          // que nao traga este campo, exactamente para nao voltar a haver um `?? []` a decidir isto por baixo.
+          marcas_nossas_conhecidas: marcasConhecidasDaConta(),
           falhas: eOGueFalou ? { leitura: false, setup_respondeu: proposta !== null } : { leitura: true },
           divergente: eOGueFalou ? false : false,
           ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
