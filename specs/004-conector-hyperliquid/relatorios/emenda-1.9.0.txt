@@ -1,0 +1,44 @@
+EMENDA 1.8.0 -> 1.9.0 — AS ORDENS VIVAS DA CONTA (medida, e nao inventada)
+
+A PERGUNTA DO DONO, verbatim: "quando o plugin de setup sobe, ele le as ordens existentes?".
+
+A RESPOSTA MEDIDA, antes de mexer:
+
+    $ grep -rn 'openOrders\|ordens_abertas' --include='*.ts' brokers/ core/ vigia/
+    (vazio)
+
+ZERO. O produto nao lia ordens vivas em sitio nenhum. A leitura do venue trazia a POSICAO (ou a sua ausencia,
+que o contrato ja' declarava como facto) e mais nada:
+
+    $ sed -n '221,255p' brokers/hyperliquid/leitura-do-mercado.ts
+    // posicao vai SEM marca — e quem a le (a mesa) trata uma posicao sem marca como ALHEIA
+    const posicao = leituraDaConta.posicoes.find(...)
+
+Ficavam invisiveis: a passiva pendurada, o stop por colocar, o que outro dedo pos, o que ficou por cancelar.
+Uma mesa que nao sabe o que esta' vivo na conta nao pode gerir nem auditar.
+
+A ASSIMETRIA QUE O DONO FAREFOU, e que confirma a resposta: a BATERIA DO VENUE (tools/testar-venue/bateria.ts,
+o instrumento de teste) LIA as ordens desde sempre:
+
+    $ sed -n '187p' tools/testar-venue/bateria.ts
+    const ordem = await (info as any).openOrders({ user: endereco });
+
+O medidor sabia; o produto nao. E' o padrao que esta' em D-008 e que esta emenda comeca a fechar.
+
+O QUE FICA (aditivo, e OBRIGATORIO):
+  * `mercado.ordens_abertas` — lista das ordens vivas do instrumento, com `instrumento`, `ordem` (oid),
+    `lado`, `preco` (limitPx), `unidades` (sz) e `marca_de_posse` (o `cloid`, na forma do venue, 1.5.0);
+  * LISTA VAZIA NAO E' O MESMO QUE AUSENTE: `[]` diz "perguntei, e nao ha' nenhuma"; ausente diria "nao
+    perguntei". Quem nao consegue perguntar NAO PRODUZ leitura — recusa nomeada (`ordens_nao_lidas`), como as
+    outras leituras obrigatorias (conta, livro, estado);
+  * o lado do venue e' `A`/`B` (ask/bid) e traduz-se NUM SITIO SO'. Um lado que nao seja nenhum dos dois
+    RECUSA a leitura: adivinhar o lado de uma ordem viva seria a mesa a inventar o que esta' na conta.
+
+PROVA NEGATIVA (contrato, 134 casos): `mercado/ordem-viva-com-lado-inventado` REPROVA
+(`valor_fora_do_conjunto`), e `mercado/com-ordem-viva` passa com a marca de posse na forma do venue.
+
+INVENTARIO DE GRANDEZAS: `mercado.ordens_abertas[].preco` e `[].unidades` declaram origem `venue`
+(openOrders[].limitPx / .sz) — a porta do arranque recusa o arranque quando uma grandeza nao tem dono.
+
+NAO SE MEXEU: `mercado.posicao` continua a ser "ausente = sem posicao", e as ordens NAO substituem a posicao.
+Um instrumento sem posicao pode ter ordens vivas, e o contrario tambem.

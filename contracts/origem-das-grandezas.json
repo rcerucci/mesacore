@@ -222,6 +222,18 @@
     "proposta.barra_ms": {
       "origem": "venue",
       "chave": "candleSnapshot[].t — a ABERTURA da barra FECHADA sobre a qual o setup decidiu (o setup nao a inventa: le'-a do venue)"
+    },
+    "mercado.ordens_abertas[].preco": {
+      "origem": "venue",
+      "chave": "openOrders[].limitPx (o preco declarado da ordem viva)"
+    },
+    "mercado.ordens_abertas[].unidades": {
+      "origem": "venue",
+      "chave": "openOrders[].sz (o que ainda esta' por executar, medido no venue)"
+    },
+    "mercado.ordens_abertas[].marca_de_posse": {
+      "origem": "venue",
+      "chave": "openOrders[].cloid (a marca de posse na forma que ESTE venue publica)"
     }
   },
   "prefixos": {

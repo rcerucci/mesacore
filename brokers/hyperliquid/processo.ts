@@ -329,6 +329,13 @@ function portaDoDuble(dados: any): Porta {
         const lev = (v.leverage ?? {}) as Record<string, unknown>;
         return { ...v, leverage: { ...lev, value: Number(alavancagemAjustada) } };
       },
+      ordensDaConta: async () => {
+        // AS ORDENS VIVAS (contrato 1.9.0) — da gravacao, como as outras leituras da conta. Uma gravacao que
+        // nao as tenha NAO devolve lista vazia: `resposta(undefined)` recusa, e a leitura inteira nao sai.
+        const r = resposta(fonteDaConta().ordens ?? dados.conta?.ordens_vivas);
+        if (!r.ok) throw new Error(r.erro);
+        return r.valor;
+      },
       agentesDaConta: async () => {
         const r = resposta(fonteDaConta().agentes ?? dados.conta?.agentes);
         if (!r.ok) throw new Error(r.erro);

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, conint
+from pydantic import BaseModel, ConfigDict, Field, conint, constr
 
 from ._defs import forma_schema
 
@@ -36,6 +36,21 @@ class Livro(BaseModel):
 class Lado3(Enum):
     buy = 'buy'
     sell = 'sell'
+
+
+class OrdensAberta(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    instrumento: forma_schema.Instrumento
+    ordem: constr(min_length=1) = Field(
+        ...,
+        description="O identificador da ordem NO VENUE (`oid`). E' por ele que a mesa e o humano falam da MESMA ordem.",
+    )
+    lado: Lado3
+    preco: forma_schema.DecimalPositivo
+    unidades: forma_schema.DecimalPositivo
+    marca_de_posse: forma_schema.MarcaDePosseDoVenue | None = None
 
 
 class Posicao(BaseModel):
@@ -70,6 +85,10 @@ class ObjectoDeMercado(BaseModel):
     ask: forma_schema.DecimalPositivo | None = None
     ultimo: forma_schema.DecimalPositivo | None = None
     livro: Livro | None = None
+    ordens_abertas: list[OrdensAberta] = Field(
+        ...,
+        description="AS ORDENS VIVAS NO VENUE — o que existe na conta e nao e' posicao: o que ficou pendurado, o que ficou por cancelar, o que outro dedo pos. OBRIGATORIA, e LISTA VAZIA NAO E' O MESMO QUE AUSENTE: `[]` diz 'perguntei, e nao ha' nenhuma'; ausente seria 'nao perguntei'. Quem nao conseguiu perguntar NAO PRODUZ leitura (recusa nomeada) — uma lista vazia inventada aqui faria a mesa achar que a conta esta' limpa quando nao esta'.",
+    )
     posicao: Posicao | None = Field(
         None,
         description='Ausente = sem posicao. A posse le-se do VENUE, pela marca (RN-T16.1).',

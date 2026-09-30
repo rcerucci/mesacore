@@ -43,6 +43,7 @@ export type ClienteDaLeituraDeMercado = {
   spotClearinghouseState(p: { user: string }): Promise<unknown>;
   activeAssetData(p: { user: string; coin: string }): Promise<unknown>;
   extraAgents(p: { user: string }): Promise<unknown>;
+  openOrders(p: { user: string }): Promise<unknown>;
   l2Book(p: { coin: string }): Promise<unknown>;
   candleSnapshot(p: { coin: string; interval: string; startTime: number }): Promise<unknown>;
   exchangeStatus(): Promise<unknown>;
@@ -55,6 +56,9 @@ export function portaDoCliente(cliente: ClienteDaLeituraDeMercado): PortaDaLeitu
       contaSpot: (conta) => cliente.spotClearinghouseState({ user: conta }),
       activoDaConta: (conta, coin) => cliente.activeAssetData({ user: conta, coin }),
       agentesDaConta: (conta) => cliente.extraAgents({ user: conta }),
+      // AS ORDENS VIVAS (contrato 1.9.0). E' o que existe na conta e nao e' posicao — e a marca de posse
+      // viaja aqui, no `cloid`: e' por ela que a posse se le' (RN-T16.1).
+      ordensDaConta: (conta) => cliente.openOrders({ user: conta }),
     },
     leitura: {
       livro: (coin) => cliente.l2Book({ coin }),
@@ -148,12 +152,59 @@ function ultimoDaVela(velas: unknown): { ultimo?: string; quantas: number } {
  * que falte RECUSA — um `mercado` sem equity e' um mercado que a mesa nao pode usar, e servi-lo seria
  * decidir sobre um vazio.
  */
+
+/**
+ * AS ORDENS VIVAS, do que o venue respondeu para a forma do contrato (1.9.0).
+ *
+ * O venue responde a lista de ordens de TODA a conta; aqui ficam so' as do instrumento desta leitura, porque o
+ * `mercado` e' por instrumento. O `side` do venue e' "A"/"B" (ask/bid) e nao `buy`/`sell`: traduz-se AQUI, num
+ * sitio so', e um lado que nao seja nenhum dos dois RECUSA — traduzir por semelhanca seria a mesa a inventar o
+ * lado de uma ordem viva.
+ *
+ * Uma resposta que nao seja lista RECUSA. Uma lista VAZIA nao: ela diz "perguntei, e nao ha' nenhuma".
+ */
+function lerOrdensVivas(
+  bruto: unknown,
+  instrumento: string,
+): { ok: true; ordens: unknown[] } | { ok: false; porque: string } {
+  if (!Array.isArray(bruto)) {
+    return {
+      ok: false,
+      porque: `a resposta das ordens vivas nao e' uma lista (veio ${typeof bruto}): sem lista nao se sabe o que esta' pendurado na conta`,
+    };
+  }
+  const ordens: unknown[] = [];
+  for (const o of bruto) {
+    const r = objecto(o);
+    if (r === undefined) return { ok: false, porque: "uma ordem viva veio sem forma de objecto" };
+    if (String(r.coin) !== instrumento) continue;
+    const ladoDoVenue = String(r.side);
+    const lado = ladoDoVenue === "A" ? "sell" : ladoDoVenue === "B" ? "buy" : undefined;
+    if (lado === undefined) {
+      return {
+        ok: false,
+        porque: `uma ordem viva de ${instrumento} veio com lado \`${ladoDoVenue}\`: no venue so' A (venda) e B (compra)`,
+      };
+    }
+    ordens.push({
+      instrumento,
+      ordem: String(r.oid),
+      lado,
+      preco: String(r.limitPx),
+      unidades: String(r.sz),
+      ...(r.cloid !== undefined && r.cloid !== null ? { marca_de_posse: String(r.cloid) } : {}),
+    });
+  }
+  return { ok: true, ordens };
+}
+
 export function montarMercado(
   bruto: {
     conta: Parameters<typeof lerConta>[0];
     livro: unknown;
     estado: unknown;
     velas: unknown;
+    ordens: unknown;
   },
   pedido: PedidoDaLeituraDeMercado,
   /** As leituras que nem chegaram a ser tentadas (a porta falhou): entram como falha, nao como ausencia. */
@@ -224,6 +275,14 @@ export function montarMercado(
     (p) => p.instrumento === pedido.instrumento,
   );
 
+  // AS ORDENS VIVAS (contrato 1.9.0): lidas do que o venue respondeu, ANTES de montar a carga — e uma resposta
+  // que nao sirva RECUSA a leitura inteira, em vez de sair um mercado sem elas.
+const lidas = lerOrdensVivas(bruto.ordens, pedido.instrumento);
+  if (!lidas.ok) {
+    return { ok: false, motivo: "ordens_nao_lidas", porque: lidas.porque };
+  }
+  const ordensAbertas = lidas.ordens;
+
   const carga: Record<string, unknown> = {
     instrumento: pedido.instrumento,
     tempo_do_venue_ms: tempo,
@@ -245,6 +304,8 @@ export function montarMercado(
     // A marca de posse NAO vem na leitura da conta: o venue guarda-a no `cloid` da ordem, e o mapa
     // marca -> ficha (RN-T16.1) e' item por fazer. Sem ela, a posicao vai declarada e sem dono — e isso e'
     // a informacao que a mesa precisa para NAO a gerir.
+    // AS ORDENS VIVAS DA CONTA, neste instrumento (contrato 1.9.0): obrigatorias, e a lista vazia diz "nao ha' nenhuma".
+    carga.ordens_abertas = ordensAbertas;
     carga.posicao = {
       lado: posicao.lado,
       unidades: posicao.unidades,
@@ -261,6 +322,7 @@ export function montarMercado(
     "mercado.idade_do_dado_ms": `medida: agora (${pedido.agora_ms}) - tempo_do_venue (${tempo})`,
     "mercado.estado": `${estado.porque} — ` + "`specialStatuses: null` significa nenhum estado especial em vigor",
     "mercado.equity": "clearinghouseState.marginSummary.accountValue (com nao realizado — RN-M3)",
+    "mercado.ordens_abertas": `openOrders[].(oid/side/limitPx/sz) — as ordens VIVAS de ${pedido.instrumento} (vazio = perguntei e nao ha' nenhuma)`,
     ...(bid !== undefined ? { "mercado.bid": "l2Book.levels[0][0].px" } : {}),
     ...(ask !== undefined ? { "mercado.ask": "l2Book.levels[1][0].px" } : {}),
     ...(ultimo !== undefined ? { "mercado.ultimo": `candleSnapshot().c da vela mais recente (${quantas} vela(s) lidas)` } : {}),
@@ -318,17 +380,21 @@ export async function lerMercadoNoVenue(
     }
   };
 
-  const [conta, livro, estado, velas] = await Promise.all([
+  const [conta, livro, estado, velas, ordens] = await Promise.all([
     tentar("conta", () => lerDoVenueDaConta(porta.conta, { conta: pedido.conta, instrumento: pedido.instrumento })),
     tentar("livro", () => porta.leitura.livro(pedido.instrumento)),
     tentar("estado", () => porta.leitura.estadoDaExchange()),
     tentar("velas", () => porta.leitura.velas(pedido.instrumento, desde)),
+    // As ORDENS VIVAS sao OBRIGATORIAS (1.9.0): quem nao conseguiu perguntar nao produz leitura — uma lista
+    // vazia inventada faria a mesa achar a conta limpa quando ela nao esta'.
+    tentar("ordens", () => porta.conta.ordensDaConta(pedido.conta)),
   ]);
 
   const falhas: { leitura: string; motivo: string; porque: string }[] = [];
   if (!conta.ok) falhas.push(conta.falha);
   if (!livro.ok) falhas.push(livro.falha);
   if (!estado.ok) falhas.push(estado.falha);
+  if (!ordens.ok) falhas.push(ordens.falha);
   // As VELAS nao entram nas obrigatorias: elas dao o `ultimo`, que e' um campo aditivo. O que o venue nao
   // publicou fica ausente e DITO — nao se recusa o mercado inteiro por causa de um campo que o contrato
   // declara opcional. As outras tres sao a conta, o livro e o estado, e sem qualquer uma delas nao ha leitura.
@@ -340,11 +406,14 @@ export async function lerMercadoNoVenue(
         livro: (livro as { valor: unknown }).valor,
         estado: (estado as { valor: unknown }).valor,
         velas: velas.ok ? velas.valor : [],
+        ordens: (ordens as { valor: unknown }).valor,
       },
       pedido,
     );
   }
-  return montarMercado({ conta: {}, livro: undefined, estado: undefined, velas: [] }, pedido, falhasDasObrigatorias);
+  // As ordens tambem vao por preencher, e de proposito: com `falhas` obrigatorias, `montarMercado` RECUSA antes
+  // de olhar para qualquer um destes valores — nao ha' caminho em que um vazio chegue a mesa como leitura.
+  return montarMercado({ conta: {}, livro: undefined, estado: undefined, velas: [], ordens: undefined }, pedido, falhasDasObrigatorias);
 }
 
 // ---------------------------------------------------------------------------------------------------------

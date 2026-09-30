@@ -69,6 +69,32 @@ export interface ObjectoDeMercado {
     profundidade: number;
   };
   /**
+   * AS ORDENS VIVAS NO VENUE — o que existe na conta e nao e' posicao: o que ficou pendurado, o que ficou por cancelar, o que outro dedo pos. OBRIGATORIA, e LISTA VAZIA NAO E' O MESMO QUE AUSENTE: `[]` diz 'perguntei, e nao ha' nenhuma'; ausente seria 'nao perguntei'. Quem nao conseguiu perguntar NAO PRODUZ leitura (recusa nomeada) — uma lista vazia inventada aqui faria a mesa achar que a conta esta' limpa quando nao esta'.
+   */
+  ordens_abertas: {
+    /**
+     * Símbolo do instrumento, como o venue o escreve.
+     */
+    instrumento: string;
+    /**
+     * O identificador da ordem NO VENUE (`oid`). E' por ele que a mesa e o humano falam da MESMA ordem.
+     */
+    ordem: string;
+    lado: "buy" | "sell";
+    /**
+     * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
+     */
+    preco: string;
+    /**
+     * Decimal textual estritamente maior que zero — para percentagens de risco, alavancagem e desvios. Aceita '0.5' (meia percentagem) e recusa '0' e '0.00'.
+     */
+    unidades: string;
+    /**
+     * A marca de posse que o VENUE PUBLICA (no historico, por execucao), na forma que o MANIFESTO dele declara (`manifesto.marca_de_posse`). ADITIVO na 1.5.0, e obrigado por MEDICAO: a Hyperliquid declara `marca_de_posse: "cloid"` no manifesto e guarda a marca como `0x` + 32 hexadecimais minusculos — que o inteiro de 31 bits da mesa NAO consegue representar (a derivacao do `cloid` e um hash da referencia de cliente, e o inteiro nao esta la dentro). Duas formas, e SO duas: (1) o inteiro de 31 bits (a forma do contrato que ja existia — `marca_de_posse`); (2) o `cloid` pela forma EXACTA. As duas sao disjuntas pelo tipo e nenhuma afrouxa a outra: um inteiro tem de caber nos 31 bits (2147483648 RECUSA, `valor_fora_da_banda`) e um texto tem de ser um `cloid` bem formado ('nao-e-marca' RECUSA, `formato_invalido`). Um TERCEIRO tipo de marca nao entra por tolerancia.
+     */
+    marca_de_posse?: number | string;
+  }[];
+  /**
    * Ausente = sem posicao. A posse le-se do VENUE, pela marca (RN-T16.1).
    */
   posicao?: {

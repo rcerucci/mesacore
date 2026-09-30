@@ -434,6 +434,9 @@ async function main(): Promise<void> {
         estado_do_mercado: doVenue.estado,
         equity: doVenue.equity,
       };
+      // AS ORDENS VIVAS (contrato 1.9.0): vao com a leitura, sem serem tocadas — o conector ja' as validou
+      // contra o contrato antes de as emitir, e a mesa precisa delas para saber o que esta' pendurado.
+      leitura.ordens_abertas = doVenue.ordens_abertas;
       for (const campo of ["bid", "ask", "ultimo", "posicao"] as const) {
         if (doVenue[campo] !== undefined) leitura[campo] = doVenue[campo];
       }

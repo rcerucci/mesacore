@@ -282,7 +282,23 @@ function decidirCom(lido: any, ciclo: number, posicaoNossa: number[], mandato: a
     idade_do_dado_ms: 100,
     estado_do_mercado: "aberto" as const,
     equity: String(lido.conta?.marginSummary?.accountValue ?? "0"),
-    // O lado da posicao vem do SINAL que o venue publica (`szi`), e nao de uma suposicao nossa.
+    // AS ORDENS VIVAS (contrato 1.9.0): as MESMAS que a bateria le' do venue desde sempre (`openOrders`), na
+    // forma do contrato. O lado do venue e' A/B: traduz-se aqui, e um lado que nao seja nenhum dos dois RECUSA
+    // — a bateria nao inventa o lado de uma ordem viva.
+    ordens_abertas: (Array.isArray(lido.ordens_abertas) ? lido.ordens_abertas : []).filter(
+      (o: any) => String(o?.coin) === INSTRUMENTO,
+    ).map((o: any) => {
+      const lado = String(o?.side) === "A" ? "sell" : String(o?.side) === "B" ? "buy" : null;
+      if (lado === null) falhou("P2 (decisao)", `ordem viva de ${INSTRUMENTO} com lado \`${String(o?.side)}\`: no venue so' A e B`);
+      return {
+        instrumento: INSTRUMENTO,
+        ordem: String(o?.oid),
+        lado,
+        preco: String(o?.limitPx),
+        unidades: String(o?.sz),
+        ...(o?.cloid != null ? { marca_de_posse: String(o.cloid) } : {}),
+      };
+    }),    // O lado da posicao vem do SINAL que o venue publica (`szi`), e nao de uma suposicao nossa.
     ...(posicaoDe(lido.conta, INSTRUMENTO)
       ? {
           posicao: {

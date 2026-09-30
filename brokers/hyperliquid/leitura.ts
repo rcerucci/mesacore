@@ -51,6 +51,8 @@ export type PortaDeConta = {
   contaSpot(conta: string): Promise<unknown>;
   activoDaConta(conta: string, coin: string): Promise<unknown>;
   agentesDaConta(conta: string): Promise<unknown>;
+  /** AS ORDENS VIVAS da conta (contrato 1.9.0): o que esta' pendurado, e a marca de posse de cada uma. */
+  ordensDaConta(conta: string): Promise<unknown>;
 };
 
 /** O cliente do venue, na forma ESTRUTURAL que esta porta consome (o SDK oficial encaixa aqui). */
@@ -59,6 +61,7 @@ export type ClienteDeConta = {
   spotClearinghouseState(p: { user: string }): Promise<unknown>;
   activeAssetData(p: { user: string; coin: string }): Promise<unknown>;
   extraAgents(p: { user: string }): Promise<unknown>;
+  openOrders(p: { user: string }): Promise<unknown>;
 };
 
 export function portaDoCliente(cliente: ClienteDeConta): PortaDeConta {
@@ -67,6 +70,7 @@ export function portaDoCliente(cliente: ClienteDeConta): PortaDeConta {
     contaSpot: (conta) => cliente.spotClearinghouseState({ user: conta }),
     activoDaConta: (conta, coin) => cliente.activeAssetData({ user: conta, coin }),
     agentesDaConta: (conta) => cliente.extraAgents({ user: conta }),
+    ordensDaConta: (conta) => cliente.openOrders({ user: conta }),
   };
 }
 

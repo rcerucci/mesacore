@@ -1,265 +1,277 @@
 {
-  "nota": "A bateria das condicoes: o que se LEU -> em que condicao o instrumento fica -> o que se pode fazer. Os casos de fronteira interessam tanto como os claros: a idade IGUAL ao limite nao e velha, o sem ligacao nao impede fechar, e duas condicoes ao mesmo tempo tem de somar os dois impedimentos. EMENDA (28 set 2026): a condicao era `sem_ligacao` (limiar de idade) e passou a `sem_ligacao` (estado reportado pelo protocolo). Os casos do limiar morreram: testavam um numero que deixou de decidir.",
-  "fonte": "core/ciclo/condicoes.json + core/config/configuracao.ts",
-  "config_da_bateria": {
-    "eventos_que_avisam": [
-      "desconhecido",
-      "recusa",
-      "divergencia",
-      "falha_de_leitura",
-      "congelamento",
-      "cb",
-      "encerramento",
-      "contenda",
-      "sem_ligacao"
-    ]
-  },
-  "casos": [
-    {
-      "nome": "ligado-e-o-mesmo-dado-e-normal (par de controle do caso sem-ligacao)",
-      "leitura": {
-        "idade_do_dado_ms": 800,
-        "estado_do_mercado": "aberto"
-      },
-      "falhas": {},
-      "condicao_esperada": "normal",
-      "impedimentos_esperados": [],
-      "abre_esperado": true,
-      "fecha_esperado": true,
-      "alarma_esperado": false,
-      "historico": "US2 cenario 1",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "sem-ligacao-nao-abre-e-pode-fechar (o MESMO dado do caso ligado)",
-      "leitura": {
-        "idade_do_dado_ms": 800,
-        "estado_do_mercado": "aberto"
-      },
-      "ligacao": "sem_ligacao",
-      "falhas": {},
-      "condicao_esperada": "sem_ligacao",
-      "impedimentos_esperados": [
-        "sem_ligacao"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": true,
-      "alarma_esperado": true,
-      "historico": "US2 cenario 6 / FR-020 (emenda 28 set 2026): a condicao vem do ESTADO DA LIGACAO reportado pelo conector, nao de um limiar de idade. Mesmo dado, so a ligacao difere do caso anterior - sem este par, 'nao abriu' podia ser efeito de outra coisa."
-    },
-    {
-      "nome": "a-leitura-falhou-nao-se-sabe-o-que-existe",
-      "leitura": {
-        "idade_do_dado_ms": 0,
-        "estado_do_mercado": "aberto"
-      },
-      "falhas": {
-        "leitura": true
-      },
-      "condicao_esperada": "sem_leitura",
-      "impedimentos_esperados": [
-        "sem_leitura"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": true,
-      "historico": "US2 cenario 2, FR-016 - fechar sem saber o que existe e adivinhar",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "o-setup-calou-se",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "aberto"
-      },
-      "falhas": {
-        "setup_respondeu": false
-      },
-      "condicao_esperada": "congelada",
-      "impedimentos_esperados": [
-        "congelada"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": true,
-      "alarma_esperado": true,
-      "historico": "US2 cenario 4, FR-018 - nao abre e nao cancela, mas DEFENDER continua permitido",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "o-que-a-mesa-espera-nao-bate-com-a-corretora",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "aberto"
-      },
-      "falhas": {},
-      "divergente": true,
-      "condicao_esperada": "divergente",
-      "impedimentos_esperados": [
-        "divergente"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": true,
-      "historico": "US2 cenario 3, FR-017 - a saida e a reconciliacao que explica, nao uma decisao da mesa",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "o-conector-declarou-o-mercado-fechado",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "fechado"
-      },
-      "falhas": {},
-      "condicao_esperada": "mercado_fechado",
-      "impedimentos_esperados": [
-        "mercado_fechado"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": false,
-      "historico": "US2 cenario 5, FR-019 - e NAO alarma: alarmar o normal ensina o dono a ignorar alarmes",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "congelada-e-divergente-somam-os-dois-impedimentos",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "aberto"
-      },
-      "falhas": {
-        "setup_respondeu": false
-      },
-      "divergente": true,
-      "condicao_esperada": "congelada",
-      "impedimentos_esperados": [
-        "congelada",
-        "divergente"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": true,
-      "historico": "o caso que obrigou o ficheiro a declarar EFEITOS: com uma condicao so, a divergencia desaparecia e o fecho ficava permitido sobre um numero que se sabe errado",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "sem-leitura-vence-a-sem-ligacao",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "aberto"
-      },
-      "falhas": {
-        "leitura": true
-      },
-      "condicao_esperada": "sem_leitura",
-      "impedimentos_esperados": [
-        "sem_leitura",
-        "sem_ligacao"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": true,
-      "historico": "US2 cenario 2 - sem leitura, o dado velho nem chega a importar: NAO PODE FECHAR, ainda que o dado velho por si so permitisse",
-      "ligacao": "sem_ligacao"
-    },
-    {
-      "nome": "mercado-fechado-com-posicao-aberta-nao-fecha",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "fechado",
-        "posicao": {
-          "lado": "buy",
-          "unidades": "1000",
-          "preco_medio": "1.0850",
-          "marca_de_posse": 1694498816
-        }
-      },
-      "falhas": {},
-      "marcas_nossas_conhecidas": [
-        1694498816
-      ],
-      "condicao_esperada": "mercado_fechado",
-      "impedimentos_esperados": [
-        "mercado_fechado"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": false,
-      "historico": "edge case da spec - a posicao fica como esta e a condicao sai quando o conector declarar aberto",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "posicao-alheia-e-divergencia-e-alarme",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "aberto",
-        "posicao": {
-          "lado": "sell",
-          "unidades": "500",
-          "preco_medio": "1.0900",
-          "marca_de_posse": 7
-        }
-      },
-      "falhas": {},
-      "marcas_nossas_conhecidas": [
-        1694498816
-      ],
-      "condicao_esperada": "divergente",
-      "impedimentos_esperados": [
-        "divergente"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": true,
-      "historico": "FR-021 - ordem viva que a mesa nao reconhece como sua: divergente e alarme, e NAO se cancela sem decisao do dono",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "posicao-com-a-nossa-marca-nao-e-divergencia",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "aberto",
-        "posicao": {
-          "lado": "buy",
-          "unidades": "1000",
-          "preco_medio": "1.0850",
-          "marca_de_posse": 1694498816
-        }
-      },
-      "falhas": {},
-      "marcas_nossas_conhecidas": [
-        1694498816
-      ],
-      "condicao_esperada": "normal",
-      "impedimentos_esperados": [],
-      "abre_esperado": true,
-      "fecha_esperado": true,
-      "alarma_esperado": false,
-      "historico": "o contraste do caso anterior: a MESMA leitura, com a marca que e nossa, nao alarma nada (RN-T16.1)",
-      "ligacao": "ligada"
-    },
-    {
-      "nome": "a-lista-do-dono-decide-se-o-aviso-sai (o mesmo dado, outro dono)",
-      "leitura": {
-        "idade_do_dado_ms": 100,
-        "estado_do_mercado": "aberto"
-      },
-      "falhas": {
-        "leitura": true
-      },
-      "config": {
-        "eventos_que_avisam": [
-          "recusa"
-        ]
-      },
-      "condicao_esperada": "sem_leitura",
-      "impedimentos_esperados": [
-        "sem_leitura"
-      ],
-      "abre_esperado": false,
-      "fecha_esperado": false,
-      "alarma_esperado": false,
-      "historico": "FR-042/SC-012: o dado e o mesmo da primeira; o que muda e a lista do dono. Se este caso nao pudesse dar alarma=false, o aviso estaria no codigo e nao na config.",
-      "ligacao": "ligada"
-    }
+ "nota": "A bateria das condicoes: o que se LEU -> em que condicao o instrumento fica -> o que se pode fazer. Os casos de fronteira interessam tanto como os claros: a idade IGUAL ao limite nao e velha, o sem ligacao nao impede fechar, e duas condicoes ao mesmo tempo tem de somar os dois impedimentos. EMENDA (28 set 2026): a condicao era `sem_ligacao` (limiar de idade) e passou a `sem_ligacao` (estado reportado pelo protocolo). Os casos do limiar morreram: testavam um numero que deixou de decidir.",
+ "fonte": "core/ciclo/condicoes.json + core/config/configuracao.ts",
+ "config_da_bateria": {
+  "eventos_que_avisam": [
+   "desconhecido",
+   "recusa",
+   "divergencia",
+   "falha_de_leitura",
+   "congelamento",
+   "cb",
+   "encerramento",
+   "contenda",
+   "sem_ligacao"
   ]
+ },
+ "casos": [
+  {
+   "nome": "ligado-e-o-mesmo-dado-e-normal (par de controle do caso sem-ligacao)",
+   "leitura": {
+    "idade_do_dado_ms": 800,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "falhas": {},
+   "condicao_esperada": "normal",
+   "impedimentos_esperados": [],
+   "abre_esperado": true,
+   "fecha_esperado": true,
+   "alarma_esperado": false,
+   "historico": "US2 cenario 1",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "sem-ligacao-nao-abre-e-pode-fechar (o MESMO dado do caso ligado)",
+   "leitura": {
+    "idade_do_dado_ms": 800,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "ligacao": "sem_ligacao",
+   "falhas": {},
+   "condicao_esperada": "sem_ligacao",
+   "impedimentos_esperados": [
+    "sem_ligacao"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": true,
+   "alarma_esperado": true,
+   "historico": "US2 cenario 6 / FR-020 (emenda 28 set 2026): a condicao vem do ESTADO DA LIGACAO reportado pelo conector, nao de um limiar de idade. Mesmo dado, so a ligacao difere do caso anterior - sem este par, 'nao abriu' podia ser efeito de outra coisa."
+  },
+  {
+   "nome": "a-leitura-falhou-nao-se-sabe-o-que-existe",
+   "leitura": {
+    "idade_do_dado_ms": 0,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "falhas": {
+    "leitura": true
+   },
+   "condicao_esperada": "sem_leitura",
+   "impedimentos_esperados": [
+    "sem_leitura"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": true,
+   "historico": "US2 cenario 2, FR-016 - fechar sem saber o que existe e adivinhar",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "o-setup-calou-se",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "falhas": {
+    "setup_respondeu": false
+   },
+   "condicao_esperada": "congelada",
+   "impedimentos_esperados": [
+    "congelada"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": true,
+   "alarma_esperado": true,
+   "historico": "US2 cenario 4, FR-018 - nao abre e nao cancela, mas DEFENDER continua permitido",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "o-que-a-mesa-espera-nao-bate-com-a-corretora",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "falhas": {},
+   "divergente": true,
+   "condicao_esperada": "divergente",
+   "impedimentos_esperados": [
+    "divergente"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": true,
+   "historico": "US2 cenario 3, FR-017 - a saida e a reconciliacao que explica, nao uma decisao da mesa",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "o-conector-declarou-o-mercado-fechado",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "fechado",
+    "ordens_abertas": []
+   },
+   "falhas": {},
+   "condicao_esperada": "mercado_fechado",
+   "impedimentos_esperados": [
+    "mercado_fechado"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": false,
+   "historico": "US2 cenario 5, FR-019 - e NAO alarma: alarmar o normal ensina o dono a ignorar alarmes",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "congelada-e-divergente-somam-os-dois-impedimentos",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "falhas": {
+    "setup_respondeu": false
+   },
+   "divergente": true,
+   "condicao_esperada": "congelada",
+   "impedimentos_esperados": [
+    "congelada",
+    "divergente"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": true,
+   "historico": "o caso que obrigou o ficheiro a declarar EFEITOS: com uma condicao so, a divergencia desaparecia e o fecho ficava permitido sobre um numero que se sabe errado",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "sem-leitura-vence-a-sem-ligacao",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "falhas": {
+    "leitura": true
+   },
+   "condicao_esperada": "sem_leitura",
+   "impedimentos_esperados": [
+    "sem_leitura",
+    "sem_ligacao"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": true,
+   "historico": "US2 cenario 2 - sem leitura, o dado velho nem chega a importar: NAO PODE FECHAR, ainda que o dado velho por si so permitisse",
+   "ligacao": "sem_ligacao"
+  },
+  {
+   "nome": "mercado-fechado-com-posicao-aberta-nao-fecha",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "fechado",
+    "posicao": {
+     "lado": "buy",
+     "unidades": "1000",
+     "preco_medio": "1.0850",
+     "marca_de_posse": 1694498816
+    },
+    "ordens_abertas": []
+   },
+   "falhas": {},
+   "marcas_nossas_conhecidas": [
+    1694498816
+   ],
+   "condicao_esperada": "mercado_fechado",
+   "impedimentos_esperados": [
+    "mercado_fechado"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": false,
+   "historico": "edge case da spec - a posicao fica como esta e a condicao sai quando o conector declarar aberto",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "posicao-alheia-e-divergencia-e-alarme",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "aberto",
+    "posicao": {
+     "lado": "sell",
+     "unidades": "500",
+     "preco_medio": "1.0900",
+     "marca_de_posse": 7
+    },
+    "ordens_abertas": []
+   },
+   "falhas": {},
+   "marcas_nossas_conhecidas": [
+    1694498816
+   ],
+   "condicao_esperada": "divergente",
+   "impedimentos_esperados": [
+    "divergente"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": true,
+   "historico": "FR-021 - ordem viva que a mesa nao reconhece como sua: divergente e alarme, e NAO se cancela sem decisao do dono",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "posicao-com-a-nossa-marca-nao-e-divergencia",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "aberto",
+    "posicao": {
+     "lado": "buy",
+     "unidades": "1000",
+     "preco_medio": "1.0850",
+     "marca_de_posse": 1694498816
+    },
+    "ordens_abertas": []
+   },
+   "falhas": {},
+   "marcas_nossas_conhecidas": [
+    1694498816
+   ],
+   "condicao_esperada": "normal",
+   "impedimentos_esperados": [],
+   "abre_esperado": true,
+   "fecha_esperado": true,
+   "alarma_esperado": false,
+   "historico": "o contraste do caso anterior: a MESMA leitura, com a marca que e nossa, nao alarma nada (RN-T16.1)",
+   "ligacao": "ligada"
+  },
+  {
+   "nome": "a-lista-do-dono-decide-se-o-aviso-sai (o mesmo dado, outro dono)",
+   "leitura": {
+    "idade_do_dado_ms": 100,
+    "estado_do_mercado": "aberto",
+    "ordens_abertas": []
+   },
+   "falhas": {
+    "leitura": true
+   },
+   "config": {
+    "eventos_que_avisam": [
+     "recusa"
+    ]
+   },
+   "condicao_esperada": "sem_leitura",
+   "impedimentos_esperados": [
+    "sem_leitura"
+   ],
+   "abre_esperado": false,
+   "fecha_esperado": false,
+   "alarma_esperado": false,
+   "historico": "FR-042/SC-012: o dado e o mesmo da primeira; o que muda e a lista do dono. Se este caso nao pudesse dar alarma=false, o aviso estaria no codigo e nao na config.",
+   "ligacao": "ligada"
+  }
+ ]
 }

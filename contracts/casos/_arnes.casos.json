@@ -1,76 +1,149 @@
 {
-  "mensagem": "envelope",
-  "nota": "A bateria do proprio envelope: enquadramento, versao, fecho do objecto e ausencia. Se estes seis passarem, o resto da bateria esta a medir o que pensa medir.",
-  "casos": [
-    {
-      "nome": "envelope/valido",
-      "mensagem": "mercado",
-      "entrada": {"contrato": "1.8.0", "tipo": "mercado", "id": "m-1", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "bid": "1.08541", "ask": "1.08543", "ultimo": "1.08542", "equity": "1000.00"}},
-      "veredicto_esperado": "aceite",
-      "motivo_esperado": null
-    },
-    {
-      "nome": "envelope/versao-divergente",
-      "mensagem": "mercado",
-      "entrada": {"contrato": "2.0.0", "tipo": "mercado", "id": "m-1", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "equity": "1000.00"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "versao_do_contrato_divergente"
-    },
-    {
-      "nome": "envelope/campo-desconhecido-no-envelope",
-      "mensagem": "mercado",
-      "entrada": {"contrato": "1.8.0", "tipo": "mercado", "id": "m-1", "nota": "isto nao existe no contrato", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "equity": "1000.00"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "campo_desconhecido"
-    },
-    {
-      "nome": "envelope/null-em-correlacao",
-      "mensagem": "mercado",
-      "entrada": {"contrato": "1.8.0", "tipo": "mercado", "id": null, "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "equity": "1000.00"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "valor_nulo_nao_permitido"
-    },
-    {
-      "nome": "envelope/sem-correlacao",
-      "mensagem": "mercado",
-      "entrada": {"contrato": "1.8.0", "tipo": "mercado", "carga": {"instrumento": "EURUSD", "tempo_do_venue_ms": 1759000000000, "idade_do_dado_ms": 120, "estado": "aberto", "equity": "1000.00"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "campo_obrigatorio_ausente"
-    },
-    {
-      "nome": "envelope/tipo-fora-do-conjunto",
-      "mensagem": "encomenda",
-      "entrada": {"contrato": "1.8.0", "tipo": "encomenda", "id": "m-1", "carga": {}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "valor_fora_do_conjunto"
-    },
-    {
-      "nome": "envelope/carga-nao-e-objecto",
-      "mensagem": "mercado",
-      "entrada": {"contrato": "1.8.0", "tipo": "mercado", "id": "m-1", "carga": "mercado"},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "tipo_invalido"
-    },
-    {
-      "nome": "enquadramento/mensagem-partida-em-duas-linhas",
-      "mensagem": "mercado",
-      "entrada_texto": "{\"contrato\":\"1.2.0\",\"tipo\":\"mercado\",\n\"id\":\"m-1\",\"carga\":{}}",
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "enquadramento_invalido"
-    },
-    {
-      "nome": "enquadramento/json-malformado",
-      "mensagem": "mercado",
-      "entrada_texto": "{\"contrato\":\"1.2.0\",\"tipo\":\"mercado\",\"id\":\"m-1\",}",
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "enquadramento_invalido"
-    },
-    {
-      "nome": "enquadramento/linha-vazia",
-      "mensagem": "mercado",
-      "entrada_texto": "",
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "enquadramento_invalido"
+ "mensagem": "envelope",
+ "nota": "A bateria do proprio envelope: enquadramento, versao, fecho do objecto e ausencia. Se estes seis passarem, o resto da bateria esta a medir o que pensa medir.",
+ "casos": [
+  {
+   "nome": "envelope/valido",
+   "mensagem": "mercado",
+   "entrada": {
+    "contrato": "1.9.0",
+    "tipo": "mercado",
+    "id": "m-1",
+    "carga": {
+     "instrumento": "EURUSD",
+     "tempo_do_venue_ms": 1759000000000,
+     "idade_do_dado_ms": 120,
+     "estado": "aberto",
+     "bid": "1.08541",
+     "ask": "1.08543",
+     "ultimo": "1.08542",
+     "equity": "1000.00",
+     "ordens_abertas": []
     }
-  ]
+   },
+   "veredicto_esperado": "aceite",
+   "motivo_esperado": null
+  },
+  {
+   "nome": "envelope/versao-divergente",
+   "mensagem": "mercado",
+   "entrada": {
+    "contrato": "2.0.0",
+    "tipo": "mercado",
+    "id": "m-1",
+    "carga": {
+     "instrumento": "EURUSD",
+     "tempo_do_venue_ms": 1759000000000,
+     "idade_do_dado_ms": 120,
+     "estado": "aberto",
+     "equity": "1000.00",
+     "ordens_abertas": []
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "versao_do_contrato_divergente"
+  },
+  {
+   "nome": "envelope/campo-desconhecido-no-envelope",
+   "mensagem": "mercado",
+   "entrada": {
+    "contrato": "1.9.0",
+    "tipo": "mercado",
+    "id": "m-1",
+    "nota": "isto nao existe no contrato",
+    "carga": {
+     "instrumento": "EURUSD",
+     "tempo_do_venue_ms": 1759000000000,
+     "idade_do_dado_ms": 120,
+     "estado": "aberto",
+     "equity": "1000.00",
+     "ordens_abertas": []
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "campo_desconhecido"
+  },
+  {
+   "nome": "envelope/null-em-correlacao",
+   "mensagem": "mercado",
+   "entrada": {
+    "contrato": "1.9.0",
+    "tipo": "mercado",
+    "id": null,
+    "carga": {
+     "instrumento": "EURUSD",
+     "tempo_do_venue_ms": 1759000000000,
+     "idade_do_dado_ms": 120,
+     "estado": "aberto",
+     "equity": "1000.00",
+     "ordens_abertas": []
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "valor_nulo_nao_permitido"
+  },
+  {
+   "nome": "envelope/sem-correlacao",
+   "mensagem": "mercado",
+   "entrada": {
+    "contrato": "1.9.0",
+    "tipo": "mercado",
+    "carga": {
+     "instrumento": "EURUSD",
+     "tempo_do_venue_ms": 1759000000000,
+     "idade_do_dado_ms": 120,
+     "estado": "aberto",
+     "equity": "1000.00",
+     "ordens_abertas": []
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "campo_obrigatorio_ausente"
+  },
+  {
+   "nome": "envelope/tipo-fora-do-conjunto",
+   "mensagem": "encomenda",
+   "entrada": {
+    "contrato": "1.9.0",
+    "tipo": "encomenda",
+    "id": "m-1",
+    "carga": {}
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "valor_fora_do_conjunto"
+  },
+  {
+   "nome": "envelope/carga-nao-e-objecto",
+   "mensagem": "mercado",
+   "entrada": {
+    "contrato": "1.9.0",
+    "tipo": "mercado",
+    "id": "m-1",
+    "carga": "mercado"
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "tipo_invalido"
+  },
+  {
+   "nome": "enquadramento/mensagem-partida-em-duas-linhas",
+   "mensagem": "mercado",
+   "entrada_texto": "{\"contrato\":\"1.2.0\",\"tipo\":\"mercado\",\n\"id\":\"m-1\",\"carga\":{}}",
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "enquadramento_invalido"
+  },
+  {
+   "nome": "enquadramento/json-malformado",
+   "mensagem": "mercado",
+   "entrada_texto": "{\"contrato\":\"1.2.0\",\"tipo\":\"mercado\",\"id\":\"m-1\",}",
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "enquadramento_invalido"
+  },
+  {
+   "nome": "enquadramento/linha-vazia",
+   "mensagem": "mercado",
+   "entrada_texto": "",
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "enquadramento_invalido"
+  }
+ ]
 }

@@ -19,6 +19,9 @@ export interface LeituraCompacta {
   tempo_do_venue_ms?: number;
   idade_do_dado_ms: number;
   estado_do_mercado: "aberto" | "fechado";
+  /** AS ORDENS VIVAS da conta neste instrumento (contrato 1.9.0). OBRIGATORIO: `[]` diz "nao ha' nenhuma",
+   *  e quem nao as leu nao escreve leitura nenhuma. Nao ha' aqui valor por omissao — nem uma lista vazia. */
+  ordens_abertas: readonly unknown[];
   equity?: string;
   bid?: string;
   ask?: string;
@@ -39,6 +42,10 @@ export function montarMercado(leitura: LeituraCompacta, correcao = 1_790_628_000
     idade_do_dado_ms: leitura.idade_do_dado_ms,
     estado: leitura.estado_do_mercado,
     equity: leitura.equity ?? "1000.00",
+    // AS ORDENS VIVAS (contrato 1.9.0): passam tal e qual, e NAO se inventa uma lista vazia. Ausente = o
+    // contrato recusa o `mercado` e a leitura nao sai — que e' o correcto para uma operacao escrita por quem
+    // nao as leu. "Nao ha' nenhuma" diz-se com `[]`, e so' quem perguntou o pode dizer.
+    ordens_abertas: leitura.ordens_abertas,
   };
   if (leitura.bid !== undefined) carga.bid = leitura.bid;
   if (leitura.ask !== undefined) carga.ask = leitura.ask;

@@ -1,5 +1,5 @@
 {
-  "contrato": "1.8.0",
+  "contrato": "1.9.0",
   "nota": "A versao do contrato vive AQUI e num so sitio — e NAO no `package.json` nem no `pyproject.toml`, cujas versoes sao do pacote de ferramentas e seguem a vida dele. Duas casas para o mesmo numero e a forma mais rapida de ter duas verdades. Os dois runners leem-na daqui: a conferencia e por igualdade exacta (D7) e nenhuma das linguagens tem a versao escrita no codigo.",
   "emenda_1_4_0": {
     "nota": "Aditiva, e obrigada por MEDICAO contra o venue (specs/004-conector-hyperliquid/relatorios/emenda-1.4.0.txt). Quatro defeitos medidos, nenhum deles mudou o sentido de um campo que ja estivesse certo.",
@@ -35,5 +35,12 @@
     "o_que_a_mesa_faz_com_ela": "A mesa so age numa proposta cuja barra seja a barra que ACABOU de fechar no relogio da ficha (`barra_atual - passo`). Uma proposta de barra antiga vira `nada` com motivo proprio (`proposta_de_barra_antiga`), e nao um silencio.",
     "prova_negativa": "`proposta/sem-a-barra-do-sinal` REPROVA (campo obrigatorio ausente) — e a prova de que a obrigatoriedade e real e nao decorativa.",
     "o_que_nao_se_mexeu": "Nenhum dos outros campos da proposta mudou, e nenhum caso foi removido. A `relogio.proxima_consulta_ms` continua opcional e a significar o mesmo."
+  },
+  "emenda_1_9_0": {
+    "nota": "Aditiva no campo, OBRIGATORIA no mercado: `mercado.ordens_abertas`. Vem da pergunta do dono — 'quando sobe, o setup le' as ordens existentes?' — e a resposta medida era NAO: `grep -rn 'openOrders|ordens_abertas' brokers/ core/ vigia/` dava ZERO. A conta tinha ordens e ninguem as via.",
+    "a_ordem_viva_nao_e_a_posicao": "A leitura do venue trazia a POSICAO (ou a ausencia dela) e mais nada. Ficavam invisiveis: a passiva pendurada, o stop por colocar, o que outro dedo pos, o que ficou por cancelar. Uma mesa que nao sabe o que esta' vivo nao pode gerir nem auditar — e' isto que a RN-T16.1 precisa para ligar a marca a' ordem.",
+    "lista_vazia_nao_e_ausente": "`[]` diz 'perguntei e nao ha nenhuma'; ausente diria 'nao perguntei'. O produtor que nao conseguiu perguntar NAO PRODUZ leitura (recusa nomeada, como nas outras leituras): inventar uma lista vazia faria a mesa achar a conta limpa quando ela nao esta'.",
+    "a_marca_de_posse_na_ordem": "Cada ordem admite `marca_de_posse` na forma DO VENUE (o `cloid`, `_defs#/$defs/marca_de_posse_do_venue`, contrato 1.5.0) — e' por esta marca que a posse se le', e e' o que faltava para o mapa marca -> ficha (RN-T16.1, D-008) ter de onde ser construido.",
+    "o_que_nao_se_mexeu": "Nenhum campo existente do `mercado` mudou de sentido, e `posicao` continua a ser 'ausente = sem posicao'. As ordens NAO substituem a posicao: sao outra coisa, e por isso sao outro campo."
   }
 }

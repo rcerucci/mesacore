@@ -243,7 +243,7 @@ for (const caso of bateria.casos_us7) {
   // "Volta ao normal" so conta se a mesma proposta voltar a abrir.
   if (caso.e_continua_a_abrir !== undefined) {
     const entradas = lerParaOCiclo(
-      { instrumento: "EURUSD", idade_do_dado_ms: 100, estado_do_mercado: "aberto" },
+      { instrumento: "EURUSD", idade_do_dado_ms: 100, estado_do_mercado: "aberto" , ordens_abertas: [] },
       { setup: padrao.proposta_setup, barra_ms: BARRA_DO_SINAL, lado: caso.e_continua_a_abrir.lado },
       50,
     );

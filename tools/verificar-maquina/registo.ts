@@ -89,7 +89,8 @@ console.log("=== SC-011: o dia reconstruido a partir do registo ===\n");
 
 // --- o dia, corrido a serio: a mesa transita, o ciclo decide, e TUDO fica no registo
 const posicao = { lado: "buy", unidades: "1000", preco_medio: "1.0850", marca_de_posse: 1694498816 };
-const mercadoAberto = { instrumento: "EURUSD", idade_do_dado_ms: 100, estado_do_mercado: "aberto" };
+// A leitura da cena, com as ordens vivas do contrato 1.9.0: a bancada declara que nao ha' nenhuma.
+const mercadoAberto = { instrumento: "EURUSD", idade_do_dado_ms: 100, estado_do_mercado: "aberto", ordens_abertas: [] };
 
 const dia: Array<{ nota: string; d: any }> = [];
 const r1 = mesa.receber({ verbo: "start", autor: "dono", pedido_id: "d-1" }, ctx);
@@ -99,7 +100,7 @@ dia.push({ nota: "em pausa, a mesma proposta", d: decidir(mercadoAberto, { lado:
 dia.push({ nota: "em pausa, caixa com posicao", d: decidir({ ...mercadoAberto, posicao }, { lado: "caixa" }, 62, { mesa_pausada: true }) });
 dia.push({ nota: "em pausa, com divergencia", d: decidir({ ...mercadoAberto, posicao }, { lado: "caixa" }, 63, { mesa_pausada: true, divergente: true }) });
 dia.push({ nota: "proposta ausente (hold contado)", d: decidir(mercadoAberto, null, 64, { mesa_pausada: true }) });
-dia.push({ nota: "condicao sem leitura", d: decidir({ instrumento: "EURUSD", idade_do_dado_ms: 0, estado_do_mercado: "aberto" }, { lado: "buy" }, 65, { mesa_pausada: true, falhas: { leitura: true } }) });
+dia.push({ nota: "condicao sem leitura", d: decidir({ instrumento: "EURUSD", idade_do_dado_ms: 0, estado_do_mercado: "aberto", ordens_abertas: [] }, { lado: "buy" }, 65, { mesa_pausada: true, falhas: { leitura: true } }) });
 
 let t = 1790628001000;
 for (const { nota, d } of dia) {

@@ -5,7 +5,7 @@
   "description": "O objecto de factos que a mesa entrega ao setup E ao humano (RN-D1, RN-D5). So factos. Ausencia e declarada pela ausencia da chave (RN-D4) — nunca por um valor neutro.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["instrumento", "tempo_do_venue_ms", "idade_do_dado_ms", "estado", "equity"],
+  "required": ["instrumento", "tempo_do_venue_ms", "idade_do_dado_ms", "estado", "equity", "ordens_abertas"],
   "properties": {
     "instrumento": {"$ref": "_defs/forma.schema.json#/$defs/instrumento"},
     "tempo_do_venue_ms": {"$ref": "_defs/forma.schema.json#/$defs/instante_ms"},
@@ -33,6 +33,23 @@
           }
         },
         "profundidade": {"type": "integer", "minimum": 1, "description": "Profundidade DECLARADA: o setup sabe o que nao ve."}
+      }
+    },
+    "ordens_abertas": {
+      "type": "array",
+      "description": "AS ORDENS VIVAS NO VENUE — o que existe na conta e nao e' posicao: o que ficou pendurado, o que ficou por cancelar, o que outro dedo pos. OBRIGATORIA, e LISTA VAZIA NAO E' O MESMO QUE AUSENTE: `[]` diz 'perguntei, e nao ha' nenhuma'; ausente seria 'nao perguntei'. Quem nao conseguiu perguntar NAO PRODUZ leitura (recusa nomeada) — uma lista vazia inventada aqui faria a mesa achar que a conta esta' limpa quando nao esta'.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["instrumento", "ordem", "lado", "preco", "unidades"],
+        "properties": {
+          "instrumento": {"$ref": "_defs/forma.schema.json#/$defs/instrumento"},
+          "ordem": {"type": "string", "minLength": 1, "description": "O identificador da ordem NO VENUE (`oid`). E' por ele que a mesa e o humano falam da MESMA ordem."},
+          "lado": {"enum": ["buy", "sell"]},
+          "preco": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
+          "unidades": {"$ref": "_defs/forma.schema.json#/$defs/decimal_positivo"},
+          "marca_de_posse": {"$ref": "_defs/forma.schema.json#/$defs/marca_de_posse_do_venue"}
+        }
       }
     },
     "posicao": {
