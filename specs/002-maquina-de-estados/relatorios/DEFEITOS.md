@@ -661,3 +661,24 @@ uma redução parcial não se exprime pela via do ciclo. Consequência: a mesa t
 lado é oposto ao da nossa posição — nomeia-a `reduzir` (reduce_only, tamanho explícito) e **recusa** uma boleta
 que aumentaria além da posição; ou (b) o vocabulário ganha o que lhe falta — um tamanho neutro na boleta
 (percentagem da POSIÇÃO, não do saldo), que é o que permite dizer «reduz metade» sem tocar no mandato.
+
+## D-014 — a ficha é lida como UM objecto, e a espec diz DOIS arquivos
+
+**Declarado em 30/09/2026.** Medido: `core/servidor.ts` (via `core/ciclo/relogio.ts`, `conferirMandatos`) lê a
+configuração com `fichas.<instrumento>.{saldo_pct, alavancagem, ...}` — o risco e o setup **no mesmo objecto**.
+A espec é explícita em contrário: "**Ficha** — a configuração concreta de um instrumento: **dois arquivos**, um
+de risco e um do setup, mais o nome do setup e da variante" (RN-M6), e separa as responsabilidades em RN-M5
+(risco: percentagem do saldo, alavancagem, distância de liquidação, bandas; setup: stop, tp, limiares, janela,
+parcial, aumentos).
+
+**Porque importa, e não é estilo:** com as duas coisas num ficheiro só, o setup *serve-se* do risco em vez de o
+cumprir, e ninguém consegue provar que os itens do setup cabem nas bandas do risco — que é precisamente o que
+o arquivo de risco existe para garantir.
+
+**O que fica feito agora:** o layout existe e é usado pelo operador — `fichas/<PAR>/risco.json` e
+`fichas/<PAR>/setup.json`, uma pasta por par (BTC a 1h, ETH a 30m: o mesmo setup, dois relógios). A operação
+escrita pelo operador leva os dois, separados, em `parametros` e `risco`.
+
+**O que falta:** o leitor do core passar a ler os dois arquivos (e a conferir as bandas), em vez de ler um
+objecto único. Enquanto não for feito, a config que se dá ao `--config` é uma vista juntada — e uma vista
+juntada pode esconder uma banda violada.

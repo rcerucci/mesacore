@@ -1,0 +1,16 @@
+{
+ "instrumento": "ETH",
+ "setup": "cruzamento_de_media",
+ "variante": "v1",
+ "nota": "ARQUIVO DO SETUP (a forma e' publicada pelo setup, RN-S3). Aqui estao os VALORES deste par. O relogio/janela e' um destes valores - e' a ficha que o decide, nao o assistente.",
+ "janela": "30m",
+ "ma_len": 24,
+ "ma_tipo": "EMA",
+ "src_ma": "hl2",
+ "src_sinal": "hl2",
+ "usar_banda": true,
+ "banda_atr": "0.25",
+ "usar_zz": true,
+ "zz_atr": "2.0",
+ "atr_len": 14
+}

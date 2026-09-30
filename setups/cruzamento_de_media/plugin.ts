@@ -27,8 +27,11 @@ const manifesto = JSON.parse(readFileSync(join(import.meta.dir, "setup.json"), "
   parametros?: { rapida: number; lenta: number };
 };
 
-const rapidaN = manifesto.parametros?.rapida ?? 5;
-const lentaN = manifesto.parametros?.lenta ?? 20;
+// OS PARAMETROS VEM DA FICHA DO PAR (por ambiente): o mesmo plugin, dois pares, dois relogios.
+const ficha = JSON.parse(process.env.FICHA_DO_PAR ?? "{}") as Record<string, unknown>;
+const rapidaN = Number(ficha.parametros_rapida ?? ficha["parametros.rapida"] ?? 5);
+const lentaN = Number(ficha.parametros_lenta ?? ficha["parametros.lenta"] ?? 20);
+const janela = String(ficha.janela ?? "1h");
 
 // ---- a leitura, do stdin: uma linha do contrato ---------------------------------------------------------
 const entrada = await new Promise<string>((resolve) => {
@@ -50,9 +53,10 @@ for (const linha of entrada.split("\n")) {
 
 // ---- as velas, do ficheiro JSONL declarado --------------------------------------------------------------
 function lerVelas(): any[] {
-  const m = manifesto.mercado;
-  if (m === undefined) return [];
-  const caminho = join(RAIZ, m.pasta, m.ficheiro);
+  // a pasta e o nome do ficheiro saem do RELOGIO da ficha: velas-<instrumento>-<janela>.jsonl
+  const pasta = process.env.PASTA_DE_MERCADO ?? "";
+  if (pasta === "") return [];
+  const caminho = join(RAIZ, pasta, `velas-${process.env.INSTRUMENTO ?? "BTC"}-${janela}.jsonl`);
   if (!existsSync(caminho)) return [];
   return readFileSync(caminho, "utf8")
     .split("\n")

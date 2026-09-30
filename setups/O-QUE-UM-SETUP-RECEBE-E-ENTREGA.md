@@ -1,3 +1,39 @@
+
+---
+
+## NOTA DATADA — 30/09/2026: o RELÓGIO é da ficha de parâmetros do par (correcção do dono)
+
+**O que estava errado no texto abaixo:** dava a entender que o intervalo das velas era uma escolha do setup
+(o `mercado.intervalo` do `setup.json`) e que o assistente podia propô-lo. Não é nada disso.
+
+**O que a espec diz (e eu fui ler depois de o dono me corrigir):**
+
+- **Ficha** — "a configuração concreta de um instrumento: **dois arquivos**, um de risco e um do setup, mais o
+  nome do setup e da variante" (RN-M6). Ou seja: **uma ficha por par**, duas peças.
+- **Arquivo de risco** (forma fixa do core, RN-S10): percentagem do saldo, alavancagem, distância mínima de
+  liquidação, e as **bandas onde os itens do setup têm de caber**. O setup **serve-o; não o inventa**.
+- **Arquivo do setup** (a forma é publicada pelo setup, RN-S3): os parâmetros de estratégia **daquele par**.
+- **RN-M5**, o Setup decide "o lado e **todo o parâmetro de estratégia, pelo seu template**: stop sim/não,
+  distância, **janela**, limiares, parcial, aumentos".
+
+**Consequência prática, e é a correcção:** o **relógio (a `janela`) é um parâmetro da ficha de parâmetros, por
+par** — não do assistente, não do setup, não da mesa. O mesmo setup corre em H1 no BTC e em M30 no ETH: **é o
+mesmo plugin e duas fichas**, e só os parâmetros mudam. O `default` de cada item vive no **template** que o
+setup publica; o **valor** vive na ficha do par.
+
+**Sítios onde isto ficou corrigido:** `fichas/<PAR>/{risco,setup}.json` (novo — uma pasta por par, dois
+arquivos, com BTC a 1h e ETH a 30m como prova de que o relógio é da ficha); `setups/<nome>/setup.json` (só o
+plugin e o template — os valores saíram de lá); `vigia/operador.ts` (`--conta` para o macro da conta e `--par`
+para a ficha do par; as velas são pedidas no relógio da ficha).
+
+**Fica dito o que ainda não está feito:** o leitor de configuração do core (`core/servidor.ts --config`) ainda
+lê a ficha **num objecto só** (risco+setup juntos), e a espec diz **dois arquivos**. Registei o buraco em
+`specs/002-maquina-de-estados/relatorios/DEFEITOS.md` como **D-014**, em vez de o tapar com um `merge`.
+
+*O texto abaixo é o original, mantido como registo do que eu tinha escrito antes da correcção.*
+
+---
+
 O QUE UM SETUP RECEBE E ENTREGA — o briefing do primeiro plugin de setup
 contrato 1.7.0 · escrito 29/09/2026 · para o dono e para quem escrever o plugin
 

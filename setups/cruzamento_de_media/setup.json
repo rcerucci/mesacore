@@ -7,23 +7,56 @@
   "run",
   "plugin.ts"
  ],
- "nota": "O primeiro setup de referencia. A mesma politica existe em Python (`plugin.py`) — trocar a lingua e' trocar `comando` e `linguagem` aqui, e nada mais muda.",
+ "nota": "O plugin e os ITENS que ele publica (o template, RN-S3). Os VALORES nao moram aqui: moram na ficha de cada par (fichas/<PAR>/setup.json), e por isso dois pares podem correr o mesmo setup com relogios diferentes (a `janela` e' um item do template, com omissao 1h).",
  "parametros": {
   "rapida": 5,
   "lenta": 20
  },
- "mercado": {
-  "pasta": "setups/cruzamento_de_media/mercado",
-  "intervalo": "1h",
-  "ficheiro": "velas-BTC-1h.jsonl"
- },
- "ficha": "cruzamento_de_media_v1",
  "template": {
-  "politica_de_execucao": "mercado",
-  "parcial": "o_que_der",
-  "desvio_maximo": "0.5",
-  "prazo_da_passiva_ms": 3000,
-  "destino_do_resto": "agressivo"
- },
- "nota_template": "O template do setup (RN-B8): o tipo de ordem e os parametros de execucao. Chega a mesa por aqui, junto com a proposta."
+  "janela": {
+   "tipo": "texto",
+   "omissao": "1h",
+   "de": "venue",
+   "nota": "o relogio do par"
+  },
+  "parametros.rapida": {
+   "tipo": "inteiro",
+   "omissao": 5
+  },
+  "parametros.lenta": {
+   "tipo": "inteiro",
+   "omissao": 20
+  },
+  "politica_de_execucao": {
+   "tipo": "escolha",
+   "opcoes": [
+    "mercado",
+    "passiva"
+   ],
+   "omissao": "mercado"
+  },
+  "parcial": {
+   "tipo": "escolha",
+   "opcoes": [
+    "o_que_der"
+   ],
+   "omissao": "o_que_der"
+  },
+  "desvio_maximo": {
+   "tipo": "texto",
+   "omissao": "0.5"
+  },
+  "prazo_da_passiva_ms": {
+   "tipo": "inteiro",
+   "omissao": 3000
+  },
+  "destino_do_resto": {
+   "tipo": "escolha",
+   "opcoes": [
+    "agressivo",
+    "cancelar"
+   ],
+   "omissao": "agressivo"
+  }
+ }
 }

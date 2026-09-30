@@ -40,13 +40,18 @@ function morrer(mensagem: string): never {
   process.exit(2);
 }
 
-const ficha = arg("--ficha") ?? morrer("falta `--ficha @<configuracao da conta>`");
+// O ARQUIVO MACRO DA CONTA (do dono: instrumentos, conta, margem total, contencao) — nao e' a ficha do par.
+const conta = arg("--conta") ?? morrer("falta `--conta @<arquivo macro da conta>`");
 const pastaDoSetup = arg("--setup") ?? morrer("falta `--setup setups/<nome>`");
-const instrumento = arg("--instrumento") ?? morrer("falta `--instrumento <simbolo>`");
+// A FICHA DO PAR: e' ela que decide o RELOGIO (a `janela`), e nao o assistente (RN-M5). Mesmo setup em dois
+// pares = duas fichas = dois relogios.
+const par = arg("--par") ?? morrer("falta `--par <PAR>` (a ficha do par: fichas/<PAR>/{risco,setup}.json)");
+const instrumento = arg("--instrumento") ?? par;
 const para = arg("--para") ?? morrer("falta `--para <ficheiro de operacao>`");
 const tickMs = Number(arg("--tick") ?? "5000");
 const voltasPedidas = Number(arg("--voltas") ?? "1");
 const pastaDoMercado = arg("--mercado") ?? null;
+const diasDeHistorico = Number(arg("--dias") ?? "30");
 
 // ---------------------------------------------------------------------------------------------------------
 // O manifesto do setup — a ÚNICA coisa que o operador precisa de saber sobre ele: como se arranca.
@@ -78,12 +83,31 @@ function lerManifestoDoSetup(pasta: string): ManifestoDoSetup {
 
 const manifesto = lerManifestoDoSetup(pastaDoSetup);
 
+// A FICHA DO PAR, os DOIS arquivos (RN-M6). Sem ela nao ha relogio nem risco: um par sem ficha nao e' operado.
+function lerFichaDoPar(p: string): { risco: any; setup: any } {
+  const base = join(RAIZ, "fichas", p);
+  const ler = (nome: string) => {
+    const caminho = join(base, nome);
+    if (!existsSync(caminho)) morrer(`a ficha do par ${p} nao tem \`${nome}\` (${caminho}): um par sem ficha nao e' operado`);
+    return JSON.parse(readFileSync(caminho, "utf8"));
+  };
+  return { risco: ler("risco.json"), setup: ler("setup.json") };
+}
+const fichaDoPar = lerFichaDoPar(par);
+const janela = String(fichaDoPar.setup.janela ?? "");
+if (janela === "") morrer(`a ficha de parametros do par ${par} nao declara a \`janela\` (o relogio): e' ela que o decide, nao o assistente`);
+
 // ---------------------------------------------------------------------------------------------------------
 // O SETUP: um processo por volta. Recebe a leitura no stdin, devolve UMA linha `proposta` no stdout.
 
 function correrSetup(leitura: unknown): Promise<{ proposta: unknown | null; linhas: string[]; erro: string | null }> {
   return new Promise((resolve) => {
-    const p = spawn(manifesto.comando[0]!, manifesto.comando.slice(1), { cwd: join(RAIZ, pastaDoSetup), env: process.env });
+    // Os PARAMETROS do par (incluindo o relogio) vao ao setup pelo ambiente: o envelope do contrato e' fechado
+    // (campo a mais e' recusado — medido na T3), e os parametros nao sao leitura de mercado.
+    const p = spawn(manifesto.comando[0]!, manifesto.comando.slice(1), {
+      cwd: join(RAIZ, pastaDoSetup),
+      env: { ...process.env, FICHA_DO_PAR: JSON.stringify(fichaDoPar.setup), RISCO_DO_PAR: JSON.stringify(fichaDoPar.risco), INSTRUMENTO: instrumento, PASTA_DE_MERCADO: pastaDoMercado ?? "" },
+    });
     const linhas: string[] = [];
     let erro: string | null = null;
     const dec = new TextDecoder();
@@ -129,13 +153,21 @@ function escreverOperacao(conteudo: unknown): void {
 }
 
 async function main(): Promise<void> {
+  // AS VELAS SAO PEDIDAS NO RELOGIO DA FICHA (`janela`), e nao num intervalo qualquer: actualiza-se o ficheiro
+  // antes de a primeira volta comecar, para o setup decidir sobre barras que existem.
+  if (pastaDoMercado !== null) {
+    const pedido = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "mercado.ts"), "--velas", instrumento,
+      "--intervalo", janela, "--dias", String(diasDeHistorico), "--ambiente", "producao",
+      "--para-pasta", pastaDoMercado, "--actualizar"], { cwd: RAIZ, env: process.env });
+    await new Promise<void>((resolve) => pedido.on("close", () => resolve()));
+  }
   const casos = join(RAIZ, "brokers", "hyperliquid", "casos", "processo.casos.json");
   const conector = spawn(
     "bun",
     [
       "run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
       "--casos", casos,
-      "--ficha", ficha.startsWith("@") ? ficha : `@${join(RAIZ, ficha)}`,
+      "--ficha", conta.startsWith("@") ? conta : `@${join(RAIZ, conta)}`,
       "--ao-vivo",
       "--leitura-a-cada", String(tickMs),
     ],
@@ -200,14 +232,16 @@ async function main(): Promise<void> {
       }
       const { proposta, linhas, erro } = await correrSetup(msg);
       const operacao = {
-        nota: `escrito pelo operador · ${new Date().toISOString()} · conector hyperliquid (${ficha}) · setup ${manifesto.nome} ${manifesto.versao}`,
+        nota: `escrito pelo operador · ${new Date().toISOString()} · conector hyperliquid (${conta}) · setup ${manifesto.nome} ${manifesto.versao}`,
         ligacao: "ligada",
         instrumentos: {
           [instrumento]: {
             leitura,
             // A FICHA em vigor e o TEMPLATE do setup: o ciclo exige-os, e sem eles nao ha boleta a compor.
-            ficha: manifesto.ficha ?? manifesto.nome,
+            ficha: `${fichaDoPar.setup.setup ?? manifesto.nome}_${fichaDoPar.setup.variante ?? "v1"}`,
             template: manifesto.template ?? {},
+            parametros: fichaDoPar.setup,
+            risco: fichaDoPar.risco,
             ...(proposta === null
               ? {}
               : { proposta: (proposta as any).carga }),

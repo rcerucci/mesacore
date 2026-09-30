@@ -2,13 +2,15 @@
 # O MESMO setup, em Python — a prova de que a lingua do plugin nao interessa a ninguem deste lado.
 # Le a mesma leitura (stdin), as mesmas velas (JSONL) e emite a mesma `proposta`. Para o operador, o que muda e'
 # uma linha no `setup.json`: `comando` e `linguagem`.
-import json, sys
+import json, os, sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent.parent
 manifesto = json.loads((Path(__file__).resolve().parent / "setup.json").read_text())
-rapida_n = manifesto.get("parametros", {}).get("rapida", 5)
-lenta_n = manifesto.get("parametros", {}).get("lenta", 20)
+ficha = json.loads(os.environ.get("FICHA_DO_PAR", "{}"))
+rapida_n = int(ficha.get("parametros_rapida", ficha.get("parametros.rapida", 5)))
+lenta_n = int(ficha.get("parametros_lenta", ficha.get("parametros.lenta", 20)))
+janela = ficha.get("janela", "1h")
 
 leitura = None
 for linha in sys.stdin.read().split("\n"):
@@ -21,10 +23,10 @@ for linha in sys.stdin.read().split("\n"):
     except json.JSONDecodeError:
         pass
 
-mercado = manifesto.get("mercado")
+pasta = os.environ.get("PASTA_DE_MERCADO", "")
 velas = []
-if mercado:
-    caminho = RAIZ / mercado["pasta"] / mercado["ficheiro"]
+if pasta:
+    caminho = RAIZ / pasta / f"velas-{os.environ.get('INSTRUMENTO','BTC')}-{janela}.jsonl"
     if caminho.exists():
         velas = [json.loads(l) for l in caminho.read_text().split("\n") if l.strip()]
 

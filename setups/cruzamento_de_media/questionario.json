@@ -1,7 +1,7 @@
 {
  "setup": "cruzamento_de_media",
  "versao": "0.1.0",
- "nota": "O template do setup: um item por parametro. E' o que a validacao do core e o formulario da tela leem — nenhum dos dois sabe o que e' uma 'media rapida'.",
+ "nota": "O template do setup: um item por parametro. A `janela` (o relogio) esta' aqui como item, mas o VALOR e' da ficha de cada par — o mesmo setup em H1 e em M30 e' o mesmo plugin, com duas fichas.",
  "escreve_em": "ficha",
  "perguntas": [
   {
@@ -17,8 +17,8 @@
    "omissao": 20
   },
   {
-   "campo": "mercado.intervalo",
-   "pergunta": "Intervalo das velas",
+   "campo": "janela",
+   "pergunta": "Relogio do par (intervalo das velas)",
    "tipo": "escolha",
    "opcoes": [
     "1m",
@@ -31,7 +31,7 @@
     "1d"
    ],
    "omissao": "1h",
-   "nota": "Os intervalos sao os do venue (medidos: 14)."
+   "nota": "Vem da ficha de parametros do PAR, nao do assistente."
   }
  ]
 }
