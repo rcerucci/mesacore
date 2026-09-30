@@ -8,7 +8,7 @@
   "instrumento": "BTC",
   "setup": "cruzamento_de_media",
   "relogio": "1h",
-  "run": true,
+  "run": false,
   "ao_desligar": "fechar",
   "saldo_pct": "1",
   "alavancagem": "2",

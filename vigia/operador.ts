@@ -291,7 +291,11 @@ async function main(): Promise<void> {
           gravarPortas();
         }
       } catch {
-        // linha que nao e' do diagnostico: nao se imprime (o operador nao e' o log do conector)
+        // Linha que nao e' JSON de porta: e' o RESTO do diagnostico do conector, e imprime-se. Engoli-lo foi
+        // o que me deixou cego quando o conector arrancava e nao entregava leitura: o operador registava o
+        // silencio e o conector sabia a razao. (D-019.)
+        const limpa = l.trim();
+        if (limpa !== "") console.error(`[conector] ${limpa.slice(0, 400)}`);
       }
     }
   });

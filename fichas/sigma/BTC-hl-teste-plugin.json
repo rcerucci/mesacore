@@ -4,14 +4,14 @@
   "conta": "hl-teste-plugin",
   "corretora": "hyperliquid",
   "ambiente": "teste",
-  "endereco": "0x<ENDERECO DA CONTA>",
-  "instrumento": "ETH",
-  "setup": "cruzamento_de_media",
-  "relogio": "30m",
-  "run": false,
+  "endereco": "0xF87138D298E338962E1a2e0ff23267Dc32c15621",
+  "instrumento": "BTC",
+  "setup": "sigma",
+  "relogio": "1h",
+  "run": true,
   "ao_desligar": "fechar",
-  "saldo_pct": "1",
-  "alavancagem": "2",
+  "saldo_pct": "10",
+  "alavancagem": "1",
   "bandas": {
    "saldo_pct": {
     "minimo": "0.5",
@@ -33,7 +33,15 @@
   "prazo_de_resposta_ms": 5000
  },
  "constantes": {
-  "parametros_rapida": 5,
-  "parametros_lenta": 20
- }
+  "ma_len": 24,
+  "ma_tipo": "EMA",
+  "src_ma": "hl2",
+  "src_sinal": "hl2",
+  "usar_banda": true,
+  "banda_atr": "0.25",
+  "usar_zz": true,
+  "zz_atr": "2.0",
+  "atr_len": 14
+ },
+ "_nota": "O `sigma` no BTC, na conta de TESTE: o mesmo plugin do Pine, o par que o conector desta conta le'. Serve para o sistema operar em observacao enquanto o SOL (D-018) nao viaja."
 }

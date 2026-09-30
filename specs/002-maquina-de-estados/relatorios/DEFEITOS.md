@@ -772,3 +772,36 @@ chega ao manifesto, ou o instrumento e' filtrado por nao ter unidade. `SOL` nao 
 
 **Porque isto bloqueia o primeiro setup:** o plugin do Pine corre em SOL. Sem leitura de SOL, o circuito ao vivo
 nao fecha neste par — e' a ultima peca entre o plugin provado e a primeira ordem.
+
+---
+
+## D-019 — o operador engolia o diagnostico do conector (e foi por isso que fiquei cego)  *(FECHADO, 30/09/2026)*
+
+**Declarado e fechado no mesmo dia.** O operador recolhia as linhas de porta do conector (para escrever o
+ficheiro das portas) e **descartava todas as outras**: o `catch` do handler dizia, textualmente, *"linha que
+nao e' do diagnostico: nao se imprime (o operador nao e' o log do conector)"*. Com o conector a arrancar (as 8
+portas passam, medido) e a **nao entregar leitura nenhuma**, o log do operador ficava com uma linha so' — e a
+razao, que o conector provavelmente disse, era deitada fora no mesmo processo.
+
+**O que custou:** uma noite de tentativas cegas — a ficha da conta, o instrumento, o venue, as velas e as
+portas foram todos medidos e estao bons; o motivo de nao haver leitura nao se soube, porque ninguem o guardou.
+
+**Correcao:** o handler passa a imprimir tudo o que o conector diz e nao e' porta, com o prefixo `[conector]`.
+Uma peca que fala e nao e' ouvida nao e' uma peca de um sistema: e' uma caixa.
+
+---
+
+## D-020 — o modo ao vivo do conector arranca e nao entrega leitura (sintoma aberto)
+
+**Declarado em 30/09/2026, 02:10.** Medido, com tudo o resto confirmado bom:
+
+* o venue responde: conta (`accountValue 989.822633`), livro do BTC (`levels` com precos reais) e velas (a
+  `candleSnapshot` devolve barras) — os tres, por `curl` directo;
+* o arranque do conector passa as 8 portas e escreve `{"passam":true,"porta":null,"motivo":null}`;
+* as velas existem onde o setup as procura (`velas-BTC-1h.jsonl`, 505 barras; idem SOL);
+* e o conector **nao emite uma unica linha `mercado`** — nem com `--leitura-a-cada 6000`, nem com 60000, nem
+  com o stdin aberto por um `sleep` ao lado. O arranque de ha' uma hora, nas mesmas condicoes, entregava
+  leitura (equity 989.822633, bid, ask — medido e usado em varias provas desta sessao).
+
+**O que muda daqui para a frente:** com o D-019 fechado, o conector passa a ser ouvido. O primeiro passo e'
+repetir a corrida e **ler o que ele diz** — e nao voltar a tentar as cegas.
