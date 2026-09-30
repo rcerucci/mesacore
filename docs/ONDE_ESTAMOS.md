@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **29/09/2026, 23:20 (-03)** · `HEAD af70d46` + a vaga do item 3 (por gravar) · contrato vigente **1.7.0**
+medido em **29/09/2026, 21:20 (-03)** · `HEAD 905fc03` · árvore **limpa** · contrato vigente **1.7.0**
 
 Este é o documento que se abre primeiro. Cada número aqui foi medido nesta hora — o comando vem ao lado — e o
 que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo substitui um número.
