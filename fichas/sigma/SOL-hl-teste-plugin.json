@@ -30,7 +30,8 @@
     "maximo": "10"
    }
   },
-  "prazo_de_resposta_ms": 5000
+  "prazo_de_resposta_ms": 5000,
+  "nome_do_par": "SOL-USDC"
  },
  "constantes": {
   "ma_len": 24,
@@ -42,5 +43,6 @@
   "usar_zz": true,
   "zz_atr": "2.0",
   "atr_len": 14
- }
+ },
+ "_nome_do_par": "`instrumento` e' o nome que o VENUE conhece (e' com ele que se le' o livro e se manda a ordem); `nome_do_par` e' o nome com que o dono conhece o par. O primeiro manda; o segundo explica."
 }

@@ -8,7 +8,7 @@
   "instrumento": "BTC",
   "setup": "sigma",
   "relogio": "1h",
-  "run": true,
+  "run": false,
   "ao_desligar": "fechar",
   "saldo_pct": "10",
   "alavancagem": "1",
@@ -43,5 +43,5 @@
   "zz_atr": "2.0",
   "atr_len": 14
  },
- "_nota": "O `sigma` no BTC, na conta de TESTE: o mesmo plugin do Pine, o par que o conector desta conta le'. Serve para o sistema operar em observacao enquanto o SOL (D-018) nao viaja."
+ "_nota": "Desligado (run:false): a conta de teste le' SOL, e o que o dono quer a rodar e' o SOL."
 }
