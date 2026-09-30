@@ -1,31 +1,36 @@
 #!/usr/bin/env bun
-// O OPERADOR — quem LIGA o conector ao setup e escreve o ficheiro de operação, a cada volta.
+// O OPERADOR — o processo que liga o conector aos setups, por conta, e escreve o ficheiro de operação.
 //
-// PORQUE EXISTE. Medido, e era o portão para o primeiro setup: o conector JÁ emite a leitura ao vivo
-// (`{"tipo":"mercado", ..., "equity":"989.82", "bid":"83510.0"}`), a mesa JÁ sabe lê-la do ficheiro de operação
-// (`core/servidor.ts --operacao`), e o setup JÁ sabe falar o contrato — mas **ninguém escrevia o ficheiro**, e o
-// vigia continuava a apontar para os dublês. Faltava esta peça, e é ela que fecha o circuito:
+// PORQUE EXISTE. Medido, e era o portão para o primeiro setup: o conector JÁ emite a leitura ao vivo, a mesa JÁ
+// sabe lê-la do ficheiro de operação, e o setup JÁ sabe falar o contrato — mas **ninguém escrevia o ficheiro**.
+// Faltava esta peça, e é ela que fecha o circuito:
 //
-//   conector (processo) --stdin/stdout--> OPERADOR --ficheiro--> mesa (ciclo)
-//                                          |
-//                                          +--setup (processo, a língua que ele quiser)--> proposta
+//   conector (processo) --stdout--> OPERADOR --ficheiro--> mesa (ciclo)
+//                                    |
+//                                    +--setup (processo, a língua que declarar)--> proposta
 //
-// COMO FALA COM O SETUP, e porque assim: **pelo seam da casa** — uma mensagem JSON por linha, no `stdin` do
-// setup, e a `proposta` na linha do `stdout` dele. É o mesmo contrato do conector, e é o que faz um setup em
-// Python e um em TypeScript serem o mesmo plugin para a mesa. O setup recebe a leitura do mercado por ali e as
-// VELAS pelos ficheiros (`brokers/hyperliquid/mercado.ts --para-pasta`, o formato JSONL já provado nas duas
-// línguas) — porque barras são muitos números por volta, e não se empurram por uma linha de conversa.
+// ELE É MULTIPAR, E É UMA CONTA INTEIRA. O operador não recebe "um par": recebe o **nome da conta**, vai às
+// fichas dessa conta (`fichas/<CONTA>/<PAR>-<setup>.json`), e trabalha as que estão com `run: true`. Desligar um
+// par é editar uma linha da ficha, não mexer em código. E cada par traz o SEU relógio (o `relogio` do cabeçalho):
+// o mesmo setup corre a 1h num par e a 30m noutro, porque quem decide o relógio é a ficha, não o assistente.
 //
-// O QUE AQUI NÃO SE FAZ: não se decide nada. O operador não avalia a proposta, não a corrige, não inventa
-// leitura que o conector não deu: leva o que um deu ao outro e escreve o que ambos disseram, com a hora.
+// O QUE AQUI NÃO SE FAZ, e é a razão de esta peça ser pequena:
+//   * não se decide nada — o operador não avalia a proposta nem a corrige; leva o que o setup disse à mesa;
+//   * não se calcula sinal — quem calcula é o setup, e o operador não sabe o que é uma média;
+//   * não se inventa leitura — par sem leitura do conector entra na operação SEM `leitura` (a mesa trata como
+//     `sem_leitura`, RN-D7), nunca com a leitura anterior, que seria mentira com ar de fresca;
+//   * não se vê o risco — ao setup vai só o que ele precisa: as CONSTANTES do indicador e o `run`. O
+//     `saldo_pct`, a `alavancagem` e as bandas ficam do lado da mesa (RN-M4.1: o setup nunca os vê).
+//
+// O RELÓGIO É UM SÓ. O setup é uma CHAMADA com resposta, nunca um processo com vida própria: dois relógios dariam
+// duas respostas à pergunta "quando é que esta decisão aconteceu?", uma delas fora do registo.
 //
 // Uso:
-//   bun run vigia/operador.ts --ficha @config/contas/hl-teste-plugin.json \
-//        --setup setups/cruzamento_de_media --instrumento BTC \
-//        --para /tmp/operacao.json --tick 5000 --voltas 3 [--mercado <pasta>]
+//   bun run vigia/operador.ts --conta hl-real-sol --setup setups/sigma \
+//        --para /tmp/operacao.json --tick 60000 --voltas 6 [--par SOL] [--mercado <pasta>] [--dias 30]
 
 import { spawn } from "node:child_process";
-import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { validar } from "../contracts/esqueleto/framing.ts";
 
@@ -39,34 +44,69 @@ function morrer(mensagem: string): never {
   console.error(JSON.stringify({ etapa: "operador", veredicto: "recusado", porque: mensagem }));
   process.exit(2);
 }
+function dizer(o: unknown): void {
+  console.log(JSON.stringify(o));
+}
 
-// O ARQUIVO MACRO DA CONTA (do dono: instrumentos, conta, margem total, contencao) — nao e' a ficha do par.
-const conta = arg("--conta") ?? morrer("falta `--conta @<arquivo macro da conta>`");
+const nomeDaConta = arg("--conta") ?? morrer("falta `--conta <nome da conta>` (as fichas vivem em fichas/<nome>/)");
 const pastaDoSetup = arg("--setup") ?? morrer("falta `--setup setups/<nome>`");
-// A FICHA DO PAR: e' ela que decide o RELOGIO (a `janela`), e nao o assistente (RN-M5). Mesmo setup em dois
-// pares = duas fichas = dois relogios.
-const par = arg("--par") ?? morrer("falta `--par <PAR>` (a ficha do par: fichas/<PAR>/{risco,setup}.json)");
-const instrumento = arg("--instrumento") ?? par;
 const para = arg("--para") ?? morrer("falta `--para <ficheiro de operacao>`");
-const tickMs = Number(arg("--tick") ?? "5000");
+const soOPar = arg("--par") ?? null; // opcional: sem ele, percorre TODAS as fichas ligadas da conta
+const tickMs = Number(arg("--tick") ?? "60000");
 const voltasPedidas = Number(arg("--voltas") ?? "1");
 const pastaDoMercado = arg("--mercado") ?? null;
 const diasDeHistorico = Number(arg("--dias") ?? "30");
+const caminhoDaCredencial = join(RAIZ, "config", "contas", `${nomeDaConta}.json`);
+if (!existsSync(caminhoDaCredencial)) {
+  morrer(`nao existe a credencial da conta ${nomeDaConta} (${caminhoDaCredencial}): a ficha diz o NOME da conta, o ficheiro da conta guarda a chave — e a chave nao mora nas fichas`);
+}
 
 // ---------------------------------------------------------------------------------------------------------
-// O manifesto do setup — a ÚNICA coisa que o operador precisa de saber sobre ele: como se arranca.
-//
-// A língua é declarada aqui e não interessa ao resto: `comando` é um argv. Um setup em Python declara
-// ["python3","plugin.py"], um em TypeScript ["bun","run","plugin.ts"] — e a mesa nunca sabe a diferença.
+// AS FICHAS DA CONTA — quem manda é o `run` da ficha, e cada uma traz o seu relógio.
+
+interface Ficha {
+  cabecalho: Record<string, any>;
+  constantes: Record<string, any>;
+  ficheiro: string;
+}
+function lerFichasDaConta(nome: string): Ficha[] {
+  const pasta = join(RAIZ, "fichas", nome);
+  if (!existsSync(pasta)) morrer(`nao existe a pasta de fichas da conta ${nome} (${pasta}): um par sem ficha nao e' operado`);
+  const fichas: Ficha[] = [];
+  for (const ficheiro of readdirSync(pasta).sort()) {
+    if (!ficheiro.endsWith(".json")) continue;
+    const f = JSON.parse(readFileSync(join(pasta, ficheiro), "utf8"));
+    if (f?.cabecalho === undefined || f?.constantes === undefined) {
+      morrer(`${pasta}/${ficheiro} nao tem cabecalho e constantes: um ficheiro por par, com o cabecalho padrao primeiro`);
+    }
+    for (const campo of ["instrumento", "relogio", "run", "setup"] as const) {
+      if (f.cabecalho[campo] === undefined) morrer(`${pasta}/${ficheiro} nao declara \`${campo}\` no cabecalho`);
+    }
+    fichas.push({ cabecalho: f.cabecalho, constantes: f.constantes, ficheiro });
+  }
+  return fichas;
+}
+
+const todas = lerFichasDaConta(nomeDaConta);
+const ligadas = todas.filter((f) => f.cabecalho.run === true && (soOPar === null || f.cabecalho.instrumento === soOPar));
+dizer({
+  etapa: "operador", conta: nomeDaConta, fichas: todas.length,
+  ligadas: ligadas.map((f) => `${f.cabecalho.instrumento}-${f.cabecalho.setup} (${f.cabecalho.relogio})`),
+  desligadas: todas.filter((f) => f.cabecalho.run !== true).map((f) => f.ficheiro),
+});
+if (ligadas.length === 0) {
+  dizer({ etapa: "operador", veredicto: "nada_a_fazer", porque: `nenhuma ficha com run=true na conta ${nomeDaConta}` });
+  process.exit(0);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// O MANIFESTO DO SETUP — a única coisa que o operador precisa de saber dele: como se arranca.
+
 interface ManifestoDoSetup {
   nome: string;
   versao: string;
   linguagem: string;
   comando: string[];
-  ficheiro_de_mercado?: string;
-  /** O nome da ficha em vigor (o par risco+setup) — vai na operacao, e o ciclo exige-o. */
-  ficha?: string;
-  /** O TEMPLATE de execucao do setup (RN-B8): tipo de ordem e parametros. */
   template?: Record<string, unknown>;
   nota?: string;
 }
@@ -80,46 +120,57 @@ function lerManifestoDoSetup(pasta: string): ManifestoDoSetup {
   if (!Array.isArray(m.comando) || m.comando.length === 0) morrer(`\`comando\` de ${pasta} tem de ser um argv nao vazio`);
   return m;
 }
-
 const manifesto = lerManifestoDoSetup(pastaDoSetup);
 
-// A FICHA DO PAR, os DOIS arquivos (RN-M6). Sem ela nao ha relogio nem risco: um par sem ficha nao e' operado.
-function lerFichaDoPar(p: string): { cabecalho: Record<string, any>; constantes: Record<string, any> } {
-  const caminho = join(RAIZ, "fichas", `${p}.json`);
-  if (!existsSync(caminho)) morrer(`nao existe a ficha do par ${p} (${caminho}): um par sem ficha nao e' operado`);
-  const f = JSON.parse(readFileSync(caminho, "utf8"));
-  if (f.cabecalho === undefined || f.constantes === undefined) {
-    morrer(`a ficha ${p} nao tem cabecalho e constantes: um ficheiro so', com o cabecalho padrao primeiro`);
+// ---------------------------------------------------------------------------------------------------------
+// AS VELAS — pedidas no RELÓGIO DA FICHA. Uma actualização por (instrumento, relógio).
+
+if (pastaDoMercado !== null) {
+  for (const f of ligadas) {
+    const relogio = String(f.cabecalho.relogio);
+    const instrumento = String(f.cabecalho.instrumento);
+    const pedido = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "mercado.ts"),
+      "--velas", instrumento, "--intervalo", relogio, "--dias", String(diasDeHistorico),
+      "--ambiente", "producao", "--para-pasta", pastaDoMercado, "--actualizar"],
+      { cwd: RAIZ, env: process.env, stdio: ["ignore", "ignore", "pipe"] });
+    let queixa = "";
+    pedido.stderr.on("data", (b) => (queixa += b.toString()));
+    const codigo = await new Promise<number | null>((r) => pedido.on("close", (c) => r(c)));
+    if (codigo !== 0) {
+      dizer({ etapa: "operador", aviso: "as velas nao se actualizaram", instrumento, relogio, codigo, queixa: queixa.slice(-300) });
+    }
   }
-  return f;
 }
-const fichaDoPar = lerFichaDoPar(par);
-const janela = String(fichaDoPar.cabecalho.relogio ?? "");
-if (janela === "") morrer(`a ficha ${par} nao declara o \`relogio\` no cabecalho: e' a ficha que o decide, nao o assistente`);
 
 // ---------------------------------------------------------------------------------------------------------
-// O SETUP: um processo por volta. Recebe a leitura no stdin, devolve UMA linha `proposta` no stdout.
+// O SETUP: um processo por CHAMADA. Recebe a leitura no stdin, devolve a `proposta` no stdout.
 
-function correrSetup(leitura: unknown): Promise<{ proposta: unknown | null; linhas: string[]; erro: string | null }> {
+function correrSetup(leitura: unknown, ficha: Ficha): Promise<{ proposta: unknown | null; erro: string | null }> {
   return new Promise((resolve) => {
-    // Os PARAMETROS do par (incluindo o relogio) vao ao setup pelo ambiente: o envelope do contrato e' fechado
-    // (campo a mais e' recusado — medido na T3), e os parametros nao sao leitura de mercado.
+    // As CONSTANTES e o relógio do par — e mais nada da ficha. O risco não passa por aqui (RN-M4.1).
     const p = spawn(manifesto.comando[0]!, manifesto.comando.slice(1), {
       cwd: join(RAIZ, pastaDoSetup),
-      env: { ...process.env, FICHA_DO_PAR: JSON.stringify(fichaDoPar.constantes), RISCO_DO_PAR: JSON.stringify(fichaDoPar.cabecalho), INSTRUMENTO: instrumento, PASTA_DE_MERCADO: pastaDoMercado ?? "" },
+      env: {
+        ...process.env,
+        CONSTANTES: JSON.stringify(ficha.constantes),
+        INSTRUMENTO: String(ficha.cabecalho.instrumento),
+        RELOGIO: String(ficha.cabecalho.relogio),
+        PASTA_DE_MERCADO: pastaDoMercado ?? "",
+      },
     });
-    const linhas: string[] = [];
     let erro: string | null = null;
+    let saida = "";
     const dec = new TextDecoder();
-    p.stdout.on("data", (b) => linhas.push(...dec.decode(b).split("\n").filter((l) => l.trim() !== "")));
+    p.stdout.on("data", (b) => (saida += dec.decode(b)));
     p.stderr.on("data", (b) => {
       const t = dec.decode(b).trim();
       if (t !== "") erro = t.slice(0, 400);
     });
     p.on("close", () => {
       // A proposta procura-se pela FORMA DO CONTRATO, e valida-se contra ele: uma linha que o contrato recusaria
-      // nao e' uma proposta — e o operador nao a "arranja".
-      for (const linha of linhas) {
+      // não é proposta, e o operador não a "arranja".
+      for (const linha of saida.split("\n")) {
+        if (linha.trim() === "") continue;
         let obj: any;
         try {
           obj = JSON.parse(linha);
@@ -128,11 +179,11 @@ function correrSetup(leitura: unknown): Promise<{ proposta: unknown | null; linh
         }
         if (obj?.tipo === "proposta") {
           const r = validar(linha);
-          if (r.veredicto === "aceite") return resolve({ proposta: obj, linhas, erro });
-          return resolve({ proposta: null, linhas, erro: `a proposta do setup nao passa o contrato: ${r.motivo}` });
+          if (r.veredicto === "aceite") return resolve({ proposta: obj, erro });
+          return resolve({ proposta: null, erro: `a proposta do setup nao passa o contrato: ${r.motivo}` });
         }
       }
-      resolve({ proposta: null, linhas, erro });
+      resolve({ proposta: null, erro });
     });
     p.stdin.write(JSON.stringify(leitura) + "\n");
     p.stdin.end();
@@ -140,11 +191,10 @@ function correrSetup(leitura: unknown): Promise<{ proposta: unknown | null; linh
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// O CONECTOR: um processo que fala a leitura, e o operador consome as linhas `mercado`.
+// A OPERAÇÃO — escrita ATÓMICA: temporário + rename. Uma leitura a meio de uma escrita daria à mesa um mundo
+// que não existiu, e a mesa decide sobre esta leitura.
 
 function escreverOperacao(conteudo: unknown): void {
-  // Escrita ATOMICA: temporario + rename. Uma leitura a meio de uma escrita daria a mesa um mundo que nao
-  // existiu — e a mesa decide sobre esta leitura.
   const dir = dirname(para);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const temporario = `${para}.tmp-${process.pid}`;
@@ -152,27 +202,25 @@ function escreverOperacao(conteudo: unknown): void {
   renameSync(temporario, para);
 }
 
+const portasVistas: { porta: string; veredicto: string; motivo?: string | null }[] = [];
+function gravarPortas(): void {
+  const falhadas = portasVistas.filter((o) => o.veredicto !== "passou" && o.veredicto !== "nao_corrida");
+  const desfecho = {
+    passam: portasVistas.length > 0 && falhadas.length === 0,
+    porta: falhadas[0]?.porta ?? null,
+    motivo: falhadas[0]?.motivo ?? null,
+  };
+  const caminho = `${para}.portas.json`;
+  const temporario = `${caminho}.tmp-${process.pid}`;
+  writeFileSync(temporario, JSON.stringify(desfecho) + "\n");
+  renameSync(temporario, caminho);
+}
+
 async function main(): Promise<void> {
-  // AS VELAS SAO PEDIDAS NO RELOGIO DA FICHA (`janela`), e nao num intervalo qualquer: actualiza-se o ficheiro
-  // antes de a primeira volta comecar, para o setup decidir sobre barras que existem.
-  if (pastaDoMercado !== null) {
-    const pedido = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "mercado.ts"), "--velas", instrumento,
-      "--intervalo", janela, "--dias", String(diasDeHistorico), "--ambiente", "producao",
-      "--para-pasta", pastaDoMercado, "--actualizar"], { cwd: RAIZ, env: process.env });
-    await new Promise<void>((resolve) => pedido.on("close", () => resolve()));
-  }
   const casos = join(RAIZ, "brokers", "hyperliquid", "casos", "processo.casos.json");
-  const conector = spawn(
-    "bun",
-    [
-      "run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
-      "--casos", casos,
-      "--ficha", conta.startsWith("@") ? conta : `@${join(RAIZ, conta)}`,
-      "--ao-vivo",
-      "--leitura-a-cada", String(tickMs),
-    ],
-    { cwd: RAIZ, env: process.env },
-  );
+  const conector = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
+    "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(tickMs)],
+    { cwd: RAIZ, env: process.env });
 
   const dec = new TextDecoder();
   let buffer = "";
@@ -187,17 +235,26 @@ async function main(): Promise<void> {
     } catch {
       // o processo ja' nao existe: nada a fazer, e nao se inventa um erro
     }
-    console.log(
-      JSON.stringify({
-        etapa: "operador",
-        veredicto: "fim",
-        voltas,
-        operacao: para,
-        setup: `${manifesto.nome} ${manifesto.versao} (${manifesto.linguagem})`,
-      }),
-    );
+    dizer({ etapa: "operador", veredicto: "fim", voltas, operacao: para, setup: `${manifesto.nome} ${manifesto.versao} (${manifesto.linguagem})` });
     process.exit(0);
   };
+
+  // AS PORTAS DO ARRANQUE: o operador recolhe o desfecho delas e grava-o onde a mesa o vai ler. Sem este
+  // ficheiro a mesa RECUSA o `start` (nomeando `nao conferidas`) — e faz bem.
+  conector.stderr.on("data", (b) => {
+    for (const l of dec.decode(b).split("\n")) {
+      if (l.trim() === "") continue;
+      try {
+        const o = JSON.parse(l);
+        if (o.porta) {
+          portasVistas.push({ porta: o.porta, veredicto: o.veredicto, motivo: o.motivo ?? null });
+          gravarPortas();
+        }
+      } catch {
+        // linha que nao e' do diagnostico: nao se imprime (o operador nao e' o log do conector)
+      }
+    }
+  });
 
   conector.stdout.on("data", async (b) => {
     buffer += dec.decode(b);
@@ -211,13 +268,16 @@ async function main(): Promise<void> {
       } catch {
         continue;
       }
-      if (msg?.tipo !== "mercado" || msg?.carga?.instrumento !== instrumento) continue;
+      if (msg?.tipo !== "mercado") continue;
+      const instrumento = String(msg.carga?.instrumento);
+      const ficha = ligadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
+      if (ficha === undefined) continue; // par que o conector leu e a conta nao tem ligado: ignora-se
       if (voltas >= voltasPedidas) return terminar();
       voltas += 1;
 
-      // A LEITURA VAI NA FORMA COMPACTA, que e' a que o ciclo le: o venue chama-lhe `estado` e o contrato do
-      // ciclo chama-lhe `estado_do_mercado` — e foi isto que fez o ciclo recusar a primeira operacao escrita
-      // (`mercado/m-1: campo_obrigatorio_ausente`). Converte-se AQUI, num sitio so', e nao se "arranja" o
+      // A LEITURA VAI NA FORMA COMPACTA, que é a que o ciclo lê: o venue chama-lhe `estado` e o contrato do
+      // ciclo chama-lhe `estado_do_mercado` — foi isto que fez o ciclo recusar a primeira operação escrita
+      // (`mercado/m-1: campo_obrigatorio_ausente`). Converte-se AQUI, num sítio só, e não se "arranja" o
       // contrato para acomodar o nome do venue.
       const doVenue = msg.carga as Record<string, unknown>;
       const leitura: Record<string, unknown> = {
@@ -230,72 +290,65 @@ async function main(): Promise<void> {
       for (const campo of ["bid", "ask", "ultimo", "posicao"] as const) {
         if (doVenue[campo] !== undefined) leitura[campo] = doVenue[campo];
       }
-      const { proposta, linhas, erro } = await correrSetup(msg);
-      const operacao = {
-        nota: `escrito pelo operador · ${new Date().toISOString()} · conector hyperliquid (${conta}) · setup ${manifesto.nome} ${manifesto.versao}`,
-        ligacao: "ligada",
-        instrumentos: {
-          [instrumento]: {
-            leitura,
-            // A FICHA em vigor e o TEMPLATE do setup: o ciclo exige-os, e sem eles nao ha boleta a compor.
-            ficha: `${manifesto.nome}_v${manifesto.versao.split(".")[0]}`,
-            template: manifesto.template ?? {},
-            parametros: fichaDoPar.constantes,
-            risco: fichaDoPar.cabecalho,
-            ...(proposta === null
-              ? {}
-              : { proposta: (proposta as any).carga }),
-            ...(erro === null ? {} : { erro_do_setup: erro }),
+
+      const { proposta, erro } = await correrSetup(msg, ficha);
+
+      // A OPERAÇÃO LEVA TODAS AS FICHAS LIGADAS, e não só a que falou nesta volta: a mesa decide, por ciclo,
+      // sobre o que está na operação — e um par ligado que desaparecesse do ficheiro era um par que a mesa
+      // deixava de ver. O par sem leitura entra SEM `leitura` (sem_leitura, RN-D7), nunca com a anterior.
+      const instrumentos: Record<string, unknown> = {};
+      for (const f of ligadas) {
+        const nome = String(f.cabecalho.instrumento);
+        const eOGueFalou = nome === instrumento;
+        instrumentos[nome] = {
+          ...(eOGueFalou ? { leitura } : {}),
+          ficha: `${String(f.cabecalho.setup)}_v${String(manifesto.versao).split(".")[0]}`,
+          template: manifesto.template ?? {},
+          parametros: f.constantes,
+          // À mesa vai a parte operacional do cabeçalho; ao setup foi só `constantes` (RN-M4.1).
+          risco: {
+            saldo_pct: f.cabecalho.saldo_pct,
+            alavancagem: f.cabecalho.alavancagem,
+            bandas: f.cabecalho.bandas,
+            prazo_de_resposta_ms: f.cabecalho.prazo_de_resposta_ms,
           },
-        },
-        ...(pastaDoMercado === null ? {} : { mercado: { pasta: pastaDoMercado, formato: "jsonl", ficheiro: manifesto.ficheiro_de_mercado ?? null } }),
-      };
-      escreverOperacao(operacao);
-      console.log(
-        JSON.stringify({
-          etapa: "operador",
-          volta: voltas,
-          instrumento,
-          equity: leitura.equity,
-          bid: leitura.bid,
-          ask: leitura.ask,
-          lado_da_proposta: (proposta as any)?.carga?.lado ?? null,
-          proposta_do_setup: proposta !== null,
-          setup_falou: erro,
-          operacao: para,
-        }),
-      );
-      if (voltas >= voltasPedidas) return terminar();
-    }
-  });
-  // AS PORTAS DO ARRANQUE: o operador recolhe o desfecho delas e grava-o onde a mesa o vai ler. Sem este
-  // ficheiro a mesa RECUSA o `start` (nomeando `nao conferidas`) — e faz bem: a decisao de arrancar com as
-  // portas por conferir nao se toma por omissao.
-  const portasVistas: { porta: string; veredicto: string; motivo?: string | null }[] = [];
-  const gravarPortas = () => {
-    const falhadas = portasVistas.filter((o) => o.veredicto !== "passou" && o.veredicto !== "nao_corrida");
-    const desfecho = { passam: portasVistas.length > 0 && falhadas.length === 0, porta: falhadas[0]?.porta ?? null, motivo: falhadas[0]?.motivo ?? null };
-    const caminho = `${para}.portas.json`;
-    const temporario = `${caminho}.tmp-${process.pid}`;
-    writeFileSync(temporario, JSON.stringify(desfecho) + "\n");
-    renameSync(temporario, caminho);
-    if (portasVistas.length > 0) {
-      console.error(JSON.stringify({ etapa: "operador", portas: portasVistas.length, falhadas: falhadas.length, ficheiro: caminho }));
-    }
-  };
-  conector.stderr.on("data", (b) => {
-    for (const l of dec.decode(b).split("\n")) {
-      if (l.trim() === "") continue;
-      try {
-        const o = JSON.parse(l);
-        if (o.porta) {
-          portasVistas.push({ porta: o.porta, veredicto: o.veredicto, motivo: o.motivo ?? null });
-          gravarPortas();
-          console.error(JSON.stringify({ etapa: "arranque", porta: o.porta, veredicto: o.veredicto }));
-        }
-      } catch {
-        // linha que nao e' do diagnostico: nao se imprime (o operador nao e' o log do conector)
+          ...(eOGueFalou && proposta !== null ? { proposta: (proposta as any).carga } : {}),
+          ...(eOGueFalou && erro !== null ? { erro_do_setup: erro } : {}),
+        };
       }
+      // A CONFIG DA MESA, gerada das fichas (o `--config` do core ainda le a ficha num objecto so', D-014).
+      // E' uma VISTA: os valores vem das fichas, e nenhum e' inventado aqui.
+      const fichasParaAMesa: Record<string, unknown> = {};
+      for (const f of ligadas) {
+        fichasParaAMesa[String(f.cabecalho.instrumento)] = {
+          saldo_pct: f.cabecalho.saldo_pct,
+          alavancagem: f.cabecalho.alavancagem,
+          bandas: f.cabecalho.bandas,
+          versao_do_mandato: `${f.cabecalho.setup}_v${String(manifesto.versao).split(".")[0]}`,
+          setup: { prazo_de_resposta_ms: f.cabecalho.prazo_de_resposta_ms },
+        };
+      }
+      writeFileSync(`${para}.config.json`, JSON.stringify({
+        _nota: "vista das fichas para a mesa (D-014: o core ainda le a ficha num objecto so'). Nao editar a mao.",
+        // A LISTA DO DONO, no TOPO (FR-042): sem ela a mesa rebenta o ciclo, e faz bem - avisar por omissao
+        // era a mesa a escolher pelo dono.
+        eventos_que_avisam: ["cb", "encerramento", "desconhecido", "recusa", "divergencia", "falha_de_leitura", "contenda"],
+        arranque_apos_cb: "exige_decisao",
+        fichas: fichasParaAMesa,
+      }, null, 1) + "\n");
+
+      escreverOperacao({
+        nota: `escrito pelo operador · ${new Date().toISOString()} · conta ${nomeDaConta} · conector hyperliquid · setup ${manifesto.nome} ${manifesto.versao}`,
+        ligacao: "ligada",
+        instrumentos,
+      });
+      dizer({
+        etapa: "operador", volta: voltas, conta: nomeDaConta, instrumento,
+        equity: (msg.carga as any).equity, bid: (msg.carga as any).bid, ask: (msg.carga as any).ask,
+        lado_da_proposta: (proposta as any)?.carga?.lado ?? null, proposta_do_setup: proposta !== null,
+        setup_falou: erro, operacao: para,
+      });
+      if (voltas >= voltasPedidas) return terminar();
     }
   });
   conector.on("close", () => terminar());

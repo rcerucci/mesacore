@@ -1,0 +1,47 @@
+{
+ "_o_que_e_isto": "A ficha de UM par NUMA conta: cabecalho padrao (quem, onde, com quanto risco, com que bandas, se esta ligado) + as constantes daquele indicador. Nome: <PAR>-<setup>.json, dentro da pasta da conta. A credencial NAO mora aqui (config/contas/<conta>.json).",
+ "cabecalho": {
+  "conta": "ctrader-real-sol",
+  "corretora": "ctrader",
+  "ambiente": "producao",
+  "endereco": "0x<ENDERECO DA CONTA>",
+  "instrumento": "SOL",
+  "setup": "sigma",
+  "relogio": "1h",
+  "run": false,
+  "ao_desligar": "fechar",
+  "saldo_pct": "10",
+  "alavancagem": "1",
+  "bandas": {
+   "saldo_pct": {
+    "minimo": "0.5",
+    "maximo": "20"
+   },
+   "alavancagem": {
+    "minimo": "1",
+    "maximo": "3"
+   },
+   "stop_pct": {
+    "minimo": "0.1",
+    "maximo": "5"
+   },
+   "tp_pct": {
+    "minimo": "0.1",
+    "maximo": "10"
+   }
+  },
+  "prazo_de_resposta_ms": 5000
+ },
+ "constantes": {
+  "ma_len": 24,
+  "ma_tipo": "EMA",
+  "src_ma": "hl2",
+  "src_sinal": "hl2",
+  "usar_banda": true,
+  "banda_atr": "0.25",
+  "usar_zz": true,
+  "zz_atr": "2.0",
+  "atr_len": 14
+ },
+ "_nota": "Existe para provar o padrão do nome: mesmo par, mesmo setup, OUTRA corretora. O conector do cTrader ainda não existe — com run=false nada disto corre."
+}

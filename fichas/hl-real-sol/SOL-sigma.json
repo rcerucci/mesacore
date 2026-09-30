@@ -1,12 +1,15 @@
 {
- "_o_que_e_isto": "A FICHA DE UM PAR. Cabecalho padrao igual em qualquer setup (quem, onde, com quanto risco e com que bandas), e depois as constantes daquele indicador. A credencial NAO mora aqui: vive em config/contas/<conta>.json, fora do git.",
+ "_o_que_e_isto": "A ficha de UM par NUMA conta: cabecalho padrao (quem, onde, com quanto risco, com que bandas, se esta ligado) + as constantes daquele indicador. Nome: <PAR>-<setup>.json, dentro da pasta da conta. A credencial NAO mora aqui (config/contas/<conta>.json).",
  "cabecalho": {
   "conta": "hl-real-sol",
   "corretora": "hyperliquid",
   "ambiente": "producao",
   "endereco": "0x<ENDERECO DA CONTA>",
   "instrumento": "SOL",
+  "setup": "sigma",
   "relogio": "1h",
+  "run": true,
+  "ao_desligar": "fechar",
   "saldo_pct": "10",
   "alavancagem": "1",
   "bandas": {
@@ -40,5 +43,5 @@
   "zz_atr": "2.0",
   "atr_len": 14
  },
- "_antes_de_correr": "Preencher `endereco` com o endereco da conta real, e pôr a credencial em config/contas/hl-real-sol.json (esse ficheiro fica FORA do git). Depois: bun run vigia/operador.ts --conta @config/contas/hl-real-sol.json --setup setups/<nome> --par SOL ..."
+ "_nota": "Preencher `endereco` e pôr a credencial em config/contas/hl-real-sol.json (fora do git)."
 }
