@@ -27,6 +27,9 @@ echo "$$" > "$DIR/operacao-em-observacao.pid"
 : > "$DIR/operador.log"
 : > "$DIR/mesa.log"
 
+# A VERSAO DO CONTRATO le'-se do ficheiro, NUNCA se escreve aqui a mao: o `start` carimbava 1.7.0 e a mesa
+# recusou-o com `versao_do_contrato_divergente` depois das emendas de 30/09/2026 (1.8.0 e 1.9.0) — a porta fez o
+# que devia, e o defeito era do script. Uma versao escrita a mao num script envelhece sozinha.
 OP="$DIR/operacao.json"
 echo "[$(date -Iseconds)] a arrancar: conta=$CONTA par=${PAR:-todos os ligados} dir=$DIR"
 
@@ -50,7 +53,7 @@ echo "[$(date -Iseconds)] operacao escrita: $OP" >> "$DIR/mesa.log"
 
 # the mesa: receives `start` (with the ports the operator collected) and keeps its clock beating.
 # O stdin fica ABERTO (`sleep`) porque o processo acaba no fim da entrada — e o relogio morre com ele.
-( cd "$RAIZ" && { echo '{"contrato":"1.7.0","tipo":"comando","id":"observacao-1","carga":{"verbo":"start","autor":"observacao","pedido_id":"observacao-1"}}'; sleep 100000; } \
+( cd "$RAIZ" && { printf '{"contrato":"%s","tipo":"comando","id":"observacao-1","carga":{"verbo":"start","autor":"observacao","pedido_id":"observacao-1"}}\n' "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["contrato"])' "$RAIZ/contracts/versao.json")"; sleep 100000; } \
     | bun run core/servidor.ts --tick 60000 --operacao "$OP" --config "$OP.config.json" \
         --portas "$OP.portas.json" --registo "$DIR/registo.jsonl" ) >> "$DIR/mesa.log" 2>&1 &
 MESA_PID=$!
