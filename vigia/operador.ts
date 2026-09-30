@@ -261,6 +261,11 @@ async function main(): Promise<void> {
   let buffer = "";
   let voltas = 0;
   let aFechar = false;
+  // O PRAZO (D-017): uma leitura que nao vem nao pode deixar a operacao por escrever para sempre. Ao fim de
+  // `LEITURAS_INUTEIS` leituras que nao servem nenhum par ligado, escreve-se a operacao com o que existe — os
+  // pares sem leitura entram SEM `leitura` (sem_leitura, RN-D7), que e' a verdade, em vez de silencio.
+  const LEITURAS_INUTEIS = 3;
+  let inuteis = 0;
 
   const terminar = () => {
     if (aFechar) return;
@@ -306,7 +311,33 @@ async function main(): Promise<void> {
       if (msg?.tipo !== "mercado") continue;
       const instrumento = String(msg.carga?.instrumento);
       const ficha = ligadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
-      if (ficha === undefined) continue; // par que o conector leu e a conta nao tem ligado: ignora-se
+      if (ficha === undefined) {
+        // Par que o conector leu e a conta nao tem ligado: nao serve. E se isto se repetir, os pares ligados
+        // que ninguem le' ficam a espera de nada — o prazo corta isso.
+        inuteis += 1;
+        if (inuteis >= LEITURAS_INUTEIS) {
+          const instrumentos: Record<string, unknown> = {};
+          for (const f of ligadas) {
+            const nome = String(f.cabecalho.instrumento);
+            instrumentos[nome] = {
+              ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
+              template: manifestoDe(f).template ?? {},
+              parametros: f.constantes,
+              risco: { saldo_pct: f.cabecalho.saldo_pct, alavancagem: f.cabecalho.alavancagem, bandas: f.cabecalho.bandas, prazo_de_resposta_ms: f.cabecalho.prazo_de_resposta_ms },
+              erro_do_setup: `prazo esgotado: ${inuteis} leituras seguidas sem nenhuma para este par (o conector le outros instrumentos?)`,
+            };
+          }
+          escreverOperacao({
+            nota: `escrito pelo operador (PRAZO, D-017) · ${new Date().toISOString()} · conta ${nomeDaConta} · nenhuma leitura para os pares ligados`,
+            ligacao: "sem_leitura",
+            instrumentos,
+          });
+          dizer({ etapa: "operador", veredicto: "prazo", leituras_inuteis: inuteis, operacao: para, ligadas: ligadas.map((f) => f.cabecalho.instrumento) });
+          return terminar();
+        }
+        continue;
+      }
+      inuteis = 0;
       if (voltas >= voltasPedidas) return terminar();
       voltas += 1;
 

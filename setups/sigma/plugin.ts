@@ -103,16 +103,23 @@ for (const p of pontos.slice(-3)) {
 if (ponto.ma === null || ponto.atr === null) dizer("hold", `so' ha' ${velas.length} barras e o indicador precisa de mais para a media e o ATR`);
 if (ponto.sig === 0) dizer("hold", "o indicador ainda nao tem lado: o preco nao saiu da zona morta em volta da media");
 
-// ---- a posição: sem ela, não se abre ----------------------------------------------------------------
+// ---- a posição: o contrato diz o que a ausência significa ------------------------------------------
+//
+// `mercado.posicao` — "Ausente = sem posicao" (o schema, textual). Nao e' "nao sei": e' PLANO. E se a conta
+// tivesse uma posicao que o conector nao conseguiu ler, a mensagem `mercado` nem era produzida (o produtor
+// recusa em vez de emitir uma leitura coxa) — por isso a ausencia e' um facto, e nao uma dúvida.
+//
+// O que o plugin NAO decide e' a POSSE: se a posicao tem marca nossa e' a mesa que o sabe (a marca vive no
+// `cloid` da ordem, e o mapa marca -> ficha e' a RN-T16.1). Aqui só se compara o LADO — que e' o que o
+// indicador precisa para saber se ja' esta' do lado que ele quer.
 const doPedido = ponto.sig === 1 ? "buy" : "sell";
 const posicao = leitura.posicao;
 if (posicao === undefined || posicao === null) {
-  dizer("hold", `o indicador tem lado (${doPedido}) mas a leitura NAO traz a posicao: sem saber se ja' estou dentro, abrir seria empilhar. Nao adivinho.`);
+  dizer(doPedido, `plano, e o indicador esta' ${doPedido}: abrir (a posicao ausente na leitura e' "sem posicao", nao e' duvida)`);
 }
 if (String(posicao.lado) === doPedido) {
   dizer("hold", `ja' estou ${doPedido}: o indicador concorda com a posicao, nao ha nada a fazer`);
 }
-// O lado OPOSTO a uma posição nossa: a mesa fecha com `reduce_only` (nao vira a mao numa ordem). Na volta
-// seguinte a posicao ja' nao existe, o indicador continua no lado novo, e a mesa abre — a viragem faz-se em
-// dois passos, de proposito.
+// O lado OPOSTO a uma posição: a mesa fecha com `reduce_only` (não vira a mão numa ordem). Na volta seguinte
+// a posição já não existe, o indicador continua no lado novo, e a mesa abre — a viragem faz-se em dois passos.
 dizer(doPedido, `viragem: o indicador esta' ${doPedido} e a posicao e' ${posicao.lado}`);

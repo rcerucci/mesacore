@@ -711,7 +711,17 @@ abertura em conta real — não uma vez.
 
 ---
 
-## D-016 — a leitura ao vivo nao traz a posicao (e sem ela o setup do Pine nao abre)
+## D-016 — a leitura ao vivo nao traz a posicao (e sem ela o setup do Pine nao abre)  *(RETRATADO, 30/09/2026)*
+
+> **RETRATACAO — 30/09/2026, medida.** Este defeito era FALSO e a culpa e' minha: escrevi-o a partir de
+> leituras onde a posicao nao aparecia, sem medir **porque**. Medido agora: `brokers/hyperliquid/leitura-do-mercado.ts:276`
+> e' o **unico** sitio que emite `mercado`, e **publica a posicao** quando ela existe. A razao de nao a ver era a
+> mais simples de todas: **a conta de teste estava PLANA**. Nao havia posicao para publicar. E o contrato di-lo
+> sem margem: `mercado.posicao` — *"Ausente = sem posicao"*. Nao ha nada a ligar; ha um plugin a corrigir — e
+> foi corrigido (o setup tratava a ausencia como duvida e agora trata-a como plano).
+>
+> O que **sobra** e' verdadeiro e fica dito: quando ha posicao, ela vai **sem marca** (a marca vive no `cloid`
+> da ordem), e e' isso que o mapa de posse (RN-T16.1, D-008) tem de resolver. O texto original fica abaixo.
 
 **Declarado em 30/09/2026.** O contrato TEM o campo (`mercado.posicao`: lado, unidades, preco_medio,
 marca_de_posse) e o produtor `brokers/hyperliquid/leitura-do-mercado.ts` **ja' o publica**. Mas o caminho
@@ -741,3 +751,24 @@ e o dono nao distingue "ainda nao chegou dado" de "nunca vai chegar". A leitura 
 
 **O que falta:** um limite de espera por par ligado; passado ele, a operacao e' escrita com os pares que tem
 leitura e os outros entram sem `leitura` (o mesmo caminho do ETH na prova do multipar).
+
+---
+
+## D-018 — o conector nao pega um instrumento acrescentado ao mandato (sintoma medido, causa por medir)
+
+**Declarado em 30/09/2026, com o sintoma exacto.** A ficha da conta de teste foi editada de
+`conta.instrumentos = ["BTC"]` para `["BTC","SOL"]` (para o setup do Pine poder decidir sobre SOL ao vivo), e a
+ficha foi lida: `conta.instrumentos = ['BTC','SOL']` (conferido). Mas o arranque do conector continua a
+reportar **`1 instrumento(s) com unidade declarada`** e **nao emite leitura nenhuma de SOL**: duas corridas ao
+vivo do operador (240 s e 260 s) terminaram sem operacao escrita, e o processo, corrido a' mao, fecha com
+`{"etapa":"fim","atendidas":0}`.
+
+**O que ja' se sabe:** a unidade do instrumento vem do **manifesto da sonda** (`unidadeDo(manifesto, ...)`,
+`conector.ts:801`), e o manifesto e' publicado no arranque a partir da lista do mandato — logo ou a lista nao
+chega ao manifesto, ou o instrumento e' filtrado por nao ter unidade. `SOL` nao aparece declarado em
+`contracts/gerado/` nem nos exemplos do conector.
+
+**O que falta:** medir qual dos dois e' (um `grep` no manifesto publicado resolve), e por o SOL a viajar.
+
+**Porque isto bloqueia o primeiro setup:** o plugin do Pine corre em SOL. Sem leitura de SOL, o circuito ao vivo
+nao fecha neste par — e' a ultima peca entre o plugin provado e a primeira ordem.
