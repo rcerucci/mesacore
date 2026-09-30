@@ -40,6 +40,8 @@ export interface InstrumentoDaOperacao {
   proposta?: { lado?: unknown; setup?: unknown; relogio?: unknown } | null;
   /** O nome da ficha em vigor (o par risco+setup do lado do setup). */
   ficha: string;
+  /** O relogio da ficha (o intervalo das velas): e' ele que define a barra de uma entrada (D-021). */
+  relogio?: string;
   /** O lado do setup: quem escolhe o tipo de ordem e o setup (RN-B8). */
   template: Template;
   /** As marcas de posse que este lado conhece - e por elas que a posse se reconhece. */
@@ -145,6 +147,26 @@ export interface FontesDoCiclo {
 }
 
 /** Uma volta do relogio: le, decide, registra. Devolve o que fez, para quem quiser contabilizar. */
+const MS_DO_RELOGIO: Record<string, number> = {
+  "1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000,
+  "1h": 3_600_000, "2h": 7_200_000, "4h": 14_400_000, "1d": 86_400_000,
+};
+
+/**
+ * A BARRA DA ULTIMA ENTRADA, por instrumento — o travao do D-021.
+ *
+ * O processo da mesa le a operacao UMA VEZ, e e' por isso que o silencio do setup nas voltas seguintes nao
+ * chega ca'. Vive em memoria de proposito: um reinicio limpa-o, e um reinicio e' decisao do dono com registo
+ * proprio (RN-V10).
+ */
+const barraDaUltimaEntrada = new Map<string, number>();
+
+/** Limpa os travoes de barra. Existe para as BANCADAS: uma bancada corre muitos casos no MESMO processo, e o
+ *  tempo de uma mesa e' um caso so'. Sem isto, o caso seguinte herda a barra do anterior e a medicao mente. */
+export function reiniciarTravosDeBarra(): void {
+  barraDaUltimaEntrada.clear();
+}
+
 export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
   const { operacao, config, marcas, estado, ciclo, instante_ms } = fontes;
   const acoes: Record<string, string> = {};
@@ -181,6 +203,22 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
     }
 
     const entradas = lerParaOCiclo(decl.leitura, decl.proposta ?? null, ciclo);
+
+    // A BARRA DO RELOGIO DA FICHA (D-021): e' ela que trava uma segunda entrada na mesma barra. Sem o intervalo
+    // declarado nao ha barra — e sem barra nao ha travao: recusa-se em vez de se decidir a' escuro.
+    const msDoRelogio = decl.relogio === undefined ? undefined : MS_DO_RELOGIO[decl.relogio];
+    if (msDoRelogio === undefined) {
+      throw new Error(
+        `a operacao nao declara o relogio de ${instrumento} (veio ${JSON.stringify(decl.relogio)}): sem o intervalo ` +
+          "nao se sabe em que barra cai a leitura",
+      );
+    }
+    const instanteDoVenue = Number(entradas.mercado?.tempo_do_venue_ms);
+    if (!Number.isFinite(instanteDoVenue)) {
+      throw new Error(`a leitura de ${instrumento} veio sem \`tempo_do_venue_ms\`: sem o instante do venue nao ha barra`);
+    }
+    const barraAtual = Math.floor(instanteDoVenue / msDoRelogio) * msDoRelogio;
+
 
     const decisao = decidirInstrumento({
       mercado: entradas.mercado,
@@ -225,7 +263,11 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       config,
       desconhecido: marcaDesconhecida,
       mesa_pausada: estado === "pausada",
+      barra_atual: barraAtual,
+      barra_da_ultima_entrada: barraDaUltimaEntrada.get(instrumento) ?? null,
     });
+    // ENTROU: guarda-se a barra. E' isto que faz a segunda proposta na mesma barra virar `nada` com motivo.
+    if (decisao.acao === "abrir") barraDaUltimaEntrada.set(instrumento, barraAtual);
 
     registarCiclo(
       instante_ms,

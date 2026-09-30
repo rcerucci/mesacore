@@ -721,6 +721,7 @@ async function prova6_mesa_sem_vigia(): Promise<void> {
             // A LEITURA DECLARA O QUE NAO TROUXE E SE DIVERGIU (a mesa ja' nao aceita a omissao em silencio).
             falhas: { leitura: false, setup_respondeu: true },
             divergente: false,
+            relogio: "1h",
           },
         },
       },

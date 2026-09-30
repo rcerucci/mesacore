@@ -63,6 +63,10 @@ export interface EntradaDoInstrumento {
   proposta_invalida?: boolean;
   /** O motivo do contrato para essa recusa - vai para o registo. */
   motivo_do_contrato?: string | null;
+  /** A barra do relogio da ficha em que esta leitura cai (ms desde a epoca, truncado ao intervalo). */
+  barra_atual?: number;
+  /** A barra em que este instrumento ja' entrou (a mesa guarda-a). Ausente = nunca entrou. */
+  barra_da_ultima_entrada?: number | null;
   falhas?: Falhas;
   /** Divergencia declarada por quem le (ex.: a reconciliacao explicou um numero que nao bate). */
   divergente?: boolean;
@@ -293,6 +297,24 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
       motivo: "fechar_impedido_pela_condicao",
       // O aviso NAO e forcado: vem da condicao. Um fecho travado pelo mercado fechado e esperado e
       // nao alarma; um fecho travado por falta de leitura ou por divergencia alarma, e vem daqui.
+      avisa: situacao.alarma,
+      boleta: null,
+    };
+  }
+
+  // O TRAVAO DA BARRA (D-021). O setup propoe uma entrada por barra fechada, mas a MESA le a operacao uma vez
+  // no arranque: o silencio das voltas seguintes nao chega ca'. Quem aperta o gatilho guarda a barra da ultima
+  // entrada e nao deixa uma segunda na mesma barra — e diz por que', em vez de nada.
+  if (
+    acao === "abrir" &&
+    entrada.barra_atual !== undefined &&
+    entrada.barra_da_ultima_entrada !== undefined &&
+    entrada.barra_da_ultima_entrada === entrada.barra_atual
+  ) {
+    return {
+      ...base,
+      acao: "nada",
+      motivo: "entrada_ja_feita_nesta_barra",
       avisa: situacao.alarma,
       boleta: null,
     };

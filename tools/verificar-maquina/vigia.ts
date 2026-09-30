@@ -225,6 +225,7 @@ async function bancadaDosVerbos() {
           // decide a bem de uma leitura que ninguem conferiu). Bancada: o caso e' que declara.
           falhas: caso.falhas ?? { leitura: false },
           divergente: caso.divergente ?? false,
+          relogio: "1h",
         },
       },
     };
@@ -407,6 +408,7 @@ async function bancadaDoEncerramento() {
         // decide a bem de uma leitura que ninguem conferiu). Bancada: o caso e' que declara.
         falhas: caso.falhas ?? { leitura: false },
         divergente: caso.divergente ?? false,
+        relogio: "1h",
       },
     },
   });
@@ -583,6 +585,7 @@ async function bancadaDaOrfandade() {
         // decide a bem de uma leitura que ninguem conferiu). Bancada: o caso e' que declara.
         falhas: casoDoCiclo.falhas ?? { leitura: false },
         divergente: casoDoCiclo.divergente ?? false,
+        relogio: "1h",
       },
     },
   };
