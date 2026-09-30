@@ -16,5 +16,14 @@
   "pasta": "setups/cruzamento_de_media/mercado",
   "intervalo": "1h",
   "ficheiro": "velas-BTC-1h.jsonl"
- }
+ },
+ "ficha": "cruzamento_de_media_v1",
+ "template": {
+  "politica_de_execucao": "mercado",
+  "parcial": "o_que_der",
+  "desvio_maximo": "0.5",
+  "prazo_da_passiva_ms": 3000,
+  "destino_do_resto": "agressivo"
+ },
+ "nota_template": "O template do setup (RN-B8): o tipo de ordem e os parametros de execucao. Chega a mesa por aqui, junto com a proposta."
 }

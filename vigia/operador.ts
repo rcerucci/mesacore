@@ -59,6 +59,10 @@ interface ManifestoDoSetup {
   linguagem: string;
   comando: string[];
   ficheiro_de_mercado?: string;
+  /** O nome da ficha em vigor (o par risco+setup) — vai na operacao, e o ciclo exige-o. */
+  ficha?: string;
+  /** O TEMPLATE de execucao do setup (RN-B8): tipo de ordem e parametros. */
+  template?: Record<string, unknown>;
   nota?: string;
 }
 function lerManifestoDoSetup(pasta: string): ManifestoDoSetup {
@@ -179,7 +183,21 @@ async function main(): Promise<void> {
       if (voltas >= voltasPedidas) return terminar();
       voltas += 1;
 
-      const leitura = msg.carga;
+      // A LEITURA VAI NA FORMA COMPACTA, que e' a que o ciclo le: o venue chama-lhe `estado` e o contrato do
+      // ciclo chama-lhe `estado_do_mercado` — e foi isto que fez o ciclo recusar a primeira operacao escrita
+      // (`mercado/m-1: campo_obrigatorio_ausente`). Converte-se AQUI, num sitio so', e nao se "arranja" o
+      // contrato para acomodar o nome do venue.
+      const doVenue = msg.carga as Record<string, unknown>;
+      const leitura: Record<string, unknown> = {
+        instrumento: doVenue.instrumento,
+        tempo_do_venue_ms: doVenue.tempo_do_venue_ms,
+        idade_do_dado_ms: doVenue.idade_do_dado_ms,
+        estado_do_mercado: doVenue.estado,
+        equity: doVenue.equity,
+      };
+      for (const campo of ["bid", "ask", "ultimo", "posicao"] as const) {
+        if (doVenue[campo] !== undefined) leitura[campo] = doVenue[campo];
+      }
       const { proposta, linhas, erro } = await correrSetup(msg);
       const operacao = {
         nota: `escrito pelo operador · ${new Date().toISOString()} · conector hyperliquid (${ficha}) · setup ${manifesto.nome} ${manifesto.versao}`,
@@ -187,6 +205,9 @@ async function main(): Promise<void> {
         instrumentos: {
           [instrumento]: {
             leitura,
+            // A FICHA em vigor e o TEMPLATE do setup: o ciclo exige-os, e sem eles nao ha boleta a compor.
+            ficha: manifesto.ficha ?? manifesto.nome,
+            template: manifesto.template ?? {},
             ...(proposta === null
               ? {}
               : { proposta: (proposta as any).carga }),
