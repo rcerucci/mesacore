@@ -1,12 +1,12 @@
 {
-  "plugin": "cruzamento-de-media",
+  "plugin": "prova-de-ficha",
   "tipo": "setup",
   "versao_do_questionario": "1.0.0",
   "escreve_em": "ficha",
   "incluir": [
     "risco_do_instrumento"
   ],
-  "nota_de_fronteira": "Um SETUP cria UMA ficha, para UM instrumento, numa conta escolhida. Os valores sao SO daquele instrumento — nao ha aqui nada da conta, e nada de outro instrumento. O setup ja tem de existir para correr isto; a ficha dele entra no ficheiro da conta que o dono escolher.",
+  "nota_de_fronteira": "FIXTURE DO ENSAIO (`tools/preparar-contas/provas.sh`, caso 6), nao um produto: existe para provar que um SETUP cria UMA ficha, para UM instrumento, numa conta escolhida — e que nao toca no resto. Era o `questionario.json` do setup de exemplo `cruzamento_de_media`, que foi retirado do repositorio a pedido do dono (30/09/2026): o fixture mudou-se para junto do ensaio que o usa, para o ensaio nao depender de um setup que pode deixar de existir.",
   "preenche_sempre": {
     "fichas.<instrumento>.risco.bandas": {
       "saldo_pct": {
@@ -37,7 +37,7 @@
       "obrigatorio": true,
       "omissao": "9",
       "pergunta": "Periodo da media curta",
-      "explicacao": "O cruzamento so dispara quando a media curta cruza a longa. Este e um parametro DESTE instrumento."
+      "explicacao": "Parametro DESTE instrumento (fixture do ensaio)."
     },
     {
       "id": "media_longa",
@@ -46,7 +46,7 @@
       "obrigatorio": true,
       "omissao": "21",
       "pergunta": "Periodo da media longa",
-      "explicacao": "A media lenta do cruzamento, tambem por instrumento."
+      "explicacao": "Parametro DESTE instrumento (fixture do ensaio)."
     },
     {
       "id": "lado",

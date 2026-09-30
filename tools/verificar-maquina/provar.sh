@@ -73,9 +73,9 @@ declarar "conector hyperliquid (offline, US1)" bash tools/verificar-conector/pro
 # assinatura, as 8 portas do arranque) so corriam quando alguem se lembrava de as chamar. Um caminho que mexe
 # em dinheiro fora do portao e um caminho que pode regredir sem ninguem dar por isso (medido 29/09/2026).
 declarar "envio do conector (38 casos)"   bun run brokers/hyperliquid/processo.ts --bancada
-# OS MOLDES DOS SETUPS entram na porta: eles nao estavam em bancada nenhuma e apodreceram sem que nada o
-# dissesse (a versao do contrato escrita a mao e o Python sem a `barra_ms` obrigatoria) — medido a 30/09/2026.
-declarar "setups de exemplo (contrato)"   bash tools/verificar-setup/exemplos.sh
+# O UNICO SETUP do repositorio e' o `sigma`: os moldes de exemplo (`cruzamento_de_media`, TS e Python) foram
+# retirados a pedido do dono (30/09/2026), e a bancada que os corria foi com eles. O que fica em pe' para o
+# setup e' o que interessa: a traducao do indicador e a regra da entrada (as duas bancadas abaixo).
 # A TRADUCAO DO INDICADOR entra na porta: o motor tem de fazer o mesmo que o `sign(mid - MA) + ZZ` do Pine em
 # TODAS as combinacoes de `input`, e nao so' nas omissoes. Foi aqui que se apanhou o `na` do ATR (medido
 # 30/09/2026: o motor calava-se nas primeiras 13 barras de 505, onde o grafico ja' tinha lado).

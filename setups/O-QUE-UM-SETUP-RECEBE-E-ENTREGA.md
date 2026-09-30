@@ -1,6 +1,15 @@
 
 ---
 
+> **NOTA DATADA — 30/09/2026: os exemplos deste documento são HISTÓRICOS.** Os dois setups de exemplo que ele
+> usava (`cruzamento_de_media`, em TypeScript e Python) foram retirados do repositório a pedido do dono; o único
+> setup que existe é `setups/sigma/`. Duas consequências para quem lê isto a escrever um setup novo:
+> (1) onde os exemplos dizem `"nome":"cruzamento_de_media"`, leia-se **o nome do próprio setup** — a forma é
+> `^[a-z][a-z0-9_]{1,31}$` (`contracts/_defs/forma.schema.json`); (2) **a versão do contrato nos exemplos não se
+> copia**: era `1.7.0` escrito à mão, e uma versão escrita à mão envelhece sozinha e cala o plugin em operação
+> (medido: um plugin MUDO por `versao_do_contrato_divergente`). A versão vigente lê-se de
+> `contracts/versao.json` (`versaoVigente()` em `contracts/esqueleto/framing.ts`), nunca se escreve.
+
 ## NOTA DATADA — 30/09/2026: o RELÓGIO é da ficha de parâmetros do par (correcção do dono)
 
 **O que estava errado no texto abaixo:** dava a entender que o intervalo das velas era uma escolha do setup

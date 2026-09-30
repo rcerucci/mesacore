@@ -178,13 +178,26 @@ entrega — a data da última é a da sonda de 30/09, e nenhuma tem `cloid` (415
   `20260929_193900_d185d7`, `cwd` este repositório) guardou em `stash` um lote de 30 ficheiros do produto que
   estavam por committar, porque o leu como restos de corridas mortas — a outra sessão estava a trabalhar neles
   desde 19:16:57. O `git reflog` guarda o rasto (`HEAD@{2026-09-30 19:25:39 -0300}: reset: moving to HEAD`), e nada
-  se perdeu porque um `stash` guarda em vez de apagar. Regra, agora com guarda a recusar na porta
-  (`~/.hermes/agent-hooks/guardiao-arvore-alheia.py`, `pre_tool_call` com matcher `terminal`, nos 5 homes):
+  se perdeu porque um `stash` guarda em vez de apagar. Regra, agora com guarda na porta
+  (`~/.hermes/agent-hooks/guardiao-arvore-alheia.py`, `pre_tool_call`, nos 5 homes), **em duas camadas desde 30/09/2026
+  20:1x (-03)** — `matcher` passou a `terminal|write_file|patch`: o `terminal` **recusa/aprova** como antes, e o
+  `write_file`/`patch` **não é travado — é REGISTADO** em `~/.hermes/logs/guardiao-arvore.jsonl` (`raiz_git`,
+  `arvore_alheia`, `trabalho_vivo`). Recusar a escrita directa foi medido e recusado (o worker de kanban nasce com
+  workspace `scratch`, **fora do repo**: travaria todas as escritas de worker para o repositório). E o aviso de
+  leitura obsoleta do editor **não impede a escrita** — avisa e aplica. A regra que fica:
   **árvore suja e precisas dela limpa → parar e reportar** (`git status --short` no corpo do cartão; `kanban_block`
   quando a decisão não for tua); **nunca** `stash`/`checkout`/`switch`/`restore`/`clean`/`reset --hard` numa árvore
   que não é a da tua sessão ou que outra sessão tem aberta. Para medir contra um estado limpo usa-se uma **cópia
   dentro do próprio workspace**; excepção a uma guarda vai **por cartão ao `default`**, com comando e saída, nunca
   por contorno.
+- **Duas colisões provadas entre sessões deste profile (30/09/2026), e o remédio estrutural.** O árbitro do cartão
+  `t_00cf9896` mediu **574 pares colidentes** (mesmo ficheiro, **sessões diferentes**, ≤1800 s) em `~/Projects` —
+  2157 chamadas `patch`/`write_file` em 300 ficheiros, 12 ficheiros e 16 sessões, **todos no home `appbuilder`**; e
+  ao vivo um worker de cartão e uma sessão desktop escreveram o **mesmo** `docs/AUDITORIA-PONTA-A-PONTA.md` entre
+  20:01:57 e 20:05:15. Remédio (já disponível, sem guarda nenhuma): **cartão criado com `project=mesacore`** dá ao
+  worker `<repo>/.worktrees/<task-id>` (git worktree) e acaba com o trunk partilhado — `MesaCore` é projecto
+  registado (`p_8fac7eec`) no store do `appbuilder`. Quem cria cartões cujo worker escreve neste repo usa o
+  `project=mesacore`.
 
 ## 8. A ação que depende de você (uma só)
 

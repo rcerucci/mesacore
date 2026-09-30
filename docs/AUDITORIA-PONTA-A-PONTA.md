@@ -134,7 +134,7 @@ decisão do dono, e a única coisa entre este sistema e uma ordem a sério.
 | **A7** | `config.fichas ?? {}` (4 sítios no arranque): uma config **sem fichas** passava as portas do mandato e da contenda — não havia nada para conferir — e chegava a `em_operacao` | idem | `exigirFichas`: sem fichas (ou com zero) a mesa **não arranca** |
 | **A8** | `ambiente ?? "teste"` (mercado e leitura-do-mercado) e `--ambiente X` sem conferência: uma ficha de **produção** sem o campo lia-se como testnet; um `--ambiente producaoo` valia teste | idem | ambiente exigido na ficha e conferido contra o conjunto |
 | **A9** | O plugin podia correr **sem pasta de estado** (o registo da barra era opcional) e um **estado ilegível** contava como «ainda não entrei» — as duas portas para repetir a entrada | `PASTA_DE_ESTADO ?? ""` e o `catch` que devolvia «não» | a pasta é obrigatória; estado ilegível → **não propõe**; se não conseguir registar a barra, **não propõe** |
-| **A10** | Os **dois setups de exemplo** (os moldes que se copiam) não estavam em bancada nenhuma — e tinham apodrecido: versão à mão e o Python **sem a `barra_ms`**, obrigatória desde a 1.8.0 | leitura + a bancada nova: antes, a proposta do Python não passaria o contrato | bancada nova `tools/verificar-setup/exemplos.sh`, **dentro do portão**: corre os dois moldes e julga a proposta deles com o contrato |
+| **A10** | Os **dois setups de exemplo** (os moldes que se copiam) não estavam em bancada nenhuma — e tinham apodrecido: versão à mão e o Python **sem a `barra_ms`**, obrigatória desde a 1.8.0 | leitura + a bancada nova: antes, a proposta do Python não passaria o contrato | bancada nova `tools/verificar-setup/exemplos.sh`, **dentro do portão**: corre os dois moldes e julga a proposta deles com o contrato. **Nota de 30/09/2026: esta bancada já não existe.** O dono mandou reter **só o `sigma`** e retirar os outros setups, e com os moldes foi a bancada que os corria — o registo fica no git (`3cd4a29^`). A lição que ela deixou, essa fica: **bancada que não está no portão apodrece em silêncio** |
 | **A11** | **O motor calava-se nas barras de arranque.** O Pine **não** exige ATR para decidir: a prontidão dele é `mid`/MA/tempo, e sem ATR a `banda` é **0** (sem zona morta) e o zigzag não trava. O nosso `calcular` tinha a barra inteira debaixo de `if (ma !== null && atr !== null)`: ficava `sig=0` nas primeiras `atr_len − 1` barras onde o gráfico **já tinha lado** | o confronto com a transcrição do Pine, pedido pelo dono: **13 barras de 505** com `sig` diferente (as #1..#13) e **5** com a `virada` diferente (#1, #9, #10, #11, #14) — a virada que o Pine marca na #1 saía-nos na #14 | `if (ma !== null)` e o ATR exigido só onde o Pine o exige (`atr !== null && atr > 0` no travão do zigzag). Depois: **0 barras divergentes em 505** e **0 em 68 corridas** de todas as opções. Retirado também o `espelho.py` — ele **não espelhava o Pine**: copiava a estrutura do nosso TypeScript e por isso nunca podia apanhar isto |
 
 | **A12** | **A entrada acontecia sem flip.** O dono decidiu (30/09/2026): «um flip de sinal tem que fechar a ordem aberta e inverter»; «na inicialização a primeira operação só no primeiro flip»; «não pode abrir ordem no meio da perna»; «se foi fechada à mão só pode ser aberta no próximo flip». O plugin decidia pelo **lado** (`ponto.sig`), logo abria em qualquer barra em que estivesse plano e o indicador tivesse lado: no arranque (o histórico já tem lado) e depois de uma ordem fechada à mão | com as barras reais, o motor estava em `sig=-1` desde a viragem da **barra #501** e a última barra fechada (#505) tinha `virada=0` — e o plugin propunha entrada; a observação das 19:31 abriu por isso | a entrada passou a ser autorizada pela **`virada` da última barra fechada** (o triângulo), não pelo lado: `setups/sigma/plugin.ts` (`ladoDoFlip`) + bancada nova `tools/verificar-setup/sigma-casos.py` (**8 casos · 8 ok**, com as barras truncadas para que a última seja/não seja a barra do flip) e **no portão** |
@@ -159,18 +159,20 @@ decisão do dono, e a única coisa entre este sistema e uma ordem a sério.
 ```
 $ bash tools/verificar-maquina/provar.sh
 …
-provar: 33 de 33 passaram — a maquina decide o que devia, e explica o que nao fez
+provar: 32 de 32 passaram — a maquina decide o que devia, e explica o que nao fez
 ```
 
-Quatro linhas mudaram nesta vaga, e as quatro são o ponto:
+Duas linhas nasceram nesta vaga, e as duas são o ponto:
 
-* `fallbacks (ZERO exigido)` — a catraca virou exigência de zero;
-* `setups de exemplo (contrato)` — os moldes passaram a ter bancada (era o A10);
 * `Pine x motor (todas as opcoes)` — a tradução do indicador passou a ser confrontada com o Pine em todo o espaço
   dos `input` (era o A11: sem esta bancada, o motor e o gráfico discordavam nas barras de arranque e nada o dizia);
 * `sigma: entrada so' no flip (8 casos)` — a regra da entrada (a decisão do dono, A12/P8) passou a ter casos próprios.
 
-As restantes 29 são as de sempre: tabela de transições, porteiro do estado, a mesa, a máquina de estados, as
+Uma terceira nasceu e saiu dentro da mesma vaga — `setups de exemplo (contrato)`, que corria os dois moldes de
+setup: o dono mandou reter **só o `sigma`**, os moldes foram retirados, e a bancada foi com eles. A catraca dos
+fallbacks (`fallbacks (ZERO exigido)`) já existia e continua a exigir zero.
+
+As restantes 30 são as de sempre: tabela de transições, porteiro do estado, a mesa, a máquina de estados, as
 condições/o ciclo/o desfecho, o arranque (sete portas), tipos, sessão e CB, pausa e encerramento, registo,
 retenção do ledger, contenda, chaves do core, marcas sobrevivem ao reinício, porta da mesa, preparar contas,
 conector offline, envio do conector, vigia + mesa, orfandade, encerramento, verbos, contrato neutro, frescura,
@@ -256,6 +258,50 @@ corrida ou nas bancadas que o portão corre.
 > **Estado à hora desta correcção:** `HEAD 1cfe787` · `git status --short | wc -l` → **42** entradas por gravar
 > (as 34 de então cresceram) · e o `stash` daquele lote **já não existe** (foi aplicado; em `git stash list` fica só
 > o do subagente de 29/09).
+>
+> **NOTA DATADA — 30/09/2026, 20:2x (-03) — o que a arbitragem do cartão `t_00cf9896` confirmou, e o que ela muda no
+> parágrafo acima.** (Decisão do árbitro, opção 3; pedido meu, registado aqui porque é aqui que uma sessão lê.)
+>
+> 1. **A guarda passou a ter duas camadas, e o texto acima descrevia uma só.** `terminal` continua a
+>    **recusar/aprovar** (medido pelo árbitro: `git stash push` com `HERMES_KANBAN_WORKSPACE` → `block`, nomeando a
+>    sessão viva; sem a variável → `approve`). `write_file`/`patch` **não são travados — são REGISTADOS** em
+>    `~/.hermes/logs/guardiao-arvore.jsonl` com `raiz_git`, `arvore_alheia` e `trabalho_vivo`. O `matcher` é agora
+>    `terminal|write_file|patch` nos **5** homes. Conferido por mim, 30/09 20:1x: `hermes -p appbuilder hooks list`
+>    → `matcher='terminal|write_file|patch'`; `hooks doctor` → *All shell hooks look healthy*; `md5sum` do hook →
+>    `b7eacd1af58ec7a8d9c918f31e382275` (cópia pré-mudança: `.bak-escrita-20260930-2010`).
+> 2. **Recusar a escrita directa foi recusado, com contraprova:** o worker de kanban nasce com workspace `scratch`,
+>    **fora do repo** — logo «fora da minha árvore» dispararia em **todas** as escritas de um worker para o
+>    repositório, incluindo o fluxo que este próprio repo já usou. Travar ali trocaria colisão rara por bloqueio
+>    diário. O que a decisão acrescenta ao que já havia é o **número**, não a recusa.
+> 3. **Correcção de uma frase minha, com o número do árbitro:** o `patch`/`write_file` **não recusa** leitura
+>    obsoleta — emite `_warning: "... was modified since you last read it on disk ..."` **e aplica**
+>    (`"success": true`). Ele mediu **12** ocorrências em `~/Projects` (última 30/09 19:27:21, `setups/sigma/plugin.ts`).
+>    Não é «o editor avisou e as âncoras casaram»: é «o editor avisou e a escrita passou».
+> 4. **A causa-raiz que a guarda não resolve — e o remédio estrutural, que já existe.** O risco não é «outro
+>    profile»: são **duas sessões do MESMO profile na mesma árvore** (o worker de um cartão + uma sessão desktop).
+>    Medido pelo árbitro: **574 pares colidentes** (mesmo ficheiro, **sessões diferentes**, ≤1800 s) em `~/Projects`
+>    — 12 ficheiros, 16 sessões, tudo no home `appbuilder`; 2157 chamadas `patch`/`write_file` em 300 ficheiros.
+>    Remédio: **cartão criado com `project=mesacore`** deixa o worker em `<repo>/.worktrees/<task-id>` (git
+>    worktree) — não há trunk partilhado para colidir, e a classe desaparece **sem guarda nenhuma**. `MesaCore` já é
+>    projecto registado no store do `appbuilder` (`p_8fac7eec`, `primary_path=/home/cerucci/Projects/MesaCore`,
+>    `active_id` — conferido por mim no `projects.db`). Quem cria cartões cujo worker escreve neste repo **usa
+>    `project=mesacore`**; a regra ficou também na skill `field-defect-triage`.
+> 5. **Gatilho de escalada (fica dito; nada a decidir hoje):** se o registo mostrar escrita sobre ficheiro que a
+>    outra sessão mudou desde a última leitura do autor — a classe que hoje só é avisada — ou a contagem subir acima
+>    do que a casa aceita, o desenho da recusa dirigida vai ao dono **com o número à frente**. E as linhas **141, 142,
+>    145, 157-159** (e 170) do log são provas de laboratório, não escritas reais: excluir de qualquer contagem.
+>
+> **Observação desta sessão, para quem trabalha nesta árvore (não committei nem limpei nada por conta própria):** no
+> instante em que escrevi esta nota o ficheiro era **não rastreado** (`git status --short` → `??`) e a árvore tinha
+> **44** entradas por gravar (`HEAD` então `1cfe787`). Às **20:17:36** a árvore foi gravada em **`3cd4a29`**
+> (45 ficheiros, +3277/−898): medido, foi o dono que mandou («comita tudo», na sessão-irmã do desktop) — e não o
+> autor do commit, que é `DevOpsBot` para **qualquer** processo desta máquina. As duas notas desta arbitragem (esta e
+> o §7 do `ONDE_ESTAMOS`) **ficaram por gravar**: `git status --short` → ` M docs/AUDITORIA-PONTA-A-PONTA.md` e
+> ` M docs/ONDE_ESTAMOS.md`, e o diff dessas duas entradas é **só o texto desta nota** (`git diff --numstat -- docs/`;
+> não se transcreve o total aqui porque esta própria linha o mudaria). A regra
+> da casa é «trabalho longo grava-se em git» — quem grava é quem
+> trabalha nesta árvore, e esta sessão (worker de cartão, workspace `scratch`) **não** grava nem limpa nada aqui:
+> fica o estado exacto, a decisão fica com quem lá trabalha.
 >
 > *Texto original, preservado (o registo é auditável):* título «um worker alheio pôs a minha árvore em `stash`»;
 > fecho «um processo de outro perfil entrou no directório de trabalho desta sessão e guardou em `stash` trabalho por

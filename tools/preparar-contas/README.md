@@ -52,7 +52,10 @@ setup, as bandas que ele aceita — vai em `preenche_sempre`, **sem perguntar ao
 }
 ```
 
-Um exemplo completo e comentado está em `setups/exemplo-cruzamento-de-media/questionario.json`.
+Um exemplo completo e comentado está em `questionario-de-prova.json` (ao lado deste README). Ele era o
+`questionario.json` do setup de exemplo `cruzamento_de_media`, que foi retirado do repositório a pedido do dono
+(30/09/2026); o molde mudou-se para junto do ensaio que o usa, para o ensaio não depender de um setup que pode
+deixar de existir. O único setup do repositório é `setups/sigma/`.
 
 ## O script não sabe nada de nenhum venue
 

@@ -154,7 +154,7 @@ fi
 prova "6. o setup escreve uma ficha e preserva a conta"
 cat > "$CASA/respostas-setup.json" <<EOF
 {
-  "_questionario": "$RAIZ/setups/exemplo-cruzamento-de-media/questionario.json",
+  "_questionario": "$AQUI/questionario-de-prova.json",
   "conta_alvo": "conta-de-prova",
   "instrumento": "BTC",
   "versao_do_mandato": "2026-09-29-a",

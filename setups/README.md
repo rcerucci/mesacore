@@ -23,6 +23,17 @@ Regras que estes diretórios DEVEM cumprir:
 - não mandam na boleta: quem a preenche é a mesa (RN-S9);
 - variantes são **fichas** do mesmo plugin, não plugins novos (RN-S5).
 
+> **NOTA DATADA — 30/09/2026: o `sigma` é o ÚNICO setup do repositório, e é ele que manda.** A pedido do dono,
+> os dois directórios de exemplo foram **retirados** — `cruzamento_de_media/` (o molde em TypeScript e Python) e
+> `exemplo-cruzamento-de-media/` (que só tinha o `questionario.json`) —, com as fichas deles
+> (`fichas/cruzamento_de_media/`) e a bancada que os corria (`tools/verificar-setup/exemplos.sh`). O setup que
+> existe é **`setups/sigma/`**: o `sign(mid - MA) + ZZ` do Pine, com o motor em `sinal.ts`, o script do dono em
+> `pine/sign-mid-ma-zz.pine` e a regra da entrada («entrada só na barra do flip») provada em
+> `tools/verificar-setup/sigma-casos.py`. Quem escrever o PRÓXIMO setup tem, como referência viva, aquele
+> directório, este documento, e as duas bancadas do portão (`Pine x motor` e `sigma: entrada so' no flip`) —
+> que são o exemplo de como um setup se prova. **O registo dos exemplos retirados fica no histórico do git**
+> (`git show 3cd4a29^:setups/cruzamento_de_media/plugin.ts`).
+>
 > **NOTA DATADA — 29/09/2026, duas correcções medidas.** (1) O nome do setup **não admite hífen**:
 > `contracts/_defs/forma.schema.json` exige `^[a-z][a-z0-9_]{1,31}$` — o directório de exemplo que já está aqui
 > (`exemplo-cruzamento-de-media/`) **violaria o contrato do próprio repositório**. O primeiro plugin a sério
