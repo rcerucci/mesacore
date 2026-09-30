@@ -76,6 +76,32 @@ export interface EntradaDoInstrumento {
   restricoes?: { sem_margem?: boolean };
 }
 
+/**
+ * As FALHAS da leitura, ou recusa.
+ *
+ * `falhas` era opcional na entrada e o codigo fazia `?? {}` — «nao sei se houve falha» virava «nao houve falha
+ * nenhuma». Quem leu sabe-o, e declara-o; nao declarar nao pode contar como ausencia de problemas.
+ */
+function exigirFalhas(entrada: EntradaDoInstrumento, instrumento: string): Falhas {
+  if (entrada.falhas === undefined || entrada.falhas === null) {
+    throw new Error(
+      `o ciclo de ${instrumento} nao recebeu as falhas da leitura (\`falhas\`): tratar o ausente como vazio e' ` +
+        "decidir a bem de uma leitura que ninguem conferiu",
+    );
+  }
+  return entrada.falhas;
+}
+
+/** A DIVERGENCIA da leitura, ou recusa. `?? false` dizia «nao diverge» sem ninguem o ter dito. */
+function exigirDivergente(entrada: EntradaDoInstrumento, instrumento: string): boolean {
+  if (typeof entrada.divergente !== "boolean") {
+    throw new Error(
+      `o ciclo de ${instrumento} nao recebeu a divergencia da leitura (\`divergente\`): o ausente nao e' "nao divergente"`,
+    );
+  }
+  return entrada.divergente;
+}
+
 export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   const { mercado, proposta } = entrada;
   const posicao = mercado.posicao ?? null;
@@ -91,8 +117,10 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   const situacao = situacaoDoInstrumento(
     { idade_do_dado_ms: mercado.idade_do_dado_ms, estado_do_mercado: mercado.estado },
     entrada.ligacao,
-    entrada.falhas ?? {},
-    (entrada.divergente ?? false) || alheia,
+    // AS FALHAS DA LEITURA e a DIVERGENCIA: quem as sabe e' quem leu. Ausentes = recusa, nunca "nenhuma falha"
+    // nem "nao divergente" — era por ai' que uma leitura por conferir virava uma decisao.
+    exigirFalhas(entrada, String(mercado?.instrumento ?? "(sem nome)")),
+    exigirDivergente(entrada, String(mercado?.instrumento ?? "(sem nome)")) || alheia,
     entrada.config,
   );
 

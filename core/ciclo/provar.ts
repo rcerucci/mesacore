@@ -23,6 +23,15 @@ import { reconciliar, type Veredicto } from "./reconciliacao.ts";
 import { marcarDesconhecido, marcasVazias, reset, type Marcas } from "../estado/marcas.ts";
 import { motivoConhecido, RAIZ_DO_REPO } from "../livro-de-motivos.ts";
 
+/** Um valor que o caso TEM de declarar. Ausente = recusa: as bancadas declaram o que testam (nao ha omissao). */
+function exigirDeclarado<T>(v: T | undefined, oQue: string): T {
+  if (v === undefined) {
+    throw new Error(`a bancada nao declarou ${oQue}: sem isso o caso nao diz o que esta' a testar`);
+  }
+  return v;
+}
+
+
 const args = process.argv.slice(2);
 const ler = (nome: string) =>
   JSON.parse(readFileSync(join(RAIZ_DO_REPO, "core", "ciclo", nome), "utf8")) as any;
@@ -160,14 +169,14 @@ for (const caso of bateriaCiclo.casos) {
     motivo_do_contrato: entradas.motivo_do_contrato,
     ficha: caso.ficha ?? padrao.ficha,
     ciclo,
-    ligacao: caso.ligacao ?? padrao.ligacao ?? "ligada",
+    ligacao: caso.ligacao !== undefined ? caso.ligacao : exigirDeclarado(padrao.ligacao, "ligacao (padrao do ficheiro de casos)"),
+    falhas: exigirDeclarado(caso.falhas, `falhas da leitura (caso ${JSON.stringify(caso.nome ?? "?")})`),
+    divergente: exigirDeclarado(caso.divergente, `divergente (caso ${JSON.stringify(caso.nome ?? "?")})`),
     mandato: caso.mandato ?? padrao.mandato,
     template: caso.template ?? padrao.template,
     marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? padrao.marcas_nossas_conhecidas,
     config: config(caso.config ?? configDoCiclo),
     desconhecido: caso.desconhecido ?? null,
-    falhas: caso.falhas ?? {},
-    divergente: caso.divergente === true,
     banda: caso.banda ?? null,
     restricoes: caso.restricoes,
   });
@@ -242,7 +251,9 @@ for (const caso of bateriaCiclo.casos) {
       condicao: decisao.condicao,
       impedimentos: decisao.impedimentos,
       avisa: decisao.avisa,
-      ligacao: caso.ligacao ?? padrao.ligacao ?? "ligada",
+      ligacao: caso.ligacao !== undefined ? caso.ligacao : exigirDeclarado(padrao.ligacao, "ligacao (padrao do ficheiro de casos)"),
+    falhas: exigirDeclarado(caso.falhas, `falhas da leitura (caso ${JSON.stringify(caso.nome ?? "?")})`),
+    divergente: exigirDeclarado(caso.divergente, `divergente (caso ${JSON.stringify(caso.nome ?? "?")})`),
       motivo_do_contrato: decisao.motivo_do_contrato,
       desconhecido: decisao.desconhecido,
       boleta: decisao.boleta,

@@ -35,7 +35,7 @@
 // mensagem DEFEITUOSA DE PROPOSITO, para a bancada provar que o outro lado a apanha. Sem esta bandeira, cada
 // linha que sai e conferida contra o contrato antes de sair.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
@@ -175,7 +175,20 @@ function resolverFicha(casos: Casos, nome: string): Ficha {
         referencia: c?.conta?.credencial ?? "",
         valor_em: c?.conexao?.credencial?.valor_em ?? "",
       },
-      instrumentos: c?.instrumentos ?? ["BTC"],
+      // A LISTA DE PARES VEM DA FICHA, e de mais nenhum sitio. Estava a ler-se `c.instrumentos` no TOPO do
+      // ficheiro (onde nunca existe: a lista mora em `conta.instrumentos`) e a cair num `["BTC"]` escrito a mao —
+      // e foi isso que fez a conta que diz SOL operar BTC durante uma noite inteira, sem uma linha a dizê-lo.
+      // Um campo em falta NOMEIA-SE; nao se substitui por um valor por omissao (foi o que o dono apanhou).
+      instrumentos: (() => {
+        const lista = c?.conta?.instrumentos ?? c?.instrumentos;
+        if (!Array.isArray(lista) || lista.length === 0) {
+          morrer(
+            `a configuracao da conta nao declara os instrumentos (conta.instrumentos): sem pares nomeados o ` +
+              "conector leria o que o venue quisesse, e um par por omissao e' uma decisao que ninguem tomou",
+          );
+        }
+        return lista;
+      })(),
     };
   }
   const ficha = casos.fichas?.[nome];
@@ -1055,6 +1068,45 @@ async function main(): Promise<void> {
     nota: "o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)",
   });
 
+  /**
+   * OS INSTRUMENTOS QUE SE LEEM, A CADA VOLTA — e nao uma lista fixa no arranque.
+   *
+   * O pedido do dono, textual: "tem que ser automatico a inclusao de instrumento. se tivesse uma ficha de eth,
+   * o plugin ao rodar iria pedir para o conector e ele nao precisa de reinicio ou alteracao alguma para puxar o
+   * papel pedido". E' isso: a lista sai das FICHAS da conta (`fichas/<setup>/<PAR>-<conta>.json` com `run: true`)
+   * e e' relida em cada volta. Acrescentar um par passa a ser escrever uma ficha — mais nada. O conector le'
+   * dela tres coisas e so' tres: `conta` (para saber se e' desta), `instrumento` e `run`.
+   */
+  const instrumentosVivos = (): string[] => {
+    const daFicha = new Set<string>();
+    const raizDasFichas = join(dirname(new URL(import.meta.url).pathname), "..", "..", "fichas");
+    try {
+      for (const pasta of readdirSync(raizDasFichas)) {
+        const caminhoDaPasta = join(raizDasFichas, pasta);
+        if (!statSync(caminhoDaPasta).isDirectory()) continue;
+        for (const ficheiro of readdirSync(caminhoDaPasta)) {
+          if (!ficheiro.endsWith(".json")) continue;
+          try {
+            const f = JSON.parse(readFileSync(join(caminhoDaPasta, ficheiro), "utf8"));
+            const c = f?.cabecalho;
+            if (c === undefined) continue;
+            if (c.conta !== ficha.conta) continue;      // ficha de outra conta: nao e' desta
+            if (c.run !== true) continue;               // desligada: nao se le'
+            if (typeof c.instrumento === "string" && c.instrumento !== "") daFicha.add(c.instrumento);
+          } catch {
+            // ficha ilegivel: nao se adivinha. Fica de fora, e o ficheiro mau aparece na lista que nao cresce.
+          }
+        }
+      }
+    } catch {
+      // sem pasta de fichas: vale a lista da conta (o comportamento antigo), e nao se inventa nada
+    }
+    // A lista da CONTA e' o minimo (nunca se deixa de ler o que o dono declarou no mandato), e as fichas
+    // acrescentam. Uniao, ordenada — e nenhum instrumento desaparece por causa de uma ficha desligada que
+    // tambem esteja no mandato.
+    return [...new Set([...ficha.instrumentos, ...daFicha])].sort();
+  };
+
   if (aoVivo && leituraACadaMs > 0) {
     const modulo = await import("@nktkas/hyperliquid");
     const transporte = new modulo.HttpTransport({ isTestnet: ficha.venue.ambiente !== "producao" });
@@ -1064,10 +1116,11 @@ async function main(): Promise<void> {
       etapa: "leitura_de_mercado_armada",
       cada_ms: leituraACadaMs,
       instrumentos: ficha.instrumentos,
-      nota: "a conta vai como MASTER (com o endereco do agente o venue devolve vazio); nenhuma linha aqui carrega a chave (FR-023)",
+      nota: "a lista de instrumentos e' RELIDA das fichas a cada volta (nenhum reinicio para acrescentar um par); a conta vai como MASTER (com o endereco do agente o venue devolve vazio); nenhuma linha aqui carrega a chave (FR-023)",
     });
     const temporizador = setInterval(async () => {
-      for (const instrumento of ficha.instrumentos) {
+      // A lista e' RELIDA em cada volta: uma ficha nova entra sozinha, sem reinicio nem alteracao nenhuma.
+      for (const instrumento of instrumentosVivos()) {
         try {
           const r = await lerMercadoNoVenue(portaDeMercado, { conta: ficha.conta, instrumento, agora_ms: Date.now() });
           if (!r.ok) {
@@ -1075,6 +1128,13 @@ async function main(): Promise<void> {
             // ausencia (RN-D7/FR-017).
             diag({ etapa: "leitura_de_mercado", instrumento, veredicto: "recusado", motivo: r.motivo, porque: r.porque });
             continue;
+          }
+          // AS AUSENCIAS VÃO DITAS: o contrato do `mercado` e' fechado e nao tem campo para elas, mas quem
+          // escreve a operacao precisa delas para declarar as FALHAS DA LEITURA ao ciclo — e uma leitura com
+          // falhas por declarar e' uma leitura que nao se pode usar (o ciclo recusa-a). Vao no diagnostico, que
+          // e' o canal de quem le' esta ponta.
+          if (r.mercado.ausentes.length > 0) {
+            diag({ etapa: "ausentes_do_mercado", instrumento, ausentes: r.mercado.ausentes });
           }
           const linha = JSON.stringify({
             contrato: versaoVigente(),

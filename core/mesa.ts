@@ -49,6 +49,17 @@ export interface OpcoesDaMesa {
   conta?: string;
 }
 
+/** O motivo de uma sessao nova, ou recusa: uma sessao sem razao declarada e' uma sessao que ninguem explica. */
+function exigirMotivo(comando: { motivo?: string }): string {
+  if (typeof comando.motivo !== "string" || comando.motivo === "") {
+    throw new Error(
+      "`nova_sessao` sem `motivo`: a sessao e' a unidade de comparacao (RN-M3.5), e uma sessao que nao diz porque' " +
+        "comecou nao se compara com nada",
+    );
+  }
+  return comando.motivo;
+}
+
 export class Mesa {
   estado: Estado = "parada";
   private readonly caminhoDasMarcas: string;
@@ -144,7 +155,9 @@ export class Mesa {
     const pedido: PedidoDeParada = {
       inicio_ms: inicio,
       agora_ms: contexto.instante_ms,
-      prazo_de_resposta_ms: contexto.prazo_de_resposta_ms ?? 0,
+      // SEM PRAZO NAO HA «ZERO»: ha ausencia declarada, e a maquina de estados tem o motivo proprio para isso
+      // (`prazo_de_resposta_nao_declarado`). Zero seria «responde ja'» — uma decisao que ninguem tomou.
+      prazo_de_resposta_ms: contexto.prazo_de_resposta_ms,
       resposta,
     };
     const anterior = this.estado;
@@ -281,7 +294,7 @@ export class Mesa {
           instante_ms: contexto.instante_ms,
           equity_de_partida: partida.equity_de_partida,
           autor: comando.autor,
-          motivo: comando.motivo ?? "",
+          motivo: exigirMotivo(comando),
           configuracao_em_vigor: partida.configuracao_em_vigor,
         });
         marcas_mod.gravarMarcas(resultado.marcas, this.caminhoDasMarcas);
@@ -304,7 +317,16 @@ export class Mesa {
         this.estado,
         comando.verbo,
         comando.autor,
-        resposta.motivo ?? "(sem motivo)",
+        (() => {
+          // UMA RECUSA SEM MOTIVO E' UM DEFEITO DA PROPRIA MESA, e grita. O que estava aqui era `?? "(sem motivo)"`:
+          // uma frase inventada no registo, a passar por razao.
+          if (resposta.motivo === undefined || resposta.motivo === null) {
+            throw new Error(
+              `a mesa recusou o verbo \`${comando.verbo}\` sem dizer porque': o registo nao pode guardar uma recusa muda`,
+            );
+          }
+          return resposta.motivo;
+        })(),
         resposta.nota,
         this.caminhoDoRegisto,
         this.conta,

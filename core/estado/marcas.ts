@@ -70,8 +70,26 @@ export function lerMarcas(caminho: string = CAMINHO_DAS_MARCAS): Marcas {
   return {
     sessao: cru.sessao ?? null,
     inibicao_cb: cru.inibicao_cb ?? null,
-    desconhecido: cru.desconhecido ?? [],
-    pedidos: cru.pedidos ?? [],
+    // UM LIVRO DE MARCAS INCOMPLETO E' UM LIVRO CORROMPIDO. `?? []` esquecia as marcas em silencio: a posicao
+    // nossa passava a alheia e a mesa deixava de gerir o que era dela.
+    desconhecido: (() => {
+      if (!Array.isArray(cru.desconhecido)) {
+        throw new Error(
+          `o livro de marcas (${caminho}) nao declara \`desconhecido\`: ler isto como lista vazia e' esquecer as ` +
+            "decisoes que ficaram por tomar",
+        );
+      }
+      return cru.desconhecido;
+    })(),
+    pedidos: (() => {
+      if (!Array.isArray(cru.pedidos)) {
+        throw new Error(
+          `o livro de marcas (${caminho}) nao declara \`pedidos\`: ler isto como lista vazia e' esquecer os ` +
+            "pedidos ja' feitos ao dono",
+        );
+      }
+      return cru.pedidos;
+    })(),
   };
 }
 

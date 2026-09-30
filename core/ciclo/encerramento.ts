@@ -65,7 +65,8 @@ const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 export interface CargaDaPergunta {
   pedido_id: string;
   opcoes: string[];
-  prazo_de_resposta_ms: number;
+  /** Ausente = o dono nao declarou prazo. NAO e' zero: zero seria «responde ja'», decisao de ninguem. */
+  prazo_de_resposta_ms?: number;
   aviso_de_manter: string;
   numeros: NumerosDaCorretora;
 }
@@ -112,7 +113,8 @@ export interface PedidoDeParada {
   inicio_ms: number;
   agora_ms: number;
   /** O prazo declarado (`setup.prazo_de_resposta_ms`): em setup manual e prazo humano. */
-  prazo_de_resposta_ms: number;
+  /** Ausente = o dono nao declarou prazo. NAO e' zero: zero seria «responde ja'», decisao de ninguem. */
+  prazo_de_resposta_ms?: number;
   /** A resposta do dono, ou `null` enquanto nao chegou nenhuma. */
   resposta: "fechar_a_mercado" | "manter" | null;
 }
@@ -162,7 +164,10 @@ export function correrPedidoDeParada(
   }
 
   // Sem resposta: dentro do prazo ainda se espera; fora do prazo a mesa VOLTA A OPERAR.
-  const esperando = pedido.agora_ms - pedido.inicio_ms <= pedido.prazo_de_resposta_ms;
+  // SEM PRAZO DECLARADO NAO HA JANELA, e por isso nao se espera: a mesa segue pelo caminho que ja' tem nome
+  // (`prazo_de_resposta_nao_declarado`). O `?? 0` que aqui estava transformava a ausencia em «responde ja'».
+  const esperando =
+    pedido.prazo_de_resposta_ms !== undefined && pedido.agora_ms - pedido.inicio_ms <= pedido.prazo_de_resposta_ms;
   if (esperando) {
     return {
       estado: "encerrando",

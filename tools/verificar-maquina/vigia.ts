@@ -221,6 +221,10 @@ async function bancadaDosVerbos() {
           ficha: caso.ficha ?? padraoDoCiclo.ficha,
           template: padraoDoCiclo.template,
           marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? [],
+          // A LEITURA DECLARA O QUE NAO TROUXE E SE DIVERGIU: ausente = recusa (o ciclo nao
+          // decide a bem de uma leitura que ninguem conferiu). Bancada: o caso e' que declara.
+          falhas: caso.falhas ?? { conector: [] },
+          divergente: caso.divergente ?? false,
         },
       },
     };
@@ -399,6 +403,10 @@ async function bancadaDoEncerramento() {
         ficha: caso.ficha,
         template: padraoDoCiclo.template,
         marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? [],
+        // A LEITURA DECLARA O QUE NAO TROUXE E SE DIVERGIU: ausente = recusa (o ciclo nao
+        // decide a bem de uma leitura que ninguem conferiu). Bancada: o caso e' que declara.
+        falhas: caso.falhas ?? { conector: [] },
+        divergente: caso.divergente ?? false,
       },
     },
   });
@@ -571,6 +579,10 @@ async function bancadaDaOrfandade() {
         ficha: casoDoCiclo.ficha ?? declaradoDoCiclo.padrao.ficha,
         template: casoDoCiclo.template ?? declaradoDoCiclo.padrao.template,
         marcas_nossas_conhecidas: casoDoCiclo.marcas_nossas_conhecidas ?? declaradoDoCiclo.padrao.marcas_nossas_conhecidas,
+        // A LEITURA DECLARA O QUE NAO TROUXE E SE DIVERGIU: ausente = recusa (o ciclo nao
+        // decide a bem de uma leitura que ninguem conferiu). Bancada: o caso e' que declara.
+        falhas: casoDoCiclo.falhas ?? { conector: [] },
+        divergente: casoDoCiclo.divergente ?? false,
       },
     },
   };

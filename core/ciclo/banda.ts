@@ -237,7 +237,15 @@ function limites(banda?: { minimo?: string; maximo?: string }): { minimo: Dec | 
  * `nao_conferidas` - e o veredicto, quando nenhuma se pode fazer, e `nao_conferivel` (nunca `dentro`).
  */
 export function conferirBanda(entrada: EntradaDaConferencia): ConferenciaDaBanda {
-  const r = (entrada.resolucao ?? {}) as Record<string, unknown>;
+  if (entrada.resolucao === undefined || entrada.resolucao === null) {
+    // Uma resolucao ausente NAO e' uma resolucao vazia: comparar bandas contra nada daria "nao conferivel" em
+    // tudo — e o silencio dessa conclusao passaria por conferencia feita.
+    throw new Error(
+      "a conferencia da banda recebeu a resolucao do conector em falta: sem ela nao ha quantidades nem precos " +
+        "para comparar, e um `nao_conferivel` por ausencia esconde a ausencia",
+    );
+  }
+  const r = entrada.resolucao as Record<string, unknown>;
   const conferidas: string[] = [];
   const fora: AchadoDeBanda[] = [];
   const naoConferidas: { campo: string; porque: string }[] = [];

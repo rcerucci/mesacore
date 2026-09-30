@@ -49,7 +49,12 @@ export interface InstrumentoDaOperacao {
 export interface Operacao {
   nota?: string;
   /** O estado da ligacao reportado pelo conector (emenda 28 set 2026). */
-  ligacao?: "ligada" | "sem_ligacao";
+  /**
+   * O estado da ligacao reportado pelo conector (emenda 28 set 2026). OBRIGATORIO: `lerOperacao` recusa a
+   * operacao que o nao declare, e por isso o tipo pode — e deve — exigi-lo. Era opcional e o ciclo fazia
+   * `?? "ligada"`, ou seja: inventava uma ligacao que ninguem reportou.
+   */
+  ligacao: "ligada" | "sem_ligacao";
   instrumentos: Record<string, InstrumentoDaOperacao>;
 }
 
@@ -64,9 +69,24 @@ export function lerOperacao(caminho: string): Operacao {
         "nada, e um ciclo sobre nada e uma mesa que parece a operar e nao opera.",
     );
   }
-  const instrumentos = Object.keys(operacao?.instrumentos ?? {});
+  if (operacao.instrumentos === undefined || operacao.instrumentos === null) {
+    throw new Error(
+      `a operacao nao declara o mapa \`instrumentos\` (${caminho}): um ciclo sem instrumentos nao decide nada, e ` +
+        "tratar o mapa ausente como vazio era o mesmo que decidir sobre nada em silencio",
+    );
+  }
+  const instrumentos = Object.keys(operacao.instrumentos);
   if (instrumentos.length === 0) {
     throw new Error(`a operacao nao declara instrumento nenhum (${caminho}): um ciclo sem instrumentos nao decide nada.`);
+  }
+  // A LIGACAO: declarada ou recusa. Nao ha terceira via. `?? "ligada"` dizia que havia ligacao sem ninguem o
+  // ter dito — e o ciclo decidia como se o conector estivesse vivo.
+  if (operacao.ligacao !== "ligada" && operacao.ligacao !== "sem_ligacao") {
+    throw new Error(
+      `a operacao nao declara a \`ligacao\` (${caminho}): esperado "ligada" ou "sem_ligacao", veio ` +
+        `${JSON.stringify(operacao.ligacao)}. Assumir «ligada» por omissao e' a mesa a inventar uma ligacao que ` +
+        "ninguem reportou — e um ciclo a decidir sobre um mercado que pode nao estar la'.",
+    );
   }
   return operacao;
 }
@@ -79,7 +99,13 @@ export function lerOperacao(caminho: string): Operacao {
  * sem mandato - e o mandato e do dono (RN-A1).
  */
 export function conferirMandatos(operacao: Operacao, config: ConfiguracaoDaConta): void {
-  const fichas = (config?.fichas ?? {}) as Record<string, Partial<Mandato>>;
+  if (config?.fichas === undefined || config.fichas === null) {
+    throw new Error(
+      "a configuracao da conta nao declara `fichas`: um instrumento sem ficha e' um instrumento sem mandato " +
+        "(RN-A1) — e o mandato e' do dono. Nao se assume ficha nenhuma.",
+    );
+  }
+  const fichas = config.fichas as Record<string, Partial<Mandato>>;
   const semFicha = Object.keys(operacao.instrumentos).filter(
     (i) => typeof fichas[i]?.saldo_pct !== "string" || typeof fichas[i]?.alavancagem !== "string",
   );
@@ -132,7 +158,7 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
     if (decl.leitura === undefined || decl.leitura === null) {
       const decisao = decidirSemLeitura({
         instrumento,
-        ligacao: operacao.ligacao ?? "ligada",
+        ligacao: operacao.ligacao,
         config,
         desconhecido: marcaDesconhecida,
       });
@@ -159,10 +185,20 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       motivo_do_contrato: entradas.motivo_do_contrato,
       ficha: decl.ficha,
       ciclo,
-      ligacao: operacao.ligacao ?? "ligada",
+      ligacao: operacao.ligacao,
       mandato,
       template: decl.template,
-      marcas_nossas_conhecidas: decl.marcas_nossas_conhecidas ?? [],
+      // AS MARCAS: sem esta lista TODA a posicao passa a ser alheia (a mesa relata e nao gere), e uma posicao
+      // nossa ficaria a espera de uma decisao que ja' foi tomada. Ausente = recusa, nao = lista vazia.
+      marcas_nossas_conhecidas: (() => {
+        if (decl.marcas_nossas_conhecidas === undefined) {
+          throw new Error(
+            `a operacao nao declara as marcas de posse de ${instrumento} (\`marcas_nossas_conhecidas\`): sem elas ` +
+              "uma posicao nossa le-se como alheia, e a mesa deixa de gerir o que e' dela",
+          );
+        }
+        return decl.marcas_nossas_conhecidas;
+      })(),
       config,
       desconhecido: marcaDesconhecida,
       mesa_pausada: estado === "pausada",

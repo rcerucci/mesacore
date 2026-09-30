@@ -19,6 +19,15 @@ import { motivoConhecido } from "../../core/livro-de-motivos.ts";
 import type { ConfiguracaoDaConta } from "../../core/config/configuracao.ts";
 import { RAIZ_DO_REPO } from "./inventario-do-arranque.ts";
 
+/** Um valor que o caso TEM de declarar. Ausente = recusa: as bancadas declaram o que testam (nao ha omissao). */
+function exigirDeclarado<T>(v: T | undefined, oQue: string): T {
+  if (v === undefined) {
+    throw new Error(`a bancada nao declarou ${oQue}: sem isso o caso nao diz o que esta' a testar`);
+  }
+  return v;
+}
+
+
 const args = process.argv.slice(2);
 const bateria = JSON.parse(readFileSync(join(RAIZ_DO_REPO, "core", "ciclo", "pausa.casos.json"), "utf8")) as any;
 const padrao = bateria.padrao;

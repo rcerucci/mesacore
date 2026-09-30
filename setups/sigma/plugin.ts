@@ -19,7 +19,7 @@
 // lado — e se a leitura não trouxer a posição, este plugin NÃO ADIVINHA: propõe `hold` e di-lo em voz alta.
 // Abrir às cegas por cima de uma posição viva é empilhar, e nenhum indicador pede isso.
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
 import { calcular, type Vela, type Constantes } from "./sinal.ts";
 import { validar } from "../../contracts/esqueleto/framing.ts";
@@ -28,10 +28,36 @@ const NOME = "sigma";
 const VERSAO = "0.1.0";
 const RAIZ = join(import.meta.dir, "..", "..");
 
-const constantes = JSON.parse(process.env.CONSTANTES ?? "{}") as Constantes;
-const instrumento = process.env.INSTRUMENTO ?? "";
-const relogio = process.env.RELOGIO ?? "";
-const pastaDoMercado = process.env.PASTA_DE_MERCADO ?? "";
+/**
+ * O QUE O OPERADOR TEM DE ME DAR — ou nao se calcula nada.
+ *
+ * Isto era `process.env.X ?? ""`, e um ambiente incompleto dava um instrumento vazio, um relogio vazio e um
+ * objecto de constantes vazio: o indicador corria com `undefined` no comprimento da media e no ATR, produzia
+ * `NaN`, e o `NaN` nao estoura — decide. Um plugin que corre com o que nao lhe deram e' pior do que um plugin
+ * que nao corre: o que nao corre diz-se, o que corre mal esconde-se.
+ */
+function exigido(nome: string): string {
+  const v = process.env[nome];
+  if (v === undefined || v === "") {
+    process.stderr.write(
+      JSON.stringify({ setup: NOME, veredicto: "recusado", porque: `falta \`${nome}\` no ambiente: sem isso nao se calcula nada` }) + "\n",
+    );
+    process.exit(2);
+  }
+  return v;
+}
+const constantes = JSON.parse(exigido("CONSTANTES")) as Constantes;
+const instrumento = exigido("INSTRUMENTO");
+const relogio = exigido("RELOGIO");
+const pastaDoMercado = exigido("PASTA_DE_MERCADO");
+for (const campo of ["ma_len", "ma_tipo", "src_ma", "src_sinal", "banda_atr", "zz_atr", "atr_len"] as const) {
+  if ((constantes as unknown as Record<string, unknown>)[campo] === undefined) {
+    process.stderr.write(
+      JSON.stringify({ setup: NOME, veredicto: "recusado", porque: `a ficha do par nao declara a constante \`${campo}\`: o indicador nao corre com metade das suas regras` }) + "\n",
+    );
+    process.exit(2);
+  }
+}
 
 const queixa = (porque: string) => process.stderr.write(JSON.stringify({ setup: NOME, diagnostico: porque }) + "\n");
 const dizer: (lado: string, porque: string) => never = (lado, porque) => {
@@ -117,8 +143,50 @@ if (ponto.sig === 0) dizer("hold", "o indicador ainda nao tem lado: o preco nao 
 // indicador precisa para saber se ja' esta' do lado que ele quer.
 const doPedido = ponto.sig === 1 ? "buy" : "sell";
 const posicao = leitura.posicao;
+const tFechada = ultima.t;
+
+// ---- UMA ENTRADA POR BARRA FECHADA, e o resto do tempo em silencio ------------------------------------
+//
+// Este é o ponto que a observação de 12 h pôs a nu: a mesa propôs `abrir` 731 vezes num relógio de H1 — 731
+// barras que não existem. O indicador decide **no fecho da barra**, logo a entrada é uma por barra; repeti-la
+// a cada ciclo é a mesma decisão enviada 60 vezes por hora, e se a mão estivesse fechada seriam 60 posições.
+//
+// A regra, e porque é esta:
+//   * a posição já está do lado que o indicador quer  -> `hold` (não se mexe);
+//   * a posição está do lado OPOSTO                     -> propõe-se a viragem em TODOS os ciclos, de propósito:
+//     o fecho é `reduce_only` e o sistema fica plano; só então a abertura do lado novo é que é uma entrada nova,
+//     e essa conta uma vez. Repetir a viragem até ela se completar é o que a faz completar-se;
+//   * sem posição: propõe-se a entrada **uma vez por barra fechada** — a barra fica registada no estado do
+//     setup, e nos ciclos seguintes da mesma barra o setup **não propõe nada** (nem `hold`: nada mesmo, que o
+//     contrato distingue "não propus" de "tenho opinião"). É isto que faz o relógio da ficha mandar na ordem.
+const PASTA_DE_ESTADO = process.env.PASTA_DE_ESTADO ?? "";  // opcional de proposito: sem estado o plugin diz que nao registou a barra (e di-lo)
+const ficheiroDeEstado = PASTA_DE_ESTADO === "" ? null : join(PASTA_DE_ESTADO, `sigma-${instrumento}.json`);
+function barraJaAberta(): boolean {
+  if (ficheiroDeEstado === null || !existsSync(ficheiroDeEstado)) return false;
+  try {
+    return (JSON.parse(readFileSync(ficheiroDeEstado, "utf8")) as { ultima_barra?: number }).ultima_barra === tFechada;
+  } catch {
+    return false; // estado ilegivel conta como "nao sei se ja' abri": abre-se, e o defeito fica visivel no erro
+  }
+}
+function registarBarra(): void {
+  if (ficheiroDeEstado === null) return;
+  try {
+    mkdirSync(PASTA_DE_ESTADO, { recursive: true });
+    writeFileSync(ficheiroDeEstado, JSON.stringify({ ultima_barra: tFechada, quando: new Date().toISOString() }) + "\n");
+  } catch (e) {
+    queixa(`nao consegui registar a barra no estado (${e instanceof Error ? e.message : String(e)}) — a entrada pode repetir-se: diz-lo em vez de a esconder`);
+  }
+}
+
 if (posicao === undefined || posicao === null) {
-  dizer(doPedido, `plano, e o indicador esta' ${doPedido}: abrir (a posicao ausente na leitura e' "sem posicao", nao e' duvida)`);
+  // PLANO. Só aqui é que uma entrada nova pode acontecer — e uma vez por barra.
+  if (barraJaAberta()) {
+    queixa(`barra ${new Date(tFechada).toISOString()} ja' deu a sua entrada: nao proponho nada (o relogio da ficha e' que manda)`);
+    process.exit(0); // sem linha nenhuma no stdout: "nao propus" — que NAO e' o mesmo que `hold`
+  }
+  registarBarra();
+  dizer(doPedido, `plano, e o indicador esta' ${doPedido}: entrada da barra ${new Date(tFechada).toISOString()} (a posicao ausente e' "sem posicao", nao e' duvida)`);
 }
 if (String(posicao.lado) === doPedido) {
   dizer("hold", `ja' estou ${doPedido}: o indicador concorda com a posicao, nao ha nada a fazer`);

@@ -59,6 +59,16 @@ const voltasPedidas = Number(arg("--voltas") ?? "1");
 const pastaDoMercado = arg("--mercado") ?? null;
 const diasDeHistorico = Number(arg("--dias") ?? "30");
 const caminhoDaCredencial = join(RAIZ, "config", "contas", `${nomeDaConta}.json`);
+// O AMBIENTE da conta manda nas velas tambem: ler o livro da testnet e as barras da producao da' um `mid`
+// contra um preco que nao e' o do venue onde se opera — centimos, mas centimos contam quando a banda e' 0.25 ATR.
+const ambienteDaConta = ((): "teste" | "producao" => {
+  try {
+    const c = JSON.parse(readFileSync(caminhoDaCredencial, "utf8"));
+    return c?.conexao?.ambiente === "producao" ? "producao" : "teste";
+  } catch {
+    return "teste";
+  }
+})();
 if (!existsSync(caminhoDaCredencial)) {
   morrer(`nao existe a credencial da conta ${nomeDaConta} (${caminhoDaCredencial}): a ficha diz o NOME da conta, o ficheiro da conta guarda a chave — e a chave nao mora nas fichas`);
 }
@@ -186,7 +196,7 @@ if (pastaDoMercado !== null) {
     void 0;
     const pedido = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "mercado.ts"),
       "--velas", instrumento, "--intervalo", relogio, "--dias", String(diasDeHistorico),
-      "--ambiente", "producao", "--para-pasta", pastaDoMercado, "--actualizar"],
+      "--ambiente", ambienteDaConta, "--para-pasta", pastaDoMercado, "--actualizar"],
       { cwd: RAIZ, env: process.env, stdio: ["ignore", "ignore", "pipe"] });
     let queixa = "";
     pedido.stderr.on("data", (b) => (queixa += b.toString()));
@@ -211,6 +221,9 @@ function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup
         INSTRUMENTO: String(ficha.cabecalho.instrumento),
         RELOGIO: String(ficha.cabecalho.relogio),
         PASTA_DE_MERCADO: pastaDoMercado ?? "",
+        // O ESTADO DO SETUP: e' ele que sabe em que barra ja' entrou este par. Vive junto da operacao, e
+        // sobrevive a reinicios — se vivesse na memoria do processo, um reinicio abria outra vez na mesma barra.
+        PASTA_DE_ESTADO: join(dirname(para), "estado"),
       },
     });
     let erro: string | null = null;
@@ -257,6 +270,9 @@ function escreverOperacao(conteudo: unknown): void {
   renameSync(temporario, para);
 }
 
+// AS FALHAS DA LEITURA, por instrumento, ditas pelo conector (as `ausentes_do_mercado`). Sem isto a operacao
+// nao declara o que a leitura nao trouxe — e o ciclo, com razao, recusa decidir.
+const ausentesDoMercado = new Map<string, string[]>();
 const portasVistas: { porta: string; veredicto: string; motivo?: string | null }[] = [];
 function gravarPortas(): void {
   const falhadas = portasVistas.filter((o) => o.veredicto !== "passou" && o.veredicto !== "nao_corrida");
@@ -310,6 +326,9 @@ async function main(): Promise<void> {
           portasVistas.push({ porta: o.porta, veredicto: o.veredicto, motivo: o.motivo ?? null });
           gravarPortas();
         }
+        if (o.etapa === "ausentes_do_mercado" && typeof o.instrumento === "string") {
+          ausentesDoMercado.set(o.instrumento, Array.isArray(o.ausentes) ? o.ausentes : []);
+        }
       } catch {
         // Linha que nao e' JSON de porta: e' o RESTO do diagnostico do conector, e imprime-se. Engoli-lo foi
         // o que me deixou cego quando o conector arrancava e nao entregava leitura: o operador registava o
@@ -332,16 +351,27 @@ async function main(): Promise<void> {
       } catch {
         continue;
       }
-      if (msg?.tipo !== "mercado") continue;
+      if (msg?.tipo !== "mercado") {
+        // O conector tambem fala pelo STDOUT (as `etapa` do diagnostico), e isso nao e' leitura. Imprime-se:
+        // foi por nao o fazer que uma leitura de outro nome passou despercebida esta noite. (D-019, segunda metade.)
+        console.error(`[conector] ${linha.slice(0, 300)}`);
+        continue;
+      }
       const instrumento = String(msg.carga?.instrumento);
-      const ficha = ligadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
+      // AS FICHAS SAO RELIDAS A CADA LEITURA: uma ficha nova entra sozinha, sem reiniciar o operador (o pedido
+      // do dono: "se tivesse uma ficha de eth ... ele nao precisa de reinicio"). Uma leitura por minuto: a
+      // releitura custa um `readdir` e poupa um reinicio.
+      const agoraLigadas = lerFichasDaConta(nomeDaConta).filter(
+        (f) => f.cabecalho.run === true && (soOPar === null || f.cabecalho.instrumento === soOPar),
+      );
+      const ficha = agoraLigadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
       if (ficha === undefined) {
         // Par que o conector leu e a conta nao tem ligado: nao serve. E se isto se repetir, os pares ligados
         // que ninguem le' ficam a espera de nada — o prazo corta isso.
         inuteis += 1;
         if (inuteis >= LEITURAS_INUTEIS) {
           const instrumentos: Record<string, unknown> = {};
-          for (const f of ligadas) {
+          for (const f of agoraLigadas) {
             const nome = String(f.cabecalho.instrumento);
             instrumentos[nome] = {
               ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
@@ -388,11 +418,15 @@ async function main(): Promise<void> {
       // sobre o que está na operação — e um par ligado que desaparecesse do ficheiro era um par que a mesa
       // deixava de ver. O par sem leitura entra SEM `leitura` (sem_leitura, RN-D7), nunca com a anterior.
       const instrumentos: Record<string, unknown> = {};
-      for (const f of ligadas) {
+      for (const f of agoraLigadas) {
         const nome = String(f.cabecalho.instrumento);
         const eOGueFalou = nome === instrumento;
         instrumentos[nome] = {
           ...(eOGueFalou ? { leitura } : {}),
+          // AS FALHAS: ou o conector disse que nao houve nenhuma ausencia (mapa sem entrada = leitura completa,
+          // e o operador nao a inventa), ou vao as que ele declarou. Sem leitura, sem falhas.
+          ...(eOGueFalou ? { falhas: { conector: ausentesDoMercado.get(nome) ?? [] } } : {}),
+          ...(eOGueFalou ? { divergente: false } : {}),
           ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
           template: resolverTemplate(manifestoDe(f), f),
           parametros: f.constantes,
@@ -429,7 +463,7 @@ async function main(): Promise<void> {
       }, null, 1) + "\n");
 
       escreverOperacao({
-        nota: `escrito pelo operador · ${new Date().toISOString()} · conta ${nomeDaConta} · conector hyperliquid · setups ${[...new Set(ligadas.map((f) => `${f.setup} ${manifestoDe(f).versao}`))].join(", ")}`,
+        nota: `escrito pelo operador · ${new Date().toISOString()} · conta ${nomeDaConta} · conector hyperliquid · setups ${[...new Set(agoraLigadas.map((f) => `${f.setup} ${manifestoDe(f).versao}`))].join(", ")}`,
         ligacao: "ligada",
         instrumentos,
       });
