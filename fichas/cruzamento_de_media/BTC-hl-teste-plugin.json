@@ -1,13 +1,13 @@
 {
- "_o_que_e_isto": "A ficha de UM par NUMA conta: cabecalho padrao (quem, onde, com quanto risco, com que bandas, se esta ligado) + as constantes daquele indicador. Nome: <PAR>-<setup>.json, dentro da pasta da conta. A credencial NAO mora aqui (config/contas/<conta>.json).",
+ "_o_que_e_isto": "A ficha de UM par NUMA conta: <PAR>-<CONTA>.json, dentro da pasta do setup. O nome e' para o olho — quem manda e' o cabecalho, e a CONTA do cabecalho tem de ser a mesma do nome ou o operador recusa (senao um ficheiro renomeado passava a mentir).",
  "cabecalho": {
   "conta": "hl-teste-plugin",
   "corretora": "hyperliquid",
   "ambiente": "teste",
   "endereco": "0x<ENDERECO DA CONTA>",
-  "instrumento": "ETH",
+  "instrumento": "BTC",
   "setup": "cruzamento_de_media",
-  "relogio": "30m",
+  "relogio": "1h",
   "run": true,
   "ao_desligar": "fechar",
   "saldo_pct": "1",

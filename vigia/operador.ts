@@ -26,11 +26,14 @@
 // duas respostas à pergunta "quando é que esta decisão aconteceu?", uma delas fora do registo.
 //
 // Uso:
-//   bun run vigia/operador.ts --conta hl-real-sol --setup setups/sigma \
+//   bun run vigia/operador.ts --conta hl-real-sol \
 //        --para /tmp/operacao.json --tick 60000 --voltas 6 [--par SOL] [--mercado <pasta>] [--dias 30]
+//
+// Repare que NÃO há `--setup`: quem diz qual setup serve cada par é a ficha (`cabecalho.setup`). É assim que um
+// operador só serve setups diferentes em pares diferentes da mesma conta.
 
 import { spawn } from "node:child_process";
-import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { validar } from "../contracts/esqueleto/framing.ts";
 
@@ -49,7 +52,6 @@ function dizer(o: unknown): void {
 }
 
 const nomeDaConta = arg("--conta") ?? morrer("falta `--conta <nome da conta>` (as fichas vivem em fichas/<nome>/)");
-const pastaDoSetup = arg("--setup") ?? morrer("falta `--setup setups/<nome>`");
 const para = arg("--para") ?? morrer("falta `--para <ficheiro de operacao>`");
 const soOPar = arg("--par") ?? null; // opcional: sem ele, percorre TODAS as fichas ligadas da conta
 const tickMs = Number(arg("--tick") ?? "60000");
@@ -68,21 +70,46 @@ interface Ficha {
   cabecalho: Record<string, any>;
   constantes: Record<string, any>;
   ficheiro: string;
+  setup: string;
+  pastaDoSetup: string;
 }
+/**
+ * As fichas de uma conta: `fichas/<SETUP>/<PAR>-<CONTA>.json`.
+ *
+ * O nome é para o olho e o cabeçalho é a verdade — e é por isso que se CONFERE que os dois dizem a mesma
+ * conta: um ficheiro renomeado (ou copiado de outra conta sem lhe mudar o cabeçalho) passaria a mentir em
+ * silêncio, e é exactamente o género de mentira que não se vê no registo.
+ */
 function lerFichasDaConta(nome: string): Ficha[] {
-  const pasta = join(RAIZ, "fichas", nome);
-  if (!existsSync(pasta)) morrer(`nao existe a pasta de fichas da conta ${nome} (${pasta}): um par sem ficha nao e' operado`);
+  const raiz = join(RAIZ, "fichas");
+  if (!existsSync(raiz)) morrer(`nao existe a pasta de fichas (${raiz}): um par sem ficha nao e' operado`);
   const fichas: Ficha[] = [];
-  for (const ficheiro of readdirSync(pasta).sort()) {
-    if (!ficheiro.endsWith(".json")) continue;
-    const f = JSON.parse(readFileSync(join(pasta, ficheiro), "utf8"));
-    if (f?.cabecalho === undefined || f?.constantes === undefined) {
-      morrer(`${pasta}/${ficheiro} nao tem cabecalho e constantes: um ficheiro por par, com o cabecalho padrao primeiro`);
+  for (const pasta of readdirSync(raiz).sort()) {
+    const caminhoDaPasta = join(raiz, pasta);
+    if (!statSync(caminhoDaPasta).isDirectory()) continue;
+    for (const ficheiro of readdirSync(caminhoDaPasta).sort()) {
+      if (!ficheiro.endsWith(".json")) continue;
+      const f = JSON.parse(readFileSync(join(caminhoDaPasta, ficheiro), "utf8"));
+      if (f?.cabecalho === undefined || f?.constantes === undefined) {
+        morrer(`${pasta}/${ficheiro} nao tem cabecalho e constantes: um ficheiro por par, com o cabecalho padrao primeiro`);
+      }
+      for (const campo of ["conta", "instrumento", "relogio", "run", "setup"] as const) {
+        if (f.cabecalho[campo] === undefined) morrer(`${pasta}/${ficheiro} nao declara \`${campo}\` no cabecalho`);
+      }
+      if (f.cabecalho.conta !== nome) continue;   // ficha de outra conta: nao e' desta corrida
+      const esperado = `${f.cabecalho.instrumento}-${f.cabecalho.conta}.json`;
+      if (ficheiro !== esperado) {
+        morrer(`${pasta}/${ficheiro}: o nome nao bate com o cabecalho (esperado \`${esperado}\`). O nome e' para o olho, o cabecalho e' a verdade, e um ficheiro renomeado mentiria em silencio`);
+      }
+      if (f.cabecalho.setup !== pasta) {
+        morrer(`${pasta}/${ficheiro}: o cabecalho diz \`setup: ${f.cabecalho.setup}\` e a pasta diz \`${pasta}\`: um dos dois mente`);
+      }
+      const pastaDoSetup = join("setups", String(f.cabecalho.setup));
+      if (!existsSync(join(RAIZ, pastaDoSetup, "setup.json"))) {
+        morrer(`${pasta}/${ficheiro}: o setup \`${f.cabecalho.setup}\` nao existe em ${pastaDoSetup}/setup.json`);
+      }
+      fichas.push({ cabecalho: f.cabecalho, constantes: f.constantes, ficheiro: `${pasta}/${ficheiro}`, setup: String(f.cabecalho.setup), pastaDoSetup });
     }
-    for (const campo of ["instrumento", "relogio", "run", "setup"] as const) {
-      if (f.cabecalho[campo] === undefined) morrer(`${pasta}/${ficheiro} nao declara \`${campo}\` no cabecalho`);
-    }
-    fichas.push({ cabecalho: f.cabecalho, constantes: f.constantes, ficheiro });
   }
   return fichas;
 }
@@ -92,6 +119,7 @@ const ligadas = todas.filter((f) => f.cabecalho.run === true && (soOPar === null
 dizer({
   etapa: "operador", conta: nomeDaConta, fichas: todas.length,
   ligadas: ligadas.map((f) => `${f.cabecalho.instrumento}-${f.cabecalho.setup} (${f.cabecalho.relogio})`),
+  setups: [...new Set(ligadas.map((f) => f.setup))],
   desligadas: todas.filter((f) => f.cabecalho.run !== true).map((f) => f.ficheiro),
 });
 if (ligadas.length === 0) {
@@ -120,7 +148,13 @@ function lerManifestoDoSetup(pasta: string): ManifestoDoSetup {
   if (!Array.isArray(m.comando) || m.comando.length === 0) morrer(`\`comando\` de ${pasta} tem de ser um argv nao vazio`);
   return m;
 }
-const manifesto = lerManifestoDoSetup(pastaDoSetup);
+// Um manifesto POR SETUP, carregado à medida (a conta pode correr setups diferentes em pares diferentes).
+const manifestos = new Map<string, ManifestoDoSetup>();
+function manifestoDe(f: Ficha): ManifestoDoSetup {
+  let m = manifestos.get(f.setup);
+  if (m === undefined) { m = lerManifestoDoSetup(f.pastaDoSetup); manifestos.set(f.setup, m); }
+  return m;
+}
 
 // ---------------------------------------------------------------------------------------------------------
 // AS VELAS — pedidas no RELÓGIO DA FICHA. Uma actualização por (instrumento, relógio).
@@ -129,6 +163,7 @@ if (pastaDoMercado !== null) {
   for (const f of ligadas) {
     const relogio = String(f.cabecalho.relogio);
     const instrumento = String(f.cabecalho.instrumento);
+    void 0;
     const pedido = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "mercado.ts"),
       "--velas", instrumento, "--intervalo", relogio, "--dias", String(diasDeHistorico),
       "--ambiente", "producao", "--para-pasta", pastaDoMercado, "--actualizar"],
@@ -145,11 +180,11 @@ if (pastaDoMercado !== null) {
 // ---------------------------------------------------------------------------------------------------------
 // O SETUP: um processo por CHAMADA. Recebe a leitura no stdin, devolve a `proposta` no stdout.
 
-function correrSetup(leitura: unknown, ficha: Ficha): Promise<{ proposta: unknown | null; erro: string | null }> {
+function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup): Promise<{ proposta: unknown | null; erro: string | null }> {
   return new Promise((resolve) => {
     // As CONSTANTES e o relógio do par — e mais nada da ficha. O risco não passa por aqui (RN-M4.1).
     const p = spawn(manifesto.comando[0]!, manifesto.comando.slice(1), {
-      cwd: join(RAIZ, pastaDoSetup),
+      cwd: join(RAIZ, ficha.pastaDoSetup),
       env: {
         ...process.env,
         CONSTANTES: JSON.stringify(ficha.constantes),
@@ -235,7 +270,7 @@ async function main(): Promise<void> {
     } catch {
       // o processo ja' nao existe: nada a fazer, e nao se inventa um erro
     }
-    dizer({ etapa: "operador", veredicto: "fim", voltas, operacao: para, setup: `${manifesto.nome} ${manifesto.versao} (${manifesto.linguagem})` });
+    dizer({ etapa: "operador", veredicto: "fim", voltas, operacao: para, setups: [...new Set(ligadas.map((f) => `${f.setup} ${manifestoDe(f).versao} (${manifestoDe(f).linguagem})`))] });
     process.exit(0);
   };
 
@@ -291,7 +326,8 @@ async function main(): Promise<void> {
         if (doVenue[campo] !== undefined) leitura[campo] = doVenue[campo];
       }
 
-      const { proposta, erro } = await correrSetup(msg, ficha);
+      const manifestoDaFicha = manifestoDe(ficha);
+      const { proposta, erro } = await correrSetup(msg, ficha, manifestoDaFicha);
 
       // A OPERAÇÃO LEVA TODAS AS FICHAS LIGADAS, e não só a que falou nesta volta: a mesa decide, por ciclo,
       // sobre o que está na operação — e um par ligado que desaparecesse do ficheiro era um par que a mesa
@@ -302,8 +338,8 @@ async function main(): Promise<void> {
         const eOGueFalou = nome === instrumento;
         instrumentos[nome] = {
           ...(eOGueFalou ? { leitura } : {}),
-          ficha: `${String(f.cabecalho.setup)}_v${String(manifesto.versao).split(".")[0]}`,
-          template: manifesto.template ?? {},
+          ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
+          template: manifestoDe(f).template ?? {},
           parametros: f.constantes,
           // À mesa vai a parte operacional do cabeçalho; ao setup foi só `constantes` (RN-M4.1).
           risco: {
@@ -324,7 +360,7 @@ async function main(): Promise<void> {
           saldo_pct: f.cabecalho.saldo_pct,
           alavancagem: f.cabecalho.alavancagem,
           bandas: f.cabecalho.bandas,
-          versao_do_mandato: `${f.cabecalho.setup}_v${String(manifesto.versao).split(".")[0]}`,
+          versao_do_mandato: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
           setup: { prazo_de_resposta_ms: f.cabecalho.prazo_de_resposta_ms },
         };
       }
@@ -338,7 +374,7 @@ async function main(): Promise<void> {
       }, null, 1) + "\n");
 
       escreverOperacao({
-        nota: `escrito pelo operador · ${new Date().toISOString()} · conta ${nomeDaConta} · conector hyperliquid · setup ${manifesto.nome} ${manifesto.versao}`,
+        nota: `escrito pelo operador · ${new Date().toISOString()} · conta ${nomeDaConta} · conector hyperliquid · setups ${[...new Set(ligadas.map((f) => `${f.setup} ${manifestoDe(f).versao}`))].join(", ")}`,
         ligacao: "ligada",
         instrumentos,
       });
