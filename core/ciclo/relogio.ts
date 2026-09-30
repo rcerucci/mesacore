@@ -269,6 +269,7 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
     // ENTROU: guarda-se a barra. E' isto que faz a segunda proposta na mesma barra virar `nada` com motivo.
     if (decisao.acao === "abrir") barraDaUltimaEntrada.set(instrumento, barraAtual);
 
+
     registarCiclo(
       instante_ms,
       instrumento,
@@ -276,6 +277,10 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       decisao.motivo,
       `ciclo ${ciclo}, condicao ${decisao.condicao}${decisao.boleta ? ", com boleta" : ""}`,
       fontes.caminhoDoRegisto,
+      // A BOLETA VAI DENTRO DA LINHA DA DECISAO: ela e' o detalhe daquela decisao, nao um acontecimento
+      // separado. E' daqui que a mao (mesa -> conector) a vai tirar quando fechar.
+      undefined,
+      decisao.boleta ?? undefined,
     );
     acoes[instrumento] = decisao.acao;
     motivos[instrumento] = decisao.motivo;

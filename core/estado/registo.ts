@@ -20,6 +20,8 @@ export const CAMINHO_DO_REGISTO = join(import.meta.dir, ".registo.jsonl");
 export const TIPOS_DA_MESA = ["transicao", "recusa", "ciclo", "marca"] as const;
 export type TipoDaLinha = (typeof TIPOS_DA_MESA)[number];
 
+import type { PedidoDeBoleta } from "../ciclo/decisao.ts";
+
 export interface LinhaDoRegisto {
   instante_ms: number;
   tipo: TipoDaLinha;
@@ -32,6 +34,12 @@ export interface LinhaDoRegisto {
    * perda maxima (CB), a sessao e a reconciliacao NAO sao atribuiveis (ver D-004).
    */
   conta?: string;
+  /**
+   * Em `boleta`: A BOLETA QUE A MESA COMPOS, tal e qual. Vive aqui porque a mao (mesa -> conector) a vai ler
+   * daqui para a entregar, e porque uma decisao de abrir sem a boleta a' vista e' uma decisao que ninguem pode
+   * conferir depois. Sem ela o registo diz QUE se decidiu, e nao O QUE teria saido.
+   */
+  boleta?: PedidoDeBoleta;
   /**
    * Em `ciclo`: o que a mesa decidiu fazer (`abrir|fechar|adoptar|nada`).
    *
@@ -80,6 +88,7 @@ export function registarTransicao(
   nota: string,
   caminho?: string,
   conta?: string,
+  boleta?: PedidoDeBoleta,
 ): void {
   registar({ instante_ms, tipo: "transicao", conta, de, para, verbo, autor, motivo, nota }, caminho);
 }
@@ -94,6 +103,7 @@ export function registarRecusa(
   nota: string,
   caminho?: string,
   conta?: string,
+  boleta?: PedidoDeBoleta,
 ): void {
   registar({ instante_ms, tipo: "recusa", conta, de, verbo, autor, motivo, nota }, caminho);
 }
@@ -107,6 +117,7 @@ export function registarCiclo(
   nota: string,
   caminho?: string,
   conta?: string,
+  boleta?: PedidoDeBoleta,
 ): void {
   if (acao === "nada" && !motivo) {
     // A linha mais perigosa do registo: a mesa nao fez, e nao diz porque. SC-011 conta estas.
@@ -115,7 +126,7 @@ export function registarCiclo(
         "quem le o registo nao distingue 'nao havia nada a fazer' de 'havia e a mesa nao fez'.",
     );
   }
-  registar({ instante_ms, tipo: "ciclo", conta, instrumento, acao, motivo, nota }, caminho);
+  registar({ instante_ms, tipo: "ciclo", conta, instrumento, acao, motivo, nota, boleta }, caminho);
 }
 
 /** Le as linhas do registo. Ficheiro ausente = nenhuma linha (e nao um erro). */
