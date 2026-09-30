@@ -300,12 +300,16 @@ const lidas = lerOrdensVivas(bruto.ordens, pedido.instrumento);
   if (bid === undefined) ausentes.push("mercado.bid (o lado das compras do livro veio vazio)");
   if (ask === undefined) ausentes.push("mercado.ask (o lado das vendas do livro veio vazio)");
 
+  // AS ORDENS VIVAS DA CONTA, neste instrumento (contrato 1.9.0): OBRIGATORIAS e SEMPRE — a conta pode estar
+  // plana e ter ordens vivas (ou nenhuma), e a lista vazia diz "perguntei e nao ha' nenhuma". Estavam dentro do
+  // `if (posicao !== undefined)` e a conta de teste, por estar PLANA, fazia sair um mercado sem elas: medido na
+  // primeira corrida ao vivo depois da emenda, e recusado pelo contrato — que e' o que tinha de acontecer.
+  carga.ordens_abertas = ordensAbertas;
+
   if (posicao !== undefined) {
     // A marca de posse NAO vem na leitura da conta: o venue guarda-a no `cloid` da ordem, e o mapa
     // marca -> ficha (RN-T16.1) e' item por fazer. Sem ela, a posicao vai declarada e sem dono — e isso e'
     // a informacao que a mesa precisa para NAO a gerir.
-    // AS ORDENS VIVAS DA CONTA, neste instrumento (contrato 1.9.0): obrigatorias, e a lista vazia diz "nao ha' nenhuma".
-    carga.ordens_abertas = ordensAbertas;
     carga.posicao = {
       lado: posicao.lado,
       unidades: posicao.unidades,
