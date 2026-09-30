@@ -27,6 +27,7 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 | A **fronteira** vigia ↔ mesa (motivos) | `uv run python tools/verificar-contrato/py/fronteira.py --motivos` | **0 falhas** — livro **50** motivos · **26** cruzam · 24 ficam · **1** excepção da porta |
 | A **retenção do ledger** (RN-L6, leitor novo) | `bun run core/estado/retencao.prova.ts` | **14 casos · 7 declarações aceites · 7 recusadas · 0 divergentes** |
 | A **conta na linha do registo** (D-004, fechado hoje) | `bun run tools/verificar-maquina/registo.ts` | **12 verificações · 0 divergentes** — duas contas, reconstrução **por conta**, e a troca como controle |
+| **A porta do MERCADO** (velas + livro, para as features e para o estudo) | `bun run brokers/hyperliquid/mercado.ts --velas BTC --intervalo 1h --dias 7` · `--livro BTC` · `--intervalos` | **169 velas** de BTC 1h (7 dias) lidas na TESTE e na producao · livro **20/20 niveis** (o manifesto declara 20) · **14 intervalos** medidos na fonte do SDK · CSV para estudo: **73 velas** |
 | O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **40** · leitura 14 · histórico **26** |
 | **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** — **dentro da porta única desde hoje** (antes só corria à mão) |
 | **A bateria de TESTE do venue** (SC-004, a que envia) | `bun tools/testar-venue/bateria.ts --ate 8 --registar` | **21 provas · 20 passaram · 1 reprovou** — e é **D-009** (a idempotência). O **D-010** (a alavancagem nunca era pedida ao venue) foi **fechado nesta vaga**: o conector pede-a (`updateLeverage`) e confirma-a pela leitura antes de a resolução sair — medido ao vivo, o venue passou de 40 para os 2 que a boleta pede. O **D-011** (a boleta pedia stop e o stop não saía) foi fechado na varredura do vocabulário — passou a **recusa nomeada**, e deixou de ser silêncio. A varredura cobre os **15 valores** que um setup pode usar (6 aceites, 9 recusas nomeadas) e está em `specs/004-conector-hyperliquid/relatorios/cobertura-do-vocabulario.md`; dela saíram ainda **D-012** (o `limite` inalcançável) e **D-013** (o lado oposto à nossa posição não é distinguido de «abrir»). Corre contra a TESTNET e move dinheiro: **não** entra no `provar.sh` |
@@ -37,6 +38,13 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 
 ## 3. O que NÃO existe (e não é «espera» — é falta)
 
+> **NOTA DATADA — 29/09/2026 (a porta do mercado existe; a LIGAÇÃO ainda não).** O `brokers/hyperliquid/mercado.ts`
+> dá as velas e o livro, com prova (`169 velas`, `20/20 níveis`, CSV para estudo). O que **não** existe é quem
+> **escreva o ficheiro de operação** a cada volta — e é por ele que a leitura chega ao ciclo e o setup calcula as
+> suas features. Medido: o vigia escreve só o ficheiro das portas, o servidor não escreve nada, e o único produtor
+> do ficheiro de operação é a bancada (`tools/verificar-maquina/vigia.ts`). Por isso o setup **ainda não tem dados
+> de mercado em operação**, apesar de a porta existir. Cartão aberto com o desenho e o critério de aceite.
+>
 > **NOTA DATADA — 29/09/2026**: duas linhas desta secção caíram por medição. (a) O **registador
 > automático** da bateria existe: a Bateria de Teste do Venue escreve
 > `specs/004-conector-hyperliquid/relatorios/registos-do-venue/<versão>-teste.txt` sozinha. (b) O **envio ao vivo** existe e foi
