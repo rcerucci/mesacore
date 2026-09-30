@@ -17,7 +17,7 @@
 // "proposta inválida", que a mesa registra como inválida).
 
 import { readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, isAbsolute } from "node:path";
 
 const RAIZ = join(dirname(import.meta.dir), "..");
 const manifesto = JSON.parse(readFileSync(join(import.meta.dir, "setup.json"), "utf8")) as {
@@ -56,7 +56,7 @@ function lerVelas(): any[] {
   // a pasta e o nome do ficheiro saem do RELOGIO da ficha: velas-<instrumento>-<janela>.jsonl
   const pasta = process.env.PASTA_DE_MERCADO ?? "";
   if (pasta === "") return [];
-  const caminho = join(RAIZ, pasta, `velas-${process.env.INSTRUMENTO ?? "BTC"}-${janela}.jsonl`);
+  const caminho = join(isAbsolute(pasta) ? pasta : join(RAIZ, pasta), `velas-${process.env.INSTRUMENTO ?? "BTC"}-${janela}.jsonl`);
   if (!existsSync(caminho)) return [];
   return readFileSync(caminho, "utf8")
     .split("\n")

@@ -26,7 +26,8 @@ for linha in sys.stdin.read().split("\n"):
 pasta = os.environ.get("PASTA_DE_MERCADO", "")
 velas = []
 if pasta:
-    caminho = RAIZ / pasta / f"velas-{os.environ.get('INSTRUMENTO','BTC')}-{janela}.jsonl"
+    base = Path(pasta) if os.path.isabs(pasta) else RAIZ / pasta
+    caminho = base / f"velas-{os.environ.get('INSTRUMENTO','BTC')}-{janela}.jsonl"
     if caminho.exists():
         velas = [json.loads(l) for l in caminho.read_text().split("\n") if l.strip()]
 

@@ -56,6 +56,11 @@ import {
 } from "./sonda.ts";
 import { portaDoCliente as portaDeContaDoCliente, type ClienteDeConta } from "./leitura.ts";
 import {
+  lerMercadoNoVenue,
+  portaDoCliente as portaDeMercadoDoCliente,
+  type ClienteDaLeituraDeMercado,
+} from "./leitura-do-mercado.ts";
+import {
   portaDoCliente as portaDeHistoricoDoCliente,
   type ClienteDeHistorico,
 } from "./historico.ts";
@@ -1024,6 +1029,10 @@ async function main(): Promise<void> {
   const ficha = resolverFicha(casos, nomeDaFicha);
   const soSonda = bandeira("--so-sonda");
   const aoVivo = bandeira("--ao-vivo");
+  // A LEITURA AO VIVO, EM CICLO — o pedaco que faltava para a mesa ter mercado em operacao. O produtor desta
+  // mensagem (`leitura-do-mercado.ts`) existia e estava provado, e nao tinha UM chamador: em operacao ninguem
+  // produzia `mercado`, e o operador esperava por uma leitura que ninguem emitia. (D-020.)
+  const leituraACadaMs = argumento("--leitura-a-cada") !== undefined ? Number(argumento("--leitura-a-cada")) : 0;
 
   const porta: Porta = aoVivo
     ? await portaAoVivo(ficha)
@@ -1045,6 +1054,50 @@ async function main(): Promise<void> {
     contrato_da_ficha: ficha.contrato,
     nota: "o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)",
   });
+
+  if (aoVivo && leituraACadaMs > 0) {
+    const modulo = await import("@nktkas/hyperliquid");
+    const transporte = new modulo.HttpTransport({ isTestnet: ficha.venue.ambiente !== "producao" });
+    const info = new modulo.InfoClient({ transport: transporte });
+    const portaDeMercado = portaDeMercadoDoCliente(info as unknown as ClienteDaLeituraDeMercado);
+    diag({
+      etapa: "leitura_de_mercado_armada",
+      cada_ms: leituraACadaMs,
+      instrumentos: ficha.instrumentos,
+      nota: "a conta vai como MASTER (com o endereco do agente o venue devolve vazio); nenhuma linha aqui carrega a chave (FR-023)",
+    });
+    const temporizador = setInterval(async () => {
+      for (const instrumento of ficha.instrumentos) {
+        try {
+          const r = await lerMercadoNoVenue(portaDeMercado, { conta: ficha.conta, instrumento, agora_ms: Date.now() });
+          if (!r.ok) {
+            // Uma leitura que nao se faz NAO vira uma leitura velha: diz-se, e quem le decide o que faz com a
+            // ausencia (RN-D7/FR-017).
+            diag({ etapa: "leitura_de_mercado", instrumento, veredicto: "recusado", motivo: r.motivo, porque: r.porque });
+            continue;
+          }
+          const linha = JSON.stringify({
+            contrato: versaoVigente(),
+            tipo: "mercado",
+            id: `mercado-${instrumento}-${Date.now()}`,
+            carga: r.mercado.carga,
+          });
+          const veredicto = validar(linha);
+          if (veredicto.veredicto !== "aceite") {
+            diag({
+              etapa: "leitura_de_mercado", instrumento, veredicto: "nao_publicada", motivo: veredicto.motivo ?? null,
+              porque: "a leitura nao passou o contrato: nao se publica uma mensagem que o contrato recusa",
+            });
+            continue;
+          }
+          console.log(linha);
+        } catch (e) {
+          diag({ etapa: "leitura_de_mercado", instrumento, veredicto: "rebentou", porque: e instanceof Error ? e.message : String(e) });
+        }
+      }
+    }, leituraACadaMs);
+    temporizador.unref();
+  }
 
   await servir({
     casos,

@@ -201,3 +201,23 @@ Diga-me se gravo, e o repositório fica com a vaga inteira num commit.
 > `contracts/gerado` limpo.
 
 Não faço o envio sem a sua palavra: mexe em ordens na sua conta.
+
+---
+
+## EM CURSO — 30/09/2026, 02:55: o sistema em OBSERVAÇÃO na conta de teste
+
+Corre (persistente, sobrevive ao fim da sessão):
+
+* `tools/operar-em-observacao.sh hl-teste-plugin` — o OPERADOR (le as fichas ligadas, puxa as velas no relogio
+  de cada uma, arranca o conector ao vivo, corre o SETUP `sigma` e escreve a operacao);
+* a MESA (`core/servidor.ts --tick 60000`), a decidir cada volta, com `start` dado e as portas conferidas;
+* o CONECTOR (`--ao-vivo --leitura-a-cada 60000`), que agora PRODUZ a leitura de mercado em ciclo (era o D-020).
+
+Ficheiros: `<dir>/operador.log`, `<dir>/mesa.log`, `<dir>/operacao.json`, `<dir>/registo.jsonl`,
+`<dir>/operacao-em-observacao.pid` — com `<dir>=~/.hermes/profiles/appbuilder/cache/scratch/observacao`.
+
+**O QUE ISTO NAO FAZ, e e' a primeira coisa a ler:** nenhuma ordem sai para o venue. A decisao e' tomada e
+registada, e a boleta nao e' enviada — o caminho mesa -> conector (a mao que aperta o gatilho) ainda nao esta
+fechado, e um gatilho a meio nao se improvisa (P16: uma ordem de ~400x o equity encheu na testnet).
+
+Parar: `kill $(cat <dir>/operacao-em-observacao.pid)` e, se sobrar, matar os filhos por nome.

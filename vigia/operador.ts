@@ -148,6 +148,26 @@ function lerManifestoDoSetup(pasta: string): ManifestoDoSetup {
   if (!Array.isArray(m.comando) || m.comando.length === 0) morrer(`\`comando\` de ${pasta} tem de ser um argv nao vazio`);
   return m;
 }
+/**
+ * O TEMPLATE TEM DUAS CARAS, e confundi-las custou uma recusa (medida: a mesa recebeu
+ * `tipo: {tipo:"escolha", opcoes:["mercado"], omissao:"mercado"}` e o contrato recusou com
+ * `parcial_nao_declarada`). O `template` do `setup.json` e' o que se PUBLICA (o descritor de cada item, para o
+ * questionario e a tela); o que a MESA consome sao os VALORES. Aqui resolvem-se: o valor e' a omissao declarada,
+ * e a ficha do par pode troca-lo pelas suas constantes.
+ */
+function resolverTemplate(manifesto: ManifestoDoSetup, ficha: Ficha): Record<string, unknown> {
+  const valores: Record<string, unknown> = {};
+  for (const [campo, descritor] of Object.entries(manifesto.template ?? {})) {
+    const d = descritor as Record<string, unknown> | null;
+    const chave = campo.replace(/^constantes\./, "");
+    const daFicha = (ficha.constantes as Record<string, unknown>)[chave];
+    if (daFicha !== undefined) valores[campo] = daFicha;
+    else if (d !== null && typeof d === "object" && "omissao" in d) valores[campo] = d.omissao;
+    else valores[campo] = descritor;
+  }
+  return valores;
+}
+
 // Um manifesto POR SETUP, carregado à medida (a conta pode correr setups diferentes em pares diferentes).
 const manifestos = new Map<string, ManifestoDoSetup>();
 function manifestoDe(f: Ficha): ManifestoDoSetup {
@@ -325,7 +345,7 @@ async function main(): Promise<void> {
             const nome = String(f.cabecalho.instrumento);
             instrumentos[nome] = {
               ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
-              template: manifestoDe(f).template ?? {},
+              template: resolverTemplate(manifestoDe(f), f),
               parametros: f.constantes,
               risco: { saldo_pct: f.cabecalho.saldo_pct, alavancagem: f.cabecalho.alavancagem, bandas: f.cabecalho.bandas, prazo_de_resposta_ms: f.cabecalho.prazo_de_resposta_ms },
               erro_do_setup: `prazo esgotado: ${inuteis} leituras seguidas sem nenhuma para este par (o conector le outros instrumentos?)`,
@@ -374,7 +394,7 @@ async function main(): Promise<void> {
         instrumentos[nome] = {
           ...(eOGueFalou ? { leitura } : {}),
           ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
-          template: manifestoDe(f).template ?? {},
+          template: resolverTemplate(manifestoDe(f), f),
           parametros: f.constantes,
           // À mesa vai a parte operacional do cabeçalho; ao setup foi só `constantes` (RN-M4.1).
           risco: {

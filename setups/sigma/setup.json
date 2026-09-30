@@ -7,7 +7,7 @@
   "run",
   "plugin.ts"
  ],
- "nota": "O `sign(mid - MA) + ZZ` do Pine, automatico. A conta esta' em `sinal.ts` (funcao pura, rebobinavel); este manifesto diz o que o setup publica e o que ele NAO usa.",
+ "nota": "O `sign(mid - MA) + ZZ` do Pine, automatico. A conta esta' em `sinal.ts` (funcao pura, rebobinavel); este manifesto diz o que o setup publica e o que ele NAO usa. O template leva os itens do indicador E os da execucao (politica, parcial, desvio, prazo da passiva, destino do resto): sem os segundos a boleta nao se compoe.",
  "template": {
   "relogio": {
    "tipo": "texto",
@@ -67,7 +67,8 @@
    "opcoes": [
     "mercado"
    ],
-   "omissao": "mercado"
+   "omissao": "mercado",
+   "nota": "o indicador decide no FECHO da barra: a ordem sai a mercado, na volta seguinte do ciclo"
   },
   "aumentos": {
    "tipo": "escolha",
@@ -84,6 +85,29 @@
    ],
    "omissao": "nenhuma",
    "nota": "O INDICADOR NAO TEM STOP. A unica saida e' a viragem (ou o dono desligar o par, e entao a ficha manda fechar). E' por isto que a RN-M4.12 - o travao de risco por ordem - faz falta aqui mais do que em qualquer outro setup: sem ele, o unico travao e' o tamanho (D-015)."
+  },
+  "parcial": {
+   "tipo": "escolha",
+   "opcoes": [
+    "o_que_der"
+   ],
+   "omissao": "o_que_der"
+  },
+  "desvio_maximo": {
+   "tipo": "texto",
+   "omissao": "0.5"
+  },
+  "prazo_da_passiva_ms": {
+   "tipo": "inteiro",
+   "omissao": 3000
+  },
+  "destino_do_resto": {
+   "tipo": "escolha",
+   "opcoes": [
+    "agressivo",
+    "cancelar"
+   ],
+   "omissao": "agressivo"
   }
  }
 }

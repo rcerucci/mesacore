@@ -20,7 +20,7 @@
 // Abrir às cegas por cima de uma posição viva é empilhar, e nenhum indicador pede isso.
 
 import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, isAbsolute } from "node:path";
 import { calcular, type Vela, type Constantes } from "./sinal.ts";
 import { validar } from "../../contracts/esqueleto/framing.ts";
 
@@ -75,7 +75,10 @@ if (leitura.estado !== "aberto") dizer("hold", `o mercado esta' ${leitura.estado
 
 // ---- as velas, do ficheiro do relógio da ficha ----------------------------------------------------------
 if (pastaDoMercado === "") dizer("hold", "nao me deram a pasta das velas: sem barras nao ha media nem ATR");
-const caminho = join(RAIZ, pastaDoMercado, `velas-${instrumento}-${relogio}.jsonl`);
+// A pasta pode ser absoluta (o operador passa uma pasta de fora do repositorio) ou relativa ao repo — e juntar
+// `RAIZ` a um caminho absoluto daria um caminho que nao existe, com o plugin a dizer "nao ha velas" de um
+// ficheiro que esta' la'. Medido a 30/09.
+const caminho = join(isAbsolute(pastaDoMercado) ? pastaDoMercado : join(RAIZ, pastaDoMercado), `velas-${instrumento}-${relogio}.jsonl`);
 if (!existsSync(caminho)) dizer("hold", `nao existe o ficheiro de velas do par (${instrumento}-${relogio})`);
 
 const todas: Vela[] = readFileSync(caminho, "utf8")
