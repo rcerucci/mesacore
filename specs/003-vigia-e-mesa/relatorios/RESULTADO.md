@@ -105,6 +105,9 @@ com o veredicto declarado e **nenhum** com sucesso — em 100% dos casos declara
 - A superfície web (RN-E8/RN-E23) fica fora, como a spec declara.
 - A pergunta em aberto do registo de transições (se `desde_ms` é o relógio do venue ou o nosso, FR-041) não
   foi fechada neste recorte.
+  > **Fechada em 29/09/2026 — pelo código, medido:** é o relógio do **venue**, e `desde_ms` é **leitura
+  > derivada** do registo (`instanteDaUltimaTransicaoPara`), não um campo a inventar. Detalhe na §«pergunta em
+  > aberto» deste relatório.
 
 ## O que falta para sair da bancada e ir a campo
 
@@ -152,6 +155,16 @@ lê hoje (`grep` em `core/` e `vigia/`):
 
 **4. Uma pergunta em aberto:** no registo de transições, o `desde_ms` (FR-041) é o relógio do **venue** ou o
 **nosso**? A decisão é do dono, e nenhum dos dois é errado — é preciso é escolher.
+
+> **Nota de 29/09/2026 — a pergunta está respondida pelo próprio código, e não se sabia.** Medido:
+> `desde_ms` **não existe como campo em ficheiro nenhum** (`grep` em `*.ts`/`*.json`/`*.py`, fora dos
+> `node_modules`: **0 ocorrências**) — e não precisa de existir, porque é uma **leitura derivada**: o instante
+> em que a mesa entrou no estado lê-se do registo (`core/estado/registo.ts`,
+> `instanteDaUltimaTransicaoPara`), que é o que o encerramento usa para datar o prazo. E o relógio de cada
+> linha é o do **venue** — está escrito no contrato do contexto (`core/mesa.ts`: «o relógio é o do VENUE
+> (RN-D3): quem chama traz o instante de lá») e no `specs/002/data-model.md` §`desde_ms` («instante, relógio
+> do venue»). Ou seja: **venue**, decidido quando a RN-D3 foi revista, e as duas pontas concordam. Fica o
+> registo — a pergunta era real quando foi escrita, e o que faltava era esta medição.
 
 **Recomendação, na ordem:** (1) fechar **D-001**, porque é o único pendente que pode custar dinheiro;
 (2) reconciliar a `idade_maxima_do_dado_ms` (regra contra código); (3) o **conector real**, que é o que
