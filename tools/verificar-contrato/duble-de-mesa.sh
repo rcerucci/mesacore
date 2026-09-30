@@ -30,7 +30,7 @@ correr "duble/conector (casos declarados)"  uv run python mocks/mesa/main.py --p
 # 3. contra os mocks de verdade: o duble fala com o plugin a serio, pelo cano dele.
 correr "duble/setup x mock de setup (001)" \
   uv run python mocks/mesa/main.py --papel setup --casos setup.casos.json \
-  --plugin "bun run contracts/mocks/setup/main.ts --lado buy"
+  --plugin "bun run contracts/mocks/setup/main.ts --barra 1730001600000 --lado buy"
 correr "duble/conector x mock de conector (001)" \
   uv run python mocks/mesa/main.py --papel conector --casos conector.casos.json \
   --plugin "uv run python contracts/mocks/conector/main.py"

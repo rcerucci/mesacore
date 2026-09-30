@@ -136,6 +136,15 @@ function lerFichasDaConta(nome: string): Ficha[] {
 
 const todas = lerFichasDaConta(nomeDaConta);
 const ligadas = todas.filter((f) => f.cabecalho.run === true && (soOPar === null || f.cabecalho.instrumento === soOPar));
+
+/**
+ * A ULTIMA PROPOSTA RECEBIDA, por instrumento — e o instante em que chegou.
+ *
+ * O setup propoe UMA VEZ por barra fechada e cala-se: a proposta existe no ficheiro durante uma leitura so'.
+ * A mesa relê a operacao em cada volta, e sem esta memoria podia nunca a ver. Nao ha aqui juizo nenhum sobre a
+ * idade dela: a barra viaja dentro da proposta e quem a julga e' a mesa, com motivo proprio.
+ */
+const ultimaProposta = new Map<string, { carga: unknown; recebida_ms: number } | null>();
 dizer({
   etapa: "operador", conta: nomeDaConta, fichas: todas.length,
   ligadas: ligadas.map((f) => `${f.cabecalho.instrumento}-${f.cabecalho.setup} (${f.cabecalho.relogio})`),
@@ -401,6 +410,14 @@ async function main(): Promise<void> {
         }
         continue;
       }
+      // A ULTIMA PROPOSTA POR INSTRUMENTO — e a barra dela.
+      //
+      // O setup fala UMA VEZ por barra e cala-se nas voltas seguintes: a proposta vive no ficheiro durante uma
+      // leitura e mais nenhuma. Como a mesa relê a operacao a cada volta (era aqui que ela vivia de um retrato),
+      // sem esta memoria a proposta podia nao ser vista por ninguem — e uma entrada perdida por uma corrida de
+      // ficheiros e' uma perda que so' se descobre horas depois, no registo. Guarda-se com a barra que o setup
+      // declarou: quem decide se ela ainda e' desta barra e' a MESA (motivo `proposta_de_barra_antiga`).
+      if (!ultimaProposta.has(String((msg.carga as any)?.instrumento))) ultimaProposta.set(String((msg.carga as any)?.instrumento), null);
       inuteis = 0;
       if (voltas >= voltasPedidas) return terminar();
       voltas += 1;
@@ -423,6 +440,14 @@ async function main(): Promise<void> {
 
       const manifestoDaFicha = manifestoDe(ficha);
       const { proposta, erro } = await correrSetup(msg, ficha, manifestoDaFicha);
+      // Guarda-se a proposta que acabou de chegar, com o instante em que chegou (auditoria: quando o setup
+      // falou, e nao so' o que disse). A barra vai dentro da propria proposta (contrato 1.8.0).
+      if (proposta !== null) {
+        ultimaProposta.set(String((msg.carga as any)?.instrumento), {
+          carga: (proposta as any).carga,
+          recebida_ms: Date.now(),
+        });
+      }
 
       // A OPERAÇÃO LEVA TODAS AS FICHAS LIGADAS, e não só a que falou nesta volta: a mesa decide, por ciclo,
       // sobre o que está na operação — e um par ligado que desaparecesse do ficheiro era um par que a mesa
@@ -458,7 +483,15 @@ async function main(): Promise<void> {
             bandas: f.cabecalho.bandas,
             prazo_de_resposta_ms: f.cabecalho.prazo_de_resposta_ms,
           },
-          ...(eOGueFalou && proposta !== null ? { proposta: (proposta as any).carga } : {}),
+          // A PROPOSTA E' A ULTIMA RECEBIDA, nao so' a desta volta: o setup cala-se depois de falar, e a mesa
+          // so' ve' o que estiver escrito. A barra dela viaja dentro da proposta, e e' a mesa que decide se
+          // ainda e' desta barra.
+          ...(ultimaProposta.get(nome) != null
+            ? {
+                proposta: (ultimaProposta.get(nome) as { carga: unknown }).carga,
+                proposta_recebida_ms: (ultimaProposta.get(nome) as { recebida_ms: number }).recebida_ms,
+              }
+            : {}),
           ...(eOGueFalou && erro !== null ? { erro_do_setup: erro } : {}),
         };
       }

@@ -7,66 +7,228 @@
     "venue": "Reportado ou declarado pelo venue. A mesa mostra, nao recalcula (RN-D6)."
   },
   "grandezas": {
-    "boleta.saldo_pct": {"origem": "dono", "chave": "fichas/<i>.risco.saldo_pct", "regra": "RN-M4.3"},
-    "boleta.alavancagem": {"origem": "dono", "chave": "fichas/<i>.risco.alavancagem", "regra": "RN-M4.3"},
-    "boleta.desvio_maximo": {"origem": "setup", "chave": "fichas/<i>.setup.desvio_maximo", "regra": "RN-B3"},
-    "boleta.stop_pct": {"origem": "setup", "chave": "fichas/<i>.setup.stop_pct", "regra": "RN-S11 (limitado pela banda fichas/<i>.risco.bandas.stop_pct)"},
-    "boleta.tp_pct": {"origem": "setup", "chave": "fichas/<i>.setup.tp_pct", "regra": "RN-S11"},
-    "boleta.prazo_da_passiva_ms": {"origem": "setup", "chave": "fichas/<i>.setup.prazo_da_passiva_ms", "regra": "RN-B8"},
-    "boleta.marca_de_posse": {"origem": "mesa", "regra": "RN-B10: composta pela mesa (ficha x ciclo); o layout esta declarado em vocabulario.json"},
-    "proposta.relogio.proxima_consulta_ms": {"origem": "setup", "chave": "fichas/<i>.setup.relogio.proxima_consulta_ms", "regra": "RN-S2/RN-T5: o setup DECLARA quando quer ser consultado de novo"},
-    "mercado.tempo_do_venue_ms": {"origem": "venue", "regra": "RN-D3: o relogio e o do venue"},
-    "mercado.idade_do_dado_ms": {"origem": "venue", "regra": "RN-D3 (revisto na emenda do dono, 28 set 2026): e a idade MEDIDA do dado. Deixou de existir limite de idade do dono (`conta.idade_maxima_do_dado_ms` SAIU) - quem diz que a mesa esta cega e' o estado da ligacao reportado PELO PROTOCOLO (obrigacao 1 do manifesto, `ligacao_por_protocolo`, contrato 1.7.0), e a idade da barra e' regra do setup"},
-    "mercado.posicao.marca_de_posse": {"origem": "venue", "regra": "RN-T16.1: a marca vem do venue, e e por ela que a posse se le"},
-    "historico.instante_ms": {"origem": "venue", "regra": "RN-C11"},
-    "historico.execucoes[].instante_ms": {"origem": "venue", "regra": "RN-C11"},
-    "historico.execucoes[].marca_de_posse": {"origem": "venue", "regra": "RN-C11: a marca que o venue guardou"},
-
-    "resolucao.quantidade": {"origem": "venue", "regra": "RN-B0: a mesa nao calcula unidades; o venue resolve"},
-    "resolucao.nocional": {"origem": "venue", "regra": "RN-B0"},
-    "resolucao.margem_empenhada": {"origem": "venue", "regra": "RN-M4.5"},
-    "resolucao.alavancagem_efectiva": {"origem": "venue", "regra": "RN-M4.5"},
-    "resolucao.preco_de_liquidacao": {"origem": "venue", "regra": "RN-M4.13"},
-
-    "pergunta_do_encerramento.prazo_de_resposta_ms": {"origem": "setup", "chave": "fichas/<i>.setup.prazo_de_resposta_ms", "regra": "RN-V9.1/RN-A3: a CHAVE e inventada pela spec 003 e o VALOR e do dono - a ficha que nao a traz recusa, nao adivinha"},
-
-    "pergunta_do_encerramento.numeros.posicao": {"origem": "venue", "regra": "RN-V8: o resumo mostra os numeros DA CORRETORA, e nenhum deles se recalcula por aqui"},
-    "pergunta_do_encerramento.numeros.nocional": {"origem": "venue", "regra": "RN-V8"},
-    "pergunta_do_encerramento.numeros.margem": {"origem": "venue", "regra": "RN-V8"},
-    "pergunta_do_encerramento.numeros.distancia_de_liquidacao": {"origem": "venue", "regra": "RN-V8"},
-    "pergunta_do_encerramento.numeros.resultado_nao_realizado": {"origem": "venue", "regra": "RN-V8"},
-
-    "mercado.bid": {"origem": "venue", "regra": "RN-D1"},
-    "mercado.ask": {"origem": "venue", "regra": "RN-D1"},
-    "mercado.ultimo": {"origem": "venue", "regra": "RN-D1"},
-    "mercado.equity": {"origem": "venue", "regra": "RN-M3: o equity e o da corretora, com nao realizado"},
-    "mercado.posicao.unidades": {"origem": "venue", "regra": "RN-T16.1: a posicao le-se do venue"},
-    "mercado.posicao.preco_medio": {"origem": "venue", "regra": "RN-T16.1"},
-    "mercado.livro.lados[].preco": {"origem": "venue", "regra": "RN-B4"},
-    "mercado.livro.lados[].tamanho": {"origem": "venue", "regra": "RN-B4"},
-    "mercado.livro.profundidade": {"origem": "venue", "regra": "RN-B4"},
-    "mercado.funding.taxa": {"origem": "venue", "regra": "RN-C11"},
-
-    "historico.resultado_realizado": {"origem": "venue", "regra": "RN-D6: somar e do venue, nunca da mesa"},
-    "historico.execucoes[].quantidade": {"origem": "venue", "regra": "RN-C11"},
-    "historico.execucoes[].preco": {"origem": "venue", "regra": "RN-C11"},
-    "historico.execucoes[].taxa": {"origem": "venue", "regra": "RN-C11"},
-    "historico.execucoes[].funding": {"origem": "venue", "regra": "RN-C11"},
-
-    "manifesto.minimo_de_valor_por_ordem": {"origem": "venue", "regra": "RN-C1: e o PISO do venue, declarado no manifesto — quem o mede e a bateria de conformidade (prova 2). Antes da 1.4.0 este valor viajava com o nome `teto_de_valor_por_ordem`, que mentia"},
-    "manifesto.maximo_de_valor_por_ordem": {"origem": "venue", "regra": "RN-C1: aditivo na 1.4.0; ausente quando o venue nao o declara"},
-    "manifesto.desvio_maximo": {"origem": "venue", "regra": "RN-C1"},
-    "manifesto.profundidade_de_livro": {"origem": "venue", "regra": "RN-C1"},
-    "manifesto.instrumentos[].minimo": {"origem": "venue", "regra": "RN-C1"},
-    "manifesto.instrumentos[].passo": {"origem": "venue", "regra": "RN-C1"},
-    "manifesto.instrumentos[].tick": {"origem": "venue", "regra": "RN-C1"},
-    "manifesto.instrumentos[].alavancagem_maxima": {"origem": "venue", "regra": "RN-C1"},
-    "manifesto.instrumentos[].funding_intervalo_horas": {"origem": "venue", "regra": "RN-C1: aditivo na 1.4.0 — a cadencia do funding por instrumento (`fundingIntervalHours`), onde o venue a declara"},
-    "manifesto.instrumentos[].alavancagem_por_escalao[].de": {"origem": "venue", "regra": "RN-C1: aditivo na 1.4.0 — o limite INFERIOR de cada escalao (`marginTiers[].lowerBound`); zero e legitimo no primeiro"},
-    "manifesto.instrumentos[].alavancagem_por_escalao[].maxima": {"origem": "venue", "regra": "RN-C1"}
+    "boleta.saldo_pct": {
+      "origem": "dono",
+      "chave": "fichas/<i>.risco.saldo_pct",
+      "regra": "RN-M4.3"
+    },
+    "boleta.alavancagem": {
+      "origem": "dono",
+      "chave": "fichas/<i>.risco.alavancagem",
+      "regra": "RN-M4.3"
+    },
+    "boleta.desvio_maximo": {
+      "origem": "setup",
+      "chave": "fichas/<i>.setup.desvio_maximo",
+      "regra": "RN-B3"
+    },
+    "boleta.stop_pct": {
+      "origem": "setup",
+      "chave": "fichas/<i>.setup.stop_pct",
+      "regra": "RN-S11 (limitado pela banda fichas/<i>.risco.bandas.stop_pct)"
+    },
+    "boleta.tp_pct": {
+      "origem": "setup",
+      "chave": "fichas/<i>.setup.tp_pct",
+      "regra": "RN-S11"
+    },
+    "boleta.prazo_da_passiva_ms": {
+      "origem": "setup",
+      "chave": "fichas/<i>.setup.prazo_da_passiva_ms",
+      "regra": "RN-B8"
+    },
+    "boleta.marca_de_posse": {
+      "origem": "mesa",
+      "regra": "RN-B10: composta pela mesa (ficha x ciclo); o layout esta declarado em vocabulario.json"
+    },
+    "proposta.relogio.proxima_consulta_ms": {
+      "origem": "setup",
+      "chave": "fichas/<i>.setup.relogio.proxima_consulta_ms",
+      "regra": "RN-S2/RN-T5: o setup DECLARA quando quer ser consultado de novo"
+    },
+    "mercado.tempo_do_venue_ms": {
+      "origem": "venue",
+      "regra": "RN-D3: o relogio e o do venue"
+    },
+    "mercado.idade_do_dado_ms": {
+      "origem": "venue",
+      "regra": "RN-D3 (revisto na emenda do dono, 28 set 2026): e a idade MEDIDA do dado. Deixou de existir limite de idade do dono (`conta.idade_maxima_do_dado_ms` SAIU) - quem diz que a mesa esta cega e' o estado da ligacao reportado PELO PROTOCOLO (obrigacao 1 do manifesto, `ligacao_por_protocolo`, contrato 1.7.0), e a idade da barra e' regra do setup"
+    },
+    "mercado.posicao.marca_de_posse": {
+      "origem": "venue",
+      "regra": "RN-T16.1: a marca vem do venue, e e por ela que a posse se le"
+    },
+    "historico.instante_ms": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    },
+    "historico.execucoes[].instante_ms": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    },
+    "historico.execucoes[].marca_de_posse": {
+      "origem": "venue",
+      "regra": "RN-C11: a marca que o venue guardou"
+    },
+    "resolucao.quantidade": {
+      "origem": "venue",
+      "regra": "RN-B0: a mesa nao calcula unidades; o venue resolve"
+    },
+    "resolucao.nocional": {
+      "origem": "venue",
+      "regra": "RN-B0"
+    },
+    "resolucao.margem_empenhada": {
+      "origem": "venue",
+      "regra": "RN-M4.5"
+    },
+    "resolucao.alavancagem_efectiva": {
+      "origem": "venue",
+      "regra": "RN-M4.5"
+    },
+    "resolucao.preco_de_liquidacao": {
+      "origem": "venue",
+      "regra": "RN-M4.13"
+    },
+    "pergunta_do_encerramento.prazo_de_resposta_ms": {
+      "origem": "setup",
+      "chave": "fichas/<i>.setup.prazo_de_resposta_ms",
+      "regra": "RN-V9.1/RN-A3: a CHAVE e inventada pela spec 003 e o VALOR e do dono - a ficha que nao a traz recusa, nao adivinha"
+    },
+    "pergunta_do_encerramento.numeros.posicao": {
+      "origem": "venue",
+      "regra": "RN-V8: o resumo mostra os numeros DA CORRETORA, e nenhum deles se recalcula por aqui"
+    },
+    "pergunta_do_encerramento.numeros.nocional": {
+      "origem": "venue",
+      "regra": "RN-V8"
+    },
+    "pergunta_do_encerramento.numeros.margem": {
+      "origem": "venue",
+      "regra": "RN-V8"
+    },
+    "pergunta_do_encerramento.numeros.distancia_de_liquidacao": {
+      "origem": "venue",
+      "regra": "RN-V8"
+    },
+    "pergunta_do_encerramento.numeros.resultado_nao_realizado": {
+      "origem": "venue",
+      "regra": "RN-V8"
+    },
+    "mercado.bid": {
+      "origem": "venue",
+      "regra": "RN-D1"
+    },
+    "mercado.ask": {
+      "origem": "venue",
+      "regra": "RN-D1"
+    },
+    "mercado.ultimo": {
+      "origem": "venue",
+      "regra": "RN-D1"
+    },
+    "mercado.equity": {
+      "origem": "venue",
+      "regra": "RN-M3: o equity e o da corretora, com nao realizado"
+    },
+    "mercado.posicao.unidades": {
+      "origem": "venue",
+      "regra": "RN-T16.1: a posicao le-se do venue"
+    },
+    "mercado.posicao.preco_medio": {
+      "origem": "venue",
+      "regra": "RN-T16.1"
+    },
+    "mercado.livro.lados[].preco": {
+      "origem": "venue",
+      "regra": "RN-B4"
+    },
+    "mercado.livro.lados[].tamanho": {
+      "origem": "venue",
+      "regra": "RN-B4"
+    },
+    "mercado.livro.profundidade": {
+      "origem": "venue",
+      "regra": "RN-B4"
+    },
+    "mercado.funding.taxa": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    },
+    "historico.resultado_realizado": {
+      "origem": "venue",
+      "regra": "RN-D6: somar e do venue, nunca da mesa"
+    },
+    "historico.execucoes[].quantidade": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    },
+    "historico.execucoes[].preco": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    },
+    "historico.execucoes[].taxa": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    },
+    "historico.execucoes[].funding": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    },
+    "manifesto.minimo_de_valor_por_ordem": {
+      "origem": "venue",
+      "regra": "RN-C1: e o PISO do venue, declarado no manifesto — quem o mede e a bateria de conformidade (prova 2). Antes da 1.4.0 este valor viajava com o nome `teto_de_valor_por_ordem`, que mentia"
+    },
+    "manifesto.maximo_de_valor_por_ordem": {
+      "origem": "venue",
+      "regra": "RN-C1: aditivo na 1.4.0; ausente quando o venue nao o declara"
+    },
+    "manifesto.desvio_maximo": {
+      "origem": "venue",
+      "regra": "RN-C1"
+    },
+    "manifesto.profundidade_de_livro": {
+      "origem": "venue",
+      "regra": "RN-C1"
+    },
+    "manifesto.instrumentos[].minimo": {
+      "origem": "venue",
+      "regra": "RN-C1"
+    },
+    "manifesto.instrumentos[].passo": {
+      "origem": "venue",
+      "regra": "RN-C1"
+    },
+    "manifesto.instrumentos[].tick": {
+      "origem": "venue",
+      "regra": "RN-C1"
+    },
+    "manifesto.instrumentos[].alavancagem_maxima": {
+      "origem": "venue",
+      "regra": "RN-C1"
+    },
+    "manifesto.instrumentos[].funding_intervalo_horas": {
+      "origem": "venue",
+      "regra": "RN-C1: aditivo na 1.4.0 — a cadencia do funding por instrumento (`fundingIntervalHours`), onde o venue a declara"
+    },
+    "manifesto.instrumentos[].alavancagem_por_escalao[].de": {
+      "origem": "venue",
+      "regra": "RN-C1: aditivo na 1.4.0 — o limite INFERIOR de cada escalao (`marginTiers[].lowerBound`); zero e legitimo no primeiro"
+    },
+    "manifesto.instrumentos[].alavancagem_por_escalao[].maxima": {
+      "origem": "venue",
+      "regra": "RN-C1"
+    },
+    "proposta.barra_ms": {
+      "origem": "venue",
+      "chave": "candleSnapshot[].t — a ABERTURA da barra FECHADA sobre a qual o setup decidiu (o setup nao a inventa: le'-a do venue)"
+    }
   },
   "prefixos": {
     "nota": "Para o que se repete dentro de arrays maiores que o conferidor enumera: uma entrada por familia, em vez de doze iguais (doze iguais e onde uma fica por escrever).",
-    "mercado.funding.": {"origem": "venue", "regra": "RN-C11"}
+    "mercado.funding.": {
+      "origem": "venue",
+      "regra": "RN-C11"
+    }
   }
 }

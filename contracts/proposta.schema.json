@@ -5,7 +5,7 @@
   "description": "A resposta do setup: o lado e, se quiser, o seu relogio. EXACTAMENTE quatro valores (RN-T4). A invalidade NAO e um valor do contrato: 'limpar', vazio ou numero sao recusados aqui, e a mesa trata como hold registando a invalidade.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["setup", "lado"],
+  "required": ["setup", "lado", "barra_ms"],
   "properties": {
     "setup": {
       "type": "object",
@@ -18,6 +18,10 @@
       }
     },
     "lado": {"$ref": "_defs/forma.schema.json#/$defs/lado"},
+    "barra_ms": {
+      "$ref": "_defs/forma.schema.json#/$defs/instante_ms",
+      "description": "A BARRA DO SINAL: o instante da ABERTURA da barra FECHADA sobre a qual o setup decidiu (ms UTC, do relogio do VENUE). E obrigatoria porque sem ela a proposta nao se situa no tempo: a mesa nao pode distinguir 'a proposta que acabou de nascer' de 'a proposta da barra passada, que ja foi executada', e uma entrada perdida ou repetida nao se explica depois. O setup e o unico que sabe em que barra decidiu — por isso e ele que o declara, e nao quem o le."
+    },
     "relogio": {
       "type": "object",
       "additionalProperties": false,

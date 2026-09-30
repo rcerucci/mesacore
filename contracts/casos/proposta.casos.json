@@ -1,83 +1,232 @@
 {
-  "mensagem": "proposta",
-  "nota": "A resposta do setup: EXACTAMENTE quatro valores (RN-T4, RN-S1). 'limpar', vazio ou numero NAO sao valores do contrato: sao invalidos, e a mesa registra a invalidade (RN-T4).",
-  "casos": [
-    {
-      "nome": "proposta/buy",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-1", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "buy"}},
-      "veredicto_esperado": "aceite",
-      "motivo_esperado": null
-    },
-    {
-      "nome": "proposta/sell",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-2", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "sell"}},
-      "veredicto_esperado": "aceite",
-      "motivo_esperado": null
-    },
-    {
-      "nome": "proposta/hold",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-3", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "hold"}},
-      "veredicto_esperado": "aceite",
-      "motivo_esperado": null
-    },
-    {
-      "nome": "proposta/caixa",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-4", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "caixa"}},
-      "veredicto_esperado": "aceite",
-      "motivo_esperado": null
-    },
-    {
-      "nome": "proposta/com-relogio-adiantado",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-5", "carga": {"setup": {"nome": "sigma", "versao": "3.4.1"}, "lado": "hold", "relogio": {"proxima_consulta_ms": 300000}}},
-      "veredicto_esperado": "aceite",
-      "motivo_esperado": null
-    },
-    {
-      "nome": "proposta/invalido-limpar",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-6", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "limpar"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "valor_fora_do_conjunto"
-    },
-    {
-      "nome": "proposta/invalido-sem-lado",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-7", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "campo_obrigatorio_ausente"
-    },
-    {
-      "nome": "proposta/invalido-lado-como-numero",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-8", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": 1}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "tipo_invalido"
-    },
-    {
-      "nome": "proposta/sem-assinatura-do-setup",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-9", "carga": {"lado": "buy"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "campo_obrigatorio_ausente"
-    },
-    {
-      "nome": "proposta/nome-de-setup-fora-do-padrao",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-10", "carga": {"setup": {"nome": "Manual", "versao": "1.0.0"}, "lado": "buy"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "formato_invalido"
-    },
-    {
-      "nome": "proposta/campo-de-estrategia-no-envelope",
-      "mensagem": "proposta",
-      "entrada": {"contrato": "1.7.0", "tipo": "proposta", "id": "p-11", "carga": {"setup": {"nome": "manual", "versao": "1.0.0"}, "lado": "buy", "rsi": "72.5"}},
-      "veredicto_esperado": "recusado",
-      "motivo_esperado": "campo_desconhecido"
+ "mensagem": "proposta",
+ "nota": "A resposta do setup: EXACTAMENTE quatro valores (RN-T4, RN-S1). 'limpar', vazio ou numero NAO sao valores do contrato: sao invalidos, e a mesa registra a invalidade (RN-T4). 1.8.0: a `barra_ms` (a barra do sinal) passa a OBRIGATORIA — o caso `proposta/sem-a-barra-do-sinal` prova que sem ela a proposta RECUSA.",
+ "casos": [
+  {
+   "nome": "proposta/buy",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-1",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "lado": "buy",
+     "barra_ms": 1729998000000
     }
-  ]
+   },
+   "veredicto_esperado": "aceite",
+   "motivo_esperado": null
+  },
+  {
+   "nome": "proposta/sell",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-2",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "lado": "sell",
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "aceite",
+   "motivo_esperado": null
+  },
+  {
+   "nome": "proposta/hold",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-3",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "lado": "hold",
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "aceite",
+   "motivo_esperado": null
+  },
+  {
+   "nome": "proposta/caixa",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-4",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "lado": "caixa",
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "aceite",
+   "motivo_esperado": null
+  },
+  {
+   "nome": "proposta/com-relogio-adiantado",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-5",
+    "carga": {
+     "setup": {
+      "nome": "sigma",
+      "versao": "3.4.1"
+     },
+     "lado": "hold",
+     "relogio": {
+      "proxima_consulta_ms": 300000
+     },
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "aceite",
+   "motivo_esperado": null
+  },
+  {
+   "nome": "proposta/invalido-limpar",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-6",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "lado": "limpar",
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "valor_fora_do_conjunto"
+  },
+  {
+   "nome": "proposta/invalido-sem-lado",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-7",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "campo_obrigatorio_ausente"
+  },
+  {
+   "nome": "proposta/invalido-lado-como-numero",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-8",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "lado": 1,
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "tipo_invalido"
+  },
+  {
+   "nome": "proposta/sem-assinatura-do-setup",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-9",
+    "carga": {
+     "lado": "buy",
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "campo_obrigatorio_ausente"
+  },
+  {
+   "nome": "proposta/nome-de-setup-fora-do-padrao",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-10",
+    "carga": {
+     "setup": {
+      "nome": "Manual",
+      "versao": "1.0.0"
+     },
+     "lado": "buy",
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "formato_invalido"
+  },
+  {
+   "nome": "proposta/campo-de-estrategia-no-envelope",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-11",
+    "carga": {
+     "setup": {
+      "nome": "manual",
+      "versao": "1.0.0"
+     },
+     "lado": "buy",
+     "rsi": "72.5",
+     "barra_ms": 1729998000000
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "campo_desconhecido"
+  },
+  {
+   "nome": "proposta/sem-a-barra-do-sinal",
+   "mensagem": "proposta",
+   "entrada": {
+    "contrato": "1.8.0",
+    "tipo": "proposta",
+    "id": "p-sem-barra",
+    "carga": {
+     "setup": {
+      "nome": "sigma",
+      "versao": "1.0.0"
+     },
+     "lado": "buy"
+    }
+   },
+   "veredicto_esperado": "recusado",
+   "motivo_esperado": "campo_obrigatorio_ausente"
+  }
+ ]
 }

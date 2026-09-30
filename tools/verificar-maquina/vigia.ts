@@ -23,6 +23,37 @@ import { RAIZ_DO_REPO } from "../../core/livro-de-motivos.ts";
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import { fundir } from "./fundir.ts";
 import { reiniciarTravosDeBarra } from "../../core/ciclo/relogio.ts";
+import { lerParaOCiclo } from "../../core/leitura/fixtures.ts";
+
+/**
+ * A BARRA DO SINAL como um setup a declara: a ultima barra FECHADA do relogio da ficha (aqui 1h).
+ *
+ * A bancada precisa dela porque a mesa so' age numa proposta que seja DESTA barra — e a operacao desta bancada
+ * e' um duble escrito a mao. Nao se inventa um numero: calcula-se do MESMO instante que a mesa vai ler, pela
+ * mesma funcao que a mesa usa para montar a leitura.
+ */
+/**
+ * O INSTANTE DO VENUE que o duble declara (30 min dentro de uma hora cheia): com ele escrito na operacao, o
+ * instante que a bancada usa para calcular a barra e' o MESMO que a mesa le' — sem isto os dois podiam cair em
+ * barras diferentes, e a bancada acusava a mesa de uma coisa que era da bancada.
+ */
+const INSTANTE_DO_DUBLE = 1730005500000;
+
+/**
+ * A BARRA FECHADA a que pertence o instante do duble — a hora CHEIA, e nao o instante menos uma hora (que cai
+ * dentro da barra anterior, e nao na abertura dela). Foi este o erro que fez a bancada acusar a mesa: medido.
+ */
+function barraDoInstanteDoDuble(): number {
+  const passo = 3_600_000;
+  return Math.floor(INSTANTE_DO_DUBLE / passo) * passo - passo;
+}
+
+function barraDoSinalDaLeitura(leitura: any): number {
+  const passo = 3_600_000;
+  const t = Number(lerParaOCiclo(leitura, null, 0).mercado?.tempo_do_venue_ms);
+  if (!Number.isFinite(t)) throw new Error("a leitura do caso nao tem `tempo_do_venue_ms`: sem instante nao ha barra");
+  return Math.floor(t / passo) * passo - passo;
+}
 
 const MODO = process.argv[2] ?? "";
 if (MODO !== "--arranque" && MODO !== "--orfandade" && MODO !== "--encerramento" && MODO !== "--verbos") {
@@ -213,7 +244,7 @@ async function bancadaDosVerbos() {
     return c;
   };
   const operacao = (caso: any, comEquity: boolean) => {
-    const leitura = { ...caso.leitura };
+    const leitura: any = { ...caso.leitura, tempo_do_venue_ms: INSTANTE_DO_DUBLE };
     if (comEquity) leitura.equity = "1000.00"; else delete leitura.equity;
     return {
       nota: "duble de operacao dos verbos", ligacao: "ligada",
@@ -221,7 +252,8 @@ async function bancadaDosVerbos() {
       instrumentos: {
         EURUSD: {
           leitura,
-          proposta: { setup: padraoDoCiclo.proposta_setup, ...caso.proposta },
+          // A barra vem calculada da leitura: e' ela que faz a proposta ser DESTA barra (contrato 1.8.0).
+          proposta: { setup: padraoDoCiclo.proposta_setup, ...caso.proposta, barra_ms: barraDoSinalDaLeitura(leitura) },
           ficha: caso.ficha ?? padraoDoCiclo.ficha,
           template: padraoDoCiclo.template,
           marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? [],
@@ -403,11 +435,11 @@ async function bancadaDoEncerramento() {
       : {}),
     instrumentos: {
       EURUSD: {
-        leitura: caso.leitura,
+        leitura: { ...caso.leitura, tempo_do_venue_ms: INSTANTE_DO_DUBLE },
         // A proposta e a do SETUP (um objecto `{nome, versao}`) com o lado do caso: `{nome, versao, lado}` no
         // mesmo nivel nao e a forma do contrato, e o ciclo recusa-a em silencio (proposta ausente -> hold).
         // Medido: 199 voltas sem uma unica decisao, e o motivo so aparecia na linha `nada` do registo.
-        proposta: { setup: padraoDoCiclo.proposta_setup, ...caso.proposta },
+        proposta: { setup: padraoDoCiclo.proposta_setup, ...caso.proposta, barra_ms: barraDoSinalDaLeitura(caso.leitura) },
         ficha: caso.ficha,
         template: padraoDoCiclo.template,
         marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? [],
@@ -586,8 +618,10 @@ async function bancadaDaOrfandade() {
     ligacao: "ligada",
     instrumentos: {
       [instrumento]: {
-        leitura: casoDoCiclo.leitura,
-        proposta: { setup: declaradoDoCiclo.padrao.proposta_setup, ...casoDoCiclo.proposta },
+        leitura: { ...casoDoCiclo.leitura, tempo_do_venue_ms: INSTANTE_DO_DUBLE },
+        // A barra calculada do MESMO instante que a mesa vai ler (contrato 1.8.0): sem isto a proposta era
+        // recusada por ser de outra barra, e a bancada acusava a mesa de um defeito que era da bancada.
+        proposta: { setup: declaradoDoCiclo.padrao.proposta_setup, ...casoDoCiclo.proposta, barra_ms: barraDoInstanteDoDuble() },
         ficha: casoDoCiclo.ficha ?? declaradoDoCiclo.padrao.ficha,
         template: casoDoCiclo.template ?? declaradoDoCiclo.padrao.template,
         marcas_nossas_conhecidas: casoDoCiclo.marcas_nossas_conhecidas ?? declaradoDoCiclo.padrao.marcas_nossas_conhecidas,

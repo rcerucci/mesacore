@@ -264,6 +264,9 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       desconhecido: marcaDesconhecida,
       mesa_pausada: estado === "pausada",
       barra_atual: barraAtual,
+      // O SINAL E' LIDO NO FECHO DA BARRA ANTERIOR: e' essa a barra que uma proposta desta volta pode declarar.
+      // (O plugin calcula sobre a ultima barra FECHADA — nunca sobre a que ainda esta' a formar.)
+      barra_do_sinal_esperada: barraAtual - msDoRelogio,
       barra_da_ultima_entrada: barraDaUltimaEntrada.get(instrumento) ?? null,
     });
     // ENTROU: guarda-se a barra. E' isto que faz a segunda proposta na mesma barra virar `nada` com motivo.

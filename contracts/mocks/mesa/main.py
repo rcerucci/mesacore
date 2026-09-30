@@ -17,7 +17,7 @@ dos dois lados ao mesmo tempo.
     python3 contracts/mocks/mesa/main.py --papel setup    --casos setup.casos.json
     python3 contracts/mocks/mesa/main.py --papel conector --casos conector.casos.json
     python3 contracts/mocks/mesa/main.py --papel setup    --casos setup.casos.json \
-            --plugin "bun run contracts/mocks/setup/main.ts --lado buy"
+            --plugin "bun run contracts/mocks/setup/main.ts --barra 1730001600000 --lado buy"
     python3 contracts/mocks/mesa/main.py --fidelidade     --casos conector.casos.json
 
 `--plugin` poe o duble a falar com o plugin a SERIO (o mock do recorte 001, por exemplo): escreve a mensagem

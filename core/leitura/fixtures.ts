@@ -49,10 +49,13 @@ export function montarMercado(leitura: LeituraCompacta, correcao = 1_790_628_000
 
 /** Monta a proposta do setup. `null` quando o setup nao propos nada (que NAO e o mesmo que `hold`). */
 export function montarProposta(
-  proposta: { lado?: unknown; setup?: unknown; relogio?: unknown } | null | undefined,
+  proposta: { lado?: unknown; setup?: unknown; relogio?: unknown; barra_ms?: unknown } | null | undefined,
 ): any | null {
   if (proposta === null || proposta === undefined) return null;
   const carga: any = { lado: proposta.lado };
+  // A BARRA DO SINAL: ela e' do setup, e atravessa sem ser tocada. E' o que a mesa compara com a barra em que
+  // esta' para decidir se a proposta ainda e' desta barra (contrato 1.8.0, obrigatoria).
+  if (proposta.barra_ms !== undefined) carga.barra_ms = proposta.barra_ms;
   if (proposta.setup !== undefined) carga.setup = proposta.setup;
   if (proposta.relogio !== undefined) carga.relogio = proposta.relogio;
   return carga;
@@ -106,7 +109,7 @@ export interface EntradaDeLeitura {
  */
 export function lerParaOCiclo(
   leitura: LeituraCompacta,
-  proposta: { lado?: unknown; setup?: unknown; relogio?: unknown } | null | undefined,
+  proposta: { lado?: unknown; setup?: unknown; relogio?: unknown; barra_ms?: unknown } | null | undefined,
   ciclo: number,
 ): EntradaDeLeitura {
   const mercado = validarContraOContrato("mercado", `m-${ciclo}`, montarMercado(leitura));

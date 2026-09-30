@@ -38,5 +38,5 @@ if leitura and leitura.get("estado") == "aberto" and velas and len(velas) >= len
     r, l = media(rapida_n), media(lenta_n)
     lado = "buy" if r > l else "sell" if r < l else "hold"
 
-print(json.dumps({"contrato": "1.7.0", "tipo": "proposta", "id": f"cruzamento-py-{int(__import__('time').time()*1000)}",
+print(json.dumps({"contrato": "1.8.0", "tipo": "proposta", "id": f"cruzamento-py-{int(__import__('time').time()*1000)}",
                   "carga": {"setup": {"nome": manifesto["nome"], "versao": manifesto["versao"]}, "lado": lado}}))

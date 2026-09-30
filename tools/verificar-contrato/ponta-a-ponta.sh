@@ -79,11 +79,11 @@ import sys; sys.path.insert(0, 'mocks/conector')
 import venue; venue.limpar()" >/dev/null
 
 echo "== setup (TypeScript) fala com a mesa =="
-verificar "setup/mercado-aberto-propoe-lado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --lado buy 2>/dev/null)" aceite -
-verificar "setup/mercado-fechado-vai-para-caixa" "$(printf '%s\n' "$MERCADO_FECHADO" | bun run mocks/setup/main.ts --lado buy 2>/dev/null)" aceite -
-verificar "setup/invalido-limpar-e-recusado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --invalido limpar 2>/dev/null)" recusado valor_fora_do_conjunto
-verificar "setup/invalido-vazio-e-recusado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --invalido vazio 2>/dev/null)" recusado campo_obrigatorio_ausente
-verificar "setup/invalido-numero-e-recusado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --invalido numero 2>/dev/null)" recusado tipo_invalido
+verificar "setup/mercado-aberto-propoe-lado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --barra 1730001600000 --lado buy 2>/dev/null)" aceite -
+verificar "setup/mercado-fechado-vai-para-caixa" "$(printf '%s\n' "$MERCADO_FECHADO" | bun run mocks/setup/main.ts --barra 1730001600000 --lado buy 2>/dev/null)" aceite -
+verificar "setup/invalido-limpar-e-recusado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --barra 1730001600000 --invalido limpar 2>/dev/null)" recusado valor_fora_do_conjunto
+verificar "setup/invalido-vazio-e-recusado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --barra 1730001600000 --invalido vazio 2>/dev/null)" recusado campo_obrigatorio_ausente
+verificar "setup/invalido-numero-e-recusado" "$(printf '%s\n' "$MERCADO_ABERTO" | bun run mocks/setup/main.ts --barra 1730001600000 --invalido numero 2>/dev/null)" recusado tipo_invalido
 
 echo
 echo "== conector (Python) fala com a mesa =="

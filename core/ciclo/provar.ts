@@ -163,6 +163,9 @@ for (const caso of bateriaCiclo.casos) {
       : { setup: padrao.proposta_setup, ...caso.proposta };
   const entradas = lerParaOCiclo(caso.leitura, propostaDoCaso, ciclo);
   const decisao = decidirInstrumento({
+    // A BARRA DO SINAL ESPERADA (contrato 1.8.0): o caso declara-a, e o caso cuja proposta nao seja desta
+    // barra passa a exercitar o motivo `proposta_de_barra_antiga` — que e' o que se quer medir aqui.
+    barra_do_sinal_esperada: caso.barra_do_sinal_esperada,
     mercado: entradas.mercado,
     proposta: entradas.proposta,
     proposta_invalida: entradas.proposta_invalida,

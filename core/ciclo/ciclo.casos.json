@@ -56,7 +56,8 @@
     },
     "relogio": {
      "proxima_consulta_ms": 60000
-    }
+    },
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 0,
@@ -85,7 +86,8 @@
    "historico": "US2 cenario 1 - a boleta sai em unidades NEUTRAS: nada de quantidade, lote, preco absoluto",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "normal-proposta-sell-abre-do-outro-lado",
@@ -96,7 +98,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "sell"
+    "lado": "sell",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 1,
@@ -114,7 +117,8 @@
    "historico": "o lado e do SETUP: a mesa obedece ao mandato e ao template, nao escolhe lado",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "normal-proposta-hold-nao-faz-nada",
@@ -124,7 +128,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "hold"
+    "lado": "hold",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 2,
@@ -137,7 +142,8 @@
    "historico": "RN-T4 - hold e uma proposta legitima que nao faz nada, e nao uma invalidade",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "normal-proposta-caixa-sem-posicao-nao-tem-o-que-fechar",
@@ -147,7 +153,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 3,
@@ -160,7 +167,8 @@
    "historico": "caixa sem nada aberto e um pedido sem objecto",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "normal-proposta-caixa-com-posicao-nossa-fecha-em-reduce-only",
@@ -176,7 +184,8 @@
     }
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 4,
@@ -196,7 +205,8 @@
    "historico": "RN-B5 - reduce_only e da mesa, na saida: fechar nunca inverte",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "sem-ligacao-nao-abre",
@@ -206,7 +216,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 5,
@@ -219,7 +230,8 @@
    "historico": "US2 cenario 6, FR-020 - abrir com preco velho e entrar num preco que ja nao existe",
    "ligacao": "sem_ligacao",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "sem-ligacao-com-posicao-nossa-PODE-fechar",
@@ -235,7 +247,8 @@
     }
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 6,
@@ -254,7 +267,8 @@
    "historico": "SC-003 - reduzir risco nunca espera por dado fresco",
    "ligacao": "sem_ligacao",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "sem-leitura-nao-abre",
@@ -267,7 +281,8 @@
     "leitura": true
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 7,
@@ -279,7 +294,8 @@
    },
    "historico": "US2 cenario 2",
    "ligacao": "ligada",
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "sem-leitura-com-posicao-tambem-NAO-fecha",
@@ -298,7 +314,8 @@
     "leitura": true
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 8,
@@ -313,7 +330,8 @@
    },
    "historico": "o outro lado do SC-003 - fechar sem saber o que existe e adivinhar",
    "ligacao": "ligada",
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "congelada-nao-abre",
@@ -326,7 +344,8 @@
     "setup_respondeu": false
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 9,
@@ -338,7 +357,8 @@
    },
    "historico": "US2 cenario 4",
    "ligacao": "ligada",
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "congelada-com-posicao-nossa-DEFENDE",
@@ -357,7 +377,8 @@
     "setup_respondeu": false
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 10,
@@ -375,7 +396,8 @@
    },
    "historico": "FR-018 - o setup mudo impede abrir e cancelar, mas a defesa NAO depende do setup",
    "ligacao": "ligada",
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "divergente-nao-abre",
@@ -386,7 +408,8 @@
    },
    "divergente": true,
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 11,
@@ -398,7 +421,8 @@
    },
    "historico": "US2 cenario 3",
    "ligacao": "ligada",
-   "falhas": {}
+   "falhas": {},
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "divergente-nao-fecha-por-iniciativa-propria",
@@ -415,7 +439,8 @@
    },
    "divergente": true,
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 12,
@@ -430,7 +455,8 @@
    },
    "historico": "FR-017 - a saida e a reconciliacao que explica, nao uma decisao da mesa",
    "ligacao": "ligada",
-   "falhas": {}
+   "falhas": {},
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "mercado-fechado-nao-abre-e-nao-alarma",
@@ -440,7 +466,8 @@
     "estado_do_mercado": "fechado"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 13,
@@ -453,7 +480,8 @@
    "historico": "US2 cenario 5 - alarmar o normal ensina o dono a ignorar alarmes",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "mercado-fechado-com-posicao-nossa-nao-fecha",
@@ -469,7 +497,8 @@
     }
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 14,
@@ -485,7 +514,8 @@
    "historico": "a posicao fica como esta e a condicao sai quando o conector declarar aberto",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "posicao-alheia-e-relatada-e-nao-gerida",
@@ -501,7 +531,8 @@
     }
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 15,
@@ -517,7 +548,8 @@
    "historico": "FR-021 - e NAO se cancela sem decisao do dono",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "sem-margem-no-ciclo-nao-e-estado",
@@ -527,7 +559,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 16,
@@ -543,7 +576,8 @@
    "historico": "FR-006 - sem_margem NAO e estado: e motivo registrado, e o ciclo seguinte corre o seu caminho",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "proposta-ausente-e-tratada-como-hold (a invalidade fica registada, e nao alimenta contador nenhum)",
@@ -574,7 +608,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "comprar"
+    "lado": "comprar",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 18,
@@ -588,7 +623,8 @@
    "historico": "RN-T4 - cinco valores nao entram: a mesa trata como hold e registra",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "a-marca-de-posse-e-ficha-e-ciclo-conferidos-por-aritmetica",
@@ -598,7 +634,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "1",
    "ciclo": 524287,
@@ -615,7 +652,8 @@
    "historico": "ficha 1 e o ciclo maximo (524287) -> 1 << 19 | 524287 = 1048575",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "com-desconhecido-nao-abre (a mesma proposta do caso 1, agora bloqueada)",
@@ -625,7 +663,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 30,
@@ -642,7 +681,8 @@
    },
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "com-desconhecido-defender-continua (a marca nao impede reduzir risco)",
@@ -658,7 +698,8 @@
     }
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 31,
@@ -682,7 +723,8 @@
    },
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "o-mesmo-dado-com-outro-dono-nao-avisa (a lista e da config)",
@@ -692,7 +734,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 32,
@@ -709,7 +752,8 @@
     "avisa": false
    },
    "ligacao": "ligada",
-   "falhas": {}
+   "falhas": {},
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "a-mesma-divergencia-com-o-dono-da-bateria-avisa",
@@ -719,7 +763,8 @@
     "estado_do_mercado": "aberto"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 33,
@@ -731,7 +776,8 @@
     "avisa": true
    },
    "ligacao": "ligada",
-   "falhas": {}
+   "falhas": {},
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "com-a-banda-reprovada-nao-abre (D-001)",
@@ -742,7 +788,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 40,
@@ -775,7 +822,8 @@
    "historico": "D-001 - a ultima resolucao deste instrumento nao cabia no que o dono autorizou: nao se abre risco novo ate a divergencia estar explicada. A proposta e a mesma do caso 'normal-proposta-buy-abre-com-boleta-neutra'.",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "com-a-banda-reprovada-defender-continua (reduzir e sempre permitido)",
@@ -791,7 +839,8 @@
     }
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 41,
@@ -831,7 +880,8 @@
    "historico": "D-001 - travar o FECHO por causa da divergencia seria defender-se do lado errado: reduzir risco e sempre permitido, mesmo sem leitura e mesmo sem ligacao (RN-M9).",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "com-a-banda-conferida-e-dentro-abre (o controle do D-001)",
@@ -842,7 +892,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 42,
@@ -872,7 +923,8 @@
    "historico": "O CONTROLE: com a banda conferida e dentro, a mesa abre como sempre abriu. Sem este lado, 'bloqueou' podia ser o codigo a bloquear tudo.",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/stop-na-borda-maxima-cabe",
@@ -883,7 +935,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 7,
@@ -909,7 +962,8 @@
     }
    },
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/stop-um-passo-acima-da-borda-recusa",
@@ -920,7 +974,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 7,
@@ -941,7 +996,8 @@
     "avisa": true
    },
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/tp-fora-da-banda-recusa",
@@ -952,7 +1008,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 7,
@@ -974,7 +1031,8 @@
     "avisa": true
    },
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/a-banda-so-tem-minimo-e-o-valor-esta-abaixo",
@@ -985,7 +1043,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 7,
@@ -1006,7 +1065,8 @@
     "avisa": true
    },
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/valor-ilegivel-nao-e-passe-livre",
@@ -1017,7 +1077,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 7,
@@ -1047,7 +1108,8 @@
     "tp_pct": "0.6"
    },
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/setup-sem-stop-e-banda-declarada-passa",
@@ -1058,7 +1120,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 7,
@@ -1098,7 +1161,8 @@
     "destino_do_resto": "cancelar"
    },
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/um-algarismo-que-a-virgula-flutuante-perde-recusa",
@@ -1109,7 +1173,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 8,
@@ -1139,7 +1204,8 @@
    },
    "historico": "D-008: `1.0000000000000000001` PASSA o maximo `1`, e um `Number()` de JavaScript arredonda-o para 1 - a comparacao em virgula flutuante diria «cabe». E' este caso que prova que a aritmetica exacta (inteiros escalados, a mesma do `conferirBanda`) e' carga e nao enfeite.",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/fechar-com-a-banda-violada-continua-a-passar",
@@ -1156,7 +1222,8 @@
     }
    },
    "proposta": {
-    "lado": "caixa"
+    "lado": "caixa",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 9,
@@ -1184,7 +1251,8 @@
    },
    "historico": "D-008: o MESMO stop fora da banda que trava a abertura (0.3 contra um maximo de 0.1) nao trava o fecho. E' o outro lado da regra: um setup mal declarado nao pode prender uma posicao aberta - reduzir risco e' sempre permitido.",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "banda-do-setup/um-algarismo-abaixo-do-minimo-que-a-virgula-flutuante-perde",
@@ -1195,7 +1263,8 @@
     "equity": "1000.00"
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 10,
@@ -1225,7 +1294,8 @@
    },
    "historico": "D-008: a metade simetrica do outro caso - `1` esta' ABAIXO do minimo `1.0000000000000000001`, e a virgula flutuante diria que sao iguais (dentro). As duas bordas (maximo e minimo) tem caso proprio, porque um limite que so' se mede de um lado e' meio limite.",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "d013-lado-oposto-a-nossa-posicao-fecha-em-reduce-only",
@@ -1241,7 +1311,8 @@
     }
    },
    "proposta": {
-    "lado": "sell"
+    "lado": "sell",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 5,
@@ -1261,7 +1332,8 @@
    "historico": "D-013 (29/09/2026): o lado oposto a' NOSSA posicao NAO e' abrir. Medido na bateria de teste (P15): com `abrir` e reduce_only=false o venue fez NETTING e zerou a posicao, e se a boleta fosse maior virava a mao numa so' ordem. Fecha, e so' reduz.",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "d013-o-par-de-controle-mesmo-lado-aumenta-a-posicao",
@@ -1277,7 +1349,8 @@
     }
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 5,
@@ -1297,7 +1370,8 @@
    "historico": "Par de controle do D-013: o MESMO lado da nossa posicao e' um AUMENTO, e sai com reduce_only=false — se os dois lados fechassem, a correccao teria ido longe de mais.",
    "ligacao": "ligada",
    "falhas": {},
-   "divergente": false
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
   },
   {
    "nome": "d013-posicao-vendida-e-proposta-buy-fecha-em-reduce-only",
@@ -1313,7 +1387,8 @@
     }
    },
    "proposta": {
-    "lado": "buy"
+    "lado": "buy",
+    "barra_ms": 1730001600000
    },
    "ficha": "3232",
    "ciclo": 6,
@@ -1331,6 +1406,65 @@
     }
    },
    "historico": "D-013, o espelho: posicao vendida nossa e proposta `buy` fecha em reduce_only, pelo mesmo motivo (netting do venue, e nunca inverter).",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false,
+   "barra_do_sinal_esperada": 1730001600000
+  },
+  {
+   "nome": "proposta-sem-a-barra-nao-move-a-mesa",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00"
+   },
+   "proposta": {
+    "lado": "buy",
+    "setup": {
+     "nome": "ema_cruz",
+     "versao": "1.0.0"
+    }
+   },
+   "ficha": "3232",
+   "ciclo": 0,
+   "decisao_esperada": {
+    "acao": "nada",
+    "motivo": "proposta_ausente_tratada_como_hold",
+    "condicao": "normal",
+    "avisa": true
+   },
+   "historico": "autoria: contrato 1.8.0 (30/09/2026). A proposta sem `barra_ms` e' recusada pelo CONTRATO, e nao pela mesa: ela chega a mesa como proposta ausente — e' mais cedo e mais forte.",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false
+  },
+  {
+   "nome": "proposta-de-barra-antiga-nao-abre-outra-vez",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00"
+   },
+   "proposta": {
+    "lado": "buy",
+    "setup": {
+     "nome": "ema_cruz",
+     "versao": "1.0.0"
+    },
+    "barra_ms": 1729998000000
+   },
+   "ficha": "3232",
+   "ciclo": 0,
+   "barra_do_sinal_esperada": 1730001600000,
+   "decisao_esperada": {
+    "acao": "nada",
+    "motivo": "proposta_de_barra_antiga",
+    "condicao": "normal",
+    "avisa": false
+   },
+   "historico": "autoria: contrato 1.8.0 (30/09/2026)",
    "ligacao": "ligada",
    "falhas": {},
    "divergente": false

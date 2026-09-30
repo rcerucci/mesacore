@@ -67,6 +67,8 @@ export interface EntradaDoInstrumento {
   barra_atual?: number;
   /** A barra em que este instrumento ja' entrou (a mesa guarda-a). Ausente = nunca entrou. */
   barra_da_ultima_entrada?: number | null;
+  /** A barra do sinal que a mesa espera NESTA volta: a que ACABOU de fechar no relogio da ficha. */
+  barra_do_sinal_esperada?: number;
   falhas?: Falhas;
   /** Divergencia declarada por quem le (ex.: a reconciliacao explicou um numero que nao bate). */
   divergente?: boolean;
@@ -218,6 +220,25 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   }
 
   // 4. As travas, por ordem: primeiro o que a mesa DEVE, depois se PODE, depois se CABE.
+  // A PROPOSTA TEM DE SER DESTA BARRA — e isto e' o que separa uma entrada de uma repeticao.
+  //
+  // O setup decide no FECHO de uma barra: quando a barra N fecha, ele olha para ela e propoe. A mesa, que corre
+  // no seu proprio relogio, entra na barra N+1. Uma proposta da barra N vista na barra N+3 ja' foi (ou devia ter
+  // sido) executada: aceita-la seria abrir de novo sobre um sinal velho; recusa-la sem o dizer seria
+  // confundir-se com "o setup nao tem opiniao". Por isso se recusa, e com nome proprio.
+  //
+  // Que a proposta TENHA barra e' o CONTRATO que o garante (1.8.0, obrigatoria) e a ponte recusa a proposta que
+  // nao a traga — aqui julga-se outra coisa: se a barra que ela declara e' a que acabou de fechar.
+  if (acao === "abrir" && Number(entrada.proposta?.barra_ms) !== entrada.barra_do_sinal_esperada) {
+    return {
+      ...base,
+      acao: "nada",
+      motivo: "proposta_de_barra_antiga",
+      avisa: situacao.alarma,
+      boleta: null,
+    };
+  }
+
   if (acao === "abrir" && entrada.mesa_pausada === true) {
     return {
       ...base,

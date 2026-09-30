@@ -27,6 +27,10 @@ export interface PropostaDoSetup {
    */
   lado: "buy" | "sell" | "hold" | "caixa";
   /**
+   * A BARRA DO SINAL: o instante da ABERTURA da barra FECHADA sobre a qual o setup decidiu (ms UTC, do relogio do VENUE). E obrigatoria porque sem ela a proposta nao se situa no tempo: a mesa nao pode distinguir 'a proposta que acabou de nascer' de 'a proposta da barra passada, que ja foi executada', e uma entrada perdida ou repetida nao se explica depois. O setup e o unico que sabe em que barra decidiu — por isso e ele que o declara, e nao quem o le.
+   */
+  barra_ms: number;
+  /**
    * O setup pode adiantar o prazo do seu template. Ausente, vale o prazo do template (RN-S2, RN-S3).
    */
   relogio?: {

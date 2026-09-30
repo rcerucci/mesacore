@@ -4,7 +4,7 @@
 // DE PROPOSITO, porque e metade do valor da bateria: um mock que so sabe ser valido prova
 // metade do contrato.
 //
-//   echo '<mercado>' | bun run mocks/setup/main.ts --lado buy
+//   echo '<mercado>' | bun run mocks/setup/main.ts --lado buy --barra 1730001600000
 //   echo '<mercado>' | bun run mocks/setup/main.ts --invalido limpar|vazio|numero
 //
 // O mock NAO sabe o tamanho, o risco nem a corretora: nao ve boleta, nao ve conta. Se um dia
@@ -55,9 +55,14 @@ function decidirLado(): unknown {
   }
 }
 
+// A BARRA DO SINAL (contrato 1.8.0): o duble NAO tem relogio nem indicador — quem o invoca e' que sabe em que
+// barra esta' a testar, e por isso a barra entra pelo argumento. Sem ela, a carga sai sem `barra_ms`, e e' isso
+// que se exercita: um setup que nao situa a sua proposta no tempo nao passa o contrato.
+const barra = argumento("--barra");
 const lado = decidirLado();
 const carga: Record<string, unknown> = { setup: { nome: "mock_setup", versao: "1.0.0" } };
 if (lado !== undefined) carga["lado"] = lado;
+if (barra !== undefined) carga["barra_ms"] = Number(barra);
 
 const proposta = {
   contrato: versaoVigente(),

@@ -12,6 +12,10 @@
 // Cada uma destas verificacoes traz a sua prova negativa: um registo adulterado de proposito tem de ser
 // reprovado. Sem isso, "0 de 0" passaria por dia perfeito.
 
+// A BARRA DO SINAL (contrato 1.8.0): a proposta diz de que barra e' e a mesa so' age na que acabou de
+// fechar. As bancadas declaram-na aqui, como UM numero so', e o caso que quiser exercitar a barra
+// errada declara a sua propria `barra_ms` na proposta.
+const BARRA_DO_SINAL = 1730001600000;
 import { readFileSync, rmSync, appendFileSync } from "node:fs";
 import { decidirInstrumento } from "../../core/ciclo/ciclo.ts";
 import { correrPedidoDeParada } from "../../core/ciclo/encerramento.ts";
@@ -59,12 +63,13 @@ const mesa = new Mesa({ caminhoDasMarcas: `${caminhoDoRegisto}.marcas`, caminhoD
 const ctx = { instante_ms: 1790628000000, inibicao_cb: false, portas_do_arranque: { passam: true }, posicao_viva: false };
 
 function decidir(leitura: any, proposta: any, ciclo: number, extra: any = {}) {
-  const entradas = lerParaOCiclo(leitura, proposta === null ? null : { setup: padrao.proposta_setup, ...proposta }, ciclo);
+  const entradas = lerParaOCiclo(leitura, proposta === null ? null : { setup: padrao.proposta_setup, barra_ms: BARRA_DO_SINAL, ...proposta }, ciclo);
   return decidirInstrumento({
     mercado: entradas.mercado,
     proposta: entradas.proposta,
     proposta_invalida: entradas.proposta_invalida,
     motivo_do_contrato: entradas.motivo_do_contrato,
+    barra_do_sinal_esperada: extra.barra_do_sinal_esperada ?? BARRA_DO_SINAL,
     ficha: padrao.ficha,
     ciclo,
     ligacao: "ligada",

@@ -1,5 +1,5 @@
 {
-  "contrato": "1.7.0",
+  "contrato": "1.8.0",
   "nota": "A versao do contrato vive AQUI e num so sitio — e NAO no `package.json` nem no `pyproject.toml`, cujas versoes sao do pacote de ferramentas e seguem a vida dele. Duas casas para o mesmo numero e a forma mais rapida de ter duas verdades. Os dois runners leem-na daqui: a conferencia e por igualdade exacta (D7) e nenhuma das linguagens tem a versao escrita no codigo.",
   "emenda_1_4_0": {
     "nota": "Aditiva, e obrigada por MEDICAO contra o venue (specs/004-conector-hyperliquid/relatorios/emenda-1.4.0.txt). Quatro defeitos medidos, nenhum deles mudou o sentido de um campo que ja estivesse certo.",
@@ -28,5 +28,12 @@
     "(3)_devolve_a_resolucao": "O conector devolve a RESOLUCAO (quantidade, nocional, margem empenhada, alavancagem efectiva, preco de liquidacao) na resposta (RN-C10). Sem os numeros da corretora, quem garante a banda declarada e o conector — e a conferencia da banda (D-001, fechada na vaga anterior) nao tem o que conferir.",
     "o_que_a_mesa_faz_com_o_false": "A porta do manifesto do arranque (`core/ciclo/arranque.ts`) RECUSA o arranque quando qualquer das tres vem ausente OU `false`, nomeando qual: um conector que declara nao cumprir uma obrigacao de que a mesa depende nao arranca — e a mesa nao inventa a declaracao por ele.",
     "o_que_nao_se_mexeu": "Nenhuma das 20 declaracoes ja existentes mudou de sentido, e nenhum caso foi removido. Os manifestos do repositorio (o duble do 001, os casos dos dois motores, o do conector real e o fixture da bancada do arranque) declaram as tres; o caso `manifesto/...: falta uma das tres` passa a fazer parte da bateria do contrato."
+  },
+  "emenda_1_8_0": {
+    "nota": "Aditiva no campo, e NAO no sentido de nada: a `proposta` passa a declarar `barra_ms` — a barra do sinal — e esse campo e OBRIGATORIO. A obrigacao nao vem de gosto: vem de MEDICAO no proprio sistema (a mesa lia a operacao uma vez, no arranque, e decidiu 44 voltas seguidas sobre a MESMA barra congelada, o que daria uma entrada e nenhuma gestao).",
+    "(a)_a_barra_do_sinal": "Quem sabe em que barra decidiu e o SETUP, e so ele: o plugin calcula sobre a ultima barra FECHADA do relogio da ficha e compara o lado com o que a conta mostra. Sem esta declaracao, quem le nao consegue distinguir a proposta que acabou de nascer da proposta da barra anterior — e a diferenca entre as duas e uma entrada repetida ou uma entrada perdida, que so se descobre no registo, horas depois.",
+    "o_que_a_mesa_faz_com_ela": "A mesa so age numa proposta cuja barra seja a barra que ACABOU de fechar no relogio da ficha (`barra_atual - passo`). Uma proposta de barra antiga vira `nada` com motivo proprio (`proposta_de_barra_antiga`), e nao um silencio.",
+    "prova_negativa": "`proposta/sem-a-barra-do-sinal` REPROVA (campo obrigatorio ausente) — e a prova de que a obrigatoriedade e real e nao decorativa.",
+    "o_que_nao_se_mexeu": "Nenhum dos outros campos da proposta mudou, e nenhum caso foi removido. A `relogio.proxima_consulta_ms` continua opcional e a significar o mesmo."
   }
 }

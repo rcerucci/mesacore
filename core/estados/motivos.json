@@ -325,6 +325,12 @@
    "quando": "o setup propoe abrir e esta barra do relogio da ficha ja' deu a sua entrada",
    "regra": "D-021, RN-B8",
    "porque": "O setup propoe uma vez por barra fechada, mas a mesa le a operacao uma vez: o silencio das voltas seguintes nao chega ca'. Sem este travao, cada ciclo abria outra posicao na mesma barra — 731 decisoes iguais em 12 horas, medidas."
+  },
+  "proposta_de_barra_antiga": {
+   "cruzam_a_fronteira": false,
+   "quando": "a decisao seria abrir e a proposta nao e' da barra que acabou de fechar no relogio da ficha (barra diferente, ausente ou ilegivel)",
+   "regra": "contrato 1.8.0, RN-S1",
+   "porque": "A proposta guardada continua na operacao depois de a barra passar: sem esta recusa, a mesa abriria outra vez sobre um sinal ja' executado. Com ela, uma entrada e' uma entrada — e o registo diz porque' nao houve segunda."
   }
  },
  "ordem_de_leitura": [
@@ -333,6 +339,6 @@
  "fronteira": {
   "de_onde_vem": "`cruzam_a_fronteira` e o ambito da conferencia das duas direcoes (recorte 003, T017): `true` = este motivo pode sair numa resposta ao vigia; `false` = nasce e morre dentro de um ciclo. Os nomes marcados `true` tem de existir no conjunto fechado `conjuntos_do_vigia` de contracts/vocabulario.json, e o inverso tambem: o conjunto nao pode ter nome que o livro nao conheca (a excecao e' o que estiver declarado como vindo da PORTA - hoje so `versao_do_contrato_divergente`, porque quem recusa e' o CONTRATO e a porta relata-o tal e qual). ATE 29/09/2026 havia duas excecoes: `posicao_desconhecida` saiu da lista ao fechar o D-006 - quem o produz passou a ser uma linha da TABELA, e um nome que a tabela produz e' motivo do livro.",
   "cruzam": 26,
-  "nao_cruzam": 28
+  "nao_cruzam": 29
  }
 }

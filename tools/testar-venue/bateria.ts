@@ -30,6 +30,10 @@
 //
 // Uso:  bun tools/testar-venue/bateria.ts [--ate <0..9>] [--registar] [--instrumento BTC]
 
+// A BARRA DO SINAL (contrato 1.8.0): a proposta diz de que barra e' e a mesa so' age na que acabou de
+// fechar. As bancadas declaram-na aqui, como UM numero so', e o caso que quiser exercitar a barra
+// errada declara a sua propria `barra_ms` na proposta.
+const BARRA_DO_SINAL = 1730001600000;
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -290,12 +294,13 @@ function decidirCom(lido: any, ciclo: number, posicaoNossa: number[], mandato: a
         }
       : {}),
   };
-  const entradas = lerParaOCiclo(leitura, { setup: { nome: "manual", versao: "0.0.1" }, lado }, ciclo);
+  const entradas = lerParaOCiclo(leitura, { setup: { nome: "manual", versao: "0.0.1" }, lado, barra_ms: BARRA_DO_SINAL }, ciclo);
   return decidirInstrumento({
     mercado: entradas.mercado,
     proposta: entradas.proposta,
     proposta_invalida: entradas.proposta_invalida,
     motivo_do_contrato: entradas.motivo_do_contrato,
+    barra_do_sinal_esperada: BARRA_DO_SINAL,
     ficha: String(3232 + ciclo),
     ciclo,
     ligacao: "ligada",

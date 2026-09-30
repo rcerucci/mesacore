@@ -7,6 +7,10 @@
 // O caso `retomar` usa a Mesa a serio, com um ficheiro de marcas proprio: retomar nao pode ser comecar de
 // novo, e isso ve-se no ficheiro - que tem de sair igual ao que entrou.
 
+// A BARRA DO SINAL (contrato 1.8.0): a proposta diz de que barra e' e a mesa so' age na que acabou de
+// fechar. As bancadas declaram-na aqui, como UM numero so', e o caso que quiser exercitar a barra
+// errada declara a sua propria `barra_ms` na proposta.
+const BARRA_DO_SINAL = 1730001600000;
 import { readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { conferirCB } from "../../core/ciclo/cb.ts";
@@ -113,12 +117,13 @@ for (const caso of bateria.casos_us6) {
     continue;
   }
 
-  const entradas = lerParaOCiclo(caso.leitura, caso.proposta === null ? null : { setup: padrao.proposta_setup, ...caso.proposta }, caso.ciclo ?? padrao.ciclo);
+  const entradas = lerParaOCiclo(caso.leitura, caso.proposta === null ? null : { setup: padrao.proposta_setup, barra_ms: BARRA_DO_SINAL, ...caso.proposta }, caso.ciclo ?? padrao.ciclo);
   const decisao = decidirInstrumento({
     mercado: entradas.mercado,
     proposta: entradas.proposta,
     proposta_invalida: entradas.proposta_invalida,
     motivo_do_contrato: entradas.motivo_do_contrato,
+    barra_do_sinal_esperada: caso.barra_do_sinal_esperada ?? BARRA_DO_SINAL,
     ficha: caso.ficha ?? padrao.ficha,
     ciclo: caso.ciclo ?? padrao.ciclo,
     ligacao: caso.ligacao ?? padrao.ligacao ?? "ligada",
@@ -239,12 +244,13 @@ for (const caso of bateria.casos_us7) {
   if (caso.e_continua_a_abrir !== undefined) {
     const entradas = lerParaOCiclo(
       { instrumento: "EURUSD", idade_do_dado_ms: 100, estado_do_mercado: "aberto" },
-      { setup: padrao.proposta_setup, lado: caso.e_continua_a_abrir.lado },
+      { setup: padrao.proposta_setup, barra_ms: BARRA_DO_SINAL, lado: caso.e_continua_a_abrir.lado },
       50,
     );
     const decisao = decidirInstrumento({
       mercado: entradas.mercado, proposta: entradas.proposta,
       proposta_invalida: false, motivo_do_contrato: null,
+      barra_do_sinal_esperada: BARRA_DO_SINAL,
       ficha: padrao.ficha, ciclo: 50,
       ligacao: "ligada",
       mandato: padrao.mandato, template: padrao.template,

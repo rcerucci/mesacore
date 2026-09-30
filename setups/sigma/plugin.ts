@@ -60,12 +60,25 @@ for (const campo of ["ma_len", "ma_tipo", "src_ma", "src_sinal", "banda_atr", "z
 }
 
 const queixa = (porque: string) => process.stderr.write(JSON.stringify({ setup: NOME, diagnostico: porque }) + "\n");
+/**
+ * QUEM NAO CONSEGUE CALCULAR NAO FALA.
+ *
+ * Era `dizer("hold", ...)` nos casos em que nem chegou a existir uma barra: sem leitura, sem velas, relogio
+ * desconhecido. Isso era uma mentira de forma — `hold` e' uma OPINIAO sobre o mercado, e o contrato distingue
+ * "nao propus" de "tenho opiniao". Sem barra nao ha proposta possivel (a `barra_ms` e' obrigatoria, contrato
+ * 1.8.0), e a resposta honesta e' o SILENCIO, com o diagnostico no `stderr`, onde ele sempre esteve: quem le
+ * o registo ve' a queixa, e quem espera uma proposta nao recebe uma inventada.
+ */
+function naoProponho(porque: string): never {
+  queixa(porque);
+  process.exit(0);
+}
 const dizer: (lado: string, porque: string) => never = (lado, porque) => {
   const linha = JSON.stringify({
-    contrato: "1.7.0",
+    contrato: "1.8.0",
     tipo: "proposta",
     id: `${NOME}-${instrumento}-${Date.now()}`,
-    carga: { setup: { nome: NOME, versao: VERSAO }, lado },
+    carga: { setup: { nome: NOME, versao: VERSAO }, lado, barra_ms: tFechada },
   });
   const r = validar(linha);
   if (r.veredicto !== "aceite") {
@@ -96,16 +109,16 @@ for (const linha of entrada.split("\n")) {
     // linha ilegivel nao vira leitura
   }
 }
-if (leitura === null) dizer("hold", "sem leitura do mercado: nao se decide sobre o que nao se leu");
-if (leitura.estado !== "aberto") dizer("hold", `o mercado esta' ${leitura.estado}`);
+if (leitura === null) naoProponho("sem leitura do mercado: nao se decide sobre o que nao se leu");
+if (leitura.estado !== "aberto") naoProponho(`o mercado esta' ${leitura.estado}`);
 
 // ---- as velas, do ficheiro do relógio da ficha ----------------------------------------------------------
-if (pastaDoMercado === "") dizer("hold", "nao me deram a pasta das velas: sem barras nao ha media nem ATR");
+if (pastaDoMercado === "") naoProponho("nao me deram a pasta das velas: sem barras nao ha media nem ATR");
 // A pasta pode ser absoluta (o operador passa uma pasta de fora do repositorio) ou relativa ao repo — e juntar
 // `RAIZ` a um caminho absoluto daria um caminho que nao existe, com o plugin a dizer "nao ha velas" de um
 // ficheiro que esta' la'. Medido a 30/09.
 const caminho = join(isAbsolute(pastaDoMercado) ? pastaDoMercado : join(RAIZ, pastaDoMercado), `velas-${instrumento}-${relogio}.jsonl`);
-if (!existsSync(caminho)) dizer("hold", `nao existe o ficheiro de velas do par (${instrumento}-${relogio})`);
+if (!existsSync(caminho)) naoProponho(`nao existe o ficheiro de velas do par (${instrumento}-${relogio})`);
 
 const todas: Vela[] = readFileSync(caminho, "utf8")
   .split("\n")
@@ -116,11 +129,11 @@ const todas: Vela[] = readFileSync(caminho, "utf8")
 // sobre um preco que ainda pode mudar — o Pine faz o mesmo com `barstate.isconfirmed`.
 const msDoRelogio: Record<string, number> = { "1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000, "1h": 3_600_000, "2h": 7_200_000, "4h": 14_400_000, "1d": 86_400_000 };
 const passo = msDoRelogio[relogio];
-if (passo === undefined) dizer("hold", `o relogio ${relogio} nao me e' conhecido`);
+if (passo === undefined) naoProponho(`o relogio ${relogio} nao me e' conhecido`);
 const agoraMs = Number(leitura.tempo_do_venue_ms ?? Date.now());
 const velas = todas.filter((v) => v.t + passo <= agoraMs);
 const ultima = velas[velas.length - 1];
-if (ultima === undefined) dizer("hold", "nao ha nenhuma barra FECHADA: a primeira ainda esta' a formar");
+if (ultima === undefined) naoProponho("nao ha nenhuma barra FECHADA: a primeira ainda esta' a formar");
 queixa(`barras: ${todas.length} no ficheiro · ${velas.length} fechadas · ultima ${new Date(ultima.t).toISOString()}`);
 
 // ---- a conta, e o que ela mostra nas últimas barras -----------------------------------------------------
