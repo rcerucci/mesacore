@@ -1,0 +1,44 @@
+{
+ "_o_que_e_isto": "A FICHA DE UM PAR. Cabecalho padrao igual em qualquer setup (quem, onde, com quanto risco e com que bandas), e depois as constantes daquele indicador. A credencial NAO mora aqui: vive em config/contas/<conta>.json, fora do git.",
+ "cabecalho": {
+  "conta": "hl-teste-plugin",
+  "corretora": "hyperliquid",
+  "ambiente": "teste",
+  "endereco": "0x<ENDERECO DA CONTA>",
+  "instrumento": "ETH",
+  "relogio": "30m",
+  "saldo_pct": "1",
+  "alavancagem": "2",
+  "bandas": {
+   "saldo_pct": {
+    "minimo": "0.5",
+    "maximo": "20"
+   },
+   "alavancagem": {
+    "minimo": "1",
+    "maximo": "3"
+   },
+   "stop_pct": {
+    "minimo": "0.1",
+    "maximo": "5"
+   },
+   "tp_pct": {
+    "minimo": "0.1",
+    "maximo": "10"
+   }
+  },
+  "prazo_de_resposta_ms": 5000
+ },
+ "constantes": {
+  "ma_len": 24,
+  "ma_tipo": "EMA",
+  "src_ma": "hl2",
+  "src_sinal": "hl2",
+  "usar_banda": true,
+  "banda_atr": "0.25",
+  "usar_zz": true,
+  "zz_atr": "2.0",
+  "atr_len": 14
+ },
+ "constantes_do_exemplo": true
+}

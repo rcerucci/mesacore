@@ -31,7 +31,7 @@ const manifesto = JSON.parse(readFileSync(join(import.meta.dir, "setup.json"), "
 const ficha = JSON.parse(process.env.FICHA_DO_PAR ?? "{}") as Record<string, unknown>;
 const rapidaN = Number(ficha.parametros_rapida ?? ficha["parametros.rapida"] ?? 5);
 const lentaN = Number(ficha.parametros_lenta ?? ficha["parametros.lenta"] ?? 20);
-const janela = String(ficha.janela ?? "1h");
+const janela = String((JSON.parse(process.env.RISCO_DO_PAR ?? "{}") as any).relogio ?? "1h");
 
 // ---- a leitura, do stdin: uma linha do contrato ---------------------------------------------------------
 const entrada = await new Promise<string>((resolve) => {

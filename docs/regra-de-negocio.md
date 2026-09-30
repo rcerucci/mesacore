@@ -53,7 +53,16 @@ que nunca usa stop são o mesmo tipo de plugin: o que a mesa lê é o **template
 - **Marca de posse** — o identificador curto que a mesa põe em cada ordem e que diz que aquela ordem é
   dela e daquela ficha. É o que permite reencontrar as **suas** posições pelos registros da corretora, sem
   base de dados própria (RN-B10, RN-T16.1).
+> **EMENDA — 30/09/2026 (decisão do dono).** A ficha passa a ser **UM ficheiro por par**, com um
+> **cabeçalho padrão** (conta, corretora, ambiente, endereço, instrumento, relógio, saldo_pct, alavancagem,
+> bandas, prazo) seguido das **constantes daquele indicador**. Motivo declarado: *"acho que não faz sentido [dois
+> arquivos]; pode ser um único que no início põe o nome da conta e o restante correspondente, seria uma espécie
+> de cabeçalho padrão para qualquer setup, posteriormente as constantes personalizadas para cada indicador"*.
+> O código do arranque (`core/ciclo/arranque.ts`) já lia a ficha como um objecto só, e é este lado que passa a
+> valer. **O texto original fica abaixo, como registo do que a espec dizia.**
+
 - **Ficha** — a configuração concreta de um instrumento: **dois arquivos**, um de risco e um do setup,
+  mais o nome do setup e da variante. *(texto original, substituído pela emenda de 30/09/2026)*
   mais o nome do setup e da variante.
 - **Arquivo de risco** — o arquivo de forma **fixa** (vem do core, igual em todos os setups):
   percentagem do saldo, alavancagem, distância mínima de liquidação, janela, e as bandas onde os itens

@@ -84,18 +84,18 @@ function lerManifestoDoSetup(pasta: string): ManifestoDoSetup {
 const manifesto = lerManifestoDoSetup(pastaDoSetup);
 
 // A FICHA DO PAR, os DOIS arquivos (RN-M6). Sem ela nao ha relogio nem risco: um par sem ficha nao e' operado.
-function lerFichaDoPar(p: string): { risco: any; setup: any } {
-  const base = join(RAIZ, "fichas", p);
-  const ler = (nome: string) => {
-    const caminho = join(base, nome);
-    if (!existsSync(caminho)) morrer(`a ficha do par ${p} nao tem \`${nome}\` (${caminho}): um par sem ficha nao e' operado`);
-    return JSON.parse(readFileSync(caminho, "utf8"));
-  };
-  return { risco: ler("risco.json"), setup: ler("setup.json") };
+function lerFichaDoPar(p: string): { cabecalho: Record<string, any>; constantes: Record<string, any> } {
+  const caminho = join(RAIZ, "fichas", `${p}.json`);
+  if (!existsSync(caminho)) morrer(`nao existe a ficha do par ${p} (${caminho}): um par sem ficha nao e' operado`);
+  const f = JSON.parse(readFileSync(caminho, "utf8"));
+  if (f.cabecalho === undefined || f.constantes === undefined) {
+    morrer(`a ficha ${p} nao tem cabecalho e constantes: um ficheiro so', com o cabecalho padrao primeiro`);
+  }
+  return f;
 }
 const fichaDoPar = lerFichaDoPar(par);
-const janela = String(fichaDoPar.setup.janela ?? "");
-if (janela === "") morrer(`a ficha de parametros do par ${par} nao declara a \`janela\` (o relogio): e' ela que o decide, nao o assistente`);
+const janela = String(fichaDoPar.cabecalho.relogio ?? "");
+if (janela === "") morrer(`a ficha ${par} nao declara o \`relogio\` no cabecalho: e' a ficha que o decide, nao o assistente`);
 
 // ---------------------------------------------------------------------------------------------------------
 // O SETUP: um processo por volta. Recebe a leitura no stdin, devolve UMA linha `proposta` no stdout.
@@ -106,7 +106,7 @@ function correrSetup(leitura: unknown): Promise<{ proposta: unknown | null; linh
     // (campo a mais e' recusado — medido na T3), e os parametros nao sao leitura de mercado.
     const p = spawn(manifesto.comando[0]!, manifesto.comando.slice(1), {
       cwd: join(RAIZ, pastaDoSetup),
-      env: { ...process.env, FICHA_DO_PAR: JSON.stringify(fichaDoPar.setup), RISCO_DO_PAR: JSON.stringify(fichaDoPar.risco), INSTRUMENTO: instrumento, PASTA_DE_MERCADO: pastaDoMercado ?? "" },
+      env: { ...process.env, FICHA_DO_PAR: JSON.stringify(fichaDoPar.constantes), RISCO_DO_PAR: JSON.stringify(fichaDoPar.cabecalho), INSTRUMENTO: instrumento, PASTA_DE_MERCADO: pastaDoMercado ?? "" },
     });
     const linhas: string[] = [];
     let erro: string | null = null;
@@ -238,10 +238,10 @@ async function main(): Promise<void> {
           [instrumento]: {
             leitura,
             // A FICHA em vigor e o TEMPLATE do setup: o ciclo exige-os, e sem eles nao ha boleta a compor.
-            ficha: `${fichaDoPar.setup.setup ?? manifesto.nome}_${fichaDoPar.setup.variante ?? "v1"}`,
+            ficha: `${manifesto.nome}_v${manifesto.versao.split(".")[0]}`,
             template: manifesto.template ?? {},
-            parametros: fichaDoPar.setup,
-            risco: fichaDoPar.risco,
+            parametros: fichaDoPar.constantes,
+            risco: fichaDoPar.cabecalho,
             ...(proposta === null
               ? {}
               : { proposta: (proposta as any).carga }),

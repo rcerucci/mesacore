@@ -662,7 +662,7 @@ lado é oposto ao da nossa posição — nomeia-a `reduzir` (reduce_only, tamanh
 que aumentaria além da posição; ou (b) o vocabulário ganha o que lhe falta — um tamanho neutro na boleta
 (percentagem da POSIÇÃO, não do saldo), que é o que permite dizer «reduz metade» sem tocar no mandato.
 
-## D-014 — a ficha é lida como UM objecto, e a espec diz DOIS arquivos
+## D-014 — a ficha é lida como UM objecto, e a espec dizia DOIS arquivos  *(RESOLVIDO POR DECISÃO, 30/09/2026)*
 
 **Declarado em 30/09/2026.** Medido: `core/servidor.ts` (via `core/ciclo/relogio.ts`, `conferirMandatos`) lê a
 configuração com `fichas.<instrumento>.{saldo_pct, alavancagem, ...}` — o risco e o setup **no mesmo objecto**.
@@ -682,3 +682,29 @@ escrita pelo operador leva os dois, separados, em `parametros` e `risco`.
 **O que falta:** o leitor do core passar a ler os dois arquivos (e a conferir as bandas), em vez de ler um
 objecto único. Enquanto não for feito, a config que se dá ao `--config` é uma vista juntada — e uma vista
 juntada pode esconder uma banda violada.
+
+**Fecho (30/09/2026).** O dono decidiu: **um ficheiro por par**, com cabeçalho padrão + as constantes do
+indicador. A espec levou emenda datada (mesma data, `docs/regra-de-negocio.md`, RN-M6). Fica alinhado: o código
+lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *Não* fica pendente código nenhum.
+
+---
+
+## D-015 — a RN-M4.12 não existe no código: o travão de risco por ordem não está lá
+
+**Declarado em 30/09/2026.** A espec, RN-M4.12: *"O mandato declara também o **risco máximo por ordem**, em
+percentagem do saldo (ex.: 2%). Antes de enviar, a mesa calcula a perda implícita — distância do stop ×
+exposição — e **recusa** a ordem que a exceda, mesmo que o setup a peça e mesmo que a ficha a permita. É o
+travão que nenhuma ordem de corretora nenhuma atravessa."*
+
+**Medido:** em `core/` não existe `risco_maximo_por_ordem`, `perda_implicita` nem `distancia_do_stop` (busca =
+0 resultados). O que existe é `core/ciclo/arranque.ts`, que confere `saldo_pct`, `alavancagem` e as `bandas` da
+ficha — dimensão, não perda. **Não há, portanto, travão de perda implícita na abertura.**
+
+**Porque isto importa agora, e não é teoria:** o setup do Pine **não tem stop** (a única saída é a viragem), e
+o venue **não trava por saldo** — foi medido a 29/09/2026 na testnet: uma ordem mal dimensionada de ~400× o
+equity **não foi recusada** e encheu (~10 000 USDC contra ~992 de equity). Sem RN-M4.12, o único travão entre a
+mesa e uma posição enorme é o **tamanho** — `saldo_pct × alavancagem`, que a ficha declara.
+
+**Consequência prática, declarada:** na conta real, `saldo_pct` baixo (10%) e `alavancagem` 1 são o travão
+inteiro. Não há segundo. Enquanto RN-M4.12 não estiver implementada, isto tem de ser dito ao dono em cada
+abertura em conta real — não uma vez.
