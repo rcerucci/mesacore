@@ -455,12 +455,23 @@ async function main() {
           "sem o mandato do dono seria decidir por ele.",
       );
     }
-    const operacao = lerOperacao(opcoes.caminhoDaOperacao);
     const config = JSON.parse(readFileSync(opcoes.caminhoDaConfig, "utf8"));
-    conferirMandatos(operacao, config);
     let ciclo = 0;
     relogio = setInterval(() => {
       if (mesa.estado === "parada") return; // sem operacao para defender, a volta nao decide
+
+      // A OPERACAO E' RELIDA A CADA VOLTA, e isto e' o que separa uma mesa de um retrato.
+      //
+      // Medido a 30/09: a mesa lia a operacao UMA VEZ, no arranque, e decidia 44 vezes sobre o mesmo retrato —
+      // a mesma proposta, a mesma posicao, a mesma barra. Com a mao fechada isso daria UMA posicao no arranque
+      // e mais nada: nem gestao da posicao aberta, nem viragem de mao, nem nada. A operacao e' um ficheiro que
+      // o operador reescreve a cada leitura (escrita atomica: temp + rename, por isso nunca se le' meio
+      // ficheiro). O que a mesa decide tem de ser o que ACABOU de ser lido.
+      //
+      // O que NAO se relê: a `--config` (os termos do dono). Essa e' lida uma vez, no arranque, e mudar os
+      // termos de uma mesa em operacao e' outro assunto — com a RN-V10 e registo proprio.
+      const operacao = lerOperacao(opcoes.caminhoDaOperacao!);
+      conferirMandatos(operacao, config);
 
       // EM `encerrando` ha DUAS coisas a fazer, e sao diferentes:
       //
