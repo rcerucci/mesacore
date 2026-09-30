@@ -84,6 +84,10 @@ declarar "Pine x motor (todas as opcoes)" bash -c "cd contracts && uv run python
 # perna, e uma ordem fechada a mao so' reabre no proximo flip. Sao oito casos, com as barras reais truncadas de
 # proposito para que a ultima barra fechada seja (ou nao seja) a barra de uma viragem.
 declarar "sigma: entrada so' no flip (8 casos)" bash -c "cd contracts && uv run python ../tools/verificar-setup/sigma-casos.py"
+# AS FICHAS conferidas contra o que o sistema LE': as tres regras de identidade, os tipos (D4: o numero viaja em
+# TEXTO) e a forma das bandas — e, sobretudo, a chave que NINGUEM le': «chave que ninguem le e' lixo» (o criterio
+# do proprio inventario), com as que estao a espera de decisao do dono reportadas em vez de escondidas.
+declarar "fichas (cabecalho, tipos, lixo)" python3 tools/verificar-setup/fichas.py
 
 # As bancadas da camada de OPERACAO (003): correm processos a serio (vigia + mesa), por isso ficam na porta
 # completa - a `--rapido` e a que se corre a cada passo.

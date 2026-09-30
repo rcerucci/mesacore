@@ -2,9 +2,6 @@
  "_o_que_e_isto": "A ficha de UM par NUMA conta: <PAR>-<CONTA>.json, dentro da pasta do setup. O nome e' para o olho — quem manda e' o cabecalho, e a CONTA do cabecalho tem de ser a mesma do nome ou o operador recusa (senao um ficheiro renomeado passava a mentir).",
  "cabecalho": {
   "conta": "hl-real-sol-2",
-  "corretora": "hyperliquid",
-  "ambiente": "producao",
-  "endereco": "0x<ENDERECO DA CONTA>",
   "instrumento": "SOL",
   "setup": "sigma",
   "relogio": "1h",

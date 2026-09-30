@@ -2,9 +2,6 @@
  "_o_que_e_isto": "A ficha de UM par NUMA conta: <PAR>-<CONTA>.json, dentro da pasta do setup. O nome e' para o olho — quem manda e' o cabecalho, e a CONTA do cabecalho tem de ser a mesma do nome ou o operador recusa (senao um ficheiro renomeado passava a mentir).",
  "cabecalho": {
   "conta": "hl-teste-plugin",
-  "corretora": "hyperliquid",
-  "ambiente": "teste",
-  "endereco": "0xF87138D298E338962E1a2e0ff23267Dc32c15621",
   "instrumento": "SOL",
   "setup": "sigma",
   "relogio": "1h",
@@ -31,7 +28,6 @@
    }
   },
   "prazo_de_resposta_ms": 5000,
-  "nome_do_par": "SOL-USDC",
   "enviar": false
  },
  "constantes": {
@@ -44,6 +40,5 @@
   "usar_zz": true,
   "zz_atr": "2.0",
   "atr_len": 14
- },
- "_nome_do_par": "`instrumento` e' o nome que o VENUE conhece (e' com ele que se le' o livro e se manda a ordem); `nome_do_par` e' o nome com que o dono conhece o par. O primeiro manda; o segundo explica."
+ }
 }

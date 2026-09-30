@@ -58,3 +58,7 @@ config/contas/
 
 # a pasta de velas de cada setup e' dado gerado (mercado.ts --para-pasta)
 setups/*/mercado/
+
+# Os worktrees do kanban (project=<repo> corre em .worktrees/<task-id>) vivem DENTRO do repositorio: sao
+# checkouts de outro processo, nao conteudo do produto — e um repositorio embutido nao entra no historico.
+.worktrees/

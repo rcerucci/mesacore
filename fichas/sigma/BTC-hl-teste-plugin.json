@@ -2,9 +2,6 @@
  "_o_que_e_isto": "A ficha de UM par NUMA conta: <PAR>-<CONTA>.json, dentro da pasta do setup. O nome e' para o olho — quem manda e' o cabecalho, e a CONTA do cabecalho tem de ser a mesma do nome ou o operador recusa (senao um ficheiro renomeado passava a mentir).",
  "cabecalho": {
   "conta": "hl-teste-plugin",
-  "corretora": "hyperliquid",
-  "ambiente": "teste",
-  "endereco": "0xF87138D298E338962E1a2e0ff23267Dc32c15621",
   "instrumento": "BTC",
   "setup": "sigma",
   "relogio": "1h",

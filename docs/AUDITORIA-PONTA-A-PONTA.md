@@ -303,6 +303,11 @@ corrida ou nas bancadas que o portão corre.
 > trabalha nesta árvore, e esta sessão (worker de cartão, workspace `scratch`) **não** grava nem limpa nada aqui:
 > fica o estado exacto, a decisão fica com quem lá trabalha.
 >
+> **Pós-escrito — 30/09/2026, 20:23:04 (-03):** a sessão que trabalha nesta árvore gravou de novo (**`acba3bf`**, «só o
+> sigma: os setups de exemplo saem do repositório…») e as **duas notas desta arbitragem foram incluídas** nesse
+> commit — não ficaram órfãs, e a árvore ficou limpa. O parágrafo acima descreve o instante em que foi escrito; este
+> pós-escrito, por ser escrito agora, é por definição o que fica por gravar (e será varrido pelo próximo `git add`).
+>
 > *Texto original, preservado (o registo é auditável):* título «um worker alheio pôs a minha árvore em `stash`»;
 > fecho «um processo de outro perfil entrou no directório de trabalho desta sessão e guardou em `stash` trabalho por
 > gravar, sem o dizer».
