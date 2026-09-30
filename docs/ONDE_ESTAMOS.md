@@ -255,3 +255,29 @@ nao do plugin. Desenho fixado (para nao se improvisar, P16):
 
 Ordem de risco: testnet primeiro, tamanho minimo, e o registo a dizer o que saiu antes de sair. Na conta real
 de pequeno valor so' depois de a mao estar fechada em testnet e o desfecho classificado.
+
+
+## 30/09/2026 (noite) — os pontos que faltavam, fechados por ordem
+
+Ordem do dono: "vamos fechar os pontos que faltam. quando for tudo resolvido me avise, aí vamos rodar, mas só
+depois da minha permissão." Estado a cada momento, com o numero que o prova:
+
+| # | Ponto | Estado | A prova |
+|---|---|---|---|
+| 1 | A mesa relê a operação em cada volta (era um retrato congelado: 44 ciclos sobre a MESMA barra) | ✅ | `core/servidor.ts` — leitura dentro do relógio; portão 30/30 |
+| 2 | A proposta diz de que barra é, e a mesa só age nessa barra (contrato **1.8.0**) | ✅ | `proposta.barra_ms` obrigatória; casos `proposta/sem-a-barra-do-sinal` (REPROVA) e `proposta-de-barra-antiga-nao-abre-outra-vez`; o operador guarda a última proposta por instrumento |
+| 3a | As ordens vivas da conta (contrato **1.9.0**) | ✅ | `mercado.ordens_abertas` obrigatória; `mercado/ordem-viva-com-lado-inventado` REPROVA; o produtor lê `openOrders` do venue e RECUSA a leitura se não conseguir perguntar |
+| 3b | O mapa de marcas marca→ficha (RN-T16.1, **D-008**) | ⬜ | desenho: a marca viaja no `cloid`; o mapa constrói-se do que NÓS enviamos (a boleta + a resolução) e do que o venue publica (as ordens vivas trazem agora `marca_de_posse`) — sem ele, uma posição nossa lê-se como ALHEIA e não é gerida |
+| 4 | A MÃO: mesa → conector (a boleta sai) | ⬜ | desenho em quatro passos mais abaixo; é o passo que move dinheiro, e só se toca na testnet, com tamanho mínimo |
+
+**O que NÃO se fez, de propósito:** nenhuma ordem saiu, nenhuma mão foi fechada e nada foi armado. O sistema
+está a observar (lê, decide, regista) e o gatilho continua no lugar. A corrida a sério espera pela permissão
+do dono — e antes dela, os pontos 3b e 4.
+
+**Lições que a noite pagou, e que ficam escritas:**
+* uma bancada que acusa a mesa pode estar a acusar-se a si: a do vigia calculava `instante - 1h` (que cai
+  DENTRO da barra anterior, e não na abertura dela) e recusava com razão o que ela própria escrevia errado;
+* o CONTRATO apanha antes da mesa: uma proposta sem barra nunca chega ao ciclo (é recusada na ponte), e por
+  isso o motivo `proposta_sem_a_barra` saiu do livro — um motivo sem produtor é ruído num conjunto fechado;
+* a frescura e as provas em Python podem dar vermelho intermitente quando o gerado está sujo ou quando o
+  `uv run` apanha o venv do ambiente: o verde confirma-se correndo de novo, e o que se commita é o gerado.
