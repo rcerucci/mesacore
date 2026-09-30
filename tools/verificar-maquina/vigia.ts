@@ -22,6 +22,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { RAIZ_DO_REPO } from "../../core/livro-de-motivos.ts";
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import { fundir } from "./fundir.ts";
+import { reiniciarTravosDeBarra } from "../../core/ciclo/relogio.ts";
 
 const MODO = process.argv[2] ?? "";
 if (MODO !== "--arranque" && MODO !== "--orfandade" && MODO !== "--encerramento" && MODO !== "--verbos") {
@@ -191,6 +192,9 @@ O que se mede, e por que e esta a medida:
     mesa servir mais do que uma conta, e nao antes.
 */
 async function bancadaDosVerbos() {
+  // D-021: cada fase e' UMA mesa. Sem este reinicio, o travao da barra de uma fase entrava na seguinte (o mesmo
+  // processo), e as 10 voltas da orfandade ficavam todas em `nada` — medido antes de o corrigir.
+  reiniciarTravosDeBarra();
   console.log("=== bancada dos verbos: pause, reset e nova_sessao (T044)\n");
 
   const declaradoDoCiclo = JSON.parse(readFileSync(join(RAIZ_DO_REPO, "core/ciclo/ciclo.casos.json"), "utf8"));
@@ -373,6 +377,9 @@ async function bancadaDosVerbos() {
 }
 
 async function bancadaDoEncerramento() {
+  // D-021: cada fase e' UMA mesa. Sem este reinicio, o travao da barra de uma fase entrava na seguinte (o mesmo
+  // processo), e as 10 voltas da orfandade ficavam todas em `nada` — medido antes de o corrigir.
+  reiniciarTravosDeBarra();
   console.log("=== bancada do encerramento: os desfechos do `stop` com posicao viva (T038)\n");
 
   const declaradoDoCiclo = JSON.parse(readFileSync(join(RAIZ_DO_REPO, "core/ciclo/ciclo.casos.json"), "utf8"));
@@ -555,6 +562,9 @@ async function bancadaDoEncerramento() {
 }
 
 async function bancadaDaOrfandade() {
+  // D-021: cada fase e' UMA mesa. Sem este reinicio, o travao da barra de uma fase entrava na seguinte (o mesmo
+  // processo), e as 10 voltas da orfandade ficavam todas em `nada` — medido antes de o corrigir.
+  reiniciarTravosDeBarra();
   console.log("=== bancada da orfandade: a mesa contra a morte do vigia (SC-001, T028, T029)\n");
 
   const declaradoDoCiclo = JSON.parse(readFileSync(join(RAIZ_DO_REPO, "core/ciclo/ciclo.casos.json"), "utf8"));
@@ -667,8 +677,20 @@ async function bancadaDaOrfandade() {
     `sem motivo: ${semMotivo.length}`);
 
   const acaoEsperada = casoDoCiclo.decisao_esperada?.acao;
+  // D-021 (30/09/2026): as voltas desta bancada caem TODAS na mesma barra, e o travao da barra faz da primeira
+  // a entrada e das seguintes `nada` com motivo. A expectativa passa a ser essa — e continua a medir o que
+  // media: que a mesa decide o que a bateria declara, na primeira volta em que a barra pode entrar.
+  // A PRIMEIRA DECISAO DA FASE e' a entrada da barra (pode ter acontecido antes de o vigia morrer — e aconteceu:
+  // medido). O travao faz das seguintes `nada` com motivo, e e' isso que se mede aqui.
+  const decisoes = lerLinhas(caminhos.ledger).filter((l: any) => l.acao !== undefined);
+  const primeiraEntrada = decisoes[0];
   conferir("orfandade: a mesa decide o que a bateria do ciclo declara para a mesma leitura",
-    novas.every((l) => l.acao === acaoEsperada), `esperado '${acaoEsperada}', obtido ${JSON.stringify(novas.map((l) => l.acao))}`);
+    primeiraEntrada !== undefined && primeiraEntrada.acao === acaoEsperada,
+    `esperado '${acaoEsperada}', obtido ${JSON.stringify(decisoes.map((l: any) => [l.acao, l.motivo]))}`);
+  const repetidas = decisoes.slice(1);
+  conferir("orfandade/D-021: as voltas seguintes da MESMA barra sao `nada` pelo travao, e dizem-no",
+    repetidas.length > 0 && repetidas.every((l: any) => l.acao === "nada" && l.motivo === "entrada_ja_feita_nesta_barra"),
+    `obtido ${JSON.stringify(repetidas.map((l: any) => [l.acao, l.motivo]))}`);
 
   // 4. O REGRESSO (T029): um vigia novo le o estado da mesa no ledger dela e nao arranca nada.
   const resultado2 = spawnSync("bun", argsDoVigia, {
