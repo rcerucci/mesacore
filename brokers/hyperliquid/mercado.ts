@@ -17,6 +17,20 @@
 // contrato — e' um item por fazer, e inventa-lo aqui seria a casa a definir a forma do mundo). Devolve o que o
 // venue publicou, e a forma crua viaja com a leitura (`fonte`, `intervalo`, `quantas`).
 //
+// O FORMATO — e porquê (pergunta do dono: «e' necessario considerar o formato mais viavel ao plugin para ele
+// realizar calculos», e «um plugin pode ser ts, python, etc.»). O formato e' **JSONL**: um objecto JSON por
+// linha, com os NOMES DE CAMPO DO PROPRIO VENUE e os numeros como TEXTO (o venue publica-os assim, e texto nao
+// perde precisao nenhuma quando o plugin calcula — a regra D4 da casa, que proibe virgula flutuante em
+// dinheiro). Ao lado vai um DESCRITOR (JSON) com o instrumento, o intervalo, a janela, quantas velas e quando
+// se escreveu, para o plugin nao ter de ler o ficheiro para saber o que tem dentro. Porque assim:
+//   * qualquer linguagem le JSON na sua biblioteca de base (TS `JSON.parse`, Python `json.loads`) — sem
+//     dependencias, e sem um formato que so uma lingua sabe ler;
+//   * uma linha por vela e' APPENDAVEL: o colector acrescenta a vela nova a cada volta, sem reescrever o
+//     historico nem obrigar o plugin a recarregar tudo;
+//   * uma linha truncada (escrita a meio) e' detectavel linha a linha, e nao corrompe o ficheiro inteiro;
+//   * os nomes sao os do venue (`t`,`T`,`o`,`h`,`l`,`c`,`v`,`n`) — nao se renomeia nada, logo nao se perde nem
+//     se inventa informacao.
+//
 // Uso (estudo, e leitura de features):
 //   bun run brokers/hyperliquid/mercado.ts --intervalos
 //   bun run brokers/hyperliquid/mercado.ts --velas BTC --intervalo 1h --dias 7
@@ -154,6 +168,65 @@ async function main(): Promise<void> {
       primeira: quantas > 0 ? velas[0] : null,
       ultima: quantas > 0 ? velas[quantas - 1] : null,
     };
+    const pasta = argumento("--para-pasta");
+    if (pasta !== undefined) {
+      // O FICHEIRO QUE O PLUGIN LE: JSONL + descritor, e a actualizacao que o colector chama a cada volta.
+      const actualizar = argv.includes("--actualizar");
+      const nome = `velas-${instrumento}-${intervalo}`;
+      const ficheiro = `${pasta.replace(/\/$/, "")}/${nome}.jsonl`;
+      const descritor = `${pasta.replace(/\/$/, "")}/${nome}.descritor.json`;
+      let ja: any[] = [];
+      let janela = { desde_ms, quantas: 0 };
+      if (actualizar) {
+        try {
+          const bruto = JSON.parse(readFileSync(descritor, "utf8")) as any;
+          if (bruto?.instrumento === instrumento && bruto?.intervalo === intervalo) {
+            janela = { desde_ms: bruto.desde_ms ?? desde_ms, quantas: bruto.quantas ?? 0 };
+            ja = readFileSync(ficheiro, "utf8")
+              .split("\n")
+              .filter((l) => l.trim() !== "")
+              .map((l) => JSON.parse(l));
+          }
+        } catch {
+          // Sem descritor ou sem ficheiro: escreve-se de novo, e diz-se na saida (`ja_tinha: 0`).
+        }
+      }
+      // APPEND, sem duplicar: as velas novas sao as que comecam DEPOIS da ultima que ja' la' esta'.
+      const ultimaJa = ja.length > 0 ? Number(ja[ja.length - 1]?.t ?? 0) : 0;
+      const novas = (velas as any[]).filter((v) => Number(v?.t ?? 0) > ultimaJa);
+      const todas = [...ja, ...novas];
+      writeFileSync(ficheiro, todas.map((v) => JSON.stringify(v)).join("\n") + "\n");
+      writeFileSync(
+        descritor,
+        JSON.stringify(
+          {
+            formato: "jsonl — um objecto por vela, campos do venue, numeros em TEXTO",
+            instrumento,
+            intervalo,
+            ambiente,
+            url,
+            desde_ms: janela.desde_ms,
+            ate_ms: todas.length > 0 ? Number(todas[todas.length - 1]?.T ?? 0) : null,
+            quantas: todas.length,
+            chaves_da_vela: chaves,
+            ficheiro: nome + ".jsonl",
+            escrito_em_ms: Date.now(),
+            fonte_do_campo_do_tempo: "`t` abre, `T` fecha (o venue publica os dois, em ms)",
+          },
+          null,
+          1,
+        ) + "\n",
+      );
+      console.log(
+        JSON.stringify(
+          { ...resumo, formato: "jsonl", ficheiro, descritor, ja_tinha: ja.length, novas: novas.length, agora_tem: todas.length },
+          null,
+          1,
+        ),
+      );
+      return;
+    }
+
     const destino = argumento("--para");
     if (destino !== undefined) {
       // O estudo quer o ficheiro: as chaves do venue, na ordem em que ele as publicou, com cabecalho.

@@ -23,5 +23,14 @@ Regras que estes diretórios DEVEM cumprir:
 - não mandam na boleta: quem a preenche é a mesa (RN-S9);
 - variantes são **fichas** do mesmo plugin, não plugins novos (RN-S5).
 
-O primeiro a entrar aqui é o setup de referência (sigma), que passa a ser uma fonte de consulta e de
-vectores de replay — não código a copiar.
+> **NOTA DATADA — 29/09/2026, duas correcções medidas.** (1) O nome do setup **não admite hífen**:
+> `contracts/_defs/forma.schema.json` exige `^[a-z][a-z0-9_]{1,31}$` — o directório de exemplo que já está aqui
+> (`exemplo-cruzamento-de-media/`) **violaria o contrato do próprio repositório**. O primeiro plugin a sério
+> chama-se, por exemplo, `cruzamento_de_media`, e o exemplo muda de nome quando for usado a sério. (2) O
+> «setup de referência (sigma)» que este parágrafo anuncia **não existe no repositório** — o que existe é
+> `exemplo-cruzamento-de-media/`, e dentro dele só o `questionario.json`. O que o primeiro setup precisa de
+> saber para ser escrito — o que recebe, em que formato, e o que entrega — está em
+> `setups/O-QUE-UM-SETUP-RECEBE-E-ENTREGA.md`.
+>
+> **Texto original, mantido por baixo (o registo é auditável):** *«O primeiro a entrar aqui é o setup de
+> referência (sigma), que passa a ser uma fonte de consulta e de vectores de replay — não código a copiar.»*
