@@ -115,8 +115,13 @@ export function construirManifesto(sonda: Sonda): Resultado {
   // que o venue deu por ENCERRADO (`isDelisted`, medido: 54 de 212). Aqui NAO se le a unidade — le-se so o
   // que decide se o mandato pode existir.
   const universoDoMandato = sonda?.meta?.universe;
-  if (Array.isArray(universoDoMandato)) {
-    for (const simbolo of sonda?.instrumentos_pedidos ?? []) {
+  // `sonda?.instrumentos_pedidos ?? []` fazia de uma sonda sem a lista uma sonda com ZERO instrumentos
+  // pedidos: esta passagem nao corria, e a recusa so' aparecia mais abaixo como "campo obrigatorio ausente" —
+  // verdadeira, mas sem nomear o problema que esta passagem existe para nomear (o instrumento deslistado).
+  // A lista pede-se aqui, e uma sonda que a nao traga nao chega a esta passagem.
+  const instrumentosDoMandato = sonda?.instrumentos_pedidos;
+  if (Array.isArray(universoDoMandato) && Array.isArray(instrumentosDoMandato)) {
+    for (const simbolo of instrumentosDoMandato) {
       const cru = universoDoMandato.find((u) => u.name === simbolo);
       if (cru?.isDelisted === true) {
         return recusa(

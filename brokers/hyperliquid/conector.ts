@@ -58,6 +58,7 @@ import { conferirIdentidade } from "./identidade.ts";
 // O contrato e a lingua do conector (FR-024: importa `contracts`, nunca o `core`). O enquadramento, a versao
 // e o vocabulario vem de LA — nao ha aqui uma segunda copia das regras do envelope.
 import { validar, versaoVigente, vocabulario } from "../../contracts/esqueleto/framing.ts";
+import { lista, ouAusente } from "../../contracts/esqueleto/texto.ts";
 
 // ---------------------------------------------------------------------------------------------------------
 // O que entra: a ficha, os enderecos declarados, o duble do venue e a bateria.
@@ -79,7 +80,14 @@ export type Ficha = {
   venue: { nome: string; ambiente: "teste" | "producao"; url_da_api: string };
   /** UMA conta (o endereco master): uma ligacao, uma chave, um processo (FR-019, RN-H15). */
   conta: string;
-  credencial: { referencia: string; valor_em: string };
+  /**
+   * O que a ficha DECLAROU da credencial — a referencia e onde ela vive, nunca o valor (FR-023).
+   *
+   * Os dois campos admitem `undefined` de proposito: era `texto(...) ?? ""`, e um campo AUSENTE chegava a' porta
+   * `chave` com a cara de «declarado vazio». Sao duas ausencias diferentes, e a porta que as julga e' a `chave`
+   * (que recusa nomeando, FR-023) — aqui o que veio viaja como veio.
+   */
+  credencial: { referencia: string | undefined; valor_em: string | undefined };
   /** Os instrumentos que o MANDATO nomeia. Nao sao um facto do venue: sao o que se confere contra ele. */
   instrumentos: string[];
 };
@@ -359,6 +367,11 @@ function exigirFicha(cru: unknown): { ok: true; ficha: Ficha } | { ok: false; mo
   if (credencial === undefined) {
     return { ok: false, motivo: "campo_obrigatorio_ausente", porque: "a ficha nao declara `credencial` — o conector nao procura chaves, le a referencia que lhe derem" };
   }
+  // A CREDENCIAL DA FICHA: o que ela DECLAROU, e nada mais. Era `texto(credencial.referencia) ?? ""` (e o mesmo
+  // em `valor_em`): um campo AUSENTE virava a cadeia vazia, e a porta `chave` deixava de distinguir «nao
+  // declarado» de «declarado vazio» — duas ausencias diferentes a chegar com a mesma cara. O valor viaja como
+  // veio (`texto` devolve `undefined` ao que nao e' texto) e quem o recusa e' a porta `chave`, nomeando o que
+  // falta (FR-023). A identidade do conector nao inventa um sitio para a chave.
   const instrumentos = f.instrumentos;
   if (!Array.isArray(instrumentos) || instrumentos.length === 0) {
     return { ok: false, motivo: "campo_obrigatorio_ausente", porque: "a ficha nao declara os `instrumentos` que o mandato nomeia" };
@@ -381,8 +394,8 @@ function exigirFicha(cru: unknown): { ok: true; ficha: Ficha } | { ok: false; mo
       },
       conta: f.conta as string,
       credencial: {
-        referencia: texto(credencial.referencia) ?? "",
-        valor_em: texto(credencial.valor_em) ?? "",
+        referencia: texto(credencial.referencia),
+        valor_em: texto(credencial.valor_em),
       },
       instrumentos: instrumentos as string[],
     },
@@ -425,7 +438,7 @@ export function juntarBateria(
         motivo: "campo_desconhecido",
         porque:
           `a bateria declara \`${campo}\`, e a sonda do venue JA o mediu (os que ela nao mede sao: ` +
-          `${porMedir.join(", ") || "nenhum"}): duas declaracoes do mesmo campo, e o processo nao escolhe uma`,
+          `${lista(porMedir)}): duas declaracoes do mesmo campo, e o processo nao escolhe uma`,
       };
     }
     (sonda as unknown as Record<string, unknown>)[campo] = valor;
@@ -482,7 +495,14 @@ export async function arrancar(entrada: Entrada, opcoes: { sem_chave?: boolean }
   if (ficha.conta === undefined || ficha.conta === null) {
     return falhou("uma_conta", "campo_obrigatorio_ausente", "a ficha nao declara `conta` — sem conta nao ha um processo por (corretora, conta) (FR-019)");
   }
-  if (Object.prototype.hasOwnProperty.call(objecto(entrada.ficha) ?? {}, "contas")) {
+  // `objecto(...) ?? {}` fazia de uma ficha que nao e' objecto uma ficha sem `contas` — e a porta passava. A
+  // ficha e' o documento que este processo confere: se ela nao tem forma, a recusa e' aqui, e nao numa
+  // leitura mais abaixo que daria um diagnostico pior.
+  const fichaComoObjecto = objecto(entrada.ficha);
+  if (fichaComoObjecto === undefined) {
+    return falhou("uma_conta", "campo_obrigatorio_ausente", "a ficha do conector nao e um objecto: nao ha `conta` que se possa conferir num documento que nao tem forma");
+  }
+  if (Object.prototype.hasOwnProperty.call(fichaComoObjecto, "contas")) {
     return falhou(
       "uma_conta",
       "campo_desconhecido",
@@ -561,7 +581,7 @@ export async function arrancar(entrada: Entrada, opcoes: { sem_chave?: boolean }
       "ligacao",
       "campo_obrigatorio_ausente",
       `leu-se(s) ${carteiras.confirmadas_pelo_venue} carteira(s) e o PERPETUO nao esta entre as lidas ` +
-        `(nao lidas: ${carteiras.nao_lidas.join(", ") || "nenhuma"}): sem o equity do perpetuo nao ha traducao ` +
+        `(nao lidas: ${lista(carteiras.nao_lidas)}): sem o equity do perpetuo nao ha traducao ` +
         "possivel — FR-021, sem leitura da conta o conector nao manda ordem que aumente exposicao",
     );
   }
@@ -606,8 +626,8 @@ export async function arrancar(entrada: Entrada, opcoes: { sem_chave?: boolean }
     return falhou(
       "sonda_e_manifesto",
       m.motivo,
-      `${m.porque}. A sonda desta corrida NAO mediu: ${medida.nao_medidos.join(", ") || "(nenhum)"}. A bateria declarou: ${
-        juntada.usados.join(", ") || "(nada)"
+      `${m.porque}. A sonda desta corrida NAO mediu: ${lista(medida.nao_medidos)}. A bateria declarou: ${
+        lista(juntada.usados)
       }`,
     );
   }
@@ -624,9 +644,22 @@ export async function arrancar(entrada: Entrada, opcoes: { sem_chave?: boolean }
     throw new Error("o instrumento de medicao (o contrato) nao conseguiu julgar o manifesto: nao se publica por omissao");
   }
   if (decisao.veredicto !== "aceite") {
+    // O MOTIVO DA RECUSA E O DO CONTRATO, com o nome dele. Era `decisao.motivo ?? "capacidade_nao_declarada"`:
+    // quando o contrato recusava sem nomear, este processo inventava um motivo — e um motivo inventado e' pior
+    // do que um motivo em falta, porque quem o le acredita nele (diria que falta declarar capacidade, quando o
+    // que faltou foi outra coisa). Um contrato que recusa sem motivo e' um contrato partido, e diz-se.
+    const nomeDoMotivo = decisao.motivo;
+    if (nomeDoMotivo === null) {
+      return falhou(
+        "sonda_e_manifesto",
+        "desfecho_nao_reconhecido",
+        `o envelope do contrato recusou o manifesto da sonda SEM declarar motivo (veredicto ${decisao.veredicto}) — ` +
+          "uma recusa sem motivo nao se substitui por um motivo nosso",
+      );
+    }
     return falhou(
       "sonda_e_manifesto",
-      decisao.motivo ?? "capacidade_nao_declarada",
+      nomeDoMotivo,
       `o manifesto que a sonda produziu nao passou o envelope do contrato: ${decisao.veredicto}/${decisao.motivo}` +
         `${decisao.detalhe ? ` (${decisao.detalhe})` : ""} — um manifesto que o contrato nao aceita nao se publica`,
     );
@@ -895,8 +928,18 @@ export async function servirHistorico(
   if (decisao.veredicto !== "aceite") {
     // O CONTRATO e o juiz da completude: se ele recusa a carga, o que falta e DO VENUE, e a resposta honesta
     // e a recusa NOMEADA. A leitura crua vai na resposta para nada depender da nossa interpretacao.
+    //
+    // O MOTIVO E O DELE. Era `decisao.motivo ?? "campo_obrigatorio_ausente"`: quando o contrato recusava sem
+    // nomear, esta ponta respondia com um motivo PROPRIO — e o dono lia uma causa que ninguem tinha dito.
+    const nomeDoMotivo = decisao.motivo;
+    if (nomeDoMotivo === null) {
+      throw new Error(
+        `o contrato recusou o historico do venue SEM declarar motivo (veredicto ${decisao.veredicto}): uma recusa ` +
+          "sem motivo nao se substitui por um motivo nosso — o que falta e' do venue, e quem o nomeia e' o contrato",
+      );
+    }
     return recusar(
-      decisao.motivo ?? "campo_obrigatorio_ausente",
+      nomeDoMotivo,
       `o historico lido do venue nao passou o envelope do contrato: ${decisao.veredicto}/${decisao.motivo}` +
         `${decisao.detalhe ? ` (${decisao.detalhe})` : ""} — as grandezas que o contrato exige e que o venue NAO deu ` +
         `(ou nao deu na forma do contrato) sao: ${h.leitura.nao_publicados.join(", ")}. ` +
@@ -923,6 +966,20 @@ export async function atender(
 ): Promise<Atendimento> {
   const diag: Record<string, unknown>[] = [];
   const defeito = opcoes.defeito;
+
+  // O PRAZO DO VENUE E DECLARADO POR QUEM CHAMA — o conector nao tem omissao.
+  //
+  // Era `opcoes.prazo_do_venue_ms ?? 3000`, em dois sitios. Um numero que decide se o SILENCIO do venue fica
+  // `desconhecido` ou passa por sucesso (FR-013/RN-T7.1) estava escrito dentro de uma expressao, onde nao se le
+  // como decisao nem se muda com consciencia. Quem corre o conector declara-o (`processo.ts`, no limite do CLI
+  // e da bancada); aqui exige-se, e um conector sem prazo nao serve nada em vez de servir com um prazo seu.
+  const prazoDoVenue = opcoes.prazo_do_venue_ms;
+  if (typeof prazoDoVenue !== "number" || !Number.isFinite(prazoDoVenue) || prazoDoVenue <= 0) {
+    throw new Error(
+      `o conector foi chamado sem um prazo do venue declarado (veio ${String(prazoDoVenue)}): o prazo e' o que ` +
+        "decide se o silencio do venue fica `desconhecido`, e nao se adivinha",
+    );
+  }
 
   // O defeito da versao: uma versao que NAO e a vigente (o valor e declarado aqui como um numero que nenhuma
   // serie do contrato usa — quando a vigente era a 1.3.0 este defeito escrevia 1.4.0, e com a 1.4.0 vigente
@@ -992,7 +1049,19 @@ export async function atender(
   // caminhos, para nao haver duas regras a divergir.
   // -------------------------------------------------------------------------------------------------------
   if (tipo === "historico") {
-    const cargaDoPedido = objecto(pedido?.carga) ?? {};
+    // A CARGA DO PEDIDO, ou recusa. Era `objecto(pedido?.carga) ?? {}`: um pedido sem carga seguia como um
+    // pedido sem `instrumento`, e a recusa saia por "campo obrigatorio ausente" — verdadeira, mas apontando
+    // para o instrumento quando o que faltava era a carga inteira.
+    const cargaDoPedido = objecto(pedido?.carga);
+    if (cargaDoPedido === undefined) {
+      return recusa(
+        id,
+        "campo_obrigatorio_ausente",
+        "o pedido de historico nao traz `carga`: sem ela nao ha instrumento, nem janela, nem nada a ler do venue",
+        {},
+        [],
+      );
+    }
     const instrumento = texto(cargaDoPedido.instrumento);
     if (instrumento === undefined) {
       return recusa(
@@ -1024,8 +1093,14 @@ export async function atender(
     return { linhas: [], diag };
   }
 
-  const b = objecto(pedido?.carga) ?? {};
-  diag.push({ etapa: "boleta", referencia_do_cliente: texto(b.referencia_do_cliente) ?? "(ausente)", instrumento: texto(b.instrumento) ?? "(ausente)" });
+  // A CARGA DA BOLETA, ou recusa — pelo mesmo motivo do historico acima: `objecto(pedido?.carga) ?? {}` deixava
+  // um pedido sem carga entrar na traducao como uma boleta vazia, e a recusa aparecia la' longe, com o nome de
+  // outro campo. O que falta diz-se aqui.
+  const b = objecto(pedido?.carga);
+  if (b === undefined) {
+    return recusa(id, "campo_obrigatorio_ausente", "o pedido de boleta nao traz `carga`: sem ela nao ha lado, nem tamanho, nem referencia a traduzir", {}, []);
+  }
+  diag.push({ etapa: "boleta", referencia_do_cliente: ouAusente(texto(b.referencia_do_cliente), "(ausente)"), instrumento: ouAusente(texto(b.instrumento), "(ausente)") });
 
   // 2. A LEITURA DA CONTA, antes de tudo o resto: sem ela nao se serve ordem que aumente exposicao (FR-021).
   const pedidoDeLeitura: PedidoDeLeitura = {
@@ -1042,7 +1117,7 @@ export async function atender(
     return recusa(
       id,
       "campo_obrigatorio_ausente",
-      `o PERPETUO nao foi lido (nao lidas: ${leitura.leitura.carteiras.nao_lidas.join(", ") || "nenhuma"}): ` +
+      `o PERPETUO nao foi lido (nao lidas: ${lista(leitura.leitura.carteiras.nao_lidas)}): ` +
         "sem o equity nao ha traducao possivel, e sem traducao nao ha ordem (FR-021)",
       {},
       [],
@@ -1074,7 +1149,21 @@ export async function atender(
     return recusa(id, accao.motivo, `${accao.porque} — e nao se arredonda para caber (RN-C9)`, {}, []);
   }
   const unidade = unidadeDo(estado.manifesto, accao.accao.instrumento);
-  const tick = unidade?.tick ?? "1";
+  // O TICK DO INSTRUMENTO, DO MANIFESTO — nunca um. Era `unidade?.tick ?? "1"`, e o `"1"` era uma unidade
+  // INVENTADA: a resolucao que sai antes do envio (a que a mesa confere contra a banda, D-001) seria calculada
+  // sobre uma unidade que o venue nao declarou. Se o instrumento nao esta no manifesto, quem recusa e' o
+  // manifesto — e aqui isso nomeia-se, em vez de se responder com um numero que ninguem publicou.
+  if (unidade === undefined) {
+    return recusa(
+      id,
+      "instrumento_desconhecido_no_manifesto",
+      `o instrumento ${accao.accao.instrumento} nao esta no manifesto que esta ponta publicou: sem a unidade ` +
+        "dele nao ha resolucao a compor, e a mesa nao confere a banda contra uma unidade inventada (D-001)",
+      {},
+      [],
+    );
+  }
+  const tick = unidade.tick;
   const resolucaoAntes = resolucaoDaTraducao(accao.accao, tick);
   diag.push({
     etapa: "traducao",
@@ -1103,7 +1192,7 @@ export async function atender(
         [],
       );
     }
-    const prazoDoAjuste = opcoes.prazo_do_venue_ms ?? 3000;
+    const prazoDoAjuste = prazoDoVenue;
     const ajuste = await comPrazo(porta.ajuste.alavancagem(accao.accao.instrumento, pedida, modoDoVenue), prazoDoAjuste);
     if (!ajuste.ok) {
       diag.push({ etapa: "alavancagem", veredicto: "nao_aplicada", pedida, antes: alavancagemNoVenue, erro: ajuste.erro });
@@ -1136,7 +1225,7 @@ export async function atender(
   const linhas: string[] = [conferivel(envelope("resolucao", `${id}/resolucao`, resolucaoAntes, versao))];
 
   // 4. O ENVIO, dentro do prazo declarado. Silencio nao e exito nem falha: e `desconhecido` (FR-013).
-  const prazo = opcoes.prazo_do_venue_ms ?? 3000;
+  const prazo = prazoDoVenue;
   const resposta = await comPrazo(porta.envio.enviar(accao.accao, estado.ficha.conta, texto(b.referencia_do_cliente)), prazo);
   if (!resposta.ok) {
     diag.push({ etapa: "envio", veredicto: "sem_resposta", erro: resposta.erro, prazo_ms: prazo });
@@ -1229,7 +1318,7 @@ export async function atender(
         resolucao,
         resposta_do_venue: {
           estado: completo ? "filled" : "partially_filled",
-          order_id: identificadorDe(preenchido.oid) ?? "(sem oid)",
+          order_id: ouAusente(identificadorDe(preenchido.oid), "(sem oid)"),
           preenchido: totalSz,
           preco_medio: avgPx,
           origem_dos_numeros: origem,
@@ -1247,7 +1336,7 @@ export async function atender(
     diag.push({
       etapa: "envio",
       veredicto: "em_repouso",
-      order_id: identificadorDe(emRepouso.oid) ?? "(sem oid)",
+      order_id: ouAusente(identificadorDe(emRepouso.oid), "(sem oid)"),
       porque:
         "o venue registou a ordem e nada executou: o desfecho fica `desconhecido` ate a leitura do venue dizer " +
         "o que se passou — FR-014/FR-015, e o achado 3 (o contrato nao tem classificacao para «na ordem, por executar»)",
@@ -1255,7 +1344,7 @@ export async function atender(
     linhas.push(
       saidaDeDesconhecido(id, resolucaoAntes, {
         estado: "resting",
-        order_id: identificadorDe(emRepouso.oid) ?? "(sem oid)",
+        order_id: ouAusente(identificadorDe(emRepouso.oid), "(sem oid)"),
         origem_dos_numeros: "calculo_antes_do_envio",
         bruto: emRepouso,
         nota: "o venue aceitou a ordem e nada executou; o contrato 1.3.0 nao tem classificacao propria para este estado",

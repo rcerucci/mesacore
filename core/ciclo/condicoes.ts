@@ -129,7 +129,9 @@ export function situacaoDoInstrumento(
     .filter((e): e is string => e !== null);
   const alarma = eventos.some((e) => deveAvisar(config, e));
 
-  const condicao: NomeDeCondicao = impedimentos[0] ?? "normal";
+  // `impedimentos[0] ?? "normal"` era um valor por omissao a tapar a lista vazia. Aqui a regra diz-se por
+  // inteiro: sem impedimento nenhum a condicao e' `normal` — e' a definicao, nao um recurso.
+  const condicao: NomeDeCondicao = impedimentos.length === 0 ? "normal" : impedimentos[0]!;
   const efeitoDaCabeca = livro.condicoes[condicao];
 
   return {

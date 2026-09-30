@@ -78,6 +78,43 @@ export const TRADUCAO: Record<string, string> = {
   desfecho_nao_reconhecido: "comando_com_tipo_invalido",
 };
 
+/**
+ * O MOTIVO DO CONTRATO, traduzido para o vocabulario da mesa — ou GRITA.
+ *
+ * Era `TRADUCAO[decisao.motivo ?? ""] ?? "comando_com_tipo_invalido"`, e o `??` do fim fazia de qualquer
+ * motivo por traduzir um "o tipo do comando estava mal". Isso tem dois custos: o dono le um diagnostico falso
+ * (o comando podia estar bem formado), e um motivo novo do contrato entrava em produção sem ninguem dar por
+ * isso — porque o resultado era sempre uma recusa plausivel.
+ *
+ * A bateria `tools/verificar-maquina/servidor.ts` confere que TODO o motivo do livro tem traducao. Se um dia
+ * nao tiver, e' aqui que se sabe — e o que sai e' um erro que nomeia o motivo, nao um generico.
+ */
+export function traduzirMotivoDoContrato(motivo: string | null): string {
+  if (motivo === null) {
+    throw new Error(
+      "o contrato recusou a mensagem SEM declarar motivo: uma recusa sem motivo nao se traduz nem se inventa " +
+        "(o enquadramento do contrato obriga a nomear o que recusou)",
+    );
+  }
+  const traduzido = TRADUCAO[motivo];
+  if (typeof traduzido !== "string" || traduzido.length === 0) {
+    throw new Error(
+      `o contrato recusou por '${motivo}', que nao consta da TRADUCAO da mesa (core/servidor.ts). Um motivo por ` +
+        "traduzir nao vira um generico: ou se acrescenta a traducao, ou a mesa passa a mentir sobre o que recusou.",
+    );
+  }
+  return traduzido;
+}
+
+/** A declaracao honesta de que o pedido NAO trouxe correlacao: o contrato exige uma correlacao VALIDA na resposta. */
+const SEM_PEDIDO = "sem_pedido";
+
+/** A correlacao do pedido, ou a declaracao de que ele nao trouxe nenhuma. Nunca uma correlacao inventada. */
+export function correlacaoDoPedido(pedidoId: string | null): string {
+  if (pedidoId === null || pedidoId === "") return SEM_PEDIDO;
+  return pedidoId;
+}
+
 export interface Opcoes {
   caminhoDasMarcas?: string;
   caminhoDoRegisto?: string;
@@ -216,7 +253,12 @@ function lerPrazoDoDono(caminhoDaConfig: string | undefined): number | null {
   let config: any;
   try { config = JSON.parse(readFileSync(caminhoDaConfig, "utf8")); } catch { return null; }
   const declarados = new Set<number>();
-  for (const ficha of Object.values<any>(config?.fichas ?? {})) {
+  // `config?.fichas ?? {}` fazia de uma configuracao sem fichas uma configuracao sem prazo — e o prazo sem
+  // declaracao ja' recusa (abaixo). Mas as duas coisas nao sao a mesma, e a leitura diz qual delas e':
+  // sem `fichas` nao ha' nada a ler, e isso nao pode parecer "as fichas nao declararam prazo".
+  const fichas: unknown = config?.fichas;
+  if (fichas === null || fichas === undefined || typeof fichas !== "object" || Array.isArray(fichas)) return null;
+  for (const ficha of Object.values<any>(fichas as Record<string, unknown>)) {
     const p = ficha?.setup?.prazo_de_resposta_ms;
     if (p === undefined) continue;
     if (!Number.isInteger(p) || p <= 0) return null;
@@ -262,7 +304,7 @@ function resposta(
   const carga: Record<string, unknown> = {
     // Um `pedido_id` inventado tem de ser ele proprio uma correlacao VALIDA (o contrato confere o
     // formato na resposta): `sem_pedido` e a declaracao honesta de que o pedido nao trouxe correlacao.
-    pedido_id: pedidoId ?? "sem_pedido",
+    pedido_id: correlacaoDoPedido(pedidoId),
     aceito: resto.motivo === undefined,
     transicao: { de: estadoAnterior, para: estadoNovo },
     instante_ms,
@@ -300,9 +342,7 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
     // Um verbo fora dos cinco tem nome no livro (`verbo_desconhecido`) e nao se afoga num generico: o
     // que o vigia precisa de saber e que aquele verbo nao existe, nao que "o tipo estava mal".
     const foraDosCinco = typeof verbo === "string" && !verbosDeclarados().includes(verbo as never);
-    const motivo = foraDosCinco
-      ? "verbo_desconhecido"
-      : (TRADUCAO[decisao.motivo ?? ""] ?? "comando_com_tipo_invalido");
+    const motivo = foraDosCinco ? "verbo_desconhecido" : traduzirMotivoDoContrato(decisao.motivo);
     return resposta(id, null, estado, estado, instante, { motivo });
   }
 
@@ -327,9 +367,17 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
       configuracao: config,
     });
     if (r.resultado !== "aceite") {
-      return resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, { motivo: r.motivo ?? "decisao_sem_pergunta" });
+      // A MESA RECUSA E NOMEIA. Uma recusa sem motivo (`r.motivo === null`) e' um defeito da propria mesa, e
+      // um defeito nao se tapa com um motivo de recurso: quem le "decisao_sem_pergunta" acredita nele.
+      if (r.motivo === null) {
+        throw new Error(
+          "a mesa recusou a decisao do encerramento sem declarar motivo: a recusa da mesa nomeia-se sempre " +
+            "(core/ciclo/encerramento.ts), e sem motivo ela nao se pode ler nem se pode corrigir",
+        );
+      }
+      return resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, { motivo: r.motivo });
     }
-    return resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, { efeito: r.efeito ?? undefined });
+    return resposta(envelope.id, pedidoId, r.estado_anterior, r.estado_novo, instante, r.efeito === null ? {} : { efeito: r.efeito });
   }
 
   // 3. o tipo: a porta so fala comando (e a decisao, acima). Outro tipo e recusado, nao encaminhado em silencio.
@@ -413,11 +461,11 @@ export function atender(linha: string, mesa: Mesa, opcoes: Opcoes): string {
           "as guardas da tabela deviam ter recusado o stop",
       );
     }
-    const carga = cargaDaPergunta(pedidoId ?? "sem_pedido", prazoDaFicha, numerosDaCorretora);
+    const carga = cargaDaPergunta(correlacaoDoPedido(pedidoId), prazoDaFicha, numerosDaCorretora);
     const pergunta = JSON.stringify({
       contrato: versaoVigente(),
       tipo: "pergunta_do_encerramento",
-      id: `p-${pedidoId ?? "sem_pedido"}`,
+      id: `p-${correlacaoDoPedido(pedidoId)}`,
       carga,
     });
     return respostaDoComando + "\n" + pergunta;
@@ -495,10 +543,19 @@ async function main() {
               // versao) e o `relogio` do template continuam a ser os dele - so o LADO e que passa a ser a
               // decisao do dono. Construir uma proposta de raiz perderia a assinatura do setup no registo,
               // que e o que diz quem propoe (RN-S7).
-              Object.entries(operacao.instrumentos).map(([i, d]: [string, any]) => [
-                i,
-                { ...d, proposta: { ...(d.proposta ?? {}), lado: "caixa" } },
-              ]),
+              Object.entries(operacao.instrumentos).map(([i, d]: [string, any]) => {
+                // SEM PROPOSTA NAO HA' LIQUIDACAO DAQUELE INSTRUMENTO, e a mesa nao a inventa: o lado trocado
+                // por `caixa` e' o lado DA proposta do setup — sem ela, o que sairia era uma proposta sem
+                // `setup` nem `relogio`, que o contrato recusa e que ninguem poderia atribuir a quem a fez
+                // (RN-S7). Parar aqui nomeia o instrumento; deixar passar dava a culpa ao contrato.
+                if (d.proposta === undefined || d.proposta === null) {
+                  throw new Error(
+                    `a liquidacao de ${i} nao tem proposta do setup de onde tirar o lado: sem proposta nao se ` +
+                      "constroi a da mesa (RN-S7), e a mesa nao fecha por uma proposta que ela propria inventou",
+                  );
+                }
+                return [i, { ...d, proposta: { ...d.proposta, lado: "caixa" } }];
+              }),
             ),
           };
           const resultado = correrUmCiclo({

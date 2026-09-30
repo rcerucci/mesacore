@@ -16,6 +16,7 @@
 // o `mesa.ts`.
 
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
+import { lista } from "../../contracts/esqueleto/texto.ts";
 import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
 import {
   resolverContenda,
@@ -106,18 +107,55 @@ export interface ResultadoDoArranque {
 
 const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 
-/** Texto decimal -> numero, sem tolerancia. Um valor que nao e decimal GRITA em vez de virar NaN. */
-function numero(texto: unknown, onde: string): number {
-  if (typeof texto !== "string" || !DECIMAL.test(texto)) {
-    throw new Error(`${onde}: '${String(texto)}' nao e um decimal textual (o contrato exige a forma, D4)`);
+/**
+ * Texto decimal -> o PROPRIO texto, ja conferido. Um valor que nao e decimal GRITA em vez de virar NaN (D4).
+ *
+ * Existe separado de `numero` porque ha' sitios onde o que se transporta e' o TEXTO (a contenda soma em
+ * inteiros escalados a partir do texto, para `0.1 + 0.2 > 0.3` nao decidir por nos). Aqueles sitios faziam
+ * `String(f.saldo_pct ?? "0")`: um `saldo_pct` ausente virava o texto `"0"` e a contenda era resolvida sobre
+ * um numero que ninguem escreveu. Agora o texto passa por aqui, e o ausente nao tem texto.
+ */
+function decimalTextual(valor: unknown, onde: string): string {
+  if (typeof valor !== "string" || !DECIMAL.test(valor)) {
+    throw new Error(`${onde}: '${String(valor)}' nao e um decimal textual (o contrato exige a forma, D4)`);
   }
-  return Number(texto);
+  return valor;
+}
+
+/** Texto decimal -> numero, sem tolerancia. */
+function numero(valor: unknown, onde: string): number {
+  return Number(decimalTextual(valor, onde));
 }
 
 interface Ficha {
   saldo_pct?: unknown;
   alavancagem?: unknown;
   bandas?: Record<string, { minimo?: string; maximo?: string }>;
+}
+
+/**
+ * AS FICHAS DA CONTA, ou recusa alta.
+ *
+ * Era `config.fichas ?? {}` em quatro sitios, e o mapa vazio nao falhava: passava pela porta do mandato (nao
+ * ha' ficha nenhuma para conferir) e pela da contenda (nao ha' pedido nenhum para somar). Uma configuracao sem
+ * `fichas` chegava assim a `em_operacao` — uma mesa sem mandato que parecia conferida. Uma mesa sem fichas nao
+ * e' uma mesa sem risco: e' uma mesa que nao se sabe o que mandata, e isso nao arranca.
+ */
+function exigirFichas(config: ConfiguracaoDaConta): Record<string, Ficha> {
+  const fichas: unknown = config.fichas;
+  if (fichas === undefined || fichas === null || typeof fichas !== "object" || Array.isArray(fichas)) {
+    throw new Error(
+      `conta.fichas: a configuracao nao declara as fichas (veio ${String(fichas)}). Sem fichas ` +
+        "nao ha' mandato nem contenda a conferir, e as portas passariam sem conferir nada.",
+    );
+  }
+  if (Object.keys(fichas).length === 0) {
+    throw new Error(
+      "conta.fichas: a configuracao declara zero fichas. Uma mesa que arranca sem ficha nenhuma arranca sem " +
+        "mandato — e nao ha' porta nenhuma que o possa conferir depois.",
+    );
+  }
+  return fichas as Record<string, Ficha>;
 }
 
 // ---------------------------------------------------------------- as sete portas
@@ -139,7 +177,7 @@ function portaDoManifesto(manifesto: any, config: ConfiguracaoDaConta): Recusa |
   }
 
   const declarados = new Set(((manifesto as any).instrumentos as any[]).map((i) => i.simbolo));
-  const faltam = Object.keys((config.fichas ?? {}) as Record<string, unknown>).filter(
+  const faltam = Object.keys(exigirFichas(config)).filter(
     (simbolo) => !declarados.has(simbolo),
   );
   if (faltam.length > 0) {
@@ -188,7 +226,7 @@ function portaDoManifesto(manifesto: any, config: ConfiguracaoDaConta): Recusa |
 }
 
 function portaDoMandato(config: ConfiguracaoDaConta): Recusa | null {
-  const fichas = (config.fichas ?? {}) as Record<string, Ficha>;
+  const fichas = exigirFichas(config);
 
   for (const [simbolo, ficha] of Object.entries(fichas)) {
     for (const campo of ["saldo_pct", "alavancagem"] as const) {
@@ -227,7 +265,7 @@ function portaDaContenda(
   config: ConfiguracaoDaConta,
   anotar?: (c: Contenda) => void,
 ): Recusa | null {
-  const fichas = (config.fichas ?? {}) as Record<string, Ficha>;
+  const fichas = exigirFichas(config);
   // A soma e feita em inteiros escalados, dentro do resolver: quem entra e quem espera nao pode depender
   // de uma casa decimal que ninguem escreveu (`0.1 + 0.2 > 0.3` em ponto flutuante).
   // As fichas vem da CONFIGURACAO: ninguem as pediu, logo nao tem hora de chegada. Vao para a fila sem
@@ -235,9 +273,9 @@ function portaDaContenda(
   // chegada que nao existe (D-003).
   const pedidos: PedidoDeContenda[] = Object.entries(fichas).map(([instrumento, f]) => ({
     instrumento,
-    saldo_pct: String((f as Ficha).saldo_pct ?? "0"),
+    saldo_pct: decimalTextual(f.saldo_pct, `ficha ${instrumento}.risco.saldo_pct`),
   }));
-  const contenda = resolverContenda(pedidos, String(config.margem_total_maxima_pct ?? "0"));
+  const contenda = resolverContenda(pedidos, decimalTextual(config.margem_total_maxima_pct, "conta.margem_total_maxima_pct"));
 
   // Cabe todo: nao ha contenda, e nem se chega a ler a politica.
   if (contenda.de_fora.length === 0) {
@@ -271,8 +309,21 @@ function portaDaContenda(
 
 /** OS CONECTORES: a mesa arranca sem os que ela propria nomeia? Nao arranca - e diz QUAL. */
 function portaDosConectores(config: ConfiguracaoDaConta, dePe: string[]): Recusa | null {
-  const declarados = (config.conectores ?? []) as unknown;
-  if (!Array.isArray(declarados) || declarados.length === 0) {
+  // `config.conectores ?? []` fazia de uma configuracao MUDADA uma configuracao sem conectores, e a recusa
+  // saia com o diagnostico errado ("nao declara conector nenhum"). O ausente e o vazio sao coisas diferentes
+  // e a porta di-las por nomes diferentes.
+  const declarados: unknown = config.conectores;
+  if (!Array.isArray(declarados)) {
+    return {
+      porta: "conectores",
+      motivo: "porta_do_arranque_falhou",
+      motivo_do_contrato: null,
+      porque:
+        `A configuracao nao declara \`conta.conectores\` (veio ${String(declarados)}). Nao se sabe que conectores ` +
+        "a mesa devia ter de pe — e presumir que nenhum chega para recusar por um motivo que nao e' o verdadeiro.",
+    };
+  }
+  if (declarados.length === 0) {
     return {
       porta: "conectores",
       motivo: "porta_do_arranque_falhou",
@@ -288,7 +339,7 @@ function portaDosConectores(config: ConfiguracaoDaConta, dePe: string[]): Recusa
     porta: "conectores",
     motivo: "porta_do_arranque_falhou",
     motivo_do_contrato: null,
-    porque: `Conector(es) declarado(s) e NAO de pe: ${faltam.join(", ")} (de pe: ${dePe.join(", ") || "nenhum"}). O vigia arranca os conectores (RN-E21) e a mesa recusa arrancar sem eles.`,
+    porque: `Conector(es) declarado(s) e NAO de pe: ${faltam.join(", ")} (de pe: ${lista(dePe)}). O vigia arranca os conectores (RN-E21) e a mesa recusa arrancar sem eles.`,
     detalhe: faltam[0]!,
   };
 }
@@ -357,7 +408,7 @@ export function passarPelasPortas(entrada: EntradaDoArranque): {
   const conferidas: NomeDaPorta[] = [];
   let contenda: Contenda | null = null;
   const passos: [NomeDaPorta, () => Recusa | null][] = [
-    ["conectores", () => portaDosConectores(entrada.config, entrada.conectores_de_pe ?? [])],
+    ["conectores", () => portaDosConectores(entrada.config, entrada.conectores_de_pe)],
     ["manifesto", () => portaDoManifesto(entrada.manifesto, entrada.config)],
     ["mandato", () => portaDoMandato(entrada.config)],
     ["contenda", () => portaDaContenda(entrada.config, (c) => { contenda = c; })],
@@ -377,7 +428,7 @@ export function passarPelasPortas(entrada: EntradaDoArranque): {
 export function arrancar(entrada: EntradaDoArranque): ResultadoDoArranque {
   const manifesto = entrada.manifesto as any;
   const lido = {
-    fichas: (entrada.config.fichas ?? {}) as Record<string, unknown>,
+    fichas: exigirFichas(entrada.config),
     manifesto: { versao: manifesto?.versao, instrumentos: manifesto?.instrumentos },
   };
 

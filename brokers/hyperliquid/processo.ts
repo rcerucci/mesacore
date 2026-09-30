@@ -39,6 +39,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
+import { lista, ouAusente } from "../../contracts/esqueleto/texto.ts";
 import {
   PORTAS_DO_PROCESSO,
   arrancar,
@@ -126,9 +127,68 @@ type Casos = any;
  */
 const MAPAS_DE_LEITURA = ["conta", "sonda", "apos_o_envio", "envio"];
 
+/**
+ * UMA LISTA DO FICHEIRO DE CASOS — a leitura, nao um valor por omissao.
+ *
+ * Estas bancadas leem um ficheiro de casos NOSSO, e as listas dele (`casos`, `arranque.casos`,
+ * `arranque.portas`, `provocacoes.casos`) sao DECLARADAS. Era `?? []`: um ficheiro a que faltasse uma lista
+ * media ZERO casos daquele tipo e a bancada acabava com "0 divergentes" — verde por nao ter corrido nada
+ * (e' o genero de verde que ja' apareceu nesta casa). Uma lista ausente e' um defeito do ficheiro, e diz-se.
+ */
+function listaDoFicheiro(x: unknown, oQue: string, caminho: string): unknown[] {
+  if (!Array.isArray(x)) {
+    throw new Error(
+      `o ficheiro de casos (${caminho}) nao declara \`${oQue}\` como lista (veio ${typeof x}): uma bancada sem ` +
+        "casos nao mede nada — e nao pode acabar verde",
+    );
+  }
+  return x;
+}
+
+/** As ENTRADAS de um bloco do ficheiro de casos (o bloco tem de ser objecto; o ausente nao e' um bloco vazio). */
+function entradasDoBloco(x: unknown, oQue: string, caminho: string): [string, unknown][] {
+  return Object.entries(blocoDoFicheiro(x, oQue, caminho));
+}
+
+/**
+ * UM BLOCO — objecto — do ficheiro de casos, exigido.
+ *
+ * Era `?? {}` (e `?? []` para as entradas, que da' no mesmo): um bloco ausente virava um bloco VAZIO, e um
+ * bloco vazio le-se como "este caso nao declara conferencia nenhuma" — que e' o mesmo que dizer que ele
+ * passou. O ausente nao e' um vazio: e' um campo por declarar, e diz-se qual.
+ */
+function blocoDoFicheiro(x: unknown, oQue: string, caminho: string): Record<string, any> {
+  if (typeof x !== "object" || x === null || Array.isArray(x)) {
+    throw new Error(
+      `o ficheiro de casos (${caminho}) nao declara \`${oQue}\` como bloco de campos (veio ${JSON.stringify(x)}): um ` +
+        "bloco ausente nao e' um bloco vazio — e ler o ausente como zero conferencias deixa passar o caso",
+    );
+  }
+  return x as Record<string, any>;
+}
+
+/**
+ * A GRAVACAO VAZIA DO DUBLE, com nome: o que a leitura de uma gravacao sem `conta` devolve.
+ *
+ * Nao e' uma leitura — e' a ausencia dela, e as leituras que a recebem RECUSAM por `resposta(undefined)`.
+ * Era `dados.conta ?? {}`: o mesmo objecto, sem nome e sem dizer de onde vinha.
+ */
+const GRAVACAO_SEM_CONTA = Object.freeze({});
+
+/**
+ * UM BLOCO DE EXPECTATIVA QUE O CASO NAO DECLARA: vazio, e com nome.
+ *
+ * Um caso pode nao declarar `desfecho_esperado` (os casos das portas nao medem o desfecho) nem
+ * `resposta_do_venue_exige` — e isso NAO e' o mesmo que declarar o bloco vazio: e' nao estar a medir aqueles
+ * campos. Como todas as chaves destes blocos sao conferidas uma a uma (`if (esperado.X !== undefined)`), o
+ * bloco ausente le-se como "nao se confere nenhuma chave" — e e' isso, exactamente, que o nome diz. Um bloco
+ * que o caso DECLARE e' conferido por inteiro (`blocoDoFicheiro`).
+ */
+const SEM_EXPECTATIVA: Record<string, any> = Object.freeze({});
+
 function fundirUmNivel(base: any, mudanca: any): any {
   const saida: Record<string, unknown> = { ...base };
-  for (const [k, v] of Object.entries(mudanca ?? {})) {
+  for (const [k, v] of Object.entries(mudanca)) {
     const antes = saida[k];
     const fundeEste = MAPAS_DE_LEITURA.includes(k);
     if (
@@ -154,26 +214,42 @@ function resolverVenue(casos: Casos, nome: string): any {
   return fundirUmNivel(resolverVenue(casos, variante.herda), variante);
 }
 
+/**
+ * UMA FICHA DO FICHEIRO DE CASOS, ou da configuracao do dono (`@caminho`) — com os campos que podem FALTAR.
+ *
+ * Nao e' a `Ficha` do conector: e' o que se LE' antes de a entregar ao conector, e quem a valida e' ele, campo
+ * a campo, nomeando o que falta. Tipar isto como `Ficha` obrigaria a INVENTAR os campos ausentes — e era
+ * exactamente isso que o `?? "?"` fazia. A fronteira (aqui e' dado; la' e' forma conferida) faz-se num `as`, no
+ * sitio onde a ficha entra no conector, e nao num valor de recurso.
+ */
+type FichaLida = { [K in keyof Ficha]: Ficha[K] extends Record<string, unknown> ? Partial<Ficha[K]> : Ficha[K] | undefined };
+
 /** Resolve uma ficha: uma variante do ficheiro de casos, ou a configuracao do dono (`@caminho`). */
-function resolverFicha(casos: Casos, nome: string): Ficha {
+function resolverFicha(casos: Casos, nome: string): FichaLida {
   if (nome.startsWith("@")) {
     const caminho = nome.slice(1);
     const c = lerJson(caminho);
     // A configuracao do dono nao declara a versao do contrato que o conector fala: quem a sabe e o contrato
     // (contracts/versao.json). O campo vai preenchido com a VIGENTE e o diagnostico diz de onde veio.
+    //
+    // O QUE NAO SE INVENTA E' O RESTO. Era `?? "?"` em quatro campos e `?? ""` em tres: uma configuracao sem
+    // `conexao.ambiente` chegava a' ficha do conector com o ambiente `"?"` — um valor que PARECE declarado, e
+    // que a porta do arranque so' recusava mais tarde, por `formato_invalido`, como se a configuracao tivesse
+    // um ambiente torto. O ausente viaja como AUSENTE, e a porta que o exige e' a que o nomeia
+    // (`campo_obrigatorio_ausente`, na porta da ficha / da chave).
     return {
-      conector: c?.conta?.conectores?.[0] ?? c?.conta?.corretora ?? "?",
+      conector: c?.conta?.conectores?.[0] ?? c?.conta?.corretora,
       contrato: versaoVigente(),
       versao_do_conector: "0.1.0",
       venue: {
-        nome: c?.conta?.corretora ?? "?",
-        ambiente: c?.conexao?.ambiente ?? "?",
-        url_da_api: c?.conexao?.url_da_api ?? "",
+        nome: c?.conta?.corretora,
+        ambiente: c?.conexao?.ambiente,
+        url_da_api: c?.conexao?.url_da_api,
       },
-      conta: c?.conta?.identificador ?? "",
+      conta: c?.conta?.identificador,
       credencial: {
-        referencia: c?.conta?.credencial ?? "",
-        valor_em: c?.conexao?.credencial?.valor_em ?? "",
+        referencia: c?.conta?.credencial,
+        valor_em: c?.conexao?.credencial?.valor_em,
       },
       // A LISTA DE PARES VEM DA FICHA, e de mais nenhum sitio. Estava a ler-se `c.instrumentos` no TOPO do
       // ficheiro (onde nunca existe: a lista mora em `conta.instrumentos`) e a cair num `["BTC"]` escrito a mao —
@@ -234,7 +310,10 @@ function portaDoDuble(dados: any): Porta {
       if (depois !== undefined) return depois;
     }
     if (rodada >= 2 && dados.conta_apos_o_pedido !== undefined) return dados.conta_apos_o_pedido;
-    return dados.conta ?? {};
+    // A GRAVACAO SEM `conta`: o duble responde com uma gravacao vazia — que faz as leituras RECUSAREM
+    // (nomeando), em vez de devolverem uma leitura vazia. Era `dados.conta ?? {}`, o mesmo objecto sem nome.
+    if (dados.conta === undefined) return GRAVACAO_SEM_CONTA;
+    return dados.conta;
   }
 
   const sondaDe = (chave: string): Resposta => {
@@ -325,8 +404,22 @@ function portaDoDuble(dados: any): Porta {
         // O DUBLE LEMBRA-SE DO AJUSTE: se ele o aplicou, a releitura devolve-o — e' assim que o caminho feliz do
         // FR-008 se prova offline, sem venue nenhum.
         if (alavancagemAjustada === null) return r.valor;
-        const v = (r.valor ?? {}) as Record<string, unknown>;
-        const lev = (v.leverage ?? {}) as Record<string, unknown>;
+        // O ajuste SOBREPOE-SE a' resposta do duble: o duble tem de a ter em objecto para a poder sobrepor.
+        // Era `(r.valor ?? {})` / `(v.leverage ?? {})`: uma resposta que nao fosse objecto virava um objecto
+        // vazio, e o ajuste saia aplicado a nada — o caso media um caminho que nao existe no venue.
+        if (typeof r.valor !== "object" || r.valor === null || Array.isArray(r.valor)) {
+          throw new Error(
+            `o duble ia aplicar o ajuste de alavancagem e a resposta do activo nao e' um objecto (${JSON.stringify(r.valor)}): ` +
+              "o ficheiro de casos nao declara o que o venue devolve, e o ajuste nao se aplica a nada",
+          );
+        }
+        const v = r.valor as Record<string, unknown>;
+        const lev = typeof v.leverage === "object" && v.leverage !== null && !Array.isArray(v.leverage)
+          ? (v.leverage as Record<string, unknown>)
+          : null;
+        if (lev === null) {
+          throw new Error("o duble ia aplicar o ajuste de alavancagem e a resposta nao traz `leverage` como objecto: o caso tem de declarar o que o venue devolve");
+        }
         return { ...v, leverage: { ...lev, value: Number(alavancagemAjustada) } };
       },
       ordensDaConta: async () => {
@@ -653,7 +746,7 @@ async function servir(args: {
     marca_de_posse: estado.manifesto.marca_de_posse,
     estado_da_ligacao: estado.estado_da_ligacao,
     carteiras_nao_lidas: estado.carteiras.nao_lidas,
-    credencial_de: estado.credencial?.de ?? "(nao lida neste modo)",
+    credencial_de: ouAusente(estado.credencial?.de, "(nao lida neste modo)"),
   });
   if (args.manifestoEm !== undefined) {
     writeFileSync(args.manifestoEm, estado.linha_do_manifesto + "\n", "utf8");
@@ -702,7 +795,7 @@ async function servir(args: {
     if (linha.trim() === "") return;
     contador.atendidas += 1;
     const r = await atender(linha, estado, args.porta, {
-      prazo_do_venue_ms: args.prazoDoVenueMs,
+      prazo_do_venue_ms: args.prazoDoVenueMs === undefined ? PRAZO_DO_VENUE_POR_OMISSAO_MS : args.prazoDoVenueMs,
       defeito: argumento("--defeito"),
     });
     for (const d of r.diag) diag(d);
@@ -749,6 +842,16 @@ function conferirMensagem(texto: string, tipoEsperado: string): { veredicto: str
   return { veredicto: "aceite", motivo: null };
 }
 
+/**
+ * O PRAZO DO VENUE — declarado UMA vez, com nome, no limite do instrumento (o CLI e a bancada).
+ *
+ * O CONECTOR NAO TEM PRAZO POR OMISSAO (`brokers/hyperliquid/conector.ts` exige-o): o prazo e' o que decide se
+ * o silencio do venue fica `desconhecido` (FR-013/RN-T7.1), e um numero que decide isso nao se escreve dentro
+ * de uma expressao, onde nao se le' nem se muda com consciencia. Quem corre o conector declara-o; quando nao o
+ * declara, vale este — e esta' aqui, nomeado, a vista de quem corre.
+ */
+const PRAZO_DO_VENUE_POR_OMISSAO_MS = 3000;
+
 function correrUmProcesso(args: {
   caminhoDosCasos: string;
   ficha: string;
@@ -780,8 +883,10 @@ function correrUmProcesso(args: {
     env: { ...process.env, MESACORE_DUBLE_CREDENCIAL: args.credencialDeTeste },
     timeout: 20000,
   });
-  const linhas = (p.stdout ?? "").split("\n").filter((l) => l.trim() !== "");
-  const erros = (p.stderr ?? "").split("\n").filter((l) => l.trim() !== "");
+  // O PROCESSO FILHO NAO CORREU, E ISSO DIZ-SE: `p.stdout ?? ""` fazia de um processo que nunca arrancou um
+  // processo que nao escreveu nada — e o codigo `-1` (abaixo) fica a dizer sozinho o que se passou.
+  const linhas = (p.stdout === null ? "" : p.stdout).split("\n").filter((l) => l.trim() !== "");
+  const erros = (p.stderr === null ? "" : p.stderr).split("\n").filter((l) => l.trim() !== "");
   const portas: Record<string, unknown>[] = [];
   for (const e of erros) {
     try {
@@ -800,12 +905,28 @@ function correrUmProcesso(args: {
       /* uma linha de diagnostico que nao e JSON fica no registo bruto, e nao conta como porta */
     }
   }
-  return { nome: "", linhas, erros, portas, codigo: p.status ?? -1 };
+  // SEM CODIGO DE SAIDA E' -1, e diz-se: `p.status` e' `null` quando o processo foi morto (o `timeout` do
+  // `spawnSync`) ou nunca arrancou. Era `?? -1` — o mesmo numero, mas a chegar por um caminho que parecia um
+  // valor por omissao. Nenhuma verificacao trata -1 como sucesso.
+  return { nome: "", linhas, erros, portas, codigo: p.status === null ? -1 : p.status };
 }
+
+/**
+ * A FICHA E O VENUE POR OMISSAO DAS BANCADAS, com nome.
+ *
+ * Eram `argumento("--ficha") ?? "base"` (e o mesmo em `--venue`): o valor por omissao que o ficheiro de casos
+ * DECLARA (`fichas.base`, `venues.base`) estava escrito como literal dentro de um `??`, no meio de uma
+ * expressao — nao se lia como a declaracao que e'.
+ */
+const FICHA_POR_OMISSAO = "base";
+const VENUE_POR_OMISSAO = "base";
 
 function correrBancada(caminhoDosCasos: string, casos: Casos): number {
   const portasDoCodigo = PORTAS_DO_PROCESSO.map((p) => p.porta);
-  const portasDoDado = casos.arranque?.portas ?? [];
+  // AS PORTAS DECLARADAS PELO FICHEIRO, exigidas: a bancada confronta-as com as do codigo, e era `?? []` — um
+  // ficheiro sem `arranque.portas` dava uma lista vazia, e a confrontacao acusava uma divergencia de listas em
+  // vez de dizer que o ficheiro nao as declara.
+  const portasDoDado = listaDoFicheiro(casos.arranque?.portas, "arranque.portas", caminhoDosCasos) as string[];
   const credencialDeTeste = `duble-${process.pid}-${Date.now()}-nao-e-chave-nenhuma`;
 
   let verificacoes = 0;
@@ -835,20 +956,27 @@ function correrBancada(caminhoDosCasos: string, casos: Casos): number {
     linhas.push({ caso: "arranque/ordem-das-portas", veredicto: "divergente", esperado_ok: false, portas: "", problemas: problemasDaOrdem });
   }
 
-  const todos = [...(casos.casos ?? []), ...(casos.arranque?.casos ?? [])];
+  // OS CASOS DA BATERIA, exigidos (as duas listas). Era `?? []` em cada uma: um ficheiro a que faltasse uma
+  // media menos casos e a bancada acabava verde por ter corrido menos.
+  const todos = [
+    ...listaDoFicheiro(casos.casos, "casos", caminhoDosCasos),
+    ...listaDoFicheiro(casos.arranque?.casos, "arranque.casos", caminhoDosCasos),
+  ] as any[];
   for (const c of todos) {
     const problemas: string[] = [];
     const nome = c.nome;
-    const ficha = c.ficha ?? "base";
-    const venue = c.venue ?? "base";
-    const boleta = c.boleta ?? null;
+    // A ficha e o venue por omissao das bancadas: sao os `base` que o PROPRIO ficheiro declara (`fichas.base`,
+    // `venues.base`), agora com nome em vez de um literal dentro de um `??`.
+    const ficha = c.ficha === undefined ? FICHA_POR_OMISSAO : c.ficha;
+    const venue = c.venue === undefined ? VENUE_POR_OMISSAO : c.venue;
+    const boleta = c.boleta === undefined ? null : c.boleta;
     const saida = correrUmProcesso({
       caminhoDosCasos,
       ficha,
       venue,
       boleta,
       credencialDeTeste,
-      prazoDoVenueMs: c.prazo_do_venue_ms,
+      prazoDoVenueMs: typeof c.prazo_do_venue_ms === "number" ? c.prazo_do_venue_ms : PRAZO_DO_VENUE_POR_OMISSAO_MS,
       defeito: c.defeito,
     });
     registo.set(nome, saida);
@@ -908,8 +1036,13 @@ function correrBancada(caminhoDosCasos: string, casos: Casos): number {
       }
     }
     if (desfecho !== null) {
-      const carga = desfecho.carga ?? {};
-      const esperado = c.desfecho_esperado ?? {};
+      // A CARGA DO DESFECHO, exigida: era `?? {}`, e um desfecho sem `carga` comparava-se como um desfecho
+      // vazio — todas as conferencias diziam "nao bate", mas com o diagnostico errado. E a expectativa do caso
+      // tambem: `c.desfecho_esperado ?? {}` fazia de um caso sem expectativa um caso que nao esperava nada.
+      const carga = blocoDoFicheiro(desfecho.carga, `desfecho.carga (caso ${c.nome})`, caminhoDosCasos);
+      const esperado = c.desfecho_esperado === undefined
+        ? SEM_EXPECTATIVA
+        : blocoDoFicheiro(c.desfecho_esperado, `desfecho_esperado (caso ${c.nome})`, caminhoDosCasos);
       if (esperado.classificacao !== undefined) {
         verificar(problemas, carga.classificacao === esperado.classificacao,
           `classificacao: ${JSON.stringify(carga.classificacao)}, esperado ${JSON.stringify(esperado.classificacao)}`);
@@ -945,7 +1078,11 @@ function correrBancada(caminhoDosCasos: string, casos: Casos): number {
         verificar(problemas, JSON.stringify(primeira.carga) === JSON.stringify(c.linha_1_esperada),
           `a resolucao da linha 1 (a de antes do envio) nao e a declarada: ${JSON.stringify(primeira.carga)} vs ${JSON.stringify(c.linha_1_esperada)}`);
       }
-      for (const [chave, valor] of Object.entries(c.resposta_do_venue_exige ?? {})) {
+      for (const [chave, valor] of Object.entries(
+        c.resposta_do_venue_exige === undefined
+          ? SEM_EXPECTATIVA
+          : blocoDoFicheiro(c.resposta_do_venue_exige, `resposta_do_venue_exige (caso ${c.nome})`, caminhoDosCasos),
+      )) {
         verificar(problemas, carga.resposta_do_venue?.[chave] === valor,
           `resposta_do_venue.${chave}: ${JSON.stringify(carga.resposta_do_venue?.[chave])}, esperado ${JSON.stringify(valor)}`);
       }
@@ -992,7 +1129,7 @@ function correrBancada(caminhoDosCasos: string, casos: Casos): number {
         bruto = null;
       }
       verificar(problemas, bruto?.carga?.versao === versaoVigente(), `o manifesto declara a versao ${JSON.stringify(bruto?.carga?.versao)}, esperado ${versaoVigente()}`);
-      verificar(problemas, (bruto?.carga?.instrumentos ?? []).length > 0, "o manifesto nao declara instrumento nenhum");
+      verificar(problemas, Array.isArray(bruto?.carga?.instrumentos) && bruto.carga.instrumentos.length > 0, "o manifesto nao declara instrumento nenhum");
       verificar(problemas, bruto?.id === "hyperliquid/manifesto", `id do manifesto: ${JSON.stringify(bruto?.id)}`);
     }
     const veredicto = problemas.length === 0 ? "ok" : "divergente";
@@ -1001,7 +1138,7 @@ function correrBancada(caminhoDosCasos: string, casos: Casos): number {
   }
 
   // ---- as provocacoes: o conferidor tem dentes?
-  for (const p of casos.provocacoes?.casos ?? []) {
+  for (const p of listaDoFicheiro(casos.provocacoes?.casos, "provocacoes.casos", caminhoDosCasos) as any[]) {
     const problemas: string[] = [];
     const v = conferirMensagem(JSON.stringify(p.entrada), "desfecho");
     verificar(problemas, v.veredicto === p.veredicto_esperado && v.motivo === p.motivo_esperado,
@@ -1045,8 +1182,12 @@ async function main(): Promise<void> {
     process.exit(correrBancada(caminhoDosCasos, casos));
   }
 
-  const nomeDaFicha = argumento("--ficha") ?? "base";
-  const ficha = resolverFicha(casos, nomeDaFicha);
+  const fichaDeclarada = argumento("--ficha");
+  const nomeDaFicha = fichaDeclarada === undefined ? FICHA_POR_OMISSAO : fichaDeclarada;
+  // A FRONTEIRA: o que o ficheiro de casos (ou a configuracao do dono) DECLARA entra no conector como `Ficha`,
+  // e quem a confere e' o conector — porta a porta, nomeando o que falta. Um campo ausente produz uma RECUSA
+  // nomeada (`campo_obrigatorio_ausente`), nunca um valor inventado.
+  const ficha = resolverFicha(casos, nomeDaFicha) as unknown as Ficha;
   const soSonda = bandeira("--so-sonda");
   const aoVivo = bandeira("--ao-vivo");
   // A LEITURA AO VIVO, EM CICLO — o pedaco que faltava para a mesa ter mercado em operacao. O produtor desta
@@ -1054,15 +1195,17 @@ async function main(): Promise<void> {
   // produzia `mercado`, e o operador esperava por uma leitura que ninguem emitia. (D-020.)
   const leituraACadaMs = argumento("--leitura-a-cada") !== undefined ? Number(argumento("--leitura-a-cada")) : 0;
 
+  const venueDeclarado = argumento("--venue");
+  const nomeDoVenue = venueDeclarado === undefined ? VENUE_POR_OMISSAO : venueDeclarado;
   const porta: Porta = aoVivo
-    ? await portaAoVivo(ficha)
-    : portaDoDuble(resolverVenue(casos, argumento("--venue") ?? "base"));
+    ? await portaAoVivo(ficha as Ficha)
+    : portaDoDuble(resolverVenue(casos, nomeDoVenue));
 
   // A bateria (FR-027): onde o venue nao publica, quem mediu foi a bateria de conformidade. Vem declarada em
   // dado — e a UNICA via por onde um numero que o venue nao deu pode entrar no manifesto.
   const varianteDaBateria = argumento("--bateria");
   const bateria: Bateria =
-    varianteDaBateria !== undefined ? (resolverVenue(casos, varianteDaBateria).bateria ?? null) : (resolverVenue(casos, argumento("--venue") ?? "base").bateria ?? null);
+    varianteDaBateria !== undefined ? (resolverVenue(casos, varianteDaBateria).bateria ?? null) : (resolverVenue(casos, nomeDoVenue).bateria ?? null);
 
   diag({
     etapa: "ficha",
@@ -1111,7 +1254,15 @@ async function main(): Promise<void> {
     // A lista da CONTA e' o minimo (nunca se deixa de ler o que o dono declarou no mandato), e as fichas
     // acrescentam. Uniao, ordenada — e nenhum instrumento desaparece por causa de uma ficha desligada que
     // tambem esteja no mandato.
-    return [...new Set([...ficha.instrumentos, ...daFicha])].sort();
+    //
+    // A LISTA DA FICHA EXIGE-SE: o relogio de leitura arma-se sobre ela, e uma ficha sem `instrumentos` faria
+    // um relogio a ler uma lista que ninguem declarou. O conector recusa essa ficha na porta propria — aqui
+    // recusa-se ANTES de armar o relogio, que e' onde ela ia ser usada.
+    const daConta = ficha.instrumentos;
+    if (daConta === undefined) {
+      morrer("a ficha nao declara `instrumentos`: nao se arma um relogio de leitura sobre uma lista que ninguem declarou");
+    }
+    return [...new Set([...daConta, ...daFicha])].sort();
   };
 
   if (aoVivo && leituraACadaMs > 0) {
@@ -1168,7 +1319,7 @@ async function main(): Promise<void> {
 
   await servir({
     casos,
-    ficha,
+    ficha: ficha as Ficha,
     porta:
       // No modo de sonda o duble do venue ainda nao sabe a referencia (nao ha boleta): a porta de envio fica sem
       // resposta declarada, e qualquer envio nesse modo e um defeito do proprio caso.
@@ -1177,7 +1328,7 @@ async function main(): Promise<void> {
     // A porta da CHAVE nao se corre no modo de historico: a leitura do historico nao assina nada e o venue
     // publica-a a quem pergunta. Um processo que le a chave para nao a usar arrisca-a sem ganho nenhum.
     semChave: soSonda || argumento("--historico") !== undefined,
-    prazoDoVenueMs: argumento("--prazo-do-venue-ms") !== undefined ? Number(argumento("--prazo-do-venue-ms")) : undefined,
+    prazoDoVenueMs: argumento("--prazo-do-venue-ms") === undefined ? PRAZO_DO_VENUE_POR_OMISSAO_MS : Number(argumento("--prazo-do-venue-ms")),
     manifestoEm: argumento("--manifesto-em"),
     soSonda,
     historicoDoInstrumento: argumento("--historico"),

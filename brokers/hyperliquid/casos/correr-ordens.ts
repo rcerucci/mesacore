@@ -16,6 +16,10 @@ import { join } from "node:path";
 import { traduzirOrdem, TIFS_DO_VENUE, type Pedido } from "../ordens.ts";
 import { derivarCloid, DERIVACAO_DO_CLOID, FORMA_DO_CLOID } from "../cloid.ts";
 import { versaoVigente } from "../../../contracts/esqueleto/framing.ts";
+import { entradas, itens } from "./blocos.ts";
+
+/** As repeticoes por omissao da checagem de cloid (mesma referencia, mesmo cloid) — o caso pode declarar outras. */
+const REPETICOES_POR_OMISSAO = 2;
 
 const RAIZ = join(import.meta.dir, "..", "..", "..");
 const ficheiro = process.argv[2] ?? join(import.meta.dir, "ordens.casos.json");
@@ -35,8 +39,8 @@ const PADRAO_DECIMAL_POSITIVO = /^(0*\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\.[0-9]+)?)
 
 /** Funde um caso sobre a base, devolvendo SEMPRE objecto novo (nunca se altera o dado partilhado). */
 function fundir(base: any, mudanca: any): any {
-  const saida = { ...(base ?? {}) };
-  for (const [k, v] of Object.entries(mudanca ?? {})) saida[k] = v;
+  const saida = base === undefined || base === null ? {} : { ...base };
+  for (const [k, v] of entradas(mudanca, "fundir/mudanca")) saida[k] = v;
   return saida;
 }
 
@@ -64,13 +68,13 @@ function pedidoDoCaso(c: any): Pedido {
     saldo: c.saldo !== undefined ? c.saldo : casos.pedido_base?.saldo,
     preco: c.preco !== undefined ? c.preco : casos.pedido_base?.preco,
   };
-  for (const caminho of (c.sem ?? []) as string[]) apagar(pedido, caminho);
+  for (const caminho of itens(c.sem, "sem") as string[]) apagar(pedido, caminho);
   return pedido as Pedido;
 }
 
 /** O motivo existe no conjunto fechado do CONTRATO? (a fonte e o ficheiro, nao um literal daqui) */
 function motivoValido(motivo: string): boolean {
-  return Object.prototype.hasOwnProperty.call(vocabulario.motivos ?? {}, motivo);
+  return Object.prototype.hasOwnProperty.call(vocabulario.motivos, motivo);
 }
 
 let total = 0;
@@ -132,7 +136,11 @@ for (const c of casos.casos) {
       if (a.desvio_maximo !== pedido.boleta?.desvio_maximo) {
         problemas.push(`o desvio declarado na accao (${JSON.stringify(a.desvio_maximo)}) nao e' o da boleta (${JSON.stringify(pedido.boleta?.desvio_maximo)})`);
       }
-      const desvio = String(pedido.boleta?.desvio_maximo ?? "");
+      const desvioDeclarado = pedido.boleta?.desvio_maximo;
+      if (typeof desvioDeclarado !== "string" || desvioDeclarado === "") {
+        throw new Error("a boleta do caso nao declara `desvio_maximo`: e o numero que a conferencia da banda compara, e sem ele nao ha banda a conferir");
+      }
+      const desvio = desvioDeclarado;
       const escala = (s: string) => { const i = s.indexOf("."); return i < 0 ? 0 : s.length - i - 1; };
       const valor = (s: string) => { const i = s.indexOf("."); return BigInt(i < 0 ? s : s.slice(0, i) + s.slice(i + 1)); };
       const eP = escala(String(a.preco)), eR = escala(String(a.preco_de_referencia)), eD = escala(desvio);
@@ -166,7 +174,7 @@ for (const c of casos.casos) {
     if (!segunda.ok || JSON.stringify(segunda.accao) !== JSON.stringify(a)) {
       problemas.push("duas chamadas com a mesma boleta deram accoes diferentes");
     }
-    for (const [caminho, esperado] of Object.entries(c.conferir ?? {})) {
+    for (const [caminho, esperado] of entradas(c.conferir, "conferir")) {
       const veio = porCaminho(a, caminho as string);
       if (veio !== esperado) problemas.push(`${caminho}=${JSON.stringify(veio)}, esperado=${JSON.stringify(esperado)}`);
     }
@@ -176,10 +184,10 @@ for (const c of casos.casos) {
 }
 
 // ---- o cloid: a mesma referencia da sempre o mesmo; outra referencia (ou outro instrumento) da outro -----------
-for (const ch of casos.checagens_de_cloid ?? []) {
+for (const ch of itens(casos.checagens_de_cloid, "checagens_de_cloid") as any[]) {
   const problemas: string[] = [];
   const conta = ch.conta !== undefined ? ch.conta : casos.conta_de_teste;
-  const repeticoes = ch.repeticoes ?? 2;
+  const repeticoes = ch.repeticoes === undefined ? REPETICOES_POR_OMISSAO : ch.repeticoes;
   const cloids: string[] = [];
   for (let i = 0; i < repeticoes; i++) {
     const r = derivarCloid(conta, ch.instrumento, ch.referencia);
@@ -203,7 +211,7 @@ for (const ch of casos.checagens_de_cloid ?? []) {
 }
 
 // ---- o cloid recusa o que tem forma invalida (fail-closed) -----------------------------------------------------
-for (const ch of casos.checagens_de_recusa_do_cloid ?? []) {
+for (const ch of itens(casos.checagens_de_recusa_do_cloid, "checagens_de_recusa_do_cloid") as any[]) {
   const problemas: string[] = [];
   const conta = ch.conta !== undefined ? ch.conta : casos.conta_de_teste;
   const r = derivarCloid(conta, ch.instrumento, ch.referencia);

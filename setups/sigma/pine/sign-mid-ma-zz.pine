@@ -1,0 +1,74 @@
+//@version=5
+indicator("sign(mid - MA) + ZZ", overlay = true)
+
+tfDec     = input.timeframe("", "Timeframe da MA (vazio = grafico)")
+maLen     = input.int(24, "MA length", minval = 1)
+maType    = input.string("EMA", "MA type", options = ["EMA", "SMA"])
+srcMA     = input.string("hl2", "Preco da MA", options = ["hl2", "close"])
+srcSig    = input.string("hl2", "Preco do sinal", options = ["hl2", "close"])
+usarBanda = input.bool(true, "Banda ATR em volta da MA")
+bandaAtr  = input.float(0.25, "Banda (x ATR)", minval = 0.0, step = 0.05)
+usarZZ    = input.bool(true, "Zigzag: so vira apos recuo em ATR")
+zzAtr     = input.float(2.0, "ZZ recuo minimo (x ATR)", minval = 0.1, step = 0.1)
+pintar    = input.bool(true, "Colorir barras")
+
+sameTF = tfDec == "" or tfDec == timeframe.period
+
+f_srcMA() =>
+    srcMA == "hl2" ? hl2 : close
+
+f_srcSig() =>
+    srcSig == "hl2" ? hl2 : close
+
+f_ma() =>
+    s = f_srcMA()
+    maType == "EMA" ? ta.ema(s, maLen) : ta.sma(s, maLen)
+
+f_atr() =>
+    ta.atr(14)
+
+maH  = sameTF ? f_ma()     : request.security(syminfo.tickerid, tfDec, f_ma(),     barmerge.gaps_off, barmerge.lookahead_off)
+atrH = sameTF ? f_atr()    : request.security(syminfo.tickerid, tfDec, f_atr(),    barmerge.gaps_off, barmerge.lookahead_off)
+mid  = sameTF ? f_srcSig() : request.security(syminfo.tickerid, tfDec, f_srcSig(), barmerge.gaps_off, barmerge.lookahead_off)
+pxT  = sameTF ? time       : request.security(syminfo.tickerid, tfDec, time,       barmerge.gaps_off, barmerge.lookahead_off)
+
+banda  = usarBanda and not na(atrH) ? bandaAtr * atrH : 0.0
+acima  = not na(mid) and not na(maH) and mid > maH + banda
+abaixo = not na(mid) and not na(maH) and mid < maH - banda
+
+pronta = not na(mid) and not na(maH) and not na(pxT)
+var int   tVista  = 0
+var int   sig     = 0
+var float extremo = na
+
+nova     = sameTF ? (pronta and barstate.isconfirmed) : (pronta and pxT != tVista)
+sigAntes = sig
+
+if nova
+    tVista := pxT
+    if sig == 1
+        extremo := na(extremo) ? mid : math.max(extremo, mid)
+    else if sig == -1
+        extremo := na(extremo) ? mid : math.min(extremo, mid)
+
+    recuoOk = true
+    if usarZZ and not na(extremo) and not na(atrH) and atrH > 0 and sig != 0
+        recuoOk := sig == 1 ? (extremo - mid) >= zzAtr * atrH : (mid - extremo) >= zzAtr * atrH
+
+    if sig != 1 and acima and (sig == 0 or recuoOk)
+        sig := 1
+        extremo := mid
+    else if sig != -1 and abaixo and (sig == 0 or recuoOk)
+        sig := -1
+        extremo := mid
+
+marcaLong  = nova and sig == 1  and sigAntes != 1
+marcaShort = nova and sig == -1 and sigAntes != -1
+
+plot(maH, "MA", color = color.new(color.blue, 0), linewidth = 2)
+plotshape(marcaLong,  title = "long",  style = shape.triangleup,   location = location.belowbar, size = size.tiny, color = color.new(color.teal, 0))
+plotshape(marcaShort, title = "short", style = shape.triangledown, location = location.abovebar, size = size.tiny, color = color.new(color.red, 0))
+barcolor(pintar ? (sig == 1 ? color.new(color.teal, 70) : sig == -1 ? color.new(color.red, 70) : color.new(color.gray, 70)) : na)
+
+plot(mid - maH, "mid-MA", display = display.data_window)
+plot(sig, "sig", display = display.data_window)

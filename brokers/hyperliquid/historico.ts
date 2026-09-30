@@ -64,6 +64,7 @@
 // fica PURO, e os casos correm offline. O venue entra como DADO.
 
 import type { Resposta } from "./sonda.ts";
+import { ouAusente } from "../../contracts/esqueleto/texto.ts";
 
 // ---------------------------------------------------------------------------------------------------------
 // A porta: as leituras do historico entram como PARAMETRO (o nucleo fica puro e testavel sem rede).
@@ -409,7 +410,7 @@ export function lerHistorico(respostas: RespostasDoHistorico, pedido: PedidoDeHi
         ok: false,
         motivo: taxa.motivo,
         porque:
-          `${taxa.porque} — a TAXA desta execucao (oid ${identificador(f.oid) ?? "(sem oid)"}, ${instante} ms) fica ` +
+          `${taxa.porque} — a TAXA desta execucao (oid ${ouAusente(identificador(f.oid), "(sem oid)")}, ${instante} ms) fica ` +
           "DESCONHECIDA, e uma taxa desconhecida NAO vira zero (FR-018: o zero pareceria um custo medido)",
       };
     }

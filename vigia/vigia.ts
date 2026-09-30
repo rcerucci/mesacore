@@ -21,7 +21,7 @@ import { createInterface } from "node:readline";
 import { spawn, type ChildProcess } from "node:child_process";
 import { join } from "node:path";
 import { validar, versaoVigente } from "../contracts/esqueleto/framing.ts";
-import { TRADUCAO } from "../core/servidor.ts";
+import { correlacaoDoPedido, traduzirMotivoDoContrato } from "../core/servidor.ts";
 import { arrancar } from "../core/ciclo/arranque.ts";
 import { lerMarcas } from "../core/estado/marcas.ts";
 import { motivoConhecido } from "../core/livro-de-motivos.ts";
@@ -104,6 +104,53 @@ process.on("exit", () => {
   }
 });
 
+/**
+ * O QUE O REGISTO ESCREVE QUANDO A MESA NAO DEVOLVEU O CAMPO: que nao se leu.
+ *
+ * O registo do vigia (`vigia/registro.ts`) e' NOSSO e admite dizer que nao se leu — e' o que ele deve dizer,
+ * em vez de um estado inventado. O que NAO se admite e' isto atravessar o contrato: a mensagem
+ * `resposta_de_comando` so' aceita os quatro estados do eixo da mesa (`forma.schema.json`), e nada la' significa
+ * "nao sei". Sao duas coisas diferentes, e por isso sao duas funcoes diferentes — nao um `??` que servia as
+ * duas.
+ */
+const NAO_SE_LEU = "(nao se leu)";
+
+/** Um campo de texto opcional, para o REGISTO do vigia. Vazio ou ausente diz-se `NAO_SE_LEU`. */
+function ouNaoSeLeu(valor: string | undefined): string {
+  if (valor === undefined || valor === "") return NAO_SE_LEU;
+  return valor;
+}
+
+/** Um sub-campo de texto da carga da mesa (`transicao.de`), para o REGISTO do vigia. */
+function textoDeDentroDe(c: Record<string, unknown> | null, dentro: string, campo: string): string {
+  if (c === null) return NAO_SE_LEU;
+  const sub = c[dentro];
+  if (typeof sub !== "object" || sub === null) return NAO_SE_LEU;
+  return ouNaoSeLeu(typeof (sub as Record<string, unknown>)[campo] === "string" ? ((sub as Record<string, unknown>)[campo] as string) : undefined);
+}
+
+/** Os quatro estados do eixo da mesa (`contracts/_defs/forma.schema.json`). Nao ha' um quinto para "nao sei". */
+const ESTADOS_DA_MESA = ["parada", "em_operacao", "pausada", "encerrando"];
+
+/**
+ * O ESTADO PARA UMA RESPOSTA DO CONTRATO, ou GRITA.
+ *
+ * Era `estado ?? "parada"` dentro do `respostaDoVigia`. Quando o ledger da mesa NAO se leu, o vigia nao sabe
+ * onde ela esta' — e `parada` era, ainda assim, resposta: uma mentira pequena, e do tipo que atravessa o
+ * contrato sem uma recusa, porque `parada` e' um dos quatro estados validos. O dono lia `parada->parada` e
+ * concluia que a mesa estava parada. Nao se responde por um estado que nao se leu: o vigia diz que nao sabe,
+ * e a resposta que ele nao pode compor nao se compoe.
+ */
+function estadoParaAResposta(estado: string | undefined): string {
+  if (estado === undefined || !ESTADOS_DA_MESA.includes(estado)) {
+    throw new Error(
+      `o vigia nao pode responder com o estado da mesa: ${estado === undefined ? "nao o leu" : `'${estado}' nao e' um estado do eixo da mesa`}. ` +
+        "O contrato admite quatro estados e nenhum deles significa «nao sei» — responder por um deles seria dizer que se sabe",
+    );
+  }
+  return estado;
+}
+
 export interface Opcoes {
   caminhoDaConfig: string;
   caminhoDoManifesto: string;
@@ -178,7 +225,16 @@ class MesaFilha {
     // vigia morrer. A configuracao e a mesma que o vigia ja le para as portas - uma so leitura da mesma
     // declaracao.
     if (opcoes.tickMs !== undefined) {
-      args.push("--tick", String(opcoes.tickMs), "--operacao", opcoes.caminhoDaOperacao ?? "", "--config", opcoes.caminhoDaConfig);
+      // O RELOGIO PRECISA DAS DUAS PONTAS. Antes, um caminho ausente ia como cadeia vazia (`?? ""`) e a mesa
+      // arrancava o relogio sobre um caminho que nao existe: o erro aparecia longe daqui, no meio de uma volta,
+      // como "a operacao nao se leu". Quem arma o relogio e quem tem de declarar o que ele le.
+      if (opcoes.caminhoDaOperacao === undefined || opcoes.caminhoDaConfig === undefined) {
+        throw new Error(
+          "o vigia foi armado com relogio (`--tick`) sem `--operacao` ou sem `--config`: o relogio e' o que faz " +
+            "a mesa decidir sozinha, e sem as duas pontas ele cicla sobre nada — e um ciclo sobre nada parece operacao",
+        );
+      }
+      args.push("--tick", String(opcoes.tickMs), "--operacao", opcoes.caminhoDaOperacao, "--config", opcoes.caminhoDaConfig);
     }
     this.proc = spawn("bun", args, { stdio: ["pipe", "pipe", "inherit"] });
     // Quem o vigia levantou fica escrito: sem isto, um pid vivo na maquina e uma ligacao que ninguem sabe
@@ -266,7 +322,7 @@ function gravarDesfecho(opcoes: Opcoes, d: ReturnType<typeof correrAsPortas>) {
 export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opcoes): Promise<string> {
   const decisao = validar(linha);
   if (decisao.veredicto !== "aceite") {
-    const motivo = TRADUCAO[decisao.motivo ?? ""] ?? "comando_com_tipo_invalido";
+    const motivo = traduzirMotivoDoContrato(decisao.motivo);
     let id: unknown = null;
     let pedido: string | null = null;
     try {
@@ -274,18 +330,28 @@ export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opc
       id = cru?.id ?? null;
       pedido = typeof cru?.carga?.pedido_id === "string" ? cru.carga.pedido_id : null;
     } catch { /* nem e JSON: o motivo do contrato ja o disse */ }
-    return respostaDoVigia(id, pedido ?? "sem_pedido", motivo);
+    return respostaDoVigia(id, correlacaoDoPedido(pedido), motivo, opcoes.estadoLido);
   }
   const envelope = JSON.parse(linha) as { id?: unknown; tipo?: string; carga?: Record<string, unknown> };
   // DOIS tipos atravessam este vigia (T034): o `comando` e a `decisao_do_encerramento`. Todo o resto e
   // recusado - a porta do vigia nao se alarga sozinha.
   const ehDecisao = envelope.tipo === "decisao_do_encerramento";
   if (envelope.tipo !== "comando" && !ehDecisao) {
-    return respostaDoVigia(envelope.id, "sem_pedido", "comando_com_tipo_invalido");
+    return respostaDoVigia(envelope.id, correlacaoDoPedido(null), "comando_com_tipo_invalido", opcoes.estadoLido);
   }
 
-  const carga = envelope.carga ?? {};
-  const pedidoId = typeof carga.pedido_id === "string" ? carga.pedido_id : "sem_pedido";
+  // A CARGA, do envelope que o CONTRATO ja aceitou. Era `envelope.carga ?? {}`: um objecto vazio dava um
+  // comando sem `verbo` que seguia viagem como "(sem verbo)" e so parava mais a frente, longe da causa. Se o
+  // contrato aceitou a linha, `carga` esta' la' (o envelope exige-a) — e se nao estiver, a linha que passou
+  // pelo contrato nao e a que aqui chegou, e isso e um defeito que se nomeia.
+  if (typeof envelope.carga !== "object" || envelope.carga === null) {
+    throw new Error(
+      `o contrato aceitou a linha e ela nao traz \`carga\` (tipo ${String(envelope.tipo)}): sem carga nao ha ` +
+        "comando nem decisao — e inventar uma vazia era decidir sobre um pedido que ninguem fez",
+    );
+  }
+  const carga = envelope.carga as Record<string, unknown>;
+  const pedidoId = correlacaoDoPedido(typeof carga.pedido_id === "string" ? carga.pedido_id : null);
   // A decisao nao e um verbo, e o registro diz o que o vigia SERVIL: por isso o campo leva o nome da decisao,
   // e nao um sexto verbo - o contrato tem cinco, e um sexto nao entra nem por omissao nem por extensao.
   const verbo = ehDecisao ? "decisao_do_encerramento" : (typeof carga.verbo === "string" ? carga.verbo : "(sem verbo)");
@@ -313,8 +379,8 @@ export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opc
       autor: typeof carga.autor === "string" ? carga.autor : "(sem autor)",
       pedido_id: pedidoId,
       aceito: false,
-      de: opcoes.estadoLido ?? "(nao se leu)",
-      para: opcoes.estadoLido ?? "(nao se leu)",
+      de: ouNaoSeLeu(opcoes.estadoLido),
+      para: ouNaoSeLeu(opcoes.estadoLido),
       motivo: "mesa_ja_em_operacao",
       efeito: null,
       porta: null,
@@ -341,8 +407,14 @@ export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opc
     if (abreEncerramento) linhaDaPergunta = await mesa.proxima(10000);
   } catch { /* a resposta nao se leu: o registro di-lo abaixo */ }
   const brutoDaMesa = linhaDaPergunta ? linhaDaMesa + "\n" + linhaDaPergunta : linhaDaMesa;
-  let c: Record<string, unknown> = {};
-  try { c = (JSON.parse(linhaDaMesa ?? "") as { carga?: Record<string, unknown> }).carga ?? {}; } catch { /* fica vazio */ }
+  // A CARGA DA RESPOSTA DA MESA. Era `JSON.parse(linhaDaMesa ?? "").carga ?? {}` com um `catch` que deixava
+  // `c = {}`: a mesa nao respondia nada e o registo escrevia uma transicao com campos "(nao se leu)" — um
+  // vazio que parece um objecto lido. O ausente passa a ser AUSENTE (`null`), e o registo diz o que sabe.
+  let c: Record<string, unknown> | null = null;
+  try {
+    const cru = JSON.parse(linhaDaMesa) as { carga?: unknown };
+    if (typeof cru.carga === "object" && cru.carga !== null) c = cru.carga as Record<string, unknown>;
+  } catch { c = null; }
   let pergunta: PerguntaRegistada | null = null;
   if (linhaDaPergunta) {
     try {
@@ -358,22 +430,20 @@ export async function atender(linha: string, mesa: MesaFilha | null, opcoes: Opc
       }
     } catch { /* a segunda linha ilegivel nao se inventa; fica `null` e o registro di-lo */ }
   }
-  const transicao = (c.transicao ?? {}) as { de?: string; para?: string };
-
   const t: TransicaoDoVigia = {
-    instante_ms: Number.isInteger(c.instante_ms) ? (c.instante_ms as number) : Date.now(),
+    instante_ms: typeof c?.instante_ms === "number" && Number.isInteger(c.instante_ms) ? c.instante_ms : Date.now(),
     verbo,
     autor: typeof carga.autor === "string" ? carga.autor : "(sem autor)",
     pedido_id: pedidoId,
-    aceito: c.aceito === true,
-    de: transicao.de ?? "(nao se leu)",
-    para: transicao.para ?? "(nao se leu)",
-    motivo: typeof c.motivo === "string" ? c.motivo : null,
-    efeito: typeof c.efeito === "string" ? c.efeito : null,
+    aceito: c?.aceito === true,
+    de: textoDeDentroDe(c, "transicao", "de"),
+    para: textoDeDentroDe(c, "transicao", "para"),
+    motivo: typeof c?.motivo === "string" ? c.motivo : null,
+    efeito: typeof c?.efeito === "string" ? c.efeito : null,
     porta: desfecho?.porta ?? null,
     motivo_da_porta: desfecho?.motivo ?? null,
     detalhe_da_porta: desfecho?.detalhe ?? null,
-    portas_conferidas: desfecho?.conferidas ?? [],
+    portas_conferidas: desfecho === null ? [] : desfecho.conferidas,
     pergunta,
   };
   acrescentar(opcoes.caminhoDoRegisto, t);
@@ -407,23 +477,42 @@ export function lerEstadoDoLedger(caminho: string): { estado: string; lido: bool
   }
 }
 
+/** A declaracao honesta de que a linha nao trouxe correlacao nenhuma (`sem_id` e' uma correlacao VALIDA). */
+const SEM_ID = "sem_id";
+
 /** Nao responde a mesa: responde o VIGIA, quando nem chegou a valer a pena incomodar a mesa.
- *  O estado que se declara e o que se sabe - e quando a mesa esta a operar e a costura nao existe, o que se
- *  sabe e o estado LIDO: dizer `parada->parada` seria uma mentira pequena na propria recusa. */
+ *  O estado que se declara e o que se sabe — e quando a mesa esta a operar e a costura nao existe, o que se
+ *  sabe e o estado LIDO: dizer `parada->parada` seria uma mentira pequena na propria recusa.
+ *
+ *  `estado` NAO tem valor por omissao, e e' o ponto: quem responde pelo contrato tem de saber onde a mesa esta'.
+ *  Nas recusas de FORMA (a linha nem chegou a ser um comando) o estado e' o que se leu no ledger — e uma recusa
+ *  de forma numa mesa de estado desconhecido nao se compoe (ver `estadoParaAResposta`). */
 function respostaDoVigia(id: unknown, pedidoId: string, motivo: string, estado?: string): string {
   const motivoFinal = motivoConhecido(motivo) ? motivo : "comando_com_tipo_invalido";
-  return JSON.stringify({
+  const daMesa = estadoParaAResposta(estado);
+  const linha = JSON.stringify({
     contrato: versaoVigente(),
     tipo: "resposta_de_comando",
-    id: typeof id === "string" ? id : "sem_id",
+    id: typeof id === "string" ? id : SEM_ID,
     carga: {
       pedido_id: pedidoId,
       aceito: false,
       motivo: motivoFinal,
-      transicao: { de: estado ?? "parada", para: estado ?? "parada" },
+      transicao: { de: daMesa, para: daMesa },
       instante_ms: Date.now(),
     },
   });
+  // O VIGIA CONFERE A SUA PROPRIA RESPOSTA. Quem responde pelo contrato responde EM conformidade com ele: uma
+  // resposta que nao passa o contrato e' uma resposta que o outro lado vai recusar, e que aqui saia na mesma
+  // — o erro so' aparecia do outro lado da fronteira, atribuido a quem a leu.
+  const decisao = validar(linha);
+  if (decisao.veredicto !== "aceite") {
+    throw new Error(
+      `a resposta do vigia nao passa o contrato (${decisao.veredicto}: ${String(decisao.motivo)}) — prefiro nao ` +
+        "responder a responder uma mensagem que o contrato recusa: " + linha,
+    );
+  }
+  return linha;
 }
 
 /** O registo de OPERACAO foi retomado? Tres respostas, e a do meio e a que custa:
@@ -475,7 +564,9 @@ async function main() {
   // nas maos NAO sai porque o cano fechou. Sem operacao - a ultima transicao que ele proprio registou e
   // `parada` - recolhe o que levantou e sai; `--uma-linha` (o instrumento da bancada) sai sempre, e diz.
   const ultima = lerRegisto(opcoes.caminhoDoRegisto).transicoes.at(-1) as TransicaoDoVigia | undefined;
-  const emOperacao = ["em_operacao", "pausada", "encerrando"].includes(ultima?.para ?? "");
+  // Sem transicao nenhuma no registo NAO HA OPERACAO a segurar — e' o primeiro arranque, nao uma duvida. Era
+  // `ultima?.para ?? ""`, um estado vazio que respondia "nao esta' em operacao" por uma razao que nao se lia.
+  const emOperacao = ultima !== undefined && ["em_operacao", "pausada", "encerrando"].includes(ultima.para);
   if (umaLinha || !emOperacao) {
     mesa?.fechar();
     for (const p of CONECTORES_LEVANTADOS) p.kill();

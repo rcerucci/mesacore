@@ -18,6 +18,12 @@
 // sempre comprado ou vendido, e é a viragem que o muda. Para propor um lado é preciso saber se JÁ ESTAMOS nesse
 // lado — e se a leitura não trouxer a posição, este plugin NÃO ADIVINHA: propõe `hold` e di-lo em voz alta.
 // Abrir às cegas por cima de uma posição viva é empilhar, e nenhum indicador pede isso.
+//
+// E A ENTRADA SÓ ACONTECE NA BARRA DO FLIP (regra do dono, 30/09/2026 — «um flip de sinal tem que fechar a ordem
+// aberta e inverter», «na inicialização a primeira operação só no primeiro flip», «não pode abrir ordem no meio
+// da perna», «se foi fechada à mão só abre no próximo flip»). O que autoriza uma entrada é o TRIÂNGULO do
+// gráfico — a `virada` da última barra fechada — e não o lado do indicador: estar do lado certo não é motivo
+// para entrar, ter virado é.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
@@ -146,7 +152,11 @@ const ponto = pontos[pontos.length - 1]!;
 for (const p of pontos.slice(-3)) {
   queixa(`diagnostico ${new Date(p.t).toISOString()} · ma=${p.ma?.toFixed(4)} · atr=${p.atr?.toFixed(4)} · mid=${p.mid.toFixed(4)} · mid-ma=${p.ma === null ? "na" : (p.mid - p.ma).toFixed(4)} · sig=${p.sig} · virada=${p.virada}`);
 }
-if (ponto.ma === null || ponto.atr === null) dizer("hold", `so' ha' ${velas.length} barras e o indicador precisa de mais para a media e o ATR`);
+// O PINE NÃO PRECISA DO ATR PARA DECIDIR: a prontidão dele é `mid`, MA e tempo, e sem ATR a banda é 0 (não há
+// zona morta). Logo uma série sem ATR **não** é «faltam dados ao indicador» — é uma LEITURA curta (menos de
+// `atr_len` barras fechadas), e numa série dessas o motor decide sobre o arranque, que é justamente onde ele e o
+// gráfico mais podem discordar. Preferimos recusar e dizer por quem.
+if (ponto.ma === null || ponto.atr === null) dizer("hold", `a serie traz so' ${velas.length} barras fechadas e o ATR do indicador precisa de ${constantes.atr_len}: uma leitura assim curta e' anomalia, nao um sinal`);
 if (ponto.sig === 0) dizer("hold", "o indicador ainda nao tem lado: o preco nao saiu da zona morta em volta da media");
 
 // ---- a posição: o contrato diz o que a ausência significa ------------------------------------------
@@ -158,56 +168,113 @@ if (ponto.sig === 0) dizer("hold", "o indicador ainda nao tem lado: o preco nao 
 // O que o plugin NAO decide e' a POSSE: se a posicao tem marca nossa e' a mesa que o sabe (a marca vive no
 // `cloid` da ordem, e o mapa marca -> ficha e' a RN-T16.1). Aqui só se compara o LADO — que e' o que o
 // indicador precisa para saber se ja' esta' do lado que ele quer.
-const doPedido = ponto.sig === 1 ? "buy" : "sell";
+const ladoDoIndicador = ponto.sig === 1 ? "buy" : "sell";
+/**
+ * O LADO DO FLIP da última barra FECHADA — é o triângulo do gráfico (`marcaLong`/`marcaShort` = `nova and
+ * sig != sigAntes`), e é ele que autoriza uma entrada. `null` quando aquela barra não virou.
+ */
+const ladoDoFlip: "buy" | "sell" | null = ponto.virada === 1 ? "buy" : ponto.virada === -1 ? "sell" : null;
 const posicao = leitura.posicao;
 const tFechada = ultima.t;
 
-// ---- UMA ENTRADA POR BARRA FECHADA, e o resto do tempo em silencio ------------------------------------
+// ---- A ENTRADA SÓ NA BARRA DO FLIP, e o resto do tempo em silêncio --------------------------------------
 //
-// Este é o ponto que a observação de 12 h pôs a nu: a mesa propôs `abrir` 731 vezes num relógio de H1 — 731
-// barras que não existem. O indicador decide **no fecho da barra**, logo a entrada é uma por barra; repeti-la
-// a cada ciclo é a mesma decisão enviada 60 vezes por hora, e se a mão estivesse fechada seriam 60 posições.
+// O primeiro defeito desta família veio da observação de 12 h: a mesa propôs `abrir` 731 vezes num relógio de
+// H1 — 731 barras que não existem. O indicador decide **no fecho da barra**, logo a entrada é uma por barra.
 //
-// A regra, e porque é esta:
-//   * a posição já está do lado que o indicador quer  -> `hold` (não se mexe);
-//   * a posição está do lado OPOSTO                     -> propõe-se a viragem em TODOS os ciclos, de propósito:
-//     o fecho é `reduce_only` e o sistema fica plano; só então a abertura do lado novo é que é uma entrada nova,
-//     e essa conta uma vez. Repetir a viragem até ela se completar é o que a faz completar-se;
-//   * sem posição: propõe-se a entrada **uma vez por barra fechada** — a barra fica registada no estado do
-//     setup, e nos ciclos seguintes da mesma barra o setup **não propõe nada** (nem `hold`: nada mesmo, que o
-//     contrato distingue "não propus" de "tenho opinião"). É isto que faz o relógio da ficha mandar na ordem.
-const PASTA_DE_ESTADO = process.env.PASTA_DE_ESTADO ?? "";  // opcional de proposito: sem estado o plugin diz que nao registou a barra (e di-lo)
-const ficheiroDeEstado = PASTA_DE_ESTADO === "" ? null : join(PASTA_DE_ESTADO, `sigma-${instrumento}.json`);
+// O segundo é este, e é a regra do dono: **não há entrada sem flip**. As quatro frases dele, e o que cada uma
+// fecha aqui:
+//   * «um flip de sinal tem que fechar a ordem aberta e inverter» -> com uma posição VIVA de lado contrário ao
+//     do indicador, propõe-se a viragem em TODOS os ciclos, de propósito: o fecho é `reduce_only` e o sistema
+//     fica plano; só então a abertura do lado novo é uma entrada nova, e essa conta uma vez (dois passos);
+//   * «a posição já está do lado que o indicador quer» -> `hold` (não se mexe);
+//   * «na inicialização do setup a primeira operação só no primeiro flip» -> ao ligar, o indicador muitas vezes
+//     JÁ TEM lado (o histórico tem viragens); sem flip na última barra fechada não se entra, logo o arranque não
+//     abre no meio da perna — fica-se à espera da próxima viragem;
+//   * «se uma ordem for fechada à mão só pode ser aberta no próximo flip» -> plano + sem flip na última barra =
+//     silêncio; e a barra do flip que já deu a sua entrada fica registada no estado (D-021), o que impede
+//     reabrir dentro da mesma barra se a ordem que abrimos for fechada logo a seguir.
+//
+// O que NÃO muda: sem lado (`sig=0`, a zona morta em volta da média) não há proposta; e uma leitura sem posição
+// é "sem posição" (o contrato diz que a ausência é PLANO), não é dúvida.
+/**
+ * O ESTADO DO SETUP: onde se regista a barra que ja' deu a sua entrada.
+ *
+ * Era `process.env.PASTA_DE_ESTADO ?? ""`, e uma pasta vazia era o mesmo que "nao ha estado": o plugin
+ * registava a falha no diagnostico — e ENTRava na mesma. A regra "UMA entrada por barra fechada" nasceu
+ * exactamente deste defeito (a observacao de 12 h mediu 731 propostas de `abrir` num relogio de H1, que sao
+ * 731 barras que nao existem). Uma regra que impede 60 posicoes por hora nao pode depender de uma variavel de
+ * ambiente que pode faltar em silencio: sem a pasta o plugin NAO PROPOE nada, e a falta e' o que ele diz.
+ */
+const PASTA_DE_ESTADO = exigido("PASTA_DE_ESTADO");
+const ficheiroDeEstado = join(PASTA_DE_ESTADO, `sigma-${instrumento}.json`);
+
+/**
+ * A barra DESTA volta ja' deu a sua entrada? Um estado ILEGIVEL nao responde "nao": responde que nao se sabe —
+ * e o plugin nao entra sobre uma duvida (a resposta antiga era `false`, ou seja: entra-se outra vez).
+ */
 function barraJaAberta(): boolean {
-  if (ficheiroDeEstado === null || !existsSync(ficheiroDeEstado)) return false;
+  if (!existsSync(ficheiroDeEstado)) return false;
+  let lido: unknown;
   try {
-    return (JSON.parse(readFileSync(ficheiroDeEstado, "utf8")) as { ultima_barra?: number }).ultima_barra === tFechada;
-  } catch {
-    return false; // estado ilegivel conta como "nao sei se ja' abri": abre-se, e o defeito fica visivel no erro
+    lido = JSON.parse(readFileSync(ficheiroDeEstado, "utf8"));
+  } catch (e) {
+    naoProponho(
+      `o estado do setup (${ficheiroDeEstado}) esta' ilegivel (${e instanceof Error ? e.message : String(e)}): ` +
+        "sem saber se esta barra ja' entrou, propor seria repetir a entrada",
+    );
   }
+  return (lido as { ultima_barra?: unknown }).ultima_barra === tFechada;
 }
+
+/**
+ * REGISTAR A BARRA, ou nao propor. Se a barra nao se conseguir registar, a entrada REPETE-SE na volta seguinte —
+ * e repetir a entrada e' abrir outra posicao. Era uma queixa no `stderr` e a proposta saia na mesma: o defeito
+ * (D-021) ficava visivel e ficava a acontecer.
+ */
 function registarBarra(): void {
-  if (ficheiroDeEstado === null) return;
   try {
     mkdirSync(PASTA_DE_ESTADO, { recursive: true });
     writeFileSync(ficheiroDeEstado, JSON.stringify({ ultima_barra: tFechada, quando: new Date().toISOString() }) + "\n");
   } catch (e) {
-    queixa(`nao consegui registar a barra no estado (${e instanceof Error ? e.message : String(e)}) — a entrada pode repetir-se: diz-lo em vez de a esconder`);
+    naoProponho(
+      `nao consegui registar a barra no estado do setup (${e instanceof Error ? e.message : String(e)}) — e uma ` +
+        "entrada que nao se registra repete-se na volta seguinte: prefiro nao entrar a entrar duas vezes",
+    );
   }
 }
 
-if (posicao === undefined || posicao === null) {
-  // PLANO. Só aqui é que uma entrada nova pode acontecer — e uma vez por barra.
-  if (barraJaAberta()) {
-    queixa(`barra ${new Date(tFechada).toISOString()} ja' deu a sua entrada: nao proponho nada (o relogio da ficha e' que manda)`);
-    process.exit(0); // sem linha nenhuma no stdout: "nao propus" — que NAO e' o mesmo que `hold`
+// ---- A POSIÇÃO VIVA: concorda, ou vira ---------------------------------------------------------------
+if (posicao !== undefined && posicao !== null) {
+  if (String(posicao.lado) === ladoDoIndicador) {
+    dizer("hold", `ja' estou ${ladoDoIndicador}: o indicador concorda com a posicao, nao ha nada a fazer`);
   }
-  registarBarra();
-  dizer(doPedido, `plano, e o indicador esta' ${doPedido}: entrada da barra ${new Date(tFechada).toISOString()} (a posicao ausente e' "sem posicao", nao e' duvida)`);
+  // O lado OPOSTO: a mesa fecha com `reduce_only` (não vira a mão numa ordem). Fica-se plano, e a abertura do
+  // lado novo só acontece se a última barra fechada for a barra do flip (secção `PLANO` abaixo) — que é o
+  // caminho normal quando o flip chega com uma posição viva: fecha e inverte DENTRO da mesma barra. Se o flip
+  // for antigo (a mesa não estava a correr quando ele aconteceu), fecha-se e espera-se a próxima viragem: fechar
+  // uma posição contra o indicador é redução de risco, abrir uma nova sem flip é que está proibido.
+  dizer(ladoDoIndicador, `viragem: o indicador esta' ${ladoDoIndicador} e a posicao e' ${posicao.lado}`);
 }
-if (String(posicao.lado) === doPedido) {
-  dizer("hold", `ja' estou ${doPedido}: o indicador concorda com a posicao, nao ha nada a fazer`);
+
+// ---- PLANO: e aqui manda a regra do dono — sem flip não há entrada -----------------------------------
+if (ladoDoFlip === null) {
+  // A última barra fechada não virou. É isto que fecha, de uma vez, os dois buracos que o dono nomeou:
+  // (a) a primeira carga com o indicador já de um lado (o histórico tem viragens antigas) — não se abre no meio
+  //     da perna, espera-se a próxima; (b) a ordem fechada à mão — só abre no próximo flip.
+  queixa(
+    `plano, e a barra ${new Date(tFechada).toISOString()} nao virou (virada=0): nao abro no meio da perna — ` +
+      `a entrada so' acontece na barra do flip (o indicador esta' ${ladoDoIndicador} desde uma viragem anterior)`,
+  );
+  process.exit(0); // sem linha nenhuma no stdout: "nao propus" — que NAO e' o mesmo que `hold`
 }
-// O lado OPOSTO a uma posição: a mesa fecha com `reduce_only` (não vira a mão numa ordem). Na volta seguinte
-// a posição já não existe, o indicador continua no lado novo, e a mesa abre — a viragem faz-se em dois passos.
-dizer(doPedido, `viragem: o indicador esta' ${doPedido} e a posicao e' ${posicao.lado}`);
+if (barraJaAberta()) {
+  queixa(`barra ${new Date(tFechada).toISOString()} ja' deu a sua entrada: nao proponho nada (o relogio da ficha e' que manda)`);
+  process.exit(0); // idem: silencio, e nao `hold`
+}
+registarBarra();
+dizer(
+  ladoDoFlip,
+  `plano, e a barra ${new Date(tFechada).toISOString()} VIROU para ${ladoDoFlip}: entrada ` +
+    `(o indicador so' autoriza uma entrada por flip — a posicao ausente e' "sem posicao", nao e' duvida)`,
+);

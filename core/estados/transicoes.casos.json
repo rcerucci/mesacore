@@ -1,485 +1,519 @@
 {
-  "nota": "A bateria dos pares (estado, verbo) da mesa. Cada caso traz o CONTEXTO que a guarda le, o resultado esperado, o estado esperado e o motivo esperado. Os casos ilegais sao tao obrigatorios como os legais: e deles que vem o SC-001 (zero recusas sem motivo, zero mudancas de estado silenciosas).",
-  "fonte_da_tabela": "core/estados/transicoes.json",
-  "fonte_dos_motivos": "core/estados/motivos.json",
-  "casos": [
-    {
-      "nome": "start-em-parada-arranca",
-      "de": "parada",
-      "verbo": "start",
-      "contexto": {
-        "portas_do_arranque": {
-          "passam": true
-        }
-      },
-      "resultado_esperado": "aceite",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": null,
-      "historico": "D-006 (29/09/2026): o contexto passou a DECLARAR as portas. Antes deste dia este caso tinha contexto VAZIO - e era isso o defeito: o vazio valia como «as portas passaram». E' o par de CONTROLE de `start-em-parada-com-as-portas-nao-conferidas-recusa`, que tem o MESMO contexto vazio e recusa."
-    },
-    {
-      "nome": "start-em-parada-com-inibicao-recusa",
-      "de": "parada",
-      "verbo": "start",
-      "contexto": {
-        "inibicao_cb": true
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "sessao_inibida",
-      "historico": "US5 cenario 3, FR-037"
-    },
-    {
-      "nome": "start-em-parada-com-porta-falhada-recusa-e-diz-qual",
-      "de": "parada",
-      "verbo": "start",
-      "contexto": {
-        "portas_do_arranque": {
-          "passam": false,
-          "porta": "manifesto",
-          "motivo": "instrumento configurado fora do manifesto"
-        }
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "porta_do_arranque_falhou",
-      "porta_da_recusa_esperada": {
-        "porta": "manifesto",
-        "motivo": "instrumento configurado fora do manifesto"
-      },
-      "historico": "US4 cenario 7, FR-031"
-    },
-    {
-      "nome": "inibicao-le-se-antes-das-portas",
-      "de": "parada",
-      "verbo": "start",
-      "contexto": {
-        "inibicao_cb": true,
-        "portas_do_arranque": {
-          "passam": false,
-          "porta": "versao",
-          "motivo": "versao divergente"
-        }
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "sessao_inibida",
-      "historico": "a ordem importa: o motivo mais especifico primeiro (motivos.json, ordem_de_leitura)"
-    },
-    {
-      "nome": "pause-em-parada-recusa",
-      "de": "parada",
-      "verbo": "pause",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "mesa_parada_nada_a_pausar",
-      "historico": "US1 cenario 3"
-    },
-    {
-      "nome": "stop-em-parada-recusa",
-      "de": "parada",
-      "verbo": "stop",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "mesa_ja_parada",
-      "historico": "FR-012"
-    },
-    {
-      "nome": "reset-em-parada-nao-muda-nada-e-declara-o-que-nao-tocou",
-      "de": "parada",
-      "verbo": "reset",
-      "contexto": {},
-      "marcas_presentes": [
-        "sessao",
-        "inibicao_cb",
-        "desconhecido"
-      ],
-      "resultado_esperado": "aceite",
-      "estado_esperado": "parada",
-      "motivo_esperado": null,
-      "nao_tocado_esperado": [
-        "sessao",
-        "inibicao_cb",
-        "desconhecido"
-      ],
-      "historico": "US1 cenario 6, FR-005"
-    },
-    {
-      "nome": "nova-sessao-em-parada-grava",
-      "de": "parada",
-      "verbo": "nova_sessao",
-      "contexto": {
-        "equity_de_partida_nao_lido": false,
-        "unidade_de_comparacao_nao_declarada": false
-      },
-      "resultado_esperado": "aceite",
-      "estado_esperado": "parada",
-      "motivo_esperado": null,
-      "historico": "US5 cenario 4, FR-038, T042 - o ponto de partida e a unidade sao LIDOS pela porta; sem eles a sessao nao se grava"
-    },
-    {
-      "nome": "nova-sessao-sem-o-equity-de-partida-recusa",
-      "de": "parada",
-      "verbo": "nova_sessao",
-      "contexto": {
-        "equity_de_partida_nao_lido": true,
-        "unidade_de_comparacao_nao_declarada": false
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "equity_de_partida_nao_lido",
-      "historico": "T042/RN-M3 - sem o equity da corretora a sessao nasceria com uma base que ninguem teve, e o CB mediria a perda contra o nada"
-    },
-    {
-      "nome": "nova-sessao-sem-a-unidade-de-comparacao-recusa",
-      "de": "parada",
-      "verbo": "nova_sessao",
-      "contexto": {
-        "equity_de_partida_nao_lido": false,
-        "unidade_de_comparacao_nao_declarada": true
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "unidade_de_comparacao_nao_declarada",
-      "historico": "T042/FR-034 - a unidade (ficha, versao do setup, versao do mandato) e o que torna os numeros de duas sessoes comparaveis"
-    },
-    {
-      "nome": "nova-sessao-com-o-contexto-vazio-recusa (prova negativa do fail-closed)",
-      "de": "parada",
-      "verbo": "nova_sessao",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "equity_de_partida_nao_lido",
-      "historico": "A licao do D-006: um contexto que NAO SABE se o ponto de partida foi lido recusa. O desconhecido nao vira sim por omissao"
-    },
-    {
-      "nome": "nova-sessao-com-posicao-viva-recusa",
-      "de": "parada",
-      "verbo": "nova_sessao",
-      "contexto": {
-        "posicao_viva": true
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "sessao_nova_com_posicao_viva",
-      "historico": "edge case de FR-034 - sessao nova nao serve para limpar posicao"
-    },
-    {
-      "nome": "verbo-que-nao-existe-recusa",
-      "de": "parada",
-      "verbo": "reiniciar",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "verbo_desconhecido",
-      "historico": "FR-004 - os verbos sao cinco; um sexto nao entra por extensao"
-    },
-    {
-      "nome": "start-em-operacao-recusa-sem-reiniciar-contadores",
-      "de": "em_operacao",
-      "verbo": "start",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": "mesa_ja_em_operacao",
-      "historico": "US1 cenario 7"
-    },
-    {
-      "nome": "pause-em-operacao-pausa-sem-fechar",
-      "de": "em_operacao",
-      "verbo": "pause",
-      "contexto": {},
-      "resultado_esperado": "aceite",
-      "estado_esperado": "pausada",
-      "motivo_esperado": null,
-      "historico": "US1 cenario 2, FR-010"
-    },
-    {
-      "nome": "stop-sem-posicao-vai-direto-a-parada",
-      "de": "em_operacao",
-      "verbo": "stop",
-      "contexto": {
-        "posicao_viva": false
-      },
-      "resultado_esperado": "aceite",
-      "estado_esperado": "parada",
-      "motivo_esperado": null,
-      "historico": "US1 cenario 4, FR-012"
-    },
-    {
-      "nome": "stop-com-posicao-vai-a-encerrando",
-      "de": "em_operacao",
-      "verbo": "stop",
-      "contexto": {
-        "posicao_viva": true,
-        "numeros_da_corretora_ausentes": false,
-        "prazo_de_resposta_nao_declarado": false
-      },
-      "resultado_esperado": "aceite",
-      "estado_esperado": "encerrando",
-      "motivo_esperado": null,
-      "historico": "US1 cenario 5, FR-011 - com o resumo ja construivel (os dois campos entram com a T033)"
-    },
-    {
-      "nome": "stop-com-posicao-e-sem-os-numeros-da-corretora-recusa",
-      "de": "em_operacao",
-      "verbo": "stop",
-      "contexto": {
-        "posicao_viva": true,
-        "numeros_da_corretora_ausentes": true,
-        "prazo_de_resposta_nao_declarado": false
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": "numeros_da_corretora_ausentes",
-      "historico": "T033/RN-V8 - o resumo mostra os numeros DA CORRETORA; sem eles a mesa nao pergunta, e a posicao continua governada"
-    },
-    {
-      "nome": "stop-com-posicao-e-sem-o-prazo-do-dono-recusa",
-      "de": "em_operacao",
-      "verbo": "stop",
-      "contexto": {
-        "posicao_viva": true,
-        "numeros_da_corretora_ausentes": false,
-        "prazo_de_resposta_nao_declarado": true
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": "prazo_de_resposta_nao_declarado",
-      "historico": "T033/RN-V9.1 - a pergunta leva o prazo do dono; sem ele nao se inventa um tempo"
-    },
-    {
-      "nome": "stop-com-posicao-e-contexto-vazio-recusa-por-fail-closed",
-      "de": "em_operacao",
-      "verbo": "stop",
-      "contexto": {
-        "posicao_viva": true
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": "numeros_da_corretora_ausentes",
-      "historico": "prova negativa da polaridade: um contexto que NAO sabe se os numeros vieram recusa, em vez de deixar passar - o exemplo do D-006, agora na direccao da RECUSA"
-    },
-    {
-      "nome": "reset-em-operacao-nao-muda-nada",
-      "de": "em_operacao",
-      "verbo": "reset",
-      "contexto": {},
-      "marcas_presentes": [
-        "sessao"
-      ],
-      "resultado_esperado": "aceite",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": null,
-      "nao_tocado_esperado": [
-        "sessao"
-      ],
-      "historico": "FR-005 - recomecar sem mexer em nada"
-    },
-    {
-      "nome": "nova-sessao-em-operacao-recusa",
-      "de": "em_operacao",
-      "verbo": "nova_sessao",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
-      "historico": "US5 cenario 5, FR-039"
-    },
-    {
-      "nome": "retomar-da-pausa-volta-a-operar",
-      "de": "pausada",
-      "verbo": "start",
-      "contexto": {},
-      "resultado_esperado": "aceite",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": null,
-      "historico": "US6 cenario 4"
-    },
-    {
-      "nome": "retomar-da-pausa-com-inibicao-recusa",
-      "de": "pausada",
-      "verbo": "start",
-      "contexto": {
-        "inibicao_cb": true
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "pausada",
-      "motivo_esperado": "sessao_inibida",
-      "historico": "FR-040 - o CB corre com a mesa pausada, e a saida e nova_sessao"
-    },
-    {
-      "nome": "pause-em-pausada-recusa",
-      "de": "pausada",
-      "verbo": "pause",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "pausada",
-      "motivo_esperado": "mesa_ja_pausada",
-      "historico": "FR-010"
-    },
-    {
-      "nome": "stop-da-pausa-sem-posicao-vai-a-parada",
-      "de": "pausada",
-      "verbo": "stop",
-      "contexto": {
-        "posicao_viva": false
-      },
-      "resultado_esperado": "aceite",
-      "estado_esperado": "parada",
-      "motivo_esperado": null,
-      "historico": "FR-012"
-    },
-    {
-      "nome": "stop-da-pausa-com-posicao-vai-a-encerrando",
-      "de": "pausada",
-      "verbo": "stop",
-      "contexto": {
-        "posicao_viva": true,
-        "numeros_da_corretora_ausentes": false,
-        "prazo_de_resposta_nao_declarado": false
-      },
-      "resultado_esperado": "aceite",
-      "estado_esperado": "encerrando",
-      "motivo_esperado": null,
-      "historico": "FR-012 - com o resumo ja construivel (T033)"
-    },
-    {
-      "nome": "reset-em-pausada-nao-muda-nada",
-      "de": "pausada",
-      "verbo": "reset",
-      "contexto": {},
-      "marcas_presentes": [
-        "sessao",
-        "desconhecido"
-      ],
-      "resultado_esperado": "aceite",
-      "estado_esperado": "pausada",
-      "motivo_esperado": null,
-      "nao_tocado_esperado": [
-        "sessao",
-        "desconhecido"
-      ],
-      "historico": "FR-005"
-    },
-    {
-      "nome": "nova-sessao-na-pausa-recusa",
-      "de": "pausada",
-      "verbo": "nova_sessao",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "pausada",
-      "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
-      "historico": "FR-039"
-    },
-    {
-      "nome": "start-durante-encerramento-cancela-a-pergunta",
-      "de": "encerrando",
-      "verbo": "start",
-      "contexto": {
-        "liquidacao_em_curso": false
-      },
-      "resultado_esperado": "aceite",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": null,
-      "historico": "o dono responde 'nao feche' com start, em vez de esperar o prazo"
-    },
-    {
-      "nome": "start-durante-liquidacao-recusa",
-      "de": "encerrando",
-      "verbo": "start",
-      "contexto": {
-        "liquidacao_em_curso": true
-      },
-      "resultado_esperado": "recusado",
-      "estado_esperado": "encerrando",
-      "motivo_esperado": "liquidacao_em_curso",
-      "historico": "FR-013 - uma vez comecada, a liquidacao nao se interrompe a meio"
-    },
-    {
-      "nome": "pause-durante-encerramento-recusa",
-      "de": "encerrando",
-      "verbo": "pause",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "encerrando",
-      "motivo_esperado": "mesa_em_encerramento",
-      "historico": "FR-011"
-    },
-    {
-      "nome": "stop-repetido-durante-encerramento-nao-reabre-a-pergunta",
-      "de": "encerrando",
-      "verbo": "stop",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "encerrando",
-      "motivo_esperado": "pedido_repetido",
-      "historico": "edge case de FR-014"
-    },
-    {
-      "nome": "reset-durante-encerramento-nao-interrompe",
-      "de": "encerrando",
-      "verbo": "reset",
-      "contexto": {},
-      "marcas_presentes": [
-        "sessao",
-        "inibicao_cb"
-      ],
-      "resultado_esperado": "aceite",
-      "estado_esperado": "encerrando",
-      "motivo_esperado": null,
-      "nao_tocado_esperado": [
-        "sessao",
-        "inibicao_cb"
-      ],
-      "historico": "edge case de FR-005 - nao apaga a inibicao nem interrompe a liquidacao"
-    },
-    {
-      "nome": "nova-sessao-durante-encerramento-recusa",
-      "de": "encerrando",
-      "verbo": "nova_sessao",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "encerrando",
-      "motivo_esperado": "mesa_em_encerramento",
-      "historico": "FR-011"
-    },
-    {
-      "nome": "start-em-parada-com-as-portas-nao-conferidas-recusa",
-      "de": "parada",
-      "verbo": "start",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "parada",
-      "motivo_esperado": "porta_do_arranque_falhou",
-      "porta_da_recusa_esperada": {
-        "porta": "(nao conferidas)",
-        "motivo": "o contexto nao trouxe o resultado das portas do arranque: nao saber que passaram nao e passar (D-006)"
-      },
-      "historico": "D-006: o contexto vazio valia como «as portas passaram» e a mesa arrancava sem conferir nada. Agora RECUSA - e nomeia a porta como «(nao conferidas)», porque nao saber e' um facto que se diz."
-    },
-    {
-      "nome": "stop-sem-posicao-sabida-recusa-e-nao-para-a-mesa",
-      "de": "em_operacao",
-      "verbo": "stop",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "em_operacao",
-      "motivo_esperado": "posicao_desconhecida",
-      "historico": "D-006: com o contexto vazio a mesa PARAVA (a guarda `sem_posicao_viva` valia `!== true`, e o desconhecido caia la). Uma mesa que para sem saber se tem posicao aberta para sem perguntar - o oposto do que a linha `encerrando` existe para fazer. Agora recusa. CONTROLES: `stop-sem-posicao-vai-direto-a-parada` (declarado `false`) e `stop-com-posicao-vai-a-encerrando` (declarado `true`)."
-    },
-    {
-      "nome": "stop-da-pausa-com-posicao-nao-sabida-recusa",
-      "de": "pausada",
-      "verbo": "stop",
-      "contexto": {},
-      "resultado_esperado": "recusado",
-      "estado_esperado": "pausada",
-      "motivo_esperado": "posicao_desconhecida",
-      "historico": "D-006: o mesmo buraco no par da pausa. CONTROLE: `stop-da-pausa-sem-posicao-vai-a-parada`."
+ "nota": "A bateria dos pares (estado, verbo) da mesa. Cada caso traz o CONTEXTO que a guarda le, o resultado esperado, o estado esperado e o motivo esperado. Os casos ilegais sao tao obrigatorios como os legais: e deles que vem o SC-001 (zero recusas sem motivo, zero mudancas de estado silenciosas).",
+ "fonte_da_tabela": "core/estados/transicoes.json",
+ "fonte_dos_motivos": "core/estados/motivos.json",
+ "casos": [
+  {
+   "nome": "start-em-parada-arranca",
+   "de": "parada",
+   "verbo": "start",
+   "contexto": {
+    "portas_do_arranque": {
+     "passam": true
     }
-  ]
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": null,
+   "historico": "D-006 (29/09/2026): o contexto passou a DECLARAR as portas. Antes deste dia este caso tinha contexto VAZIO - e era isso o defeito: o vazio valia como «as portas passaram». E' o par de CONTROLE de `start-em-parada-com-as-portas-nao-conferidas-recusa`, que tem o MESMO contexto vazio e recusa."
+  },
+  {
+   "nome": "start-em-parada-com-inibicao-recusa",
+   "de": "parada",
+   "verbo": "start",
+   "contexto": {
+    "inibicao_cb": true
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "sessao_inibida",
+   "historico": "US5 cenario 3, FR-037"
+  },
+  {
+   "nome": "start-em-parada-com-porta-falhada-recusa-e-diz-qual",
+   "de": "parada",
+   "verbo": "start",
+   "contexto": {
+    "portas_do_arranque": {
+     "passam": false,
+     "porta": "manifesto",
+     "motivo": "instrumento configurado fora do manifesto"
+    }
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "porta_do_arranque_falhou",
+   "porta_da_recusa_esperada": {
+    "porta": "manifesto",
+    "motivo": "instrumento configurado fora do manifesto"
+   },
+   "historico": "US4 cenario 7, FR-031"
+  },
+  {
+   "nome": "inibicao-le-se-antes-das-portas",
+   "de": "parada",
+   "verbo": "start",
+   "contexto": {
+    "inibicao_cb": true,
+    "portas_do_arranque": {
+     "passam": false,
+     "porta": "versao",
+     "motivo": "versao divergente"
+    }
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "sessao_inibida",
+   "historico": "a ordem importa: o motivo mais especifico primeiro (motivos.json, ordem_de_leitura)"
+  },
+  {
+   "nome": "pause-em-parada-recusa",
+   "de": "parada",
+   "verbo": "pause",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "mesa_parada_nada_a_pausar",
+   "historico": "US1 cenario 3"
+  },
+  {
+   "nome": "stop-em-parada-recusa",
+   "de": "parada",
+   "verbo": "stop",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "mesa_ja_parada",
+   "historico": "FR-012"
+  },
+  {
+   "nome": "reset-em-parada-nao-muda-nada-e-declara-o-que-nao-tocou",
+   "de": "parada",
+   "verbo": "reset",
+   "contexto": {},
+   "marcas_presentes": [
+    "sessao",
+    "inibicao_cb",
+    "desconhecido"
+   ],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "parada",
+   "motivo_esperado": null,
+   "nao_tocado_esperado": [
+    "sessao",
+    "inibicao_cb",
+    "desconhecido"
+   ],
+   "historico": "US1 cenario 6, FR-005"
+  },
+  {
+   "nome": "nova-sessao-em-parada-grava",
+   "de": "parada",
+   "verbo": "nova_sessao",
+   "contexto": {
+    "equity_de_partida_nao_lido": false,
+    "unidade_de_comparacao_nao_declarada": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "parada",
+   "motivo_esperado": null,
+   "historico": "US5 cenario 4, FR-038, T042 - o ponto de partida e a unidade sao LIDOS pela porta; sem eles a sessao nao se grava"
+  },
+  {
+   "nome": "nova-sessao-sem-o-equity-de-partida-recusa",
+   "de": "parada",
+   "verbo": "nova_sessao",
+   "contexto": {
+    "equity_de_partida_nao_lido": true,
+    "unidade_de_comparacao_nao_declarada": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "equity_de_partida_nao_lido",
+   "historico": "T042/RN-M3 - sem o equity da corretora a sessao nasceria com uma base que ninguem teve, e o CB mediria a perda contra o nada"
+  },
+  {
+   "nome": "nova-sessao-sem-a-unidade-de-comparacao-recusa",
+   "de": "parada",
+   "verbo": "nova_sessao",
+   "contexto": {
+    "equity_de_partida_nao_lido": false,
+    "unidade_de_comparacao_nao_declarada": true
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "unidade_de_comparacao_nao_declarada",
+   "historico": "T042/FR-034 - a unidade (ficha, versao do setup, versao do mandato) e o que torna os numeros de duas sessoes comparaveis"
+  },
+  {
+   "nome": "nova-sessao-com-o-contexto-vazio-recusa (prova negativa do fail-closed)",
+   "de": "parada",
+   "verbo": "nova_sessao",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "equity_de_partida_nao_lido",
+   "historico": "A licao do D-006: um contexto que NAO SABE se o ponto de partida foi lido recusa. O desconhecido nao vira sim por omissao"
+  },
+  {
+   "nome": "nova-sessao-com-posicao-viva-recusa",
+   "de": "parada",
+   "verbo": "nova_sessao",
+   "contexto": {
+    "posicao_viva": true
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "sessao_nova_com_posicao_viva",
+   "historico": "edge case de FR-034 - sessao nova nao serve para limpar posicao"
+  },
+  {
+   "nome": "verbo-que-nao-existe-recusa",
+   "de": "parada",
+   "verbo": "reiniciar",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "verbo_desconhecido",
+   "historico": "FR-004 - os verbos sao cinco; um sexto nao entra por extensao"
+  },
+  {
+   "nome": "start-em-operacao-recusa-sem-reiniciar-contadores",
+   "de": "em_operacao",
+   "verbo": "start",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": "mesa_ja_em_operacao",
+   "historico": "US1 cenario 7"
+  },
+  {
+   "nome": "pause-em-operacao-pausa-sem-fechar",
+   "de": "em_operacao",
+   "verbo": "pause",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "pausada",
+   "motivo_esperado": null,
+   "historico": "US1 cenario 2, FR-010"
+  },
+  {
+   "nome": "stop-sem-posicao-vai-direto-a-parada",
+   "de": "em_operacao",
+   "verbo": "stop",
+   "contexto": {
+    "posicao_viva": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "parada",
+   "motivo_esperado": null,
+   "historico": "US1 cenario 4, FR-012"
+  },
+  {
+   "nome": "stop-com-posicao-vai-a-encerrando",
+   "de": "em_operacao",
+   "verbo": "stop",
+   "contexto": {
+    "posicao_viva": true,
+    "numeros_da_corretora_ausentes": false,
+    "prazo_de_resposta_nao_declarado": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "encerrando",
+   "motivo_esperado": null,
+   "historico": "US1 cenario 5, FR-011 - com o resumo ja construivel (os dois campos entram com a T033)"
+  },
+  {
+   "nome": "stop-com-posicao-e-sem-os-numeros-da-corretora-recusa",
+   "de": "em_operacao",
+   "verbo": "stop",
+   "contexto": {
+    "posicao_viva": true,
+    "numeros_da_corretora_ausentes": true,
+    "prazo_de_resposta_nao_declarado": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": "numeros_da_corretora_ausentes",
+   "historico": "T033/RN-V8 - o resumo mostra os numeros DA CORRETORA; sem eles a mesa nao pergunta, e a posicao continua governada"
+  },
+  {
+   "nome": "stop-com-posicao-e-sem-o-prazo-do-dono-recusa",
+   "de": "em_operacao",
+   "verbo": "stop",
+   "contexto": {
+    "posicao_viva": true,
+    "numeros_da_corretora_ausentes": false,
+    "prazo_de_resposta_nao_declarado": true
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": "prazo_de_resposta_nao_declarado",
+   "historico": "T033/RN-V9.1 - a pergunta leva o prazo do dono; sem ele nao se inventa um tempo"
+  },
+  {
+   "nome": "stop-com-posicao-e-contexto-vazio-recusa-por-fail-closed",
+   "de": "em_operacao",
+   "verbo": "stop",
+   "contexto": {
+    "posicao_viva": true
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": "numeros_da_corretora_ausentes",
+   "historico": "prova negativa da polaridade: um contexto que NAO sabe se os numeros vieram recusa, em vez de deixar passar - o exemplo do D-006, agora na direccao da RECUSA"
+  },
+  {
+   "nome": "reset-em-operacao-nao-muda-nada",
+   "de": "em_operacao",
+   "verbo": "reset",
+   "contexto": {},
+   "marcas_presentes": [
+    "sessao"
+   ],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": null,
+   "nao_tocado_esperado": [
+    "sessao"
+   ],
+   "historico": "FR-005 - recomecar sem mexer em nada"
+  },
+  {
+   "nome": "nova-sessao-em-operacao-recusa",
+   "de": "em_operacao",
+   "verbo": "nova_sessao",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
+   "historico": "US5 cenario 5, FR-039"
+  },
+  {
+   "nome": "retomar-da-pausa-volta-a-operar",
+   "de": "pausada",
+   "verbo": "start",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": null,
+   "historico": "US6 cenario 4"
+  },
+  {
+   "nome": "retomar-da-pausa-com-inibicao-recusa",
+   "de": "pausada",
+   "verbo": "start",
+   "contexto": {
+    "inibicao_cb": true
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "pausada",
+   "motivo_esperado": "sessao_inibida",
+   "historico": "FR-040 - o CB corre com a mesa pausada, e a saida e nova_sessao"
+  },
+  {
+   "nome": "pause-em-pausada-recusa",
+   "de": "pausada",
+   "verbo": "pause",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "pausada",
+   "motivo_esperado": "mesa_ja_pausada",
+   "historico": "FR-010"
+  },
+  {
+   "nome": "stop-da-pausa-sem-posicao-vai-a-parada",
+   "de": "pausada",
+   "verbo": "stop",
+   "contexto": {
+    "posicao_viva": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "parada",
+   "motivo_esperado": null,
+   "historico": "FR-012"
+  },
+  {
+   "nome": "stop-da-pausa-com-posicao-vai-a-encerrando",
+   "de": "pausada",
+   "verbo": "stop",
+   "contexto": {
+    "posicao_viva": true,
+    "numeros_da_corretora_ausentes": false,
+    "prazo_de_resposta_nao_declarado": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "encerrando",
+   "motivo_esperado": null,
+   "historico": "FR-012 - com o resumo ja construivel (T033)"
+  },
+  {
+   "nome": "reset-em-pausada-nao-muda-nada",
+   "de": "pausada",
+   "verbo": "reset",
+   "contexto": {},
+   "marcas_presentes": [
+    "sessao",
+    "desconhecido"
+   ],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "pausada",
+   "motivo_esperado": null,
+   "nao_tocado_esperado": [
+    "sessao",
+    "desconhecido"
+   ],
+   "historico": "FR-005"
+  },
+  {
+   "nome": "nova-sessao-na-pausa-recusa",
+   "de": "pausada",
+   "verbo": "nova_sessao",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "pausada",
+   "motivo_esperado": "mesa_precisa_parar_para_sessao_nova",
+   "historico": "FR-039"
+  },
+  {
+   "nome": "start-durante-encerramento-cancela-a-pergunta",
+   "de": "encerrando",
+   "verbo": "start",
+   "contexto": {
+    "liquidacao_em_curso": false
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": null,
+   "historico": "o dono responde 'nao feche' com start, em vez de esperar o prazo"
+  },
+  {
+   "nome": "start-durante-liquidacao-recusa",
+   "de": "encerrando",
+   "verbo": "start",
+   "contexto": {
+    "liquidacao_em_curso": true
+   },
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "encerrando",
+   "motivo_esperado": "liquidacao_em_curso",
+   "historico": "FR-013 - uma vez comecada, a liquidacao nao se interrompe a meio"
+  },
+  {
+   "nome": "pause-durante-encerramento-recusa",
+   "de": "encerrando",
+   "verbo": "pause",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "encerrando",
+   "motivo_esperado": "mesa_em_encerramento",
+   "historico": "FR-011"
+  },
+  {
+   "nome": "stop-repetido-durante-encerramento-nao-reabre-a-pergunta",
+   "de": "encerrando",
+   "verbo": "stop",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "encerrando",
+   "motivo_esperado": "pedido_repetido",
+   "historico": "edge case de FR-014"
+  },
+  {
+   "nome": "reset-durante-encerramento-nao-interrompe",
+   "de": "encerrando",
+   "verbo": "reset",
+   "contexto": {},
+   "marcas_presentes": [
+    "sessao",
+    "inibicao_cb"
+   ],
+   "resultado_esperado": "aceite",
+   "estado_esperado": "encerrando",
+   "motivo_esperado": null,
+   "nao_tocado_esperado": [
+    "sessao",
+    "inibicao_cb"
+   ],
+   "historico": "edge case de FR-005 - nao apaga a inibicao nem interrompe a liquidacao"
+  },
+  {
+   "nome": "nova-sessao-durante-encerramento-recusa",
+   "de": "encerrando",
+   "verbo": "nova_sessao",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "encerrando",
+   "motivo_esperado": "mesa_em_encerramento",
+   "historico": "FR-011"
+  },
+  {
+   "nome": "start-em-parada-com-as-portas-nao-conferidas-recusa",
+   "de": "parada",
+   "verbo": "start",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "parada",
+   "motivo_esperado": "porta_do_arranque_falhou",
+   "porta_da_recusa_esperada": {
+    "porta": "(nao conferidas)",
+    "motivo": "o contexto nao trouxe o resultado das portas do arranque: nao saber que passaram nao e passar (D-006)"
+   },
+   "historico": "D-006: o contexto vazio valia como «as portas passaram» e a mesa arrancava sem conferir nada. Agora RECUSA - e nomeia a porta como «(nao conferidas)», porque nao saber e' um facto que se diz."
+  },
+  {
+   "nome": "stop-sem-posicao-sabida-recusa-e-nao-para-a-mesa",
+   "de": "em_operacao",
+   "verbo": "stop",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "em_operacao",
+   "motivo_esperado": "posicao_desconhecida",
+   "historico": "D-006: com o contexto vazio a mesa PARAVA (a guarda `sem_posicao_viva` valia `!== true`, e o desconhecido caia la). Uma mesa que para sem saber se tem posicao aberta para sem perguntar - o oposto do que a linha `encerrando` existe para fazer. Agora recusa. CONTROLES: `stop-sem-posicao-vai-direto-a-parada` (declarado `false`) e `stop-com-posicao-vai-a-encerrando` (declarado `true`)."
+  },
+  {
+   "nome": "stop-da-pausa-com-posicao-nao-sabida-recusa",
+   "de": "pausada",
+   "verbo": "stop",
+   "contexto": {},
+   "marcas_presentes": [],
+   "resultado_esperado": "recusado",
+   "estado_esperado": "pausada",
+   "motivo_esperado": "posicao_desconhecida",
+   "historico": "D-006: o mesmo buraco no par da pausa. CONTROLE: `stop-da-pausa-sem-posicao-vai-a-parada`."
+  }
+ ]
 }

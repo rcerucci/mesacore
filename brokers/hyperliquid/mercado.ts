@@ -38,6 +38,7 @@
 //   bun run brokers/hyperliquid/mercado.ts --livro BTC [--ficha @config/contas/hl-teste-plugin.json]
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { ouAusente } from "../../contracts/esqueleto/texto.ts";
 
 // ---------------------------------------------------------------------------------------------------------
 // Os INTERVALOS: medidos na fonte do SDK instalado (`node_modules/@nktkas/hyperliquid/.../candleSnapshot.d.ts`,
@@ -47,6 +48,42 @@ export const INTERVALOS_DO_VENUE = [
   "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "8h", "12h", "1d", "3d", "1w", "1M",
 ] as const;
 export type Intervalo = (typeof INTERVALOS_DO_VENUE)[number];
+
+/** Os dois ambientes do venue, com nome: o `--ambiente` e' conferido contra esta lista, e nao contra um `as`. */
+const AMBIENTES = ["teste", "producao"] as const;
+
+/**
+ * O AMBIENTE QUANDO NINGUEM O DECLARA: a TESTE.
+ *
+ * A omissao vai para a testnet de proposito — e' a direccao que nao pode mexer em dinheiro — e por isso tem
+ * nome proprio, em vez de viver como um literal dentro de um `??` (onde nao se lia como uma decisao).
+ */
+const AMBIENTE_POR_OMISSAO: "teste" | "producao" = "teste";
+
+/** O numero de dias por omissao das velas, com nome: um literal dentro de um `??` nao se le como decisao. */
+const DIAS_POR_OMISSAO = 7;
+
+/** O intervalo por omissao — conferido contra `INTERVALOS_DO_VENUE` antes de ser usado, logo nao adivinha nada. */
+const INTERVALO_POR_OMISSAO = "1h";
+
+/**
+ * O TEMPO DE UMA VELA, exigido.
+ *
+ * Era `Number(v?.t ?? 0)`, em tres sitios: uma vela sem `t` virava a vela do instante ZERO — ou seja, mais
+ * antiga do que todas — e saia DESCARTADA na deduplicacao, em silencio. O ficheiro que o setup le ficava com um
+ * buraco, e um buraco no meio das barras e' um cruzamento de medias que nunca aconteceu. O venue publica `t`
+ * (abertura) e `T` (fecho) em todos os candles; uma vela sem eles nao e' uma vela.
+ */
+function tempoDaVela(v: unknown, campo: "t" | "T", onde: string): number {
+  const valor = (v as Record<string, unknown> | null)?.[campo];
+  if (typeof valor !== "number" || !Number.isFinite(valor)) {
+    throw new Error(
+      `${onde}: uma vela veio sem \`${campo}\` (${JSON.stringify(v)?.slice(0, 140)}): sem o tempo da barra nao se ` +
+        "sabe onde ela entra no ficheiro, e uma barra no lugar errado e' um sinal no lugar errado",
+    );
+  }
+  return valor;
+}
 
 /** A PORTA do mercado: o que a casa pede, sem saber qual e' o venue. */
 export type PortaDeMercado = {
@@ -92,21 +129,48 @@ const argumento = (nome: string): string | undefined => {
   return i < 0 ? undefined : argv[i + 1];
 };
 
-/** O ambiente e a URL: da ficha, quando ela e' dada; por omissao, a TESTE. Nunca le a credencial. */
+/**
+ * O ambiente e a URL: da ficha, quando ela e' dada; sem `--ficha` nem `--ambiente`, a TESTE. Nunca le a
+ * credencial.
+ *
+ * O QUE MUDOU, E PORQUE. Era `bruto?.conexao?.ambiente ?? "teste"`, e o `--ambiente` era um `as` sem
+ * conferencia. Duas maneiras de acabar na testnet sem ninguem o decidir: uma ficha de PRODUCAO que nao
+ * declarasse o campo (ou que o declarasse com uma gralha) lia-se como teste, e um `--ambiente producaoo`
+ * atravessava o `as` e valia teste. O ambiente decide ONDE se le e ONDE se opera: um valor por omissao aqui
+ * nao e' uma comodidade, e' uma decisao tomada por quem nao a declarou.
+ */
 function ambienteEFonte(): { ambiente: "teste" | "producao"; fonte: string; url: string } {
   const ficha = argumento("--ficha");
   const declarado = argumento("--ambiente");
+  if (declarado !== undefined && declarado !== "teste" && declarado !== "producao") {
+    console.error(JSON.stringify({ erro: "ambiente_fora_do_conjunto", ambiente: declarado, aceitos: AMBIENTES }));
+    process.exit(2);
+  }
   if (ficha !== undefined) {
     const caminho = ficha.startsWith("@") ? ficha.slice(1) : ficha;
     const bruto = JSON.parse(readFileSync(caminho, "utf8")) as any;
-    const ambiente = (bruto?.conexao?.ambiente ?? "teste") as "teste" | "producao";
+    const daFicha = bruto?.conexao?.ambiente;
+    if (daFicha !== "teste" && daFicha !== "producao") {
+      console.error(
+        JSON.stringify({
+          erro: "a ficha nao declara `conexao.ambiente`",
+          ficha: caminho,
+          veio: daFicha,
+          aceitos: AMBIENTES,
+          porque: "o ambiente decide onde se le e onde se opera; nao se adivinha por omissao",
+        }),
+      );
+      process.exit(2);
+    }
     return {
-      ambiente: (declarado as "teste" | "producao") ?? ambiente,
-      fonte: `ficha ${caminho} (conexao.ambiente)`,
-      url: String(bruto?.conexao?.url_da_api ?? "(o SDK decide pelo ambiente)"),
+      ambiente: declarado === undefined ? (daFicha as "teste" | "producao") : (declarado as "teste" | "producao"),
+      fonte: declarado === undefined ? `ficha ${caminho} (conexao.ambiente)` : `--ambiente (sobre a ficha ${caminho})`,
+      url: ouAusente(typeof bruto?.conexao?.url_da_api === "string" ? bruto.conexao.url_da_api : null, "(o SDK decide pelo ambiente)"),
     };
   }
-  const ambiente = (declarado ?? "teste") as "teste" | "producao";
+  // Sem `--ficha` E sem `--ambiente` a ferramenta vai para a TESTE — e di-lo. A omissao e' a direccao que nao
+  // pode mexer em dinheiro, e por isso tem nome proprio em vez de um literal solto no meio de um `??`.
+  const ambiente = declarado === undefined ? AMBIENTE_POR_OMISSAO : (declarado as "teste" | "producao");
   return { ambiente, fonte: "por omissao (sem `--ficha`: `--ambiente`)", url: "(o SDK decide pelo ambiente)" };
 }
 
@@ -138,20 +202,29 @@ async function main(): Promise<void> {
   const porta = await portaAoVivo(ambiente);
 
   if (argumento("--velas") !== undefined) {
-    const intervalo = (argumento("--intervalo") ?? "1h") as Intervalo;
+    const intervaloDeclarado = argumento("--intervalo");
+    const intervalo = (intervaloDeclarado === undefined ? INTERVALO_POR_OMISSAO : intervaloDeclarado) as Intervalo;
     if (!(INTERVALOS_DO_VENUE as readonly string[]).includes(intervalo)) {
       console.error(JSON.stringify({ erro: "intervalo_fora_do_conjunto_do_venue", intervalo, aceitos: INTERVALOS_DO_VENUE }));
       process.exit(2);
     }
     const desdeArg = argumento("--desde");
-    const dias = Number(argumento("--dias") ?? "7");
+    const diasDeclarados = argumento("--dias");
+    const dias = Number(diasDeclarados === undefined ? String(DIAS_POR_OMISSAO) : diasDeclarados);
     const desde_ms = desdeArg === undefined ? Date.now() - dias * 24 * 3600 * 1000 : Number(desdeArg);
     if (!Number.isFinite(desde_ms)) {
       console.error(JSON.stringify({ erro: "desde_invalido", desdeArg }));
       process.exit(2);
     }
     const velas = (await porta.velas({ instrumento, intervalo, desde_ms })) as any[];
-    const quantas = Array.isArray(velas) ? velas.length : 0;
+    // O VENUE RESPONDE UMA LISTA, ou respondeu outra coisa. `Array.isArray(velas) ? velas.length : 0` contava
+    // ZERO velas para uma resposta que nao era lista nenhuma — e zero velas e' um resultado plausivel (um
+    // instrumento novo nao tem historico), logo a anomalia passava por resultado.
+    if (!Array.isArray(velas)) {
+      console.error(JSON.stringify({ erro: "velas_do_venue_nao_sao_lista", veio: typeof velas, instrumento, intervalo }));
+      process.exit(2);
+    }
+    const quantas = velas.length;
     // A FORMA crua, declarada: as chaves que o venue publicou na primeira vela. Nao se inventa esquema nenhum.
     const chaves = quantas > 0 ? Object.keys(velas[0] as object).sort() : [];
     const resumo = {
@@ -183,8 +256,16 @@ async function main(): Promise<void> {
       if (actualizar) {
         try {
           const bruto = JSON.parse(readFileSync(descritor, "utf8")) as any;
-          if (bruto?.instrumento === instrumento && bruto?.intervalo === intervalo) {
-            janela = { desde_ms: bruto.desde_ms ?? desde_ms, quantas: bruto.quantas ?? 0 };
+          // O DESCRITOR TEM DE TRAZER A JANELA INTEIRA para se poder retomar dele. Era
+          // `bruto.desde_ms ?? desde_ms` e `bruto.quantas ?? 0`: um descritor a que faltasse um campo
+          // retomava-se com a janela de AGORA e zero velas — o ficheiro era reescrito do zero e o que ja' la'
+          // estava perdia-se, sem uma palavra. Sem os tres campos, isto nao e' um descritor: escreve-se de novo.
+          if (
+            bruto?.instrumento === instrumento && bruto?.intervalo === intervalo &&
+            typeof bruto.desde_ms === "number" && Number.isFinite(bruto.desde_ms) &&
+            typeof bruto.quantas === "number" && Number.isInteger(bruto.quantas)
+          ) {
+            janela = { desde_ms: bruto.desde_ms, quantas: bruto.quantas };
             ja = readFileSync(ficheiro, "utf8")
               .split("\n")
               .filter((l) => l.trim() !== "")
@@ -195,8 +276,8 @@ async function main(): Promise<void> {
         }
       }
       // APPEND, sem duplicar: as velas novas sao as que comecam DEPOIS da ultima que ja' la' esta'.
-      const ultimaJa = ja.length > 0 ? Number(ja[ja.length - 1]?.t ?? 0) : 0;
-      const novas = (velas as any[]).filter((v) => Number(v?.t ?? 0) > ultimaJa);
+      const ultimaJa = ja.length > 0 ? tempoDaVela(ja[ja.length - 1], "t", "ficheiro das velas") : 0;
+      const novas = velas.filter((v) => tempoDaVela(v, "t", "velas do venue") > ultimaJa);
       const todas = [...ja, ...novas];
       writeFileSync(ficheiro, todas.map((v) => JSON.stringify(v)).join("\n") + "\n");
       writeFileSync(
@@ -209,7 +290,7 @@ async function main(): Promise<void> {
             ambiente,
             url,
             desde_ms: janela.desde_ms,
-            ate_ms: todas.length > 0 ? Number(todas[todas.length - 1]?.T ?? 0) : null,
+            ate_ms: todas.length > 0 ? tempoDaVela(todas[todas.length - 1], "T", "ficheiro das velas") : null,
             quantas: todas.length,
             chaves_da_vela: chaves,
             ficheiro: nome + ".jsonl",
@@ -251,8 +332,18 @@ async function main(): Promise<void> {
 
   const livro = await porta.livro({ instrumento });
   const l = livro as any;
-  const niveis = { bids: Array.isArray(l?.levels?.[0]) ? l.levels[0].length : 0, asks: Array.isArray(l?.levels?.[1]) ? l.levels[1].length : 0 };
-  console.log(JSON.stringify({ ambiente, fonte, instrumento, niveis, melhor: { bid: l?.levels?.[0]?.[0] ?? null, ask: l?.levels?.[1]?.[0] ?? null }, bruto: l }, null, 1));
+  // O LIVRO TEM DE TRAZER OS DOIS LADOS. Era `Array.isArray(l?.levels?.[0]) ? length : 0`, e um livro que nao
+  // trouxesse os lados virava "0/0 niveis" — que e' um resultado plausivel, e por isso um diagnostico falso
+  // para uma leitura que nao se leu. (O manifesto declara 20 niveis por lado; o que aqui chega e' o que o
+  // venue publicou.)
+  const lados = l?.levels;
+  if (!Array.isArray(lados) || !Array.isArray(lados[0]) || !Array.isArray(lados[1])) {
+    console.error(JSON.stringify({ erro: "livro_sem_os_dois_lados", instrumento, bruto: l }));
+    process.exit(2);
+  }
+  const niveis = { bids: lados[0].length, asks: lados[1].length };
+  const melhor = { bid: lados[0].length > 0 ? lados[0][0] : null, ask: lados[1].length > 0 ? lados[1][0] : null };
+  console.log(JSON.stringify({ ambiente, fonte, instrumento, niveis, melhor, bruto: l }, null, 1));
 }
 
 // Só corre quando chamado como programa (importar daqui nao dispara nada).

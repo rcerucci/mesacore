@@ -53,7 +53,7 @@ export function estaNoRepositorio(valor: string, raiz = RAIZ): string | null {
   return null;
 }
 
-export function carregarCredencial(referencia: string, valorEm: string, raiz = RAIZ): Resultado {
+export function carregarCredencial(referencia: unknown, valorEm: unknown, raiz = RAIZ): Resultado {
   if (typeof referencia !== "string" || referencia.trim() === "") {
     return recusa("campo_obrigatorio_ausente", "a config nao declara `conta.credencial` (o NOME da credencial)");
   }

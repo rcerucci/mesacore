@@ -23,6 +23,7 @@ import { registarCiclo } from "../estado/registo.ts";
 import { lerParaOCiclo, type LeituraCompacta } from "../leitura/fixtures.ts";
 import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
 import type { Marcas } from "../estado/marcas.ts";
+import { desconhecidoDe } from "../estado/marcas.ts";
 import type { Estado } from "../estados/maquina.ts";
 import type { Mandato, Template } from "./decisao.ts";
 import { decidirInstrumento, decidirSemLeitura, type Falhas } from "./ciclo.ts";
@@ -175,7 +176,10 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
 
   for (const [instrumento, decl] of Object.entries(operacao.instrumentos)) {
     const mandato = (config.fichas as Record<string, Mandato>)[instrumento]!;
-    const marcaDesconhecida = (marcas.desconhecido ?? []).find((d) => d.instrumento === instrumento) ?? null;
+    // `(marcas.desconhecido ?? [])` fazia de um livro de marcas sem a chave um livro sem desconhecidos. O
+    // marcador `desconhecido` e' OBRIGATORIO desde que o leitor existe (`lerMarcas` recusa o ficheiro que o
+    // nao declare, core/estado/marcas.ts): aqui le-se o que la' esta', pela funcao que ja' o sabe fazer.
+    const marcaDesconhecida = desconhecidoDe(marcas, instrumento);
 
     // A LEITURA QUE NAO CHEGOU (RN-D7). Quem escreve a operacao deixa o campo AUSENTE quando o conector nao
     // entregou leitura nesta volta — e ausente nao e' «a mesma de antes» nem «sem posicao»: e' nao se leu.

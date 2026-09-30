@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import Ajv2020 from "ajv/dist/2020";
 import { construirManifesto, type Sonda } from "../manifesto.ts";
+import { entradas, itens } from "./blocos.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..", "..");
 const ficheiro = process.argv[2] ?? join(import.meta.dir, "manifesto.casos.json");
@@ -25,7 +26,7 @@ function porCaminho(obj: any, caminho: string): unknown {
 
 function fundir(base: any, mudanca: any): any {
   const saida = { ...base };
-  for (const [k, v] of Object.entries(mudanca ?? {})) saida[k] = v;
+  for (const [k, v] of entradas(mudanca, "fundir/mudanca")) saida[k] = v;
   return saida;
 }
 
@@ -50,7 +51,7 @@ for (const c of casos.casos) {
     if (!esquemaOk) {
       problemas.push("manifesto recusado pelo esquema: " + ajv.errorsText(validaManifesto.errors));
     }
-    for (const [caminho, esperado] of Object.entries(c.conferir ?? {})) {
+    for (const [caminho, esperado] of entradas(c.conferir, "conferir")) {
       const veio = porCaminho(r.manifesto, caminho);
       if (veio !== esperado) problemas.push(`${caminho}=${JSON.stringify(veio)}, esperado=${JSON.stringify(esperado)}`);
     }
@@ -59,7 +60,7 @@ for (const c of casos.casos) {
       if (!segunda.ok) {
         problemas.push("a segunda sonda foi recusada: " + segunda.motivo);
       } else {
-        for (const [caminho, esperado] of Object.entries(c.conferir_na_segunda ?? {})) {
+        for (const [caminho, esperado] of entradas(c.conferir_na_segunda, "conferir_na_segunda")) {
           const veio = porCaminho(segunda.manifesto, caminho);
           if (veio !== esperado) problemas.push(`2a sonda ${caminho}=${JSON.stringify(veio)}, esperado=${JSON.stringify(esperado)}`);
         }

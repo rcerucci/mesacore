@@ -23,8 +23,9 @@
 //      casa invisivel decidiria quem fica de fora - um numero que ninguem escreveu decide uma recusa. A
 //      soma e feita em inteiros escalados (`BigInt`), pela mesma razao que o CB do recorte 002.
 
-export type CriterioDaContenda = "fifo" | "fifo_desempatado_por_simbolo" | "recusada";
+import { lista } from "../../contracts/esqueleto/texto.ts";
 
+export type CriterioDaContenda = "fifo" | "fifo_desempatado_por_simbolo" | "recusada";
 /**
  * O motivo da RECUSA da contenda: quando o tecto e os saldos nao partilham uma escala, nao ha soma
  * comparavel a tecto nenhum, e a contenda nao se resolve por omissao (RN-M4.7).
@@ -76,7 +77,11 @@ export interface Contenda {
   recusa?: RecusaDaContenda;
 }
 
-const casas = (s: string): number => (s.split(".")[1] ?? "").length;
+/** As casas decimais de um decimal textual. Sem parte decimal, sao zero — e isso e' aritmetica, nao recurso. */
+const casas = (s: string): number => {
+  const partes = s.split(".");
+  return partes.length === 2 ? partes[1]!.length : 0;
+};
 
 /**
  * O valor de um decimal textual na escala `c` — ou `undefined` quando ele NAO CABE nessa escala (tem
@@ -200,6 +205,6 @@ export function resolverContenda(pedidos: PedidoDeContenda[], tectoPct: string):
         ? `As fichas somam ${emTexto(total)}% e o tecto e ${emTexto(tecto)}%: entram todas.`
         : `As fichas somam ${emTexto(total)}% e o tecto e ${emTexto(tecto)}%. Ordem de atendimento: ` +
           `${ordenados.map((p) => p.instrumento).join(" -> ")} (${criterio === "fifo" ? "FIFO pela hora de chegada na mesa" : "FIFO com empate desempatado pelo simbolo"}). ` +
-          `Entram ${admitidos.join(", ") || "nenhuma"}; ficam de fora ${deFora.join(", ")}.`,
+          `Entram ${lista(admitidos)}; ficam de fora ${deFora.join(", ")}.`,
   };
 }

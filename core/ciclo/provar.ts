@@ -22,6 +22,7 @@ import { classificarDesfecho, type Envio } from "./desfecho.ts";
 import { reconciliar, type Veredicto } from "./reconciliacao.ts";
 import { marcarDesconhecido, marcasVazias, reset, type Marcas } from "../estado/marcas.ts";
 import { motivoConhecido, RAIZ_DO_REPO } from "../livro-de-motivos.ts";
+import { ouAusente } from "../../contracts/esqueleto/texto.ts";
 
 /** Um valor que o caso TEM de declarar. Ausente = recusa: as bancadas declaram o que testam (nao ha omissao). */
 function exigirDeclarado<T>(v: T | undefined, oQue: string): T {
@@ -104,13 +105,21 @@ const bateriaCondicoes = ler("condicoes.casos.json");
 const configDasCondicoes = config(bateriaCondicoes.config_da_bateria);
 
 for (const caso of bateriaCondicoes.casos) {
+  // A LIGACAO E AS FALHAS SAO DECLARADAS PELO CASO — nao ha omissao.
+  //
+  // Era `caso.ligacao ?? "ligada"` e `caso.falhas ?? {}`: um caso que se esquecesse de as declarar dizia
+  // «ligado, sem falhas nenhumas» — exactamente o estado em que a mesa ABRE — e a bancada passava por omissao,
+  // em vez de passar por medicao. O ficheiro declara-os nos doze casos; aqui exigem-se, e um caso novo que os
+  // nao traga RECUSA a bateria em vez de a deixar mentir.
   const s = situacaoDoInstrumento(
     { idade_do_dado_ms: caso.leitura.idade_do_dado_ms, estado_do_mercado: caso.leitura.estado_do_mercado },
-    caso.ligacao ?? "ligada",
-    caso.falhas ?? {},
+    exigirDeclarado(caso.ligacao, `ligacao (caso ${caso.nome})`),
+    exigirDeclarado(caso.falhas, `falhas da leitura (caso ${caso.nome})`),
     caso.divergente === true ||
       (caso.leitura.posicao !== undefined &&
-        !(caso.marcas_nossas_conhecidas ?? []).includes(caso.leitura.posicao.marca_de_posse)),
+        !exigirDeclarado(caso.marcas_nossas_conhecidas, `marcas_nossas_conhecidas (caso ${caso.nome}, que tem posicao)`).includes(
+          caso.leitura.posicao.marca_de_posse,
+        )),
     config(caso.config ?? configDasCondicoes),
   );
   const contexto = [
@@ -173,8 +182,8 @@ for (const caso of bateriaCiclo.casos) {
     ficha: caso.ficha ?? padrao.ficha,
     ciclo,
     ligacao: caso.ligacao !== undefined ? caso.ligacao : exigirDeclarado(padrao.ligacao, "ligacao (padrao do ficheiro de casos)"),
-    falhas: exigirDeclarado(caso.falhas, `falhas da leitura (caso ${JSON.stringify(caso.nome ?? "?")})`),
-    divergente: exigirDeclarado(caso.divergente, `divergente (caso ${JSON.stringify(caso.nome ?? "?")})`),
+    falhas: exigirDeclarado(caso.falhas, `falhas da leitura (caso ${exigirDeclarado(caso.nome, "nome do caso")})`),
+    divergente: exigirDeclarado(caso.divergente, `divergente (caso ${exigirDeclarado(caso.nome, "nome do caso")})`),
     mandato: caso.mandato ?? padrao.mandato,
     template: caso.template ?? padrao.template,
     marcas_nossas_conhecidas: caso.marcas_nossas_conhecidas ?? padrao.marcas_nossas_conhecidas,
@@ -226,20 +235,30 @@ for (const caso of bateriaCiclo.casos) {
   // As contagens dos criterios, medidas e nao afirmadas.
   if (decisao.acao === "abrir" && decisao.condicao !== "normal") aberturasForaDeNormal += 1;
   const pediuFechar = (caso.proposta?.lado ?? null) === "caixa";
+  // A MARCA SO' SE LE' QUANDO HA' POSICAO: sem posicao nao ha marca a conferir, e as 9 fichas de caso que nao
+  // trazem posicao nao trazem marcas — exigir a lista ai' seria exigir um campo que nao diz nada.
   const temPosicaoNossa =
     caso.leitura.posicao !== undefined &&
-    (caso.marcas_nossas_conhecidas ?? []).includes(caso.leitura.posicao.marca_de_posse);
+    exigirDeclarado(caso.marcas_nossas_conhecidas, `marcas_nossas_conhecidas (caso ${caso.nome}, que tem posicao)`).includes(
+      caso.leitura.posicao.marca_de_posse,
+    );
   // SC-003 (emenda de 28 set 2026): o que trava a abertura deixou de ser a idade e passou a ser o ESTADO
   // DA LIGACAO. O criterio e o mesmo; a fonte do facto e que mudou.
-  const semLigacao = (caso.ligacao ?? padrao.ligacao ?? "ligada") === "sem_ligacao";
+  //
+  // `?? "ligada"` no fim era um terceiro recurso a tapar um `padrao` sem `ligacao`: o caso ficava "ligado" e o
+  // SC-003 (a ligacao trava ABRIR) media menos do que dizia. O `padrao` e' exigido, e o caso tambem.
+  const semLigacao = (caso.ligacao ?? exigirDeclarado(padrao.ligacao, "ligacao (padrao do ficheiro de casos)")) === "sem_ligacao";
   if (semLigacao && pediuFechar && temPosicaoNossa) {
     comDadoVelhoPediuFechar += 1;
     if (decisao.acao === "fechar") comDadoVelhoFechou += 1;
   }
   if (semLigacao && decisao.acao === "abrir") comDadoVelhoAbriu += 1;
 
-  // SC-005: so contam as tentativas em que se PEDIU abrir com a marca presente.
-  const querAbrir = ["buy", "sell"].includes(caso.proposta?.lado ?? "");
+  // SC-005: so contam as tentativas em que se PEDIU abrir com a marca presente. `?? ""` fazia de um lado
+  // ausente um lado vazio — que nao esta' na lista, e por isso nao contava: o mesmo que um lado declarado e
+  // desconhecido. Aqui o lado le-se pelo que e'.
+  const ladoProposto = caso.proposta?.lado;
+  const querAbrir = typeof ladoProposto === "string" && ["buy", "sell"].includes(ladoProposto);
   if (querAbrir && caso.desconhecido != null) {
     tentativasComDesconhecido += 1;
     if (decisao.acao === "abrir") aberturasComDesconhecido += 1;
@@ -255,8 +274,8 @@ for (const caso of bateriaCiclo.casos) {
       impedimentos: decisao.impedimentos,
       avisa: decisao.avisa,
       ligacao: caso.ligacao !== undefined ? caso.ligacao : exigirDeclarado(padrao.ligacao, "ligacao (padrao do ficheiro de casos)"),
-    falhas: exigirDeclarado(caso.falhas, `falhas da leitura (caso ${JSON.stringify(caso.nome ?? "?")})`),
-    divergente: exigirDeclarado(caso.divergente, `divergente (caso ${JSON.stringify(caso.nome ?? "?")})`),
+      falhas: exigirDeclarado(caso.falhas, `falhas da leitura (caso ${exigirDeclarado(caso.nome, "nome do caso")})`),
+      divergente: exigirDeclarado(caso.divergente, `divergente (caso ${exigirDeclarado(caso.nome, "nome do caso")})`),
       motivo_do_contrato: decisao.motivo_do_contrato,
       desconhecido: decisao.desconhecido,
       boleta: decisao.boleta,
@@ -275,7 +294,10 @@ let ilegiveis = 0;
 let ilegiveisPromovidos = 0;
 
 for (const caso of bateriaDesfecho.casos) {
-  const envio = { ...bateriaDesfecho.padrao.envio, ...(caso.envio ?? {}) } as Envio;
+  // O ENVIO DO CASO SOBREPOE-SE AO PADRAO DA BATERIA. Era `...(caso.envio ?? {})`: um objecto vazio cuja unica
+  // funcao e' dizer "nao ha nada a sobrepor". Isso diz-se por inteiro, e nao com um valor por omissao que
+  // parece um envio vazio.
+  const envio = { ...bateriaDesfecho.padrao.envio, ...(caso.envio === undefined ? {} : caso.envio) } as Envio;
   const r = classificarDesfecho(
     envio,
     caso.chegada ?? null,
@@ -297,7 +319,7 @@ for (const caso of bateriaDesfecho.casos) {
     // A conferencia da banda (D-001), quando o caso a declara. Ausente = o caso nao a mede (e diz-se).
     desencontro(
       caso.banda_veredicto_esperado === undefined || r.banda?.veredicto === caso.banda_veredicto_esperado,
-      `banda: esperada '${caso.banda_veredicto_esperado}', obtida '${r.banda?.veredicto ?? "(nenhuma)"}'`,
+      `banda: esperada '${caso.banda_veredicto_esperado}', obtida '${ouAusente(r.banda?.veredicto, "(nenhuma)")}'`,
     ),
   ].filter((x): x is string => x !== null);
   exigir(contexto.length === 0, `desfecho/${caso.nome}`, contexto);

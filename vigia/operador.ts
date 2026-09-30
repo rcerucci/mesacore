@@ -55,10 +55,16 @@ function dizer(o: unknown): void {
 const nomeDaConta = arg("--conta") ?? morrer("falta `--conta <nome da conta>` (as fichas vivem em fichas/<nome>/)");
 const para = arg("--para") ?? morrer("falta `--para <ficheiro de operacao>`");
 const soOPar = arg("--par") ?? null; // opcional: sem ele, percorre TODAS as fichas ligadas da conta
-const tickMs = Number(arg("--tick") ?? "60000");
-const voltasPedidas = Number(arg("--voltas") ?? "1");
+// OS NUMEROS POR OMISSAO DO OPERADOR, com nome. Eram `arg("--tick") ?? "60000"` (e companhia): o valor por
+// omissao de uma opcao de linha de comando e' uma declaracao do instrumento, e uma declaracao escrita como
+// literal solto no meio do argumento nao se le nem se muda - passa a ter nome, e o nome diz o que e'.
+const TICK_POR_OMISSAO_MS = 60_000;
+const VOLTAS_POR_OMISSAO = 1;
+const DIAS_DE_HISTORICO_POR_OMISSAO = 30;
+const tickMs = arg("--tick") === undefined ? TICK_POR_OMISSAO_MS : Number(arg("--tick"));
+const voltasPedidas = arg("--voltas") === undefined ? VOLTAS_POR_OMISSAO : Number(arg("--voltas"));
 const pastaDoMercado = arg("--mercado") ?? null;
-const diasDeHistorico = Number(arg("--dias") ?? "30");
+const diasDeHistorico = arg("--dias") === undefined ? DIAS_DE_HISTORICO_POR_OMISSAO : Number(arg("--dias"));
 const caminhoDaCredencial = join(RAIZ, "config", "contas", `${nomeDaConta}.json`);
 // O AMBIENTE da conta manda nas velas tambem: ler o livro da testnet e as barras da producao da' um `mid`
 // contra um preco que nao e' o do venue onde se opera — centimos, mas centimos contam quando a banda e' 0.25 ATR.
@@ -212,7 +218,15 @@ function lerManifestoDoSetup(pasta: string): ManifestoDoSetup {
  */
 function resolverTemplate(manifesto: ManifestoDoSetup, ficha: Ficha): Record<string, unknown> {
   const valores: Record<string, unknown> = {};
-  for (const [campo, descritor] of Object.entries(manifesto.template ?? {})) {
+  // O MANIFESTO SEM TEMPLATE NAO E' UM TEMPLATE VAZIO. `manifesto.template ?? {}` devolvia zero valores: a
+  // mesa recebia uma operacao sem constante nenhuma e decidia sobre um setup que nao declarou nada — o genero
+  // de vazio que passa por "nao ha nada a declarar". O template e' o que o setup PUBLICA (o resto da
+  // configuracao da mesa sai dele), e um setup que o nao publica nao esta' pronto a ser corrido.
+  const template: unknown = manifesto.template;
+  if (template === undefined || template === null || typeof template !== "object" || Array.isArray(template)) {
+    morrer(`o setup ${ficha.setup} nao publica \`template\` no seu setup.json (veio ${String(template)}): sem template nao ha valores a resolver, e a mesa decidiria com a ficha pela metade`);
+  }
+  for (const [campo, descritor] of Object.entries(template as Record<string, unknown>)) {
     const d = descritor as Record<string, unknown> | null;
     const chave = campo.replace(/^constantes\./, "");
     const daFicha = (ficha.constantes as Record<string, unknown>)[chave];
@@ -255,7 +269,7 @@ if (pastaDoMercado !== null) {
 // ---------------------------------------------------------------------------------------------------------
 // O SETUP: um processo por CHAMADA. Recebe a leitura no stdin, devolve a `proposta` no stdout.
 
-function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup): Promise<{ proposta: unknown | null; erro: string | null }> {
+function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup): Promise<{ proposta: unknown | null; erro: string | null; respondeu: boolean }> {
   return new Promise((resolve) => {
     // As CONSTANTES e o relógio do par — e mais nada da ficha. O risco não passa por aqui (RN-M4.1).
     const p = spawn(manifesto.comando[0]!, manifesto.comando.slice(1), {
@@ -265,7 +279,11 @@ function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup
         CONSTANTES: JSON.stringify(ficha.constantes),
         INSTRUMENTO: String(ficha.cabecalho.instrumento),
         RELOGIO: String(ficha.cabecalho.relogio),
-        PASTA_DE_MERCADO: pastaDoMercado ?? "",
+        // A PASTA DAS VELAS so' entra no ambiente se o operador a tiver declarado. Era `pastaDoMercado ?? ""`, e
+        // uma pasta vazia e' um caminho que nao existe: o setup ia recusar mais tarde com "nao existe o ficheiro
+        // de velas do par" — o SINTOMA, e nao a causa. Sem a variavel, o setup diz o que falta a serio (a pasta),
+        // pelo `exigido()` dele (setups/sigma/plugin.ts).
+        ...(pastaDoMercado === null ? {} : { PASTA_DE_MERCADO: pastaDoMercado }),
         // O ESTADO DO SETUP: e' ele que sabe em que barra ja' entrou este par. Vive junto da operacao, e
         // sobrevive a reinicios — se vivesse na memoria do processo, um reinicio abria outra vez na mesma barra.
         PASTA_DE_ESTADO: join(dirname(para), "estado"),
@@ -279,7 +297,7 @@ function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup
       const t = dec.decode(b).trim();
       if (t !== "") erro = t.slice(0, 400);
     });
-    p.on("close", () => {
+    p.on("close", (codigo) => {
       // A proposta procura-se pela FORMA DO CONTRATO, e valida-se contra ele: uma linha que o contrato recusaria
       // não é proposta, e o operador não a "arranja".
       for (const linha of saida.split("\n")) {
@@ -292,11 +310,14 @@ function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup
         }
         if (obj?.tipo === "proposta") {
           const r = validar(linha);
-          if (r.veredicto === "aceite") return resolve({ proposta: obj, erro });
-          return resolve({ proposta: null, erro: `a proposta do setup nao passa o contrato: ${r.motivo}` });
+          if (r.veredicto === "aceite") return resolve({ proposta: obj, erro, respondeu: codigo === 0 });
+          return resolve({ proposta: null, erro: `a proposta do setup nao passa o contrato: ${r.motivo}`, respondeu: false });
         }
       }
-      resolve({ proposta: null, erro });
+      // SEM PROPOSTA, MAS TENDO RESPONDIDO: o setup correu ate' ao fim e nao propoe NESTA volta. E' o caso
+      // normal do `sigma`, que propoe UMA vez por barra fechada; o `codigo` diz se o processo correu (0) ou
+      // se rebentou/silenciou (nao-zero) — e sao coisas diferentes.
+      return resolve({ proposta: null, erro, respondeu: codigo === 0 });
     });
     p.stdin.write(JSON.stringify(leitura) + "\n");
     p.stdin.end();
@@ -442,7 +463,7 @@ async function main(): Promise<void> {
   conector.stdout.on("data", async (b) => {
     buffer += dec.decode(b);
     const pedacos = buffer.split("\n");
-    buffer = pedacos.pop() ?? "";
+    buffer = pedacos.pop()!;
     for (const linha of pedacos) {
       if (linha.trim() === "") continue;
       let msg: any;
@@ -537,7 +558,7 @@ async function main(): Promise<void> {
       }
 
       const manifestoDaFicha = manifestoDe(ficha);
-      const { proposta, erro } = await correrSetup(msg, ficha, manifestoDaFicha);
+      const { proposta, erro, respondeu } = await correrSetup(msg, ficha, manifestoDaFicha);
       // Guarda-se a proposta que acabou de chegar, com o instante em que chegou (auditoria: quando o setup
       // falou, e nao so' o que disse). A barra vai dentro da propria proposta (contrato 1.8.0).
       if (proposta !== null) {
@@ -558,19 +579,24 @@ async function main(): Promise<void> {
           ...(eOGueFalou ? { leitura } : {}),
           // AS FALHAS: ou o conector disse que nao houve nenhuma ausencia (mapa sem entrada = leitura completa,
           // e o operador nao a inventa), ou vao as que ele declarou. Sem leitura, sem falhas.
-          // AS FALHAS, na forma do contrato: a leitura que existe nao falhou; o setup respondeu se respondeu.
-          // O par sem leitura declara a falha dela — e' isso que faz o ciclo decidir `sem_leitura` com nome.
-          // AS MARCAS DE POSSE QUE A MESA CONHECE. Hoje e' a lista VAZIA, e a razao e' medida: o mapa
-          // marca -> ficha (RN-T16.1) nao existe em ficheiro nenhum (D-008). A consequencia e' real e fica dita:
-          // uma posicao que apareca na conta le-se como ALHEIA — e' a verdade do sistema enquanto o mapa nao
-          // existir, e e' por isso que ela nao se gere sozinha. Declarado, nao omitido: a mesa RECUSA a operacao
-          // que nao traga este campo, exactamente para nao voltar a haver um `?? []` a decidir isto por baixo.
+          // AS FALHAS, na forma do contrato: a leitura que existe nao falhou; o setup respondeu SE RESPONDEU
+          // — e "respondeu" e' o processo do setup ter CORRIDO ate' ao fim (`respondeu`, do codigo de saida e
+          // da validade da resposta), nunca o ter proposto algo.
+          //
+          // Era `proposta !== null`, e era um defeito de traducao com consequencias: o `sigma` propoe UMA vez
+          // por barra fechada e nas outras voltas cala-se DE PROPOSITO — e cada um desses silencios entrava
+          // aqui como `setup_respondeu: false`, o que poe o instrumento em `congelada` (nao abre, NAO FECHA,
+          // e avisa o dono). Medido na observacao de 30/09/2026: 11 voltas seguidas `congelada` com o setup a
+          // funcionar exactamente como devia. Uma posicao viva ficava sem defesa por causa de uma traducao.
+          falhas: eOGueFalou ? { leitura: false, setup_respondeu: respondeu } : { leitura: true },
+          divergente: eOGueFalou ? false : false,
+          // AS MARCAS DE POSSE QUE A MESA CONHECE (RN-T16.1, D-008): do mapa marca -> ficha, que se constroi
+          // do que NOS enviamos (a boleta + a resolucao). Sem marca conhecida a posicao le-se como ALHEIA, e
+          // a mesa nao a gere. O campo vai sempre declarado — a mesa RECUSA a operacao que o nao traga.
           marcas_nossas_conhecidas: marcasConhecidasDaConta(nome),
           // O RELOGIO DA FICHA: e' ele que define a barra, e sem barra a mesa nao tem como travar uma segunda
           // entrada na mesma (D-021). O relogio da config manda na ordem.
           relogio: String(f.cabecalho.relogio),
-          falhas: eOGueFalou ? { leitura: false, setup_respondeu: proposta !== null } : { leitura: true },
-          divergente: eOGueFalou ? false : false,
           ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
           template: resolverTemplate(manifestoDe(f), f),
           parametros: f.constantes,

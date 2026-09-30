@@ -111,6 +111,17 @@ function exigirDivergente(entrada: EntradaDoInstrumento, instrumento: string): b
 
 export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   const { mercado, proposta } = entrada;
+  // DE QUE INSTRUMENTO SE FALA. Era `String(mercado?.instrumento ?? "(sem nome)")` em dois sitios, e o nome
+  // inventado ia para a MENSAGEM de recusa: o dono lia "(sem nome)" onde devia ler que a leitura nao trouxe
+  // instrumento nenhum. Sem instrumento nao ha decisao atribuivel — e uma decisao que nao se atribui nao se
+  // registra nem se defende.
+  const instrumento: string = String(mercado?.instrumento);
+  if (!instrumento || instrumento === "undefined" || instrumento === "null") {
+    throw new Error(
+      "o ciclo nao recebeu o instrumento da leitura (`mercado.instrumento`): sem saber de que instrumento se " +
+        "fala, a decisao nao tem dono — e uma decisao sem dono nao se pode registar (RN-D4)",
+    );
+  }
   const posicao = mercado.posicao ?? null;
   // A MARCA DE POSSE e' o que diz de quem e' a posicao (RN-T16.1). Quando o venue a nao da (a leitura vinda
   // do venue vai sem marca: o mapa marca -> ficha e' item por fazer), uma posicao NAO e' nossa — e uma
@@ -126,8 +137,8 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     entrada.ligacao,
     // AS FALHAS DA LEITURA e a DIVERGENCIA: quem as sabe e' quem leu. Ausentes = recusa, nunca "nenhuma falha"
     // nem "nao divergente" — era por ai' que uma leitura por conferir virava uma decisao.
-    exigirFalhas(entrada, String(mercado?.instrumento ?? "(sem nome)")),
-    exigirDivergente(entrada, String(mercado?.instrumento ?? "(sem nome)")) || alheia,
+    exigirFalhas(entrada, instrumento),
+    exigirDivergente(entrada, instrumento) || alheia,
     entrada.config,
   );
 

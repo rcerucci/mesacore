@@ -96,4 +96,10 @@ const linha = JSON.stringify({
   carga: { setup: { nome: NOME, versao: "1.0.0" }, lado, barra_ms: ultima.t },
 });
 queixa(`media ${constantes.rapida}=${rapida.toFixed(4)} contra ${constantes.lenta}=${lenta.toFixed(4)} · barra ${new Date(ultima.t).toISOString()}`);
+// A AUTO-CONFERENCIA, como no `sigma`: uma proposta que o contrato recusa NAO SAI — e diz-se por que.
+const decisao = validar(linha);
+if (decisao.veredicto !== "aceite") {
+  queixa(`a minha propria proposta nao passa o contrato (${decisao.motivo}) — prefiro nao propor a propor mal`);
+  process.exit(3);
+}
 console.log(linha);

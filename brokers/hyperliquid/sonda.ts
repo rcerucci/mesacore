@@ -21,6 +21,7 @@
 // NAO IMPORTA O `core` (RN-E1) e NAO DECIDE NADA (RN-C5, RN-C15): le, mapeia e declara.
 
 import { construirManifesto, type Sonda, type Resultado } from "./manifesto.ts";
+import { ouAusente } from "../../contracts/esqueleto/texto.ts";
 
 // ---------------------------------------------------------------------------------------------------------
 // A forma de uma resposta do venue: ou veio, ou nao veio — e o que nao veio TEM razao.
@@ -309,7 +310,7 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
   if (universo === undefined) {
     desconhecido(
       "meta.universe",
-      razaoDaFalha(respostas.meta, "meta") ?? "a resposta de `meta` nao trouxe uma lista `universe`",
+      ouAusente(razaoDaFalha(respostas.meta, "meta"), "a resposta de `meta` nao trouxe uma lista `universe`"),
     );
   } else {
     // As TABELAS de margem do venue: uma por familia de escaloes, e o `marginTableId` que cada instrumento
@@ -318,25 +319,34 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
     // sem escaloes declarados (e o manifesto nao declara o que nao se pode dizer na lingua do contrato).
     const tabelas = new Map<number, { lowerBound: string; maxLeverage: number }[]>();
     let tabelasInvalidas = 0;
-    for (const tabela of lista(meta?.marginTables) ?? []) {
-      const par = lista(tabela);
-      const identificador = par !== undefined ? numero(par[0]) : undefined;
-      const escaloes = par !== undefined ? lista(objecto(par[1])?.marginTiers) : undefined;
-      if (identificador === undefined || escaloes === undefined || escaloes.length === 0) continue;
-      const linhas: { lowerBound: string; maxLeverage: number }[] = [];
-      let valida = true;
-      for (const escalao of escaloes) {
-        const e = objecto(escalao);
-        const limite = e !== undefined ? texto(e.lowerBound) : undefined;
-        const maxima = e !== undefined ? numero(e.maxLeverage) : undefined;
-        if (limite === undefined || maxima === undefined || !DECIMAL.test(limite)) {
-          valida = false;
-          break;
+    // `lista(meta?.marginTables) ?? []` fazia de uma meta sem `marginTables` uma meta com ZERO tabelas — o
+    // mesmo resultado que "o venue nao publica tabelas de margem", que e' uma MEDICAO. Um campo que veio com
+    // outra forma desaparecia por aqui, em silencio; passa a dizer-se, e o ciclo corre sobre o que existe.
+    const tabelasDoVenue = lista(meta?.marginTables);
+    if (tabelasDoVenue === undefined) {
+      desconhecido("tabelas_de_margem", "a resposta de `meta` nao trouxe `marginTables` como lista");
+    }
+    if (tabelasDoVenue !== undefined) {
+      for (const tabela of tabelasDoVenue) {
+        const par = lista(tabela);
+        const identificador = par !== undefined ? numero(par[0]) : undefined;
+        const escaloes = par !== undefined ? lista(objecto(par[1])?.marginTiers) : undefined;
+        if (identificador === undefined || escaloes === undefined || escaloes.length === 0) continue;
+        const linhas: { lowerBound: string; maxLeverage: number }[] = [];
+        let valida = true;
+        for (const escalao of escaloes) {
+          const e = objecto(escalao);
+          const limite = e !== undefined ? texto(e.lowerBound) : undefined;
+          const maxima = e !== undefined ? numero(e.maxLeverage) : undefined;
+          if (limite === undefined || maxima === undefined || !DECIMAL.test(limite)) {
+            valida = false;
+            break;
+          }
+          linhas.push({ lowerBound: limite, maxLeverage: maxima });
         }
-        linhas.push({ lowerBound: limite, maxLeverage: maxima });
+        if (valida) tabelas.set(identificador, linhas);
+        else tabelasInvalidas += 1;
       }
-      if (valida) tabelas.set(identificador, linhas);
-      else tabelasInvalidas += 1;
     }
 
     const linhas: LinhaDoUniverso[] = [];
@@ -384,22 +394,28 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
   // ---- 3. o contexto por instrumento: funding (e a marca para a leitura) ---------------------------
   const ctxs = lista(veio(respostas.meta_e_ctxs));
   const contextos = ctxs !== undefined && ctxs.length === 2 ? lista(ctxs[1]) : undefined;
-  const primeiroContexto = contextos?.map(objecto).find((c) => c !== undefined);
+  // `contextos?.map(objecto).filter(...).length ?? 0` contava ZERO contextos quando a leitura nao trouxe lista
+  // nenhuma — e o `?? 0` ia para dentro da MENSAGEM de uma medicao ("0 de 0 contextos trazem funding"), que se
+  // le como um facto do venue. Aqui a forma e' resolvida uma vez, e o que nao tem forma nao vira contagem.
+  const contextosComForma = contextos === undefined ? undefined : (contextos.map(objecto).filter((c) => c !== undefined) as Record<string, unknown>[]);
+  const primeiroContexto = contextosComForma === undefined ? undefined : contextosComForma[0];
   if (primeiroContexto === undefined) {
     desconhecido(
       "funding_publicado",
-      razaoDaFalha(respostas.meta_e_ctxs, "metaAndAssetCtxs") ??
+      ouAusente(
+        razaoDaFalha(respostas.meta_e_ctxs, "metaAndAssetCtxs"),
         "a resposta de `metaAndAssetCtxs` nao trouxe a lista de contextos por instrumento",
+      ),
     );
   } else {
     const taxa = texto(primeiroContexto.funding);
-    const traz = contextos?.map(objecto).filter((c) => c !== undefined && taxaDeFunding(c) !== undefined).length ?? 0;
+    const traz = contextosComForma!.filter((c) => taxaDeFunding(c) !== undefined).length;
     medido(
       "funding_publicado",
       taxa !== undefined,
       "info.metaAndAssetCtxs()[1][].funding",
       taxa !== undefined
-        ? `o venue publica a taxa de funding por instrumento (${traz} de ${contextos?.length ?? 0} contextos trazem ` +
+        ? `o venue publica a taxa de funding por instrumento (${traz} de ${contextosComForma!.length} contextos trazem ` +
           "`funding`; exemplo medido: BTC = " + taxa + "), e `predictedFundings` declara o intervalo horario"
         : "o venue respondeu os contextos por instrumento e NENHUM traz `funding`: nao publica funding",
     );
@@ -415,7 +431,7 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
   if (lados === undefined || lados.length < 2 || lados[0] === undefined || lados[1] === undefined) {
     desconhecido(
       "profundidade_de_livro",
-      razaoDaFalha(respostas.livro, "l2Book") ?? "a resposta de `l2Book` nao trouxe dois lados de niveis",
+      ouAusente(razaoDaFalha(respostas.livro, "l2Book"), "a resposta de `l2Book` nao trouxe dois lados de niveis"),
     );
   } else {
     const profundidade = Math.min(lados[0].length, lados[1].length);
@@ -498,7 +514,7 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
   const razaoDasOrdens = razaoDaFalha(respostas.ordens_historicas, "historicalOrders");
 
   if (ordens.length === 0) {
-    const porque = razaoDasOrdens ?? "o venue nao tem ordens registadas para esta conta";
+    const porque = ouAusente(razaoDasOrdens, "o venue nao tem ordens registadas para esta conta");
     desconhecido("tipos_de_ordem", `sem ordens registadas nao ha tipo de ordem medido (${porque})`);
     desconhecido("reduce_only_suportado", `sem ordens registadas nao ha reduce-only medido (${porque})`);
     desconhecido("marca_de_posse", `sem ordens registadas nao ha forma de marca medida (${porque})`);
@@ -622,14 +638,14 @@ export function construirSonda(respostas: RespostasDoVenue, pedido: PedidoDaSond
   {
     const modos: string[] = [];
     const evidencias: string[] = [];
-    const estritos = universo?.filter((u) => objecto(u)?.marginMode === "strictIsolated").length ?? 0;
-    if (estritos > 0) {
+    const estritos = universo === undefined ? undefined : universo.filter((u) => objecto(u)?.marginMode === "strictIsolated").length;
+    if (estritos !== undefined && estritos > 0) {
       modos.push("isolado");
       evidencias.push(`meta().universe[] tem ${estritos} activos com marginMode=strictIsolated`);
     } else if (universo !== undefined) {
       evidencias.push("meta().universe[] nao declara nenhum activo strictIsolated");
     } else {
-      evidencias.push(razaoDaFalha(respostas.meta, "meta") ?? "sem meta nao se ve margem isolada");
+      evidencias.push(ouAusente(razaoDaFalha(respostas.meta, "meta"), "sem meta nao se ve margem isolada"));
     }
     const activo = objecto(veio(respostas.activo_da_conta));
     const tipoDaAlavancagem = activo !== undefined ? texto(objecto(activo.leverage)?.type) : undefined;

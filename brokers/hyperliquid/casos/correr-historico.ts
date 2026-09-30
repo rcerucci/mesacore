@@ -22,8 +22,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cargaDoHistorico, lerHistorico, type PedidoDeHistorico, type RespostasDoHistorico } from "../historico.ts";
 import { validar, versaoVigente } from "../../../contracts/esqueleto/framing.ts";
+import { entradas, itens } from "./blocos.ts";
+import { ouAusente } from "../../../contracts/esqueleto/texto.ts";
 
 const CASOS_POR_OMISSAO = join(import.meta.dir, "historico.casos.json");
+
+/** A BASE DE RESPOSTAS POR OMISSAO DO CASO, com nome: e a base `real` que o ficheiro de casos declara. */
+const BASE_DO_CASO_POR_OMISSAO = "real";
 
 function argumento(nome: string): string | undefined {
   const i = process.argv.indexOf(nome);
@@ -78,7 +83,7 @@ function haNulo(v: unknown): boolean {
 
 /** Soma decimais TEXTUAIS em BigInt (so para a prova negativa: o conferidor soma onde nos NAO podemos somar). */
 function somarDecimais(valores: string[]): string {
-  const escala = Math.max(...valores.map((v) => (v.split(".")[1] ?? "").length));
+  const escala = Math.max(...valores.map((v) => { const partes = v.split("."); return partes.length === 2 ? partes[1]!.length : 0; }));
   let total = 0n;
   for (const v of valores) {
     const sinal = v.startsWith("-") ? -1n : 1n;
@@ -88,7 +93,8 @@ function somarDecimais(valores: string[]): string {
   const s = total.toString();
   const negativo = s.startsWith("-");
   const digitos = negativo ? s.slice(1) : s;
-  const inteira = escala === 0 ? digitos : digitos.slice(0, -escala) || "0";
+  const cortada = escala === 0 ? digitos : digitos.slice(0, -escala);
+  const inteira = cortada === "" ? "0" : cortada;
   const fracao = escala === 0 ? "" : digitos.slice(-escala);
   const texto = escala === 0 ? inteira : `${inteira}.${fracao}`;
   return negativo ? `-${texto}` : texto;
@@ -143,7 +149,7 @@ const LADO = "\u00b7"; // o mesmo separador de campo das outras bancadas do reco
 function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } {
   const erros: string[] = [];
   const declaracoes: string[] = [];
-  const base = ficheiro.bases[caso.base ?? "real"];
+  const base = ficheiro.bases[caso.base === undefined ? BASE_DO_CASO_POR_OMISSAO : caso.base];
   if (base === undefined) {
     return { erros: [`a base \`${caso.base}\` nao existe no ficheiro de casos`], declaracoes };
   }
@@ -152,9 +158,9 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
   // As respostas do caso: a base, sobreposta pelo que o caso declarar. Uma leitura declarada a falhar vem na
   // forma `{"__erro__": "..."}` — a MESMA convencao do duble do processo: o que nao se declarou nao vira
   // resposta vazia.
-  for (const [chave, valor] of Object.entries(caso.respostas ?? {})) bruto[chave] = valor;
-  for (const caminhoApagar of caso.remover ?? []) apagarCaminho(bruto, caminhoApagar);
-  for (const [caminhoMudar, valor] of Object.entries(caso.mudar ?? {})) escreverCaminho(bruto, caminhoMudar, valor);
+  for (const [chave, valor] of entradas(caso.respostas, "respostas")) bruto[chave] = valor;
+  for (const caminhoApagar of itens(caso.remover, "remover") as string[]) apagarCaminho(bruto, caminhoApagar);
+  for (const [caminhoMudar, valor] of entradas(caso.mudar, "mudar")) escreverCaminho(bruto, caminhoMudar, valor);
 
   const respostas: RespostasDoHistorico = {};
   for (const chave of ["execucoes", "ordens", "taxas", "funding_da_conta", "funding_publicado"]) {
@@ -171,7 +177,7 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
   const pedido: PedidoDeHistorico = {
     conta: ficheiro.conta,
     instrumento: ficheiro.instrumento,
-    ...(caso.pedido ?? {}),
+    ...(caso.pedido === undefined ? {} : caso.pedido),
   } as PedidoDeHistorico;
 
   const r = lerHistorico(respostas, pedido);
@@ -186,27 +192,27 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
     erros.push(`motivo: esperado ${caso.motivo_esperado}, veio ${(r as any).motivo}`);
   }
   if (caso.motivo_esperado === null && !r.ok) erros.push(`motivo: esperado nenhum, veio ${(r as any).motivo}`);
-  for (const trecho of caso.porque_contem ?? []) {
+  for (const trecho of itens(caso.porque_contem, "porque_contem") as string[]) {
     const porque = r.ok ? "" : r.porque;
     if (!porque.includes(trecho)) erros.push(`porque nao contem ${JSON.stringify(trecho)}: ${porque.slice(0, 200)}`);
   }
-  for (const [campo, esperado] of Object.entries(caso.conferir ?? {})) {
+  for (const [campo, esperado] of entradas(caso.conferir, "conferir")) {
     const veio = lerCaminho(vista, campo);
     if (JSON.stringify(veio) !== JSON.stringify(esperado)) {
       erros.push(`conferir ${campo}: esperado ${JSON.stringify(esperado)}, veio ${JSON.stringify(veio)}`);
     }
   }
-  for (const [campo, esperado] of Object.entries(caso.contagens ?? {})) {
+  for (const [campo, esperado] of entradas(caso.contagens, "contagens")) {
     const veio = lerCaminho(vista, campo);
     const n = Array.isArray(veio) ? veio.length : typeof veio === "string" ? veio.length : undefined;
     if (n !== esperado) erros.push(`contagem ${campo}: esperado ${esperado}, veio ${n} (${JSON.stringify(veio)?.slice(0, 80)})`);
   }
-  for (const [campo, trecho] of Object.entries(caso.contem ?? {})) {
+  for (const [campo, trecho] of entradas(caso.contem, "contem")) {
     const veio = lerCaminho(vista, campo);
     const texto = typeof veio === "string" ? veio : JSON.stringify(veio);
-    if (!texto?.includes(trecho)) erros.push(`contem ${campo}: nao contem ${JSON.stringify(trecho)}: ${texto?.slice(0, 200)}`);
+    if (!texto.includes(String(trecho))) erros.push(`contem ${campo}: nao contem ${JSON.stringify(trecho)}: ${texto.slice(0, 200)}`);
   }
-  for (const campo of caso.ausentes ?? []) {
+  for (const campo of itens(caso.ausentes, "ausentes") as string[]) {
     if (lerCaminho(vista, campo) !== undefined) erros.push(`ausente ${campo}: veio ${JSON.stringify(lerCaminho(vista, campo))}`);
   }
   if (caso.nao_tem_null === true && haNulo(vista)) {
@@ -215,7 +221,7 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
 
   // A PROVA NEGATIVA (FR-018/FR-019): o conferidor soma os `closedPnl` do venue e exige que a soma NAO apareca.
   if (caso.nao_soma_o_resultado === true) {
-    const execucoes = (bruto.execucoes ?? []) as Record<string, unknown>[];
+    const execucoes = itens(bruto.execucoes, "execucoes") as Record<string, unknown>[];
     const resultados = execucoes
       .filter((f) => f?.coin === pedido.instrumento)
       .map((f) => f?.closedPnl)
@@ -237,7 +243,7 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
   // A CARGA DO CONTRATO: monta-se e entrega-se AO CONTRATO. O veredicto dele e o veredicto que se confere.
   if (caso.carga !== undefined && r.ok) {
     const carga = cargaDoHistorico(r.leitura);
-    for (const [caminhoCarga, esperado] of Object.entries(caso.carga.leva ?? {})) {
+    for (const [caminhoCarga, esperado] of entradas(caso.carga.leva, "carga.leva")) {
       const veio = lerCaminho(carga, caminhoCarga);
       if (JSON.stringify(veio) !== JSON.stringify(esperado)) {
         erros.push(
@@ -245,9 +251,9 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
         );
       }
     }
-    for (const chave of caso.carga.nao_leva ?? []) {
+    for (const chave of itens(caso.carga.nao_leva, "carga.nao_leva") as string[]) {
       if (chave in carga) erros.push(`a carga leva \`${chave}\`, que o venue nao deu (nem o contrato tem para o historico)`);
-      const execucoes = (carga.execucoes ?? []) as Record<string, unknown>[];
+      const execucoes = itens(carga.execucoes, "execucoes") as Record<string, unknown>[];
       const comChave = execucoes.filter((e) => chave in e).length;
       if (comChave > 0) erros.push(`a carga leva \`${chave}\` em ${comChave} execucao(oes), e o venue nao a deu`);
     }
@@ -260,7 +266,7 @@ function correrCaso(caso: Checagem): { erros: string[]; declaracoes: string[] } 
       erros.push(`contrato: esperado motivo ${caso.carga.contrato_motivo}, veio ${decisao.motivo}`);
     }
     declaracoes.push(
-      `a carga do contrato deste caso foi julgada pelo CONTRATO: ${decisao.veredicto}/${decisao.motivo ?? "-"} ` +
+      `a carga do contrato deste caso foi julgada pelo CONTRATO: ${decisao.veredicto}/${ouAusente(decisao.motivo, "-")} ` +
         `(execucoes: ${(carga.execucoes as unknown[]).length}; chaves que o venue nao deu NAO entram)`,
     );
   }
@@ -325,7 +331,7 @@ if (casoBom === undefined || casoRuim === undefined) {
   // 1. o veredicto invertido
   torcer("veredicto-invertido", { ...casoBom, esperadoOk: false }, true);
   // 2. uma conferencia com o valor errado
-  torcer("conferir-errado", { ...casoBom, conferir: { ...(casoBom.conferir ?? {}), instrumento: "NAO-E-BTC" } }, true);
+  torcer("conferir-errado", { ...casoBom, conferir: { ...Object.fromEntries(entradas(casoBom.conferir, "conferir")), instrumento: "NAO-E-BTC" } }, true);
   // 3. um campo que existe declarado como ausente
   torcer("ausente-que-existe", { ...casoBom, ausentes: ["instrumento"] }, true);
   // 4. uma recusa que devia ter sido leitura (o contrario tambem tem de morder)

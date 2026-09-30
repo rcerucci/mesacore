@@ -19,13 +19,21 @@ interface Caso {
   de: Estado;
   verbo: string;
   contexto: Contexto;
-  marcas_presentes?: string[];
+  marcas_presentes: string[];
   resultado_esperado: string;
   estado_esperado: Estado;
   motivo_esperado: string | null;
   porta_da_recusa_esperada?: { porta: string; motivo: string };
   nao_tocado_esperado?: string[];
   historico?: string;
+}
+
+/** Um valor que o caso TEM de declarar. Ausente = recusa: as bancadas declaram o que testam (nao ha omissao). */
+function exigirDeclarado<T>(v: T | undefined, oQue: string): T {
+  if (v === undefined) {
+    throw new Error(`a bancada nao declarou ${oQue}: sem isso o caso nao diz o que esta' a testar`);
+  }
+  return v;
 }
 
 function comparar(caso: Caso, r: Resposta): string[] {
@@ -51,10 +59,14 @@ function comparar(caso: Caso, r: Resposta): string[] {
     }
   }
   if (caso.nao_tocado_esperado) {
-    const obtido = (r.nao_tocado ?? []).join(",");
-    if (obtido !== caso.nao_tocado_esperado.join(",")) {
+    // O RESULTADO TEM DE DECLARAR O QUE NAO TOCOU. Era `(r.nao_tocado ?? []).join(",")`: um resultado que nao
+    // declarasse o campo aparecia como "nao tocou nada" — que e' uma AFIRMACAO sobre as marcas, e das que
+    // tranquilizam. Sem o campo, a bancada diz que nao o pode comparar.
+    const obtido = r.nao_tocado === undefined || r.nao_tocado === null ? null : r.nao_tocado.join(",");
+    if (obtido === null || obtido !== caso.nao_tocado_esperado.join(",")) {
       diferencas.push(
-        `nao_tocado: esperado [${caso.nao_tocado_esperado.join(", ")}], obtido [${obtido}]`,
+        `nao_tocado: esperado [${caso.nao_tocado_esperado.join(", ")}], obtido ` +
+          `${obtido === null ? "(o resultado nao declarou `nao_tocado`)" : `[${obtido}]`}`,
       );
     }
   }
@@ -75,7 +87,11 @@ console.log(`bateria: ${caminho}`);
 console.log(`casos: ${bateria.casos.length}\n`);
 
 for (const caso of bateria.casos) {
-  const r = aplicar(caso.de, caso.verbo, caso.contexto, caso.marcas_presentes ?? []);
+  // AS MARCAS PRESENTES SAO DECLARADAS PELO CASO. Era `caso.marcas_presentes ?? []`, e um caso que nao as
+  // declarasse dizia «nao ha marca nenhuma» — um facto sobre o estado da mesa que o caso nao estava a afirmar.
+  // A marca `inibicao_cb` presente ou ausente MUDA a transicao (e' o D-006); uma bancada que a omite mede a
+  // transicao errada e passa. As fichas declaram-no (34 das 38 nao o declaravam — foi escrito), e aqui exige-se.
+  const r = aplicar(caso.de, caso.verbo, caso.contexto, exigirDeclarado(caso.marcas_presentes, `marcas_presentes (caso ${caso.nome})`));
   const diferencas = comparar(caso, r);
 
   // Uma recusa sem motivo e defeito de desenho, nao diferenca de expectativa: conta a parte.

@@ -23,6 +23,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { lerConta, type PedidoDeLeitura, type RespostasDaConta } from "../leitura.ts";
+import { entradas, itens } from "./blocos.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..", "..");
 const ficheiro = process.argv[2] ?? join(import.meta.dir, "leitura.casos.json");
@@ -73,7 +74,8 @@ function porCaminho(obj: any, caminho: string): unknown {
     const m = /^([A-Za-z0-9_]+)((?:\[[0-9]+\])*)$/.exec(parte);
     if (m === null) return undefined;
     alvo = alvo === undefined || alvo === null ? undefined : alvo[m[1] as string];
-    for (const idx of (m[2] as string).match(/\[[0-9]+\]/g) ?? []) {
+    const indices = (m[2] as string).match(/\[[0-9]+\]/g);
+    for (const idx of indices === null ? [] : indices) {
       alvo = Array.isArray(alvo) ? alvo[Number(idx.slice(1, -1))] : undefined;
     }
   }
@@ -149,7 +151,7 @@ function registar(caso: string, esperadoOk: boolean, problemas: string[]): void 
 for (const c of casos.casos) {
   const base = c.base !== undefined ? casos.bases[c.base] : casos.bases.real;
   const respostas = fundir(base, c.respostas);
-  for (const caminho of c.remover ?? []) apagar(respostas, caminho as string);
+  for (const caminho of itens(c.remover, "remover") as string[]) apagar(respostas, caminho);
   const pedido: PedidoDeLeitura = { conta: casos.conta, ...(casos.instrumento !== undefined ? { instrumento: casos.instrumento } : {}) };
 
   const r = lerConta(respostas as RespostasDaConta, pedido);
@@ -159,7 +161,7 @@ for (const c of casos.casos) {
     problemas.push(`ok=${r.ok}, esperado=${!!c.esperadoOk}${r.ok ? "" : ` (${r.motivo}: ${r.porque})`}`);
   } else if (!r.ok) {
     if (c.motivo_esperado && r.motivo !== c.motivo_esperado) problemas.push(`motivo=${r.motivo}, esperado=${c.motivo_esperado}`);
-    if (!texto(r.motivo) || !Object.prototype.hasOwnProperty.call(vocabulario.motivos ?? {}, r.motivo)) {
+    if (!texto(r.motivo) || !Object.prototype.hasOwnProperty.call(vocabulario.motivos, r.motivo)) {
       problemas.push(`motivo ${JSON.stringify(r.motivo)} nao existe no conjunto fechado do contrato`);
     }
     if (!texto(r.porque) || r.porque.length < 20) problemas.push("a recusa nao se explica (porque vazio ou curto)");
@@ -193,14 +195,14 @@ for (const c of casos.casos) {
       if (v !== undefined && (!texto(v) || !DECIMAL.test(v))) problemas.push(`${caminho}=${JSON.stringify(v)} nao e decimal textual`);
     }
     for (const campo of ["unidades", "preco_medio", "nocional", "margem", "resultado_nao_realizado", "preco_de_liquidacao"]) {
-      for (let i = 0; i < (L.posicoes ?? []).length; i++) {
+      for (let i = 0; i < itens(L.posicoes, "posicoes").length; i++) {
         const v = porCaminho(L, `posicoes[${i}].${campo}`);
         if (v !== undefined && (!texto(v) || !DECIMAL.test(v))) problemas.push(`posicoes[${i}].${campo}=${JSON.stringify(v)} nao e decimal textual`);
       }
     }
 
     // Sem distancia, TEM de estar dito por que — e a distancia fica AUSENTE (nunca zero).
-    for (let i = 0; i < (L.posicoes ?? []).length; i++) {
+    for (let i = 0; i < itens(L.posicoes, "posicoes").length; i++) {
       const porque = porCaminho(L, `posicoes[${i}].porque_sem_distancia`);
       const distancia = porCaminho(L, `posicoes[${i}].distancia_de_liquidacao`);
       if (porque !== undefined && distancia !== undefined) {
@@ -217,18 +219,18 @@ for (const c of casos.casos) {
 
     // Todo `motivo` escrito pela leitura (a carteira que nao se leu) existe no conjunto fechado.
     for (const { caminho, motivo } of motivos(L)) {
-      if (!texto(motivo) || !Object.prototype.hasOwnProperty.call(vocabulario.motivos ?? {}, motivo)) {
+      if (!texto(motivo) || !Object.prototype.hasOwnProperty.call(vocabulario.motivos, motivo)) {
         problemas.push(`${caminho}=${JSON.stringify(motivo)} nao existe no conjunto fechado do contrato`);
       }
     }
 
-    for (const [caminho, esperado] of Object.entries(c.conferir ?? {})) {
+    for (const [caminho, esperado] of entradas(c.conferir, "conferir")) {
       const veio = porCaminho(L, caminho as string);
       if (JSON.stringify(veio) !== JSON.stringify(esperado)) {
         problemas.push(`${caminho}=${JSON.stringify(veio)}, esperado=${JSON.stringify(esperado)}`);
       }
     }
-    for (const caminho of c.ausentes ?? []) {
+    for (const caminho of itens(c.ausentes, "ausentes") as string[]) {
       const veio = porCaminho(L, caminho as string);
       if (veio !== undefined) problemas.push(`${caminho} devia estar AUSENTE e veio ${JSON.stringify(veio)}`);
     }

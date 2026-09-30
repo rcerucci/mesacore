@@ -407,9 +407,19 @@ const lidas = lerOrdensVivas(bruto.ordens, pedido.instrumento);
   });
   const decisao = validar(mensagem);
   if (decisao.veredicto !== "aceite") {
+    // O MOTIVO DO CONTRATO, exigido. Era `${decisao.motivo ?? "?"}`, e o `?` entrava num motivo que o dono le:
+    // um motivo sem nome nao se procura em lado nenhum, e "mercado_recusado_pelo_contrato:?" parece um
+    // diagnostico. O contrato nomeia sempre o que recusa — quando nao nomeia, e' ele que esta' mal.
+    const nomeDoMotivo = decisao.motivo;
+    if (nomeDoMotivo === null) {
+      throw new Error(
+        `o contrato recusou o mercado de ${pedido.instrumento} sem declarar motivo (veredicto ${decisao.veredicto}) — ` +
+          `e um motivo sem nome nao se pode seguir: ${JSON.stringify(carga)}`,
+      );
+    }
     return {
       ok: false,
-      motivo: `mercado_recusado_pelo_contrato:${decisao.motivo ?? "?"}`,
+      motivo: `mercado_recusado_pelo_contrato:${nomeDoMotivo}`,
       porque: `o mercado montado no venue nao passou o contrato (${decisao.veredicto}): ${JSON.stringify(carga)}`,
     };
   }
@@ -496,9 +506,18 @@ async function principal(): Promise<void> {
     return i < 0 ? undefined : argv[i + 1];
   };
   const instrumento = argumento("--instrumento");
-  const conta = argumento("--conta") ?? process.env.MESACORE_CONTA ?? "";
-  const ambiente = (argumento("--ambiente") ?? "teste") as "teste" | "producao";
-  if (instrumento === undefined || conta === "") {
+  // A CONTA: `--conta`, ou o ambiente. Sem nenhum dos dois NAO HAVIA sentinela `""` para recusar mais abaixo
+  // (era `?? ""`): o vazio passa a ser a AUSENCIA, e a recusa diz o que falta.
+  const conta = argumento("--conta") ?? process.env.MESACORE_CONTA;
+  // O AMBIENTE: conferido contra o conjunto e com nome proprio na omissao — `(x ?? "teste") as ...` deixava um
+  // `--ambiente producaoo` valer teste, em silencio (a mesma familia da correccao do `mercado.ts`).
+  const ambienteDeclarado = argumento("--ambiente");
+  if (ambienteDeclarado !== undefined && ambienteDeclarado !== "teste" && ambienteDeclarado !== "producao") {
+    console.error(JSON.stringify({ erro: "ambiente_fora_do_conjunto", ambiente: ambienteDeclarado, aceitos: ["teste", "producao"] }));
+    process.exit(2);
+  }
+  const ambiente: "teste" | "producao" = ambienteDeclarado === undefined ? "teste" : ambienteDeclarado;
+  if (instrumento === undefined || conta === undefined || conta === "") {
     console.error(
       "uso: bun run brokers/hyperliquid/leitura-do-mercado.ts --instrumento BTC --conta 0x... [--ambiente teste|producao] [--agora <ms>] [--json]",
     );

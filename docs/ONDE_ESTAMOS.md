@@ -173,6 +173,19 @@ entrega — a data da última é a da sonda de 30/09, e nenhuma tem `cloid` (415
   referência**, e o valor nunca entra em log nem no repositório (RN-E14) — o stash foi escrito com essa regra
   escrita no cabeçalho do `identidade.ts`, mas isso é **alegação até a bateria de varredura correr sobre ele**.
 
+- **Duas sessões na mesma árvore: quem a limpa é quem trabalha nela (protocolo escrito em 30/09/2026, e armado).**
+  Medido: às 19:25:39 de 30/09 uma **sessão-irmã deste profile** («Auditar estado atual do MesaCore», sessão
+  `20260929_193900_d185d7`, `cwd` este repositório) guardou em `stash` um lote de 30 ficheiros do produto que
+  estavam por committar, porque o leu como restos de corridas mortas — a outra sessão estava a trabalhar neles
+  desde 19:16:57. O `git reflog` guarda o rasto (`HEAD@{2026-09-30 19:25:39 -0300}: reset: moving to HEAD`), e nada
+  se perdeu porque um `stash` guarda em vez de apagar. Regra, agora com guarda a recusar na porta
+  (`~/.hermes/agent-hooks/guardiao-arvore-alheia.py`, `pre_tool_call` com matcher `terminal`, nos 5 homes):
+  **árvore suja e precisas dela limpa → parar e reportar** (`git status --short` no corpo do cartão; `kanban_block`
+  quando a decisão não for tua); **nunca** `stash`/`checkout`/`switch`/`restore`/`clean`/`reset --hard` numa árvore
+  que não é a da tua sessão ou que outra sessão tem aberta. Para medir contra um estado limpo usa-se uma **cópia
+  dentro do próprio workspace**; excepção a uma guarda vai **por cartão ao `default`**, com comando e saída, nunca
+  por contorno.
+
 ## 8. A ação que depende de você (uma só)
 
 **Autorizar (ou não) o primeiro envio a sério — um só, com você a conferir no broker.** O que existe hoje é

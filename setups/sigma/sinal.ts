@@ -16,6 +16,14 @@
 //     a última viragem; e vira quando o preço está acima/abaixo da banda e — se já havia lado — o recuo desde o
 //     extremo chega a `zz_atr * ATR`. Com `sig=0` o zigzag NÃO trava: a primeira entrada é sempre permitida.
 //
+// O `na` DO PINE, QUE JA' NOS FALTOU AQUI (medido em 30/09/2026, 505 barras de SOL H1 contra a transcrição do
+// indicador em `tools/verificar-setup/pine-sigma.py`): a prontidão do Pine é `not na(mid) and not na(maH) and
+// not na(pxT)` — **o ATR não entra nela**. Sem ATR (as primeiras `atr_len - 1` barras) a `banda` é **0, ou seja
+// não há zona morta**, e o `recuoOk` do zigzag **não trava**. O nosso motor exigia ATR e calava-se nessas
+// barras: ficava `sig=0` nas barras #1..#13 onde o gráfico já tinha lado, e a virada que o Pine marcava na #1
+// saía-nos na #14. As duas séries reconvergiam, mas por sorte — o lado e o `extremo` do arranque alimentam o
+// travão do zigzag de todas as barras seguintes.
+//
 // A ARMADILHA, e é a razão de este ficheiro existir separado do plugin: `ta.ema` e `ta.rma` TÊM SEMENTE, e a
 // semente muda os primeiros valores. Uma "simplificação" que arranque a média do primeiro valor dá números
 // quase iguais e um dia vira onde o gráfico não virou. Aqui a semente é explícita e medida contra o gráfico.
@@ -151,13 +159,14 @@ export function calcular(velas: Vela[], k: Constantes, semente: "recursiva" | "s
     const sigAntes = sig;
 
     // A barra "nova" do Pine: aqui TODAS as velas são fechadas (o plugin deixa a que está a formar de fora), e
-    // por isso todas contam — a mesma semântica de `barstate.isconfirmed` no mesmo timeframe.
-    if (ma !== null && atr !== null) {
+    // por isso todas contam — a mesma semântica de `barstate.isconfirmed` no mesmo timeframe. E o ATR **não**
+    // entra na prontidão do Pine: sem ele a `banda` é 0 (não há zona morta) e o zigzag não trava.
+    if (ma !== null) {
       if (sig === 1) extremo = extremo === null ? m : Math.max(extremo, m);
       else if (sig === -1) extremo = extremo === null ? m : Math.min(extremo, m);
 
       let recuoOk = true;
-      if (k.usar_zz && extremo !== null && atr > 0 && sig !== 0) {
+      if (k.usar_zz && extremo !== null && atr !== null && atr > 0 && sig !== 0) {
         recuoOk = sig === 1 ? extremo - m >= zzAtr * atr : m - extremo >= zzAtr * atr;
       }
 

@@ -73,6 +73,17 @@ declarar "conector hyperliquid (offline, US1)" bash tools/verificar-conector/pro
 # assinatura, as 8 portas do arranque) so corriam quando alguem se lembrava de as chamar. Um caminho que mexe
 # em dinheiro fora do portao e um caminho que pode regredir sem ninguem dar por isso (medido 29/09/2026).
 declarar "envio do conector (38 casos)"   bun run brokers/hyperliquid/processo.ts --bancada
+# OS MOLDES DOS SETUPS entram na porta: eles nao estavam em bancada nenhuma e apodreceram sem que nada o
+# dissesse (a versao do contrato escrita a mao e o Python sem a `barra_ms` obrigatoria) — medido a 30/09/2026.
+declarar "setups de exemplo (contrato)"   bash tools/verificar-setup/exemplos.sh
+# A TRADUCAO DO INDICADOR entra na porta: o motor tem de fazer o mesmo que o `sign(mid - MA) + ZZ` do Pine em
+# TODAS as combinacoes de `input`, e nao so' nas omissoes. Foi aqui que se apanhou o `na` do ATR (medido
+# 30/09/2026: o motor calava-se nas primeiras 13 barras de 505, onde o grafico ja' tinha lado).
+declarar "Pine x motor (todas as opcoes)" bash -c "cd contracts && uv run python ../tools/verificar-setup/varredura-pine.py"
+# A REGRA DA ENTRADA (regra do dono, 30/09/2026): a entrada so' acontece na barra do FLIP — nao se abre no meio da
+# perna, e uma ordem fechada a mao so' reabre no proximo flip. Sao oito casos, com as barras reais truncadas de
+# proposito para que a ultima barra fechada seja (ou nao seja) a barra de uma viragem.
+declarar "sigma: entrada so' no flip (8 casos)" bash -c "cd contracts && uv run python ../tools/verificar-setup/sigma-casos.py"
 
 # As bancadas da camada de OPERACAO (003): correm processos a serio (vigia + mesa), por isso ficam na porta
 # completa - a `--rapido` e a que se corre a cada passo.
@@ -84,7 +95,7 @@ if [ "$RAPIDO" -eq 0 ]; then
   declarar "contrato neutro (recorte 001)" bash tools/verificar-contrato/ponta-a-ponta.sh
   declarar "frescura do contrato"          bash tools/verificar-contrato/frescura.sh
   declarar "frescura (prova negativa, T057)" bash tools/verificar-contrato/frescura.sh --prova-negativa
-  declarar "fallbacks (nenhum novo)"          bash -c "cd contracts && uv run python ../tools/verificar-contrato/py/fallbacks.py"
+  declarar "fallbacks (ZERO exigido)"          bash -c "cd contracts && uv run python ../tools/verificar-contrato/py/fallbacks.py --exigir-zero"
 declarar "fronteira (SC-003, T046-T049)" bash tools/verificar-contrato/fronteira.sh
   declarar "duble de mesa (US6, SC-004)"   bash tools/verificar-contrato/duble-de-mesa.sh
   declarar "inventario de chaves (SC-012)" bash tools/verificar-contrato/inventario.sh

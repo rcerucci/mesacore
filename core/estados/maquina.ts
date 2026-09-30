@@ -193,16 +193,29 @@ export function aplicar(
     if (linha.recusa === "porta_do_arranque_falhou") {
       // A porta que falhou, quando ela se conhece. SEM ela o desconhecido nao pode sair em silencio: quem
       // recebe a recusa tem de ler que o que falta e' o RESULTADO DAS PORTAS - nao um veredicto delas.
-      resposta.motivo_da_porta = contexto.portas_do_arranque?.porta
-        ? {
-            porta: contexto.portas_do_arranque.porta,
-            motivo: contexto.portas_do_arranque.motivo ?? "porta recusou sem motivo declarado",
-          }
-        : {
-            porta: "(nao conferidas)",
-            motivo:
-              "o contexto nao trouxe o resultado das portas do arranque: nao saber que passaram nao e passar (D-006)",
-          };
+      //
+      // O motivo da porta NAO tem valor de recurso. Era `?? "porta recusou sem motivo declarado"`: uma frase
+      // que parece um diagnostico e nao e' nenhum, e que deixava passar um contexto incompleto. Quem diz que
+      // uma porta falhou sabe PORQUE; se nao o declarou, o contexto e' que esta' mal — e isso nomeia-se.
+      if (!contexto.portas_do_arranque?.porta) {
+        resposta.motivo_da_porta = {
+          porta: "(nao conferidas)",
+          motivo:
+            "o contexto nao trouxe o resultado das portas do arranque: nao saber que passaram nao e passar (D-006)",
+        };
+        return resposta;
+      }
+      const motivoDaPorta = contexto.portas_do_arranque.motivo;
+      if (motivoDaPorta === undefined || motivoDaPorta === "") {
+        throw new Error(
+          `o contexto diz que a porta '${contexto.portas_do_arranque.porta}' do arranque recusou, mas nao declara ` +
+            "o motivo da recusa: uma recusa sem motivo nao se resume — e um resumo sem motivo e' um resumo que mente",
+        );
+      }
+      resposta.motivo_da_porta = {
+        porta: contexto.portas_do_arranque.porta,
+        motivo: motivoDaPorta,
+      };
     }
     return resposta;
   }
