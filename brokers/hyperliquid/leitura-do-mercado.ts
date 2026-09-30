@@ -350,12 +350,12 @@ const lidas = lerOrdensVivas(bruto.ordens, pedido.instrumento);
   //
   // Sem mapa, ou sem cloid conhecido, a posicao vai SEM marca — e uma posicao sem marca e' tratada pela mesa
   // como ALHEIA (relata e nao gere). Nao se inventa dono: e' a mesma disciplina da RN-D4.
-  if (posicao !== undefined) {
-    const mapa = mapaDeMarcas();
-    const cloidDoVenue = preenchimentoMaisRecente(bruto.execucoes, pedido.instrumento);
-    const nossa = cloidDoVenue !== undefined ? mapa.find((m) => m.cloid.toLowerCase() === cloidDoVenue.toLowerCase()) : undefined;
-    if (nossa !== undefined && typeof nossa.marca === "number") carga.posicao_marca_de_posse = nossa.marca;
-  }
+  const mapa = mapaDeMarcas();
+  const cloidDoVenue = posicao !== undefined ? preenchimentoMaisRecente(bruto.execucoes, pedido.instrumento) : undefined;
+  const marcaDaPosicao =
+    cloidDoVenue !== undefined
+      ? mapa.find((m) => m.cloid.toLowerCase() === cloidDoVenue.toLowerCase())?.marca
+      : undefined;
 
   // AS ORDENS VIVAS DA CONTA, neste instrumento (contrato 1.9.0): OBRIGATORIAS e SEMPRE — a conta pode estar
   // plana e ter ordens vivas (ou nenhuma), e a lista vazia diz "perguntei e nao ha' nenhuma". Estavam dentro do
@@ -371,10 +371,15 @@ const lidas = lerOrdensVivas(bruto.ordens, pedido.instrumento);
       lado: posicao.lado,
       unidades: posicao.unidades,
       preco_medio: posicao.preco_medio,
+      // A MARCA, quando o venue mostrou um preenchimento com um `cloid` NOSSO (o mapa, RN-T16.1). Ausente, a
+      // posicao vai sem dono — e a mesa trata-a como alheia, que e' o que se quer quando nao se sabe.
+      ...(typeof marcaDaPosicao === "number" ? { marca_de_posse: marcaDaPosicao } : {}),
     };
-    ausentes.push(
-      "mercado.posicao.marca_de_posse (a marca vive no `cloid` da ordem no venue; o mapa marca -> ficha e' RN-T16.1, por fazer)",
-    );
+    if (typeof marcaDaPosicao !== "number") {
+      ausentes.push(
+        "mercado.posicao.marca_de_posse (o venue nao mostrou nenhum preenchimento deste instrumento com um `cloid` nosso: a posse nao se atribui)",
+      );
+    }
   }
 
   const origens: Record<string, string> = {
