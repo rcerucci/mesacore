@@ -156,6 +156,23 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     // Fechar NUNCA inverte: o lado da boleta e o oposto da posicao que existe (RN-B5).
     ladoDaBoleta = posicao.lado === "buy" ? "sell" : "buy";
     reduce_only = true;
+  } else if (nossa && posicao.lado !== lado) {
+    // O LADO OPOSTO A' NOSSA POSICAO NAO E' ABRIR — E' REDUZIR (D-013, medido 29/09/2026).
+    //
+    // O que se mediu, na bateria de teste do venue (P15): com posicao nossa aberta, uma proposta do lado oposto
+    // produzia `acao: "abrir"` e a boleta saia com `reduce_only: false` — e o venue FAZ NETTING: a mesma ordem
+    // do mesmo tamanho ZEROU a posicao, e o registo ficou a dizer `abrir` sobre uma reducao. Pior: se a boleta
+    // fosse MAIOR que a posicao, o mesmo caminho entregava uma VIRADA NUMA SO' ORDEM — exactamente o que a
+    // virada de mao em dois passos (o vocabulario nao tem verbo para ela) existe para nao deixar acontecer.
+    //
+    // A CORRECCAO, e porque e' esta: `reduce_only` e' a unica forma de dizer «reduz, nunca inverte» sem a mesa
+    // calcular unidades (que nao e' dela, RN-B0) — o venue corta no tamanho da posicao, e a boleta pode ir por
+    // cima sem risco. A accao fica `fechar`, que e' o nome que o vocabulario ja tem para «isto so' reduz»
+    // (`abrir | fechar | adoptar | nada`): uma REDUCAO PARCIAL continua sem nome proprio, e isso esta' declarado
+    // como o que falta ao vocabulario — mas o perigo (a virada em silencio) fica fechado hoje.
+    acao = "fechar";
+    ladoDaBoleta = lado;
+    reduce_only = true;
   } else {
     acao = "abrir";
     ladoDaBoleta = lado;

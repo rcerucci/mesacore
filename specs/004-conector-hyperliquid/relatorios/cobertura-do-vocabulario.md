@@ -90,6 +90,9 @@ O QUE FALTA PARA FECHAR (por ordem, e por onde se mede)
    a limpar o que descansa.
 4. **`limite` utilizavel (D-012)** — derivar o preco do limite com a quantizacao da regra do venue em vez de usar
    a marca crua.
-5. **D-013** — decidir: o lado oposto a' nossa posicao e' `reduzir` (nomeado como reducao) ou e' recusa; hoje e'
-   `abrir` e o venue faz outra coisa.
+5. ~~**D-013** — o lado oposto a' nossa posicao~~ — **FEITO 29/09/2026**: o ciclo distingue-o (proposta do lado
+   oposto a uma posicao NOSSA -> `fechar` com `reduce_only: true`, nunca abre do outro lado), com par de controle
+   e espelho no `core/ciclo/provar.ts` (**102 verificacoes · 0 divergentes**). Uma **reducao PARCIAL** continua
+   sem nome no vocabulario da decisao (`abrir|fechar|adoptar|nada`) — e' o que resta desta linha.
+6. **A ligacao do mercado** e o **SL/TP** — em curso por cartao (`t_2ccdde89`, `t_e802e344`).
 FIM

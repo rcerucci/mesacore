@@ -614,7 +614,28 @@ como `agressivo`.
 regra, em vez de a usar crua) — ou declarar no manifesto que o `limite` não é utilizável; (b) o verbo de
 cancelamento, sem o qual `destino_do_resto` não tem sentido.
 
-## D-013 — O lado oposto à NOSSA posição não é distinguido de «abrir» (declarado 29/09/2026)
+## D-013 — O lado oposto à NOSSA posição não é distinguido de «abrir» — **FECHADO** (declarado e fechado 29/09/2026)
+
+> **FECHADO — 29/09/2026.** O ciclo passou a distinguir o caso: proposta do lado **oposto** a uma posição que é
+> NOSSA → `acao: "fechar"` com `reduce_only: true` na boleta. `reduce_only` é a única forma honesta de dizer
+> «reduz, nunca inverte» sem a mesa calcular unidades (RN-B0): o venue corta no tamanho da posição, e a boleta
+> pode ir por cima sem risco. Prova, no `core/ciclo/provar.ts` — **102 verificações · 0 divergentes** (eram 99),
+> com os 3 casos novos:
+>
+> ```
+> ok  ciclo/d013-lado-oposto-a-nossa-posicao-fecha-em-reduce-only    (buy nosso + proposta sell -> fechar, sell/ro)
+> ok  ciclo/d013-o-par-de-controle-mesmo-lado-aumenta-a-posicao      (buy nosso + proposta buy  -> abrir,  buy, ro=false)
+> ok  ciclo/d013-posicao-vendida-e-proposta-buy-fecha-em-reduce-only (sell nosso + proposta buy -> fechar, buy/ro)
+> ```
+>
+> O par de controle existe de propósito: se os DOIS lados fechassem, a correcção teria ido longe de mais — o
+> mesmo lado da nossa posição é um **aumento**, e continua a sair com `reduce_only: false`.
+>
+> **O que fica por fechar, e fica dito:** uma **redução PARCIAL** continua sem nome próprio. O vocabulário da
+> decisão é `abrir | fechar | adoptar | nada` (medido em `core/ciclo/decisao.ts`), o tamanho da boleta vem da
+> percentagem do saldo do mandato, e não há verbo para «reduz metade». Acrescentar um verbo mexe no registo e,
+> se o `acao` cruzar a fronteira, no contrato — é decisão de desenho, com a prova já feita à frente. A prova
+> viva (a bateria a mandar o lado oposto ao venue) fica para quando o trabalho em curso no conector aterrar.
 
 **Encontrado ao provar a virada de mão** (o dono pediu-a, e o vocabulário não a tem). Medido na bateria (P15),
 com posição nossa aberta de `0.00023 BTC`:

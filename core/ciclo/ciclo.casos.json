@@ -1162,6 +1162,108 @@
         "avisa": true
       },
       "historico": "D-008: a metade simetrica do outro caso - `1` esta' ABAIXO do minimo `1.0000000000000000001`, e a virgula flutuante diria que sao iguais (dentro). As duas bordas (maximo e minimo) tem caso proprio, porque um limite que so' se mede de um lado e' meio limite."
+    },
+    {
+      "nome": "d013-lado-oposto-a-nossa-posicao-fecha-em-reduce-only",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "sell"
+      },
+      "ficha": "3232",
+      "ciclo": 5,
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "fechar",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "sell",
+          "reduce_only": true
+        }
+      },
+      "historico": "D-013 (29/09/2026): o lado oposto a' NOSSA posicao NAO e' abrir. Medido na bateria de teste (P15): com `abrir` e reduce_only=false o venue fez NETTING e zerou a posicao, e se a boleta fosse maior virava a mao numa so' ordem. Fecha, e so' reduz.",
+      "ligacao": "ligada"
+    },
+    {
+      "nome": "d013-o-par-de-controle-mesmo-lado-aumenta-a-posicao",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 5,
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "abrir",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "buy",
+          "reduce_only": false
+        }
+      },
+      "historico": "Par de controle do D-013: o MESMO lado da nossa posicao e' um AUMENTO, e sai com reduce_only=false — se os dois lados fechassem, a correccao teria ido longe de mais.",
+      "ligacao": "ligada"
+    },
+    {
+      "nome": "d013-posicao-vendida-e-proposta-buy-fecha-em-reduce-only",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "posicao": {
+          "lado": "sell",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 6,
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "decisao_esperada": {
+        "acao": "fechar",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "buy",
+          "reduce_only": true
+        }
+      },
+      "historico": "D-013, o espelho: posicao vendida nossa e proposta `buy` fecha em reduce_only, pelo mesmo motivo (netting do venue, e nunca inverter).",
+      "ligacao": "ligada"
     }
   ]
 }
