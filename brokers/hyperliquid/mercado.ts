@@ -173,6 +173,9 @@ async function main(): Promise<void> {
       // O FICHEIRO QUE O PLUGIN LE: JSONL + descritor, e a actualizacao que o colector chama a cada volta.
       const actualizar = argv.includes("--actualizar");
       const nome = `velas-${instrumento}-${intervalo}`;
+      // A pasta pode nao existir: a ferramenta CRIA-A, em vez de rebentar na escrita (medido: foi o que
+      // aconteceu na primeira corrida do operador, e o erro saiu como stack trace em vez de resultado).
+      (await import("node:fs")).mkdirSync(pasta, { recursive: true });
       const ficheiro = `${pasta.replace(/\/$/, "")}/${nome}.jsonl`;
       const descritor = `${pasta.replace(/\/$/, "")}/${nome}.descritor.json`;
       let ja: any[] = [];

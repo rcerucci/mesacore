@@ -55,3 +55,6 @@ config/contas/
 !brokers/hyperliquid/credencial.ts
 !brokers/hyperliquid/casos/correr-credencial.ts
 !brokers/hyperliquid/casos/credencial.casos.json
+
+# a pasta de velas de cada setup e' dado gerado (mercado.ts --para-pasta)
+setups/*/mercado/

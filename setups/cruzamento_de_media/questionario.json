@@ -1,0 +1,37 @@
+{
+ "setup": "cruzamento_de_media",
+ "versao": "0.1.0",
+ "nota": "O template do setup: um item por parametro. E' o que a validacao do core e o formulario da tela leem — nenhum dos dois sabe o que e' uma 'media rapida'.",
+ "escreve_em": "ficha",
+ "perguntas": [
+  {
+   "campo": "parametros.rapida",
+   "pergunta": "Quantas velas na media rapida?",
+   "tipo": "inteiro",
+   "omissao": 5
+  },
+  {
+   "campo": "parametros.lenta",
+   "pergunta": "Quantas velas na media lenta?",
+   "tipo": "inteiro",
+   "omissao": 20
+  },
+  {
+   "campo": "mercado.intervalo",
+   "pergunta": "Intervalo das velas",
+   "tipo": "escolha",
+   "opcoes": [
+    "1m",
+    "5m",
+    "15m",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "1d"
+   ],
+   "omissao": "1h",
+   "nota": "Os intervalos sao os do venue (medidos: 14)."
+  }
+ ]
+}

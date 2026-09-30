@@ -1,0 +1,20 @@
+{
+ "nome": "cruzamento_de_media",
+ "versao": "0.1.0",
+ "linguagem": "typescript",
+ "comando": [
+  "bun",
+  "run",
+  "plugin.ts"
+ ],
+ "nota": "O primeiro setup de referencia. A mesma politica existe em Python (`plugin.py`) — trocar a lingua e' trocar `comando` e `linguagem` aqui, e nada mais muda.",
+ "parametros": {
+  "rapida": 5,
+  "lenta": 20
+ },
+ "mercado": {
+  "pasta": "setups/cruzamento_de_media/mercado",
+  "intervalo": "1h",
+  "ficheiro": "velas-BTC-1h.jsonl"
+ }
+}
