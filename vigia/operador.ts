@@ -443,6 +443,9 @@ async function main(): Promise<void> {
           // existir, e e' por isso que ela nao se gere sozinha. Declarado, nao omitido: a mesa RECUSA a operacao
           // que nao traga este campo, exactamente para nao voltar a haver um `?? []` a decidir isto por baixo.
           marcas_nossas_conhecidas: marcasConhecidasDaConta(),
+          // O RELOGIO DA FICHA: e' ele que define a barra, e sem barra a mesa nao tem como travar uma segunda
+          // entrada na mesma (D-021). O relogio da config manda na ordem.
+          relogio: String(f.cabecalho.relogio),
           falhas: eOGueFalou ? { leitura: false, setup_respondeu: proposta !== null } : { leitura: true },
           divergente: eOGueFalou ? false : false,
           ficha: `${f.setup}_v${String(manifestoDe(f).versao).split(".")[0]}`,
