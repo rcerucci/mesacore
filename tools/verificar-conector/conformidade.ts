@@ -23,8 +23,15 @@
 //   9. INSTRUMENTO QUE NAO EXISTE NO MANIFESTO: recusa NOMEADA, dos dois lados (o conector e a mesa).
 //
 // O QUE ESTA BATERIA NAO PROVA, e di-lo em voz alta (FR-026 - prova que nao corre deixa o resultado
-// INCOMPLETO, nunca "passou"): nada do venue. As oito provas no ambiente de TESTE da corretora (SC-004)
-// sao outra bateria, com rede e chave. Aqui nao ha rede, nao ha chave, e o unico "venue" e a sonda em dado.
+// INCOMPLETO, nunca "passou"): nada do venue. As provas no ambiente de TESTE da corretora (SC-004) sao a
+// `tools/testar-venue/bateria.ts`, que corre com rede e com a chave POR REFERENCIA (o valor entra no processo
+// do conector, nunca no desta bateria). Aqui nao ha rede, nao ha chave, e o unico "venue" e a sonda em dado.
+//
+// A BATERIA DE TESTE existe desde 29/09/2026, e o registro dela fica em
+// `specs/004-conector-hyperliquid/relatorios/registos-do-venue/<versao>-teste.txt` (a saida crua do venue, por
+// versao do contrato). Das provas dela, 11 de 14 passaram: as tres que reprovaram estao declaradas em
+// `specs/002-maquina-de-estados/relatorios/DEFEITOS.md` (D-009 a idempotencia, D-010 a alavancagem que nunca e'
+// pedida, D-011 o stop que nao sai), e ha uma incapacidade medida (D-012, o tipo `limite` inalcancavel).
 //
 // A PROVA NEGATIVA corre SEMPRE, em memoria: um envelope com campo a mais, um `null`, um decimal com
 // expoente, um motivo fora do vocabulario, um veredicto fora do conjunto, uma versao trocada. Cada um TEM
@@ -1008,7 +1015,7 @@ for (const p of provas) {
 
 // FR-026: o que nao corre fica INCOMPLETO, nunca "passou". A bateria do venue e o caso declarado.
 console.log(
-  "\nvenue (as OITO provas de SC-004, no ambiente de TESTE da corretora): INCOMPLETO — nao corre offline; " +
+  "\nvenue (as provas de SC-004, no ambiente de TESTE): INCOMPLETO AQUI — a `tools/testar-venue/bateria.ts` — nao corre offline; " +
     "esta bateria nao tem rede nem chave, e esse aceite e outra bateria (RN-C6, FR-025).",
 );
 

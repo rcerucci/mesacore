@@ -29,12 +29,19 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 | A **conta na linha do registo** (D-004, fechado hoje) | `bun run tools/verificar-maquina/registo.ts` | **12 verificações · 0 divergentes** — duas contas, reconstrução **por conta**, e a troca como controle |
 | O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **40** · leitura 14 · histórico **26** |
 | **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** — **dentro da porta única desde hoje** (antes só corria à mão) |
-| A conformidade do conector | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 241 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
+| **A bateria de TESTE do venue** (SC-004, a que envia) | `bun tools/testar-venue/bateria.ts --ate 8 --registar` | **14 provas · 11 passaram · 3 reprovaram** — e as três estão declaradas: **D-009** (a idempotência), **D-010** (a alavancagem nunca é pedida ao venue) e **D-011** (a boleta pede stop e o stop não sai). Mais uma incapacidade: **D-012** (o tipo `limite` é inalcançável no BTC, e o `cancelar` não tem verbo). Corre contra a TESTNET e move dinheiro: **não** entra no `provar.sh` |
+| A conformidade do conector (offline) | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 241 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
 | O contrato nas duas linguagens | `bun tools/verificar-conector/porta-do-contrato.ts` | **0 falhas** — contrato **1.7.0** · **131 casos** nos dois motores · 23 sondas da emenda |
-| As tarefas dos recortes | `grep -c '^- \[x\]' specs/*/tasks.md` | 001 **59/59** · 002 **67/67** · 003 **63/63** · 004 **71 fechadas · 3 abertas** |
+| As tarefas dos recortes | `grep -c '^- \[x\]' specs/*/tasks.md` | 001 **59/59** · 002 **67/67** · 003 **63/63** · 004 **74/74 medidas** — as três últimas (T042/T048/T057) foram medidas na testnet e **dois critérios não se cumprem**: SC-003 (D-009) e SC-004 (11 de 12) |
 | O tamanho do que é nosso | `git ls-files` + `wc -l` | **17.895+** linhas de TypeScript · 2.980 de Python · 3.499 de shell |
 
 ## 3. O que NÃO existe (e não é «espera» — é falta)
+
+> **NOTA DATADA — 29/09/2026**: duas linhas desta secção caíram por medição. (a) O **registador
+> automático** da bateria existe: a Bateria de Teste do Venue escreve
+> `specs/004-conector-hyperliquid/relatorios/registos-do-venue/<versão>-teste.txt` sozinha. (b) O **envio ao vivo** existe e foi
+> usado: o conector assinou e submeteu na testnet (ordens `61429208395`, `61429223297`, `61429239313`).
+> O que continua por fazer é a **idempotência** (D-009) e o **mapa de posse** (RN-T16.1).
 
 - **Uma regra que não corre: D-007** (declarado hoje, ao fechar o D-006). A recusa `liquidacao_em_curso`
   (FR-013) está escrita na tabela e **funciona quando o contexto a declara** — mas **ninguém a declara**:
@@ -130,6 +137,22 @@ público `info`:
 `openOrders` → `[]` · `frontendOpenOrders` → `[]`. **Nenhuma ordem foi enviada; não há posição aberta.** O
 histórico de execuções que existe na conta (56 execuções, `userFills`, 17.988 bytes) é **anterior** a esta
 entrega — a data da última é a da sonda de 30/09, e nenhuma tem `cloid` (415 de 415 nulos).
+
+> **NOTA DATADA — 29/09/2026, mais tarde: o parágrafo acima deixou de ser verdade, e por acção nossa.** A
+> Bateria de Teste do Venue (`tools/testar-venue/bateria.ts`) correu contra a testnet **e enviou**, com o dono
+> a autorizar o teste. Medido em `clearinghouseState`/`historicalOrders`/`userFills` depois da corrida:
+>
+> - **equity `998.409456`** (eram 998.46: a diferença são as **taxas** — 0.006009 + 0.00864 + 0.01728);
+> - **posição: nenhuma** (a bateria abre e fecha na mesma corrida; a limpeza fecha o que sobra de corridas
+>   anteriores, e o fecho é sempre com `reduce_only`);
+> - **425 ordens na conta, 10 com `cloid`** — e as 10 são as nossas; as outras 415 são do motor antigo. Ou
+>   seja: **as ordens desta mesa passam a trazer marca**, e é por aí que o mapa de posse (RN-T16.1) pode ligar
+>   uma ordem a uma ficha;
+> - **63 execuções**, 7 com `cloid` (as nossas), com taxa e resultado realizado por execução
+>   (`closedPnl 0.00322` no fecho).
+>
+> O número antigo (415 de 415) fica por cima porque o registo é auditável — e porque é ele que mostra que a
+> conta só passou a ter marcas quando **esta** mesa passou a enviar.
 
 ## 7. As armadilhas que não se vêem na tela
 

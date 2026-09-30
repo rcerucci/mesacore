@@ -1,0 +1,131 @@
+A BATERIA DE TESTE DO VENUE (SC-004) — a primeira corrida a serio, contra a TESTNET
+contrato 1.7.0 · 29/09/2026 · instrumento BTC · abertura MANUAL (sem setup)
+
+O QUE ESTA BATERIA E
+--------------------
+A outra metade do `tools/verificar-conector/conformidade.ts`. Aquele prova tudo o que se prova OFFLINE e di-lo
+em voz alta: do venue, nada — a linha do venue sai INCOMPLETO, nunca «passou» (FR-026). Esta corre contra o
+ambiente de TESTE da corretora, que existe para isto, e cada prova DIZ o que mediu.
+
+    bun tools/testar-venue/bateria.ts --ate 8 --registar
+    (--ciclo <n> fixa a base das referencias; por omissao ela vem do relogio, para nao repetir o cloid)
+
+E a unica bancada do repositorio que MOVE dinheiro, e move-o na TESTE. Nao entra no `provar.sh` por isso: o
+portao corre a cada passo, e um portao que envia ordens a cada passo nao e' um portao.
+
+O QUE CORREU, POR ORDEM — 14 provas · 11 passaram · 3 REPROVARAM (P6, P10 e P11)
+-------------------------------------------------------------
+P0  arranque ao vivo (as 8 portas)                    OK
+      ficha=passou · versao_do_contrato=passou · uma_conta=passou · ambiente_e_rede=passou ·
+      chave=nao_corrida · ligacao=passou · sonda_e_manifesto=passou · identidade=passou
+      o venue respondeu e o manifesto saiu (1 instrumento): BTC, tipos [mercado, limite], idempotencia true,
+      marca_de_posse cloid, estado_da_ligacao ligada, agente de assinatura registado (a `identidade`).
+      `chave=nao_corrida` e' o declarado: no modo de sonda nao se assina nada.
+
+P1  as leituras do venue                              OK
+      equity 998.45 · posicao BTC 0.00023 @ 83468.3 · ordens abertas 0 · execucoes 58
+
+P1b a LIMPEZA (a conta comeca plana)                  OK
+      havia 0.00023 BTC (de uma corrida anterior) · boleta sell reduce_only=true saldo_pct=1.01 ·
+      venue: parcial {"estado":"partially_filled","preenchido":"0.00023","preco_medio":"83460.0"} ·
+      posicao depois: nenhuma
+      PORQUE ESTA PROVA EXISTE: a 2a corrida desta bateria foi RECUSADA pela mesa —
+      `posicao_alheia_relatada_nao_gerida` — porque havia posicao que ela nao reconhecia como sua, e a mesa
+      NAO abre por cima disso (FR-021). A recusa estava certa; era a bateria que nao limpava o que sujava.
+
+P2  a mesa decide (proposta manual) e o conector traduz  OK
+      acao=abrir · boleta BTC buy mercado · TRADUCAO: 0.00023 unidade(s) a 83877 · tif=Ioc ·
+      cloid=0x0be22c2ea5af902098493496b48978f9
+      a mesa NAO calcula unidades: a boleta traz o `saldo_pct` (1%) e a `alavancagem` (2) do mandato, e quem
+      deriva a quantidade — com o SALDO e o PRECO lidos do venue naquele instante — e' o conector.
+
+P3  o conector ao vivo ASSINA e SUBMETE               OK
+      venue: estado=filled ordem=61429208395 preenchido=0.00023 a 83469.0 · classificacao=aceite
+
+P4  a mesa classifica o desfecho + a banda (D-001)    OK
+      classificacao=aceite · banda {"veredicto":"dentro","accao":"seguir","conferidas":["alavancagem",
+      "saldo_pct","distancia_de_liquidacao"],"fora":[],"nao_conferidas":[]}
+      a `resolucao` sai ANTES do envio (0.00023 / nocional 19.29171 / margem 9.64 / alavancagem 2 /
+      liquidacao 41938) — o que a mesa confere antes de a ordem sair.
+
+P5  os cinco numeros com posicao viva                 OK (com uma diferenca que fica dita)
+      venue: 0.00023 BTC · nocional 19.1958 · margem 19.1958 · alavancagem 1 · liquidacao null ·
+      equity 998.43 · execucoes 61 (ultima: taxa 0.006009, resultado 0.0)
+      1 de 5 coincidem com a resolucao do desfecho. A diferenca tem nome: o venue conta em margem CROSS com
+      `leverage.value = 1` e NAO publica `liquidationPx` para esta posicao, enquanto a resolucao que sai antes
+      do envio traz os numeros PROJECTADOS por nos (alavancagem 2, liquidacao = preco x (1 - 1/alavancagem)).
+      O conector DECLARA a origem (`origem_dos_numeros: calculo_antes_do_envio`) e nao inventa: e' o item
+      T068 (a emenda proposta) a vista, agora com numeros a serio.
+
+P6  a IDEMPOTENCIA (a mesma referencia outra vez)      REPROVOU  <<< o achado desta corrida
+      2a resposta do venue: classificacao=aceite resposta={"estado":"filled","order_id":"61429223297",
+      "preenchido":"0.00023","preco_medio":"83483.0"} · execucoes 61 -> 62 · posicao 0.00023 -> 0.00046
+      MEDIDO no historico da conta: as DUAS ordens estao la', com o MESMO cloid
+      (0x0be22c2ea5af902098493496b48978f9) e oids diferentes (61429208395 e 61429223297). O `cloid` CHEGA ao
+      venue (10 ordens da conta com cloid = as nossas; 415 sem = motor antigo) e NAO deduplica nada.
+      => DECLARADO COMO D-009.
+
+P7  o fecho com reduce_only: a posicao volta a zero   OK
+      havia 0.00046 BTC · boleta sell reduce_only=true saldo_pct=2.02 · venue: parcial
+      {"estado":"partially_filled","preenchido":"0.00046","preco_medio":"83483.0"} · posicao depois: nenhuma ·
+      equity 998.409456 (a diferenca para 998.45 sao as taxas: 0.006009 + 0.00864 + 0.01728)
+      `reduce_only` fecha o que ha' e nunca vira posicao: foi ele que permitiu pedir por cima (saldo_pct
+      2.02% para cobrir 0.00046) sem risco de abrir do outro lado.
+
+P8  as recusas que nao custam                        OK · OK · OK
+      abaixo do minimo de valor do venue  -> recusa NOSSA: minimo_do_instrumento_acima_da_banda
+      instrumento que o manifesto nao tem -> recusa: instrumento_desconhecido_no_manifesto
+      tipo de ordem que o venue nao declara -> recusa: capacidade_nao_declarada
+      Nenhuma chegou a sair: quem recusa e' o conector, com o motivo nomeado — a recusa nao se descobre na
+      resposta do venue.
+
+
+P10 os campos da boleta que o conector aceita e NAO le   REPROVOU  <<< achado
+      com `stop_pct: 2` e `tp_pct: 4` vs SEM eles: payload IDENTICO (mesma quantidade 0.00023, mesmo preco
+      83971, mesmo cloid). Campos que saem: ["alavancagem","cloid","desvio_maximo","instrumento","lado",
+      "nocional","preco","preco_de_referencia","quantidade","reduce_only","tif","tipo"] — nenhum e' stop.
+      O venue declara `stop_anexo=false`. Medido no codigo: `stop_pct`/`tp_pct` tem 0 ocorrencias em
+      `brokers/`; `prazo_da_passiva_ms` e `destino_do_resto` so' aparecem na DECLARACAO do tipo da boleta.
+      => DECLARADO COMO D-011: o stop que o dono autoriza (vem do setup, RN-S11) nao sai, e a mesa fica a
+      acreditar numa proteccao que nao existe. FR-007 outra vez, com dinheiro do outro lado.
+
+P11 a alavancagem que a boleta pede chega ao venue?      REPROVOU  <<< achado
+      a boleta pede 2 · o venue tem 1 (`activeAssetData.leverage = {"type":"cross","value":1}`) · a posicao
+      le-se com leverage=null. 0 chamadas de ajuste de alavancagem em `brokers/`.
+      => DECLARADO COMO D-010: o FR-008 («a alavancagem DEVE ser pedida ao venue quando houver esse verbo»)
+      nao esta' implementado, e a resolucao que a mesa confere contra a banda (D-001) traz a alavancagem
+      PEDIDA — os numeros com que o dono autoriza risco saem de uma alavancagem que nao esta' la'. E' a
+      explicacao do «1 de 5 coincidem» da P5.
+
+E uma incapacidade achada ao tentar exercer o outro tipo de ordem declarado:
+      a boleta `limite` (o manifesto declara `tipos_de_ordem: [mercado, limite]`) morre SEMPRE antes de sair:
+      `valor_fora_da_banda` — "o preco 83554.0 tem 6 [algarismos significativos] e o venue aceita no maximo 5".
+      A raiz: no `limite` o preco que vai para o venue e' a MARCA, caracter a caracter, e a marca do BTC tem 6
+      algarismos; no `mercado` o preco e' derivado e sai quantizado, e por isso passa (o par de controle).
+      E nao ha' verbo de cancelamento em `brokers/` (0 ocorrencias): o `limite` sai `Alo` (post-only), ou seja
+      descansa no livro e nao pode ser retirado por nos — um `destino_do_resto: "cancelar"` comporta-se como
+      `agressivo`. => DECLARADO COMO D-012.
+
+O REGISTO
+---------
+`specs/004-conector-hyperliquid/relatorios/registos-do-venue/1.7.0-teste.txt` — por versao do contrato, com a saida crua inteira
+(portas, manifesto, contas, desfechos, execucoes, recusas). E' o registo automatico que os planos nomeavam
+(`conformidade.sh`) e que nao existia: ate' hoje era escrito a mao. **Nao entra no git por declaracao do
+proprio repositorio** (`.gitignore:29` — `brokers/*/conformidade/` e' saida gerada, e o que se guarda e' a
+BATERIA, que o reproduz). Por isso este relatorio existe: e' o que fica gravado, com os numeros e a saida crua
+dos passos que decidem.
+
+O QUE FICA POR FAZER, e que nao se esconde
+------------------------------------------
+1. D-009 (a idempotencia): 11 de 14. Enquanto nao for corrigida, o SC-004 NAO esta cumprido — a prova que
+   falha e' a que promete ao dono que a mesma referencia nao cria segunda ordem. As duas saidas (recusar em
+   nos, consultando o historico; ou tirar a `idempotencia` do manifesto) sao decisao de desenho.
+2. D-010 (a alavancagem, FR-008): o verbo existe no venue e nunca e' usado; os numeros da resolucao saem de
+   uma alavancagem que nao vigora.
+3. D-011 (o stop que nao sai, FR-007): o campo mais perigoso dos tres — a boleta pede proteccao, o payload sai
+   igual ao de uma boleta sem proteccao nenhuma, e nada avisa.
+4. D-012 (o `limite` inalcancavel no BTC e o `cancelar` sem verbo): o tipo declarado no manifesto nao e'
+   utilizavel, e a unica saida que o usa fica por retirar.
+5. T068 (a resolucao projectada): o venue nao publica `preco_de_liquidacao` nem a alavancagem efectiva que
+   nos projectamos; medido agora, a diferenca e' 1 de 5 numeros iguais.
+6. A bateria move dinheiro: nao entra no `provar.sh`, e quem a corre sabe-o.

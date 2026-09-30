@@ -474,3 +474,117 @@ com o stop **dentro** da banda (passa) e **um passo fora** (recusa nomeada, e o 
 venue, com a mesa a dizer que a viu e a **não a gerir** (e, no caso `false`, a pausar o instrumento);
 (iii) para o tempo em posição: a posição aberta há mais do que a banda, e o fecho a acontecer — com o par de
 controle de uma posição **dentro** do tempo, que fica.
+
+## D-009 — A idempotência declarada no manifesto não é a do venue (declarado 29/09/2026)
+
+**Encontrado na primeira corrida da bateria de TESTE contra a testnet** — a primeira vez que este conector
+falou com a corretora a sério para **enviar**. O manifesto declara `idempotencia: true`; medido, é **falso do
+lado do venue**: a mesma boleta (mesma referência de cliente → mesmo `cloid`) enviada duas vezes produziu
+**duas ordens**.
+
+| envio | ordem no venue | `cloid` enviado | estado | execuções na conta |
+|---|---|---|---|---|
+| abertura | `61429208395` | `0x0be22c2ea5af902098493496b48978f9` | filled 0.00023 @ 83469.0 | 61 |
+| **a mesma boleta outra vez** | `61429223297` | `0x0be22c2ea5af902098493496b48978f9` | filled 0.00023 @ 83483.0 | 62 |
+
+Medido no `historicalOrders` da conta: as duas ordens estão lá, com o **mesmo** `cloid` e `oid` diferentes; a
+posição passou de `0.00023` para `0.00046`. E o `cloid` **chega** ao venue — 10 das 425 ordens da conta têm
+`cloid`, e são exactamente as nossas (as 415 restantes são do motor antigo, que não marcava nada). Ou seja: não
+é um defeito de transporte. **O `cloid` não é um mecanismo de deduplicação neste venue.**
+
+**Porque é que isto importa.** A idempotência não é uma conveniência: é o que permite ao dono repetir um
+comando, ou à mesa reenviar depois de um silêncio, sem abrir duas vezes o mesmo risco. Com o manifesto a
+declarar `true` e o venue a aceitar duplicados, quem confiar na declaração **duplica posição** — foi o que
+esta corrida fez, de propósito, para o medir.
+
+**As duas saídas — decisão de desenho, e não a tomar aqui:**
+
+- **(a) a idempotência passa a ser nossa**: antes de enviar, o conector consulta o histórico da conta (já o lê:
+  `historicalOrders`/`userFills`, ver `historico.ts`) e, se aquela referência já produziu ordem, **recusa** e
+  devolve o que já existe em vez de mandar outra. O venue não ajuda, mas também não impede: a informação está
+  do nosso lado;
+- **(b) a declaração corrige-se**: `idempotencia: false` no manifesto, e o contrato passa a dizer ao dono o que
+  é verdade — que repetir a referência pode criar segunda ordem, e que a protecção tem de vir de fora.
+
+Enquanto nenhuma delas for feita, o `SC-004` **não está cumprido**: a bateria registou 11 de 12, e a que falha
+é a que promete ao dono que a mesma referência não cria segunda ordem (RN-H11/FR-011).
+
+**Prova.** `specs/004-conector-hyperliquid/relatorios/registos-do-venue/1.7.0-teste.txt` (P6, com a saída crua das duas respostas e do
+histórico) e `specs/004-conector-hyperliquid/relatorios/bateria-de-teste-1.7.0.txt`.
+
+## D-010 — A alavancagem que a boleta pede nunca é pedida ao venue (declarado 29/09/2026)
+
+**Encontrado na bateria de teste, ao ler os cinco números da posição viva.** A boleta do teste pede
+`alavancagem: "2"`; o venue responde `activeAssetData.leverage = {"type":"cross","value":1}` — e a posição lê-se
+com a alavancagem que **já lá estava**, não a que a mesa pediu.
+
+```
+P11  a boleta pede 2 · o venue tem 1 ({"type":"cross","value":1}) · a posicao le-se com leverage=null
+```
+
+Medido também no código: **0 chamadas de ajuste de alavancagem** em `brokers/` (o `updateLeverage` do SDK não
+é usado em sítio nenhum). O campo viaja na tradução (a `accao` sai com `alavancagem: "2"`) e **morre ali**.
+
+**Porque é que isto não é cosmético.** FR-008: «A alavancagem DEVE ser pedida ao venue quando houver esse
+verbo». O manifesto declara `sabe_ajustar_alavancagem: true` — a capacidade existe, não é usada. E a
+**resolução** que a mesa confere contra a banda (D-001) traz a alavancagem **pedida**, não a que vigora: os
+números com que o dono autoriza risco saem de uma alavancagem que não está lá. Foi exactamente isto que fez a
+P5 medir «1 de 5 coincidem» com a leitura do venue.
+
+**O que fecharia:** pedir a alavancagem ao venue antes de abrir (o verbo existe no SDK deste venue) e, quando
+ele recusar, **recusar a boleta** em vez de seguir com outra alavancagem — o silêncio é que não serve.
+
+## D-011 — A boleta pede stop e o stop não sai: o conector aceita e não lê (declarado 29/09/2026)
+
+**Encontrado ao medir, com o tradutor a correr, o que os campos da boleta mudam no que sai.** A mesma boleta
+enviada **com** `stop_pct: "2"` e `tp_pct: "4"` e **sem** eles produz um payload **idêntico** — mesma
+quantidade, mesmo preço, mesmo `cloid`:
+
+```
+com stop_pct/tp_pct vs sem: payload IDENTICO
+campos que saem: ["alavancagem","cloid","desvio_maximo","instrumento","lado","nocional","preco",
+                  "preco_de_referencia","quantidade","reduce_only","tif","tipo"]   <- nenhum é stop
+o venue declara stop_anexo=false
+```
+
+Medido no código: `stop_pct` e `tp_pct` têm **0 ocorrências** em `brokers/`; `prazo_da_passiva_ms` e
+`destino_do_resto` só aparecem na **declaração do tipo** da boleta, nunca numa leitura. (Para o par
+`prazo`/`destino` a medição directa com preço válido deu também payload idêntico; na bateria os dois casos
+`limite` morreram antes, pela razão do D-012 — e isso fica dito em vez de se contar como prova.)
+
+**Porque é que isto é grave.** O stop **vem do setup** (`core/ciclo/decisao.ts` copia `setup.stop_pct` para a
+boleta, RN-S11) e é o que o dono autoriza como protecção. O conector recebe-o, o contrato exige-o na boleta, o
+manifesto diz que **este venue não prende stops** (`stop_anexo: false`) — e ninguém recusa: a ordem sai sem
+stop e **a mesa fica a acreditar numa protecção que não existe**. É o FR-007 outra vez («o conector NUNCA
+adapta uma boleta em silêncio»), agora com o risco do lado do dinheiro.
+
+**O que fecharia:** quando a boleta traz `stop_pct`/`tp_pct` e o manifesto não declara capacidade de os
+prender, **recusar nomeando** (`capacidade_nao_declarada`); e, para o `prazo`/`destino`, ou se implementam
+(verbo de cancelamento, D-012) ou saem do contrato.
+
+## D-012 — O tipo `limite` é inalcançável neste venue (e o `destino_do_resto: cancelar` não tem verbo) (declarado 29/09/2026)
+
+**Encontrado ao tentar exercer o outro tipo de ordem que o manifesto declara.** O manifesto diz
+`tipos_de_ordem: ["mercado","limite"]`; medido, **toda** a boleta `limite` morre antes de sair:
+
+```
+limite -> {"ok": false, "motivo": "valor_fora_da_banda",
+           "porque": "o preco 83554.0 nao cabe na regra do venue: o venue aceita no maximo 5 algarismos
+                      significativos no preco e o preco 83554.0 tem 6 — recusa, nao arredonda"}
+mercado (o par de controle, mesma marca) -> passa, com o preco quantizado a 83971
+```
+
+A raiz: no tipo `limite` o preço que vai para o venue é **a marca, carácter a carácter**
+(`ordens.ts`: `par.tipo === "limite" ? preco : precoAgressivo(...)`), e a marca que este venue publica para o
+BTC tem **6 algarismos significativos** (`83554.0`) — acima dos 5 que o próprio venue aceita no preço de uma
+ordem. No `mercado` o preço é derivado e sai sempre quantizado, e por isso passa. **A recusa é nomeada (não é
+silêncio)**, mas o resultado é o mesmo: o `limite` não é utilizável no BTC.
+
+Junto com isto, e pela mesma medição de código: o `destino_do_resto: "cancelar"` **não tem verbo** — não
+existe cancelamento em `brokers/` (0 ocorrências), e o `limite` é enviado `Alo` (post-only), ou seja, uma
+ordem que descansa no livro e **não pode ser retirada por nós**. Uma boleta que peça `cancelar` comporta-se
+como `agressivo`.
+
+**O que fecharia:** (a) um preço de limite que caiba na regra do venue (derivar da marca com a quantização da
+regra, em vez de a usar crua) — ou declarar no manifesto que o `limite` não é utilizável; (b) o verbo de
+cancelamento, sem o qual `destino_do_resto` não tem sentido.

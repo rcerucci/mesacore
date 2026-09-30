@@ -31,6 +31,13 @@
 //     marca NAO esta la dentro. Medido: 415 de 415 ordens da conta com `cloid` nulo, e nenhuma execucao
 //     com `cloid`. Uma coisa nao da a outra — e como nao ha nenhuma, nao ha o que escrever: a marca por
 //     execucao fica AUSENTE na carga (nunca zero), que e o que a emenda 1.5.0 passou a permitir;
+//   * NOTA DE 29/09/2026 (a medicao de cima envelheceu, e o que ela conclui continua de pe'): a conta passou a
+//   ter ordens NOSSAS depois de a bateria de teste enviar a serio. Medido agora: **425 ordens na conta, 10 com
+//   `cloid` (as nossas) e 415 sem** (o motor antigo). As 415 continuam a nao dar marca nenhuma, e a conclusao
+//   nao muda: nao se deriva o mapa de posse do historico ANTIGO. O que muda e' que as ordens NOVAS trazem
+//   `cloid` — e o `cloid` e' um hash de mao unica da referencia, portanto da' para LIGAR uma ordem a esta mesa
+//   (a RN-T16.1, o mapa marca -> ciclo/ficha, passa a ter por onde). Medido em `historicalOrders`/`userFills`,
+//   29/09/2026, na conta de TESTE.
 //   * a REFERENCIA DE CLIENTE de cada execucao, quando o venue nao guardou `cloid` nenhum (nesta conta,
 //     nenhuma: a ordem veio do motor antigo, que nao usava marca). O `cloid` e um hash de mao unica: da
 //     referencia para o `cloid` vai-se; de volta, nao. Ausente na carga, nunca `null` nem vazio;

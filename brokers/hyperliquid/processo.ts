@@ -72,7 +72,14 @@ const USO = `uso:
   --ficha <nome>      a ficha do processo, declarada em \`fichas\` do ficheiro de casos
   --ficha @<caminho>  a ficha lida da configuracao do dono (config/contas/*.json), como o vigia a entrega
   --venue <variante>  o duble do venue, declarado em \`venues\` do ficheiro de casos (por omissao: base)
-  --ao-vivo           fala com o venue a serio (SDK), so LEITURAS: este modo nao assina nada
+  // ORIGINAL (mentia, e ficou, porque o registo e' auditavel): "--ao-vivo  fala com o venue a serio (SDK),
+  // so LEITURAS: este modo nao assina nada".
+  // CORRIGIDO 29/09/2026, por medicao: no modo ao vivo o processo FAZ AS DUAS COISAS. Sem boleta a entrar,
+  // le e nao assina (a porta da chave sai 'nao_corrida', e isso e' o declarado na sonda); com uma boleta no
+  // stdin, ASSINA E SUBMETE. Medido na testnet: boleta de abertura -> ordem 61429208395, preenchida 0.00023
+  // BTC a 83469.0; o fecho com reduce_only -> ordem 61429239313. Quem le este texto para saber se pode
+  // correr o modo ao vivo sem risco tem de saber que ele ENVIA.
+  --ao-vivo           fala com o venue a serio (SDK): le, e ASSINA E SUBMETE a boleta que entrar pelo stdin
   --so-sonda          arranca sem ler a chave, publica o manifesto e sai (nao serve boletas)
   --historico <coin>  le o HISTORICO do venue (execucoes, taxas, funding, resultado) do instrumento e sai:
                       escreve na costura a linha que o contrato aceitar, ou a RECUSA NOMEADA (FR-018)
