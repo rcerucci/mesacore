@@ -512,7 +512,23 @@ Enquanto nenhuma delas for feita, o `SC-004` **não está cumprido**: a bateria 
 **Prova.** `specs/004-conector-hyperliquid/relatorios/registos-do-venue/1.7.0-teste.txt` (P6, com a saída crua das duas respostas e do
 histórico) e `specs/004-conector-hyperliquid/relatorios/bateria-de-teste-1.7.0.txt`.
 
-## D-010 — A alavancagem que a boleta pede nunca é pedida ao venue (declarado 29/09/2026)
+## D-010 — A alavancagem que a boleta pede nunca é pedida ao venue — **FECHADO** (declarado e fechado 29/09/2026)
+
+> **FECHADO — 29/09/2026.** O conector passou a **pedir** a alavancagem ao venue e a **confirmá-la pela
+> leitura**, antes de a `resolução` sair (a ordem importa: se a resolução saísse primeiro, declararia a
+> alavancagem pedida enquanto o venue tinha outra, e a conferência da banda — D-001 — estaria a conferir uma
+> alavancagem que não vigora). Medido ao vivo na TESTE, na mesma corrida da bateria:
+>
+> ```
+> P11  a boleta pede 2 · o venue tem 2 ({"type":"cross","value":2}) · a posicao le-se com leverage=null
+> ```
+>
+> **Antes desta correcção o venue tinha 40** (medido na corrida anterior, com o mesmo pedido de 2). O verbo
+> usado é o do próprio venue (`updateLeverage`, com `isCross` lido da conta — o conector não escolhe o modo de
+> margem, só pede a alavancagem). Três recusas nomeadas ficaram no caminho, todas `capacidade_nao_declarada`:
+> a porta não tem verbo de ajuste; o venue recusou o ajuste; ou o venue disse «sim» e a releitura continua com
+> outro valor — em nenhum dos três se abre com uma alavancagem diferente da declarada (FR-007).
+> Prova: `specs/004-.../relatorios/registos-do-venue/1.7.0-teste.txt` (P11) e o `diag` da etapa `alavancagem`.
 
 **Encontrado na bateria de teste, ao ler os cinco números da posição viva.** A boleta do teste pede
 `alavancagem: "2"`; o venue responde `activeAssetData.leverage = {"type":"cross","value":1}` — e a posição lê-se

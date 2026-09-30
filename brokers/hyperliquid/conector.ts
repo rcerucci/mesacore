@@ -104,6 +104,15 @@ export type Porta = {
   historico: PortaDeHistorico;
   envio: PortaDeEnvio;
   /**
+   * O AJUSTE DE ALAVANCAGEM NO VENUE (FR-008). Medido em 29/09/2026 (D-010): a boleta pedia uma alavancagem, o
+   * venue tinha outra, e este conector nunca lha pedia — a `resolucao` declarava a pedida, e era sobre ela que a
+   * mesa conferia a banda (D-001). Um venue sem este verbo NAO ajusta, e por isso uma boleta que peca alavancagem
+   * e' RECUSADA quando ele falta — nao se abre com uma alavancagem diferente da declarada (fail-closed, FR-007).
+   */
+  ajuste?: {
+    alavancagem(instrumento: string, alavancagem: string, modo: "cruzado" | "isolado"): Promise<Resposta>;
+  };
+  /**
    * O ENDERECO DO AGENTE QUE ASSINA — o unico dado que a porta de identidade precisa e que so quem tem a
    * chave sabe. NAO e' um segredo: e' um endereco publico. A porta AO VIVO deriva-o da chave carregada por
    * REFERENCIA (o VALOR nunca sai de `credencial.ts`, FR-023); o DUBLE declara-o no seu dado. Sem ele, a
@@ -1074,6 +1083,55 @@ export async function atender(
     nocional: accao.accao.nocional,
     tif: accao.accao.tif,
   });
+
+  // 3-bis. A ALAVANCAGEM PEDIDA TEM DE CHEGAR AO VENUE (FR-008). Antes de a `resolucao` sair: se ela saisse
+  // primeiro, a resolucao declararia a alavancagem PEDIDA enquanto o venue tinha outra — e a conferencia da
+  // banda (D-001) estaria a conferir uma alavancagem que nao vigora. Pede-se, e CONFIRMA-SE pela leitura.
+  const lerAlavancagem = (v: unknown): string => (typeof v === "number" ? String(v) : typeof v === "string" ? v : "");
+  const alavancagemNoVenue = lerAlavancagem(objecto(objecto(respostasDaConta.activo)?.leverage)?.value);
+  const modoDoVenue: "cruzado" | "isolado" =
+    objecto(objecto(respostasDaConta.activo)?.leverage)?.type === "isolated" ? "isolado" : "cruzado";
+  const pedida = String(accao.accao.alavancagem);
+  if (Number(alavancagemNoVenue) !== Number(pedida) || !Number.isFinite(Number(pedida))) {
+    if (porta.ajuste === undefined) {
+      return recusa(
+        id,
+        "capacidade_nao_declarada",
+        `a boleta pede alavancagem ${pedida} e o venue tem ${alavancagemNoVenue}: esta porta nao tem verbo de ` +
+          "ajuste, e nao se abre com uma alavancagem diferente da declarada (a resolucao sairia a mentir sobre o risco)",
+        {},
+        [],
+      );
+    }
+    const prazoDoAjuste = opcoes.prazo_do_venue_ms ?? 3000;
+    const ajuste = await comPrazo(porta.ajuste.alavancagem(accao.accao.instrumento, pedida, modoDoVenue), prazoDoAjuste);
+    if (!ajuste.ok) {
+      diag.push({ etapa: "alavancagem", veredicto: "nao_aplicada", pedida, antes: alavancagemNoVenue, erro: ajuste.erro });
+      return recusa(
+        id,
+        "capacidade_nao_declarada",
+        `o venue nao aplicou a alavancagem ${pedida} (tinha ${alavancagemNoVenue}): ${ajuste.erro}`,
+        { pedida, antes: alavancagemNoVenue },
+        [],
+      );
+    }
+    // A releitura e' uma LEITURA: nao passa por `comPrazo` (o prazo e' do envio) — le-se, e compara-se.
+    const relido = await porta.conta.activoDaConta(estado.ficha.conta, accao.accao.instrumento);
+    const depois = lerAlavancagem(objecto(objecto(relido)?.leverage)?.value);
+    diag.push({ etapa: "alavancagem", pedida, antes: alavancagemNoVenue, depois, modo: modoDoVenue });
+    if (Number(depois) !== Number(pedida)) {
+      return recusa(
+        id,
+        "capacidade_nao_declarada",
+        `o venue respondeu que sim ao ajuste de alavancagem e continua com ${depois} (a boleta pede ${pedida}): ` +
+          "recusa, porque a resolucao sairia a declarar uma alavancagem que nao vigora (FR-008)",
+        { pedida, depois },
+        [],
+      );
+    }
+  } else {
+    diag.push({ etapa: "alavancagem", pedida, antes: alavancagemNoVenue, nota: "ja' era a pedida" });
+  }
 
   const linhas: string[] = [conferivel(envelope("resolucao", `${id}/resolucao`, resolucaoAntes, versao))];
 

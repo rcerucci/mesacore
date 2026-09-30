@@ -206,6 +206,8 @@ function resposta(v: unknown): Resposta {
 function portaDoDuble(dados: any): Porta {
   let rodada = 0;
   let enviado = false;
+  // O ajuste de alavancagem do DUBLE: ele lembra-se do que aplicou, para a releitura poder confirmar.
+  let alavancagemAjustada: string | null = null;
   let referenciaEnviada: string | null = null;
 
   function fonteDaConta(): any {
@@ -302,7 +304,12 @@ function portaDoDuble(dados: any): Porta {
       activoDaConta: async () => {
         const r = resposta(fonteDaConta().activo ?? dados.conta?.activo);
         if (!r.ok) throw new Error(r.erro);
-        return r.valor;
+        // O DUBLE LEMBRA-SE DO AJUSTE: se ele o aplicou, a releitura devolve-o — e' assim que o caminho feliz do
+        // FR-008 se prova offline, sem venue nenhum.
+        if (alavancagemAjustada === null) return r.valor;
+        const v = (r.valor ?? {}) as Record<string, unknown>;
+        const lev = (v.leverage ?? {}) as Record<string, unknown>;
+        return { ...v, leverage: { ...lev, value: Number(alavancagemAjustada) } };
       },
       agentesDaConta: async () => {
         const r = resposta(fonteDaConta().agentes ?? dados.conta?.agentes);
@@ -349,6 +356,18 @@ function portaDoDuble(dados: any): Porta {
           },
         }
       : {}),
+    // O AJUSTE DE ALAVANCAGEM no DUBLE: aplica e guarda. `venues.<nome>.ajuste === false` faz o duble NAO ter o
+    // verbo — e' o caso adversario que prova a recusa nomeada quando o venue nao sabe ajustar (FR-008).
+    ...(dados.ajuste === false
+      ? {}
+      : {
+          ajuste: {
+            alavancagem: async (_instrumento: string, alavancagem: string) => {
+              alavancagemAjustada = alavancagem;
+              return { ok: true, valor: { status: "ok" } };
+            },
+          },
+        }),
     envio: {
       enviar: async (_accao: unknown, _conta: string, referencia?: string) => {
         if (referencia === undefined || referencia === null) {
@@ -492,6 +511,49 @@ async function portaAoVivo(ficha: Ficha): Promise<Porta> {
           return { ok: true, valor: JSON.parse(texto) };
         } catch {
           return { ok: false, erro: `o venue respondeu ao envio numa forma ilegivel (HTTP ${resposta.status})` };
+        }
+      },
+    },
+    // O AJUSTE DE ALAVANCAGEM (FR-008), ao vivo: a accao `updateLeverage` do venue, assinada como as ordens. O
+    // `modo` vem da leitura (cruzado/isolado) — o conector nao escolhe o modo de margem, so' pede a alavancagem.
+    ajuste: {
+      alavancagem: async (instrumento: string, alavancagem: string, modo: "cruzado" | "isolado") => {
+        if (carteira === undefined) {
+          return { ok: false, erro: `nao se assina sem chave: ${porqueDaIdentidade}` };
+        }
+        let accaoDoVenue: unknown;
+        try {
+          accaoDoVenue = assinatura.canonicalize(troca.UpdateLeverageRequest.entries.action, {
+            type: "updateLeverage",
+            asset: await indiceDe(instrumento),
+            isCross: modo === "cruzado",
+            leverage: Number(alavancagem),
+          });
+        } catch (e) {
+          return { ok: false, erro: `nao se conseguiu compor a accao de alavancagem: ${e instanceof Error ? e.message : String(e)}` };
+        }
+        const nonce = Date.now();
+        const assinado = await assinatura.signL1Action({ wallet: carteira, action: accaoDoVenue as never, nonce, isTestnet });
+        let resposta: Response;
+        try {
+          resposta = await fetch(`${ficha.venue.url_da_api}/exchange`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: accaoDoVenue, nonce, signature: assinado }),
+          });
+        } catch (e) {
+          return { ok: false, erro: `o venue nao respondeu ao ajuste de alavancagem: ${e instanceof Error ? e.message : String(e)}` };
+        }
+        const texto = await resposta.text();
+        if (!resposta.ok) return { ok: false, erro: `o venue respondeu HTTP ${resposta.status} ao ajuste de alavancagem` };
+        try {
+          const valor = JSON.parse(texto) as { status?: string; response?: unknown };
+          if (valor?.status === "err") {
+            return { ok: false, erro: `o venue recusou o ajuste de alavancagem: ${JSON.stringify(valor.response)}` };
+          }
+          return { ok: true, valor };
+        } catch {
+          return { ok: false, erro: `o venue respondeu ao ajuste numa forma ilegivel (HTTP ${resposta.status})` };
         }
       },
     },

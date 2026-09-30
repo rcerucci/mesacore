@@ -43,7 +43,7 @@ A TABELA — cada valor, com o veredicto MEDIDO
 | `reduce_only: true` | so reduzir | **aceite** — fechou 0.00046 sem abrir nada | P7 |
 | `reduce_only: false` | pode abrir | **aceite** | P3 |
 | `stop_pct` / `tp_pct` | prender o stop a' posicao | **recusa nomeada** (29/09/2026): o conector nao manda stop nenhum, e antes RECUSAVA-SE A SI MESMO nao fazer isto — a boleta saia e o stop nao (D-011) | P10/P12 |
-| `alavancagem` | pedir a alavancagem ao venue (FR-008) | **REPROVOU** — a boleta pede 2, o venue tem 40 (`{"type":"cross","value":40}`), e ha' 0 chamadas de ajuste em `brokers/` | **P11 (D-010)** |
+| `alavancagem` | pedir a alavancagem ao venue (FR-008) | **ACEITE, e o venue fica com a pedida**: a boleta pede 2 e o venue passou de 40 para `{"type":"cross","value":2}` — o conector pede (`updateLeverage`) e CONFIRMA pela leitura antes de a resolucao sair | **P11 (D-010 fechado)** |
 | `referencia_do_cliente` | idempotencia: a mesma referencia nao cria segunda ordem | **REPROVOU** — a mesma referencia criou DUAS ordens, as duas preenchidas | **P6 (D-009)** |
 | `marca_de_posse` | viajar na ordem (cloid) | **aceite** — as ordens desta mesa chegam ao venue com `cloid` (10 das 425 ordens da conta sao nossas e tem marca) | P6 |
 | `desvio_maximo` | limitar o desvio do preco | **conferido** — o tradutor recusa desvio acima do declarado pelo venue (`desvio_maximo: 0.5`) e o preco de mercado sai quantizado dentro da banda | P12 + bancada das ordens |
@@ -81,8 +81,9 @@ Duas licoes, e as duas ficam escritas:
 
 O QUE FALTA PARA FECHAR (por ordem, e por onde se mede)
 -------------------------------------------------------
-1. **FR-008 (alavancagem)** — pedir ao venue antes de abrir e conferir a leitura depois; se nao aplicar, recusar.
-   Prova: `activeAssetData.leverage` igual ao pedido, medido antes/depois (P11 fica verde).
+1. ~~**FR-008 (alavancagem)**~~ — **FEITO 29/09/2026**: pede-se ao venue e confirma-se pela leitura antes de a
+   resolucao sair; se ele recusar ou nao aplicar, a boleta e' recusada com nome. P11 verde, medido ao vivo
+   (o venue passou de 40 para 2).
 2. **Verbo de CANCELAMENTO** (`cancel`/`cancelByCloid` no SDK) — sem ele nao ha' `destino_do_resto: cancelar` no
    `limite`, nem se retira uma ordem trigger que descansa.
 3. **Ordem TRIGGER** (`tpsl`) — e' o que entrega `stop_pct`/`tp_pct` (e o tipo `stop`), com o cancelamento acima

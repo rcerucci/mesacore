@@ -13,7 +13,7 @@ ambiente de TESTE da corretora, que existe para isto, e cada prova DIZ o que med
 E a unica bancada do repositorio que MOVE dinheiro, e move-o na TESTE. Nao entra no `provar.sh` por isso: o
 portao corre a cada passo, e um portao que envia ordens a cada passo nao e' um portao.
 
-O QUE CORREU, POR ORDEM — 21 provas · 19 passaram · 2 REPROVARAM (P6 e P11)
+O QUE CORREU, POR ORDEM — 21 provas · 20 passaram · 1 REPROVOU (P6, a idempotencia = D-009)
 -------------------------------------------------------------
 P0  arranque ao vivo (as 8 portas)                    OK
       ficha=passou · versao_do_contrato=passou · uma_conta=passou · ambiente_e_rede=passou ·
@@ -151,7 +151,7 @@ seja, desliguei o travao para testar o travao. A prova esta' refeita (par de con
 venue) e a licao esta' escrita na matriz: `saldo_pct` mal dimensionado nao vira recusa no venue, vira POSICAO.
 
 --- O QUE FICA POR FAZER (por ordem) ------------------------------------------------------------------------
-1. FR-008: pedir a alavancagem ao venue (P11 fica verde) — `updateLeverage` existe no SDK.
+1. ~~FR-008: pedir a alavancagem ao venue~~ — **FEITO nesta vaga**: P11 verde, o venue passou de 40 para a alavancagem pedida (2).
 2. O verbo de cancelamento (`cancel`/`cancelByCloid`).
 3. A ordem `trigger` (tpsl) — e' o que entrega `stop_pct`/`tp_pct` e o tipo `stop`.
 4. O `limite` utilizavel (D-012): preco derivado com a quantizacao do venue, em vez da marca crua.

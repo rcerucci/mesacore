@@ -1,33 +1,33 @@
 BATERIA DE TESTE DO VENUE (SC-004) — contrato 1.7.0
-corrida em 2026-09-30T02:15:11.377Z · instrumento BTC · abertura MANUAL (sem setup)
+corrida em 2026-09-30T02:31:12.757Z · instrumento BTC · abertura MANUAL (sem setup)
 ambiente: TESTE (config/contas/hl-teste-plugin.json) · a credencial entra por REFERENCIA, no processo do conector
 
 PASSOU  P0 arranque ao vivo (as 8 portas, config/contas/hl-teste-plugin.json)
       mediu: portas: ficha=passou · versao_do_contrato=passou · uma_conta=passou · ambiente_e_rede=passou · chave=nao_corrida · ligacao=passou · sonda_e_manifesto=passou · identidade=passou
       porque: o venue respondeu, o manifesto foi publicado (1 instrumento(s)) e nenhuma porta falhou; `chave` fica `nao_corrida` no modo de sonda, e isso e' o declarado
 PASSOU  P1 as leituras do venue (conta, marcas, execucoes, ordens abertas)
-      mediu: equity="990.435864" · posicao BTC=(nenhuma) · ordens abertas=0 · execucoes=84
+      mediu: equity="990.304509" · posicao BTC=(nenhuma) · ordens abertas=0 · execucoes=96
       porque: o venue respondeu as quatro leituras; a leitura da conta e' o que a mesa precisa para dimensionar e para o resumo do encerramento
 PASSOU  P1 a limpeza: a conta comeCA plana
       mediu: posicao BTC=nenhuma (nao havia nada a limpar)
       porque: a conta de teste ja' estava plana: a corrida comeca do zero e nada se fecha por fechar
 PASSOU  P2 a mesa decide com a proposta manual e monta a boleta (e o conector TRADUZ, offline)
-      mediu: acao=abrir · boleta BTC buy mercado · TADUCAO: 0.00023 unidade(s) a 84051 (nocional undefined) · tif=Ioc · cloid=0xc57e93808026f20307b1f21f2f192e3c
+      mediu: acao=abrir · boleta BTC buy mercado · TADUCAO: 0.00023 unidade(s) a 83983 (nocional undefined) · tif=Ioc · cloid=0x2a5e9348938d88b4250c59bac7ec5deb
       porque: a boleta foi montada do mandato (o dono) e do template (o setup manual), validada contra o contrato, e o conector traduziu-a com o SALDO e o PRECO lidos do venue agora - sem uma unica unidade calculada pela mesa
 PASSOU  P3 o conector ao vivo ASSINA e SUBMETE (a ordem sai na TESTE)
-      mediu: classificacao=aceite · venue: estado=filled ordem=61431355719 preenchido=0.00023 a 83643.0
+      mediu: classificacao=aceite · venue: estado=filled ordem=61432410111 preenchido=0.00023 a 83566.0
       porque: o venue respondeu pela palavra dele (aceite) - e a recusa, quando ela vem, vem NOMEADA; a `resolucao` saiu ANTES do envio (o que a mesa conferiu antes de a ordem sair)
 PASSOU  P4 a mesa classifica o desfecho e confere a resolucao contra a banda (D-001)
       mediu: classificacao=aceite · motivo=(nenhum) · banda={"veredicto":"dentro","accao":"seguir","conferidas":["alavancagem","saldo_pct","distancia_de_liquidacao"],"fora":[],"nao_conferidas":[],"porque":"3 de 3 conferidas, e todas dentro da banda declarada (alavancagem, saldo_pct, distancia_de_liquidacao). Nada ficou por conferir."}
       porque: a palavra do venue virou classificacao DA MESA (aceite/parcial/desconhecido/recusado) e a resolucao foi conferida contra a banda do mandato - as duas coisas que so' a resposta a serio permite medir
 PASSOU  P5 a conta depois do envio: os cinco numeros da posicao viva
-      mediu: 0.00023 BTC · nocional 19.23766 · margem 0.480941 · alavancagem 40 · liquidacao null · equity 990.426977 · execucoes na conta=85 (ultima: BTC 0.00023 a 83643.0, taxa 0.008657, resultado 0.0)
-      porque: os cinco numeros vieram do VENUE (a mesa nao os calcula): 1 de 5 coincidem com a resolucao do desfecho (o venue moveu-se entre o envio e esta leitura, e e' isso que o registo guarda)
+      mediu: 0.00023 BTC · nocional 19.21811 · margem 9.609055 · alavancagem 2 · liquidacao null · equity 990.29379 · execucoes na conta=97 (ultima: BTC 0.00023 a 83566.0, taxa 0.008649, resultado 0.0)
+      porque: os cinco numeros vieram do VENUE (a mesa nao os calcula): 2 de 5 coincidem com a resolucao do desfecho (o venue moveu-se entre o envio e esta leitura, e e' isso que o registo guarda)
 REPROVOU  P6 a idempotencia: a MESMA referencia outra vez, e a contagem no venue
-      mediu: 2a resposta do venue: classificacao=aceite resposta={"estado":"filled","order_id":"61431370522","preenchido":"0.00023","preco_medio":"83643.0","origem_dos_numeros":"calculo · execucoes 85 -> 86 · posicao 0.00046
-      porque: a mesma referencia mexeu na conta (85 -> 86 execucoes): a idempotencia declarada no manifesto NAO se confirma
+      mediu: 2a resposta do venue: classificacao=aceite resposta={"estado":"filled","order_id":"61432425021","preenchido":"0.00023","preco_medio":"83565.0","origem_dos_numeros":"calculo · execucoes 97 -> 98 · posicao 0.00046
+      porque: a mesma referencia mexeu na conta (97 -> 98 execucoes): a idempotencia declarada no manifesto NAO se confirma
 PASSOU  P7 o fecho com reduce_only: a posicao volta a zero
-      mediu: havia 0.00046 BTC · boleta sell reduce_only=true saldo_pct=2.04 · venue: parcial {"estado":"partially_filled","order_id":"61431385958","preenchido":"0.00046","preco_medio":"83619.0" · posicao depois=nenhuma · equity=990.390201
+      mediu: havia 0.00046 BTC · boleta sell reduce_only=true saldo_pct=2.04 · venue: parcial {"estado":"partially_filled","order_id":"61432439037","preenchido":"0.00046","preco_medio":"83556.0" · posicao depois=nenhuma · equity=990.265546
       porque: a posicao fechou com reduce_only e o venue confirmou: o instrumento voltou ao que estava antes do teste
 PASSOU  P8 recusa: abaixo do minimo de valor do venue
       mediu: recusou com minimo_do_instrumento_acima_da_banda
@@ -41,14 +41,14 @@ PASSOU  P8 recusa: tipo de ordem que o venue nao declara
 PASSOU  P10 os campos da boleta que o conector aceita e NAO le (stop, tp, prazo, destino)
       mediu: com stop_pct/tp_pct vs sem: diferente · com prazo 60000/destino cancelar vs 3000/agressivo: diferente · campos que saem: ["alavancagem","cloid","desvio_maximo","instrumento","lado","nocional","preco","preco_de_referencia","quantidade","reduce_only","tif","tipo"] · o venue declara stop_anexo=false
       porque: os campos da boleta mudam o que sai para o venue
-REPROVOU  P11 a alavancagem que a boleta pede chega ao venue? (FR-008)
-      mediu: a boleta pede 2 · o venue tem 40 ({"type":"cross","value":40}) · a posicao le-se com leverage=null
-      porque: a boleta pede 2 e o venue tem 40: o conector NUNCA pede a alavancagem ao venue (0 chamadas de ajuste em `brokers/`), e a resolucao declara a pedida - os numeros que a mesa confere saem de uma alavancagem que nao esta' la'. DECLARADO: D-010
+PASSOU  P11 a alavancagem que a boleta pede chega ao venue? (FR-008)
+      mediu: a boleta pede 2 · o venue tem 2 ({"type":"cross","value":2}) · a posicao le-se com leverage=null
+      porque: a alavancagem pedida e' a que o venue tem
 PASSOU  P12 a varredura do VOCABULARIO (cada valor que um setup pode usar, com o desfecho declarado)
       mediu: 15 valores conferidos · 6 aceites · 9 recusas nomeadas · 0 fora do esperado
       porque: todos os valores do vocabulario tem desfecho NOMEADO: ou saem com as consequencias certas, ou recusam com motivo. Nenhum valor 'passa' sem mudar nada
 PASSOU  P13 abrir VENDIDO (o outro lado do vocabulario)
-      mediu: boleta sell mercado · venue: aceite {"estado":"filled","order_id":"61431415690","preenchido":"0.00023","preco_medio":"83643.0","origem_dos_numeros · posicao lida=-0.00023 · depois do fecho=nenhuma
+      mediu: boleta sell mercado · venue: aceite {"estado":"filled","order_id":"61432462006","preenchido":"0.00023","preco_medio":"83549.0","origem_dos_numeros · posicao lida=-0.00023 · depois do fecho=nenhuma
       porque: o lado `sell` abre vendido no venue (o sinal que o venue publica e negativo) e o fecho devolveu a conta a zero
 PASSOU  P14 a VIRADA DE MAO (que nao existe no vocabulario: `caixa` + lado inverso, em dois passos)
       mediu: comprado 0.00023 -> fechado (parcial) -> vendido -0.00023 -> fechado (parcial) -> plana · ordens: buy -> sell/ro -> sell -> buy/ro
@@ -60,10 +60,10 @@ PASSOU  P15 o FECHO depois do inverso sem fechar (a conta volta a zero)
       mediu: nao havia nada a fechar: o lado oposto JA tinha fechado a posicao (netting do venue)
       porque: a conta ja' estava plana: o `sell` com reduce_only=false, do MESMO tamanho, zerou a posicao — o venue faz netting, e a mesa tinha registado `abrir`
 PASSOU  P16 o teto do saldo: a banda do MANDATO (o único travão que existe deste lado)
-      mediu: nocional 1% do equity -> dentro/seguir · nocional 2000% do equity -> fora/reduzir_e_registar fora=[{"campo":"saldo_pct","valor":"19808.71728","minimo":"0.990435864","maximo":"49.52179320","porque":"a posicao ficou com nocional 19808.71728 sobre um equity de 990.435864, e o maximo declarado (5%) vale 49.52179320 de nocional"}]
+      mediu: nocional 1% do equity -> dentro/seguir · nocional 2000% do equity -> fora/reduzir_e_registar fora=[{"campo":"saldo_pct","valor":"19806.09018","minimo":"0.990304509","maximo":"49.51522545","porque":"a posicao ficou com nocional 19806.09018 sobre um equity de 990.304509, e o maximo declarado (5%) vale 49.51522545 de nocional"}]
       porque: a banda do saldo e' o travão que o dono declara, e o par de controle mostra-o a morder: 1% do equity passa, 2000% nao. Do lado do VENUE nao ha travão nenhum: medido no acidente de hoje, ele nao recusa por margem — enche o que cabe (parcial) e devolve a posicao; e' por isso que este limite tem de ser nosso
 PASSOU  P17 a conta fica PLANA (o que autoriza repetir a bateria)
-      mediu: equity 990.304509 · posicao nenhuma · ordens abertas 0 · execucoes 96
+      mediu: equity 990.192683 · posicao nenhuma · ordens abertas 0 · execucoes 107
       porque: nenhuma posicao e nenhuma ordem a descansar: a bateria abre e fecha o que abre, e a corrida seguinte comeca limpa
 
 SAIDA CRUA (o que o venue respondeu, sem resumo):
@@ -107,14 +107,14 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
   {
    "porta": "identidade",
    "veredicto": "passou",
-   "porque": "o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734338799 ms): a credencial que o processo carregou por referencia e' desta conta"
+   "porque": "o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735290990 ms): a credencial que o processo carregou por referencia e' desta conta"
   }
  ],
  "P0_manifesto": "{\"contrato\":\"1.7.0\",\"tipo\":\"manifesto\",\"id\":\"hyperliquid/manifesto\",\"carga\":{\"conector\":{\"nome\":\"hyperliquid\",\"versao\":\"0.1.0\"},\"versao\":\"1.7.0\",\"instrumentos\":[{\"simbolo\":\"BTC\",\"minimo\":\"0.00001\",\"passo\":\"0.00001\",\"tick\":\"0.1\",\"alavancagem_maxima\":\"40\",\"funding_intervalo_horas\":1,\"alavancagem_por_escalao\":[{\"de\":\"0.0\",\"maxima\":\"40\"},{\"de\":\"10000.0\",\"maxima\":\"25\"},{\"de\":\"50000.0\",\"maxima\":\"10\"}]}],\"sabe_ajustar_alavancagem\":true,\"modos_de_margem\":[\"cruzado\",\"isolado\"],\"minimo_de_valor_por_ordem\":\"10\",\"modelo_de_posicao\":\"netting\",\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"parcial_suportada\":[\"o_que_der\"],\"desvio_maximo\":\"0.5\",\"reduce_only_suportado\":true,\"stop_anexo\":false,\"profundidade_de_livro\":20,\"funding\":true,\"relogio_de_fecho_de_barra\":\"continuo\",\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"marca_liga_ordem_a_posicao\":false,\"estado_do_mercado\":true,\"ligacao_por_protocolo\":true,\"releitura_de_preco_ao_enviar\":true,\"devolve_a_resolucao\":true}}",
  "P1_conta": {
-  "equity": "990.435864",
+  "equity": "990.304509",
   "posicao": null,
-  "time": 1790734344619
+  "time": 1790735296529
  },
  "P1_meta": [
   {
@@ -1597,33 +1597,33 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
   [
    {
     "funding": "0.0000125",
-    "openInterest": "5827.3",
-    "prevDayPx": "117.09",
-    "dayNtlVlm": "317357.4047000001",
+    "openInterest": "5826.28",
+    "prevDayPx": "116.68",
+    "dayNtlVlm": "317284.8242",
     "premium": "0.0",
-    "oraclePx": "119.765",
-    "markPx": "119.7992",
-    "midPx": "119.8",
+    "oraclePx": "119.3941",
+    "markPx": "119.4347",
+    "midPx": "119.435",
     "impactPxs": [
-     "119.5555",
-     "120.0839"
+     "119.2389",
+     "119.7603"
     ],
-    "dayBaseVlm": "2672.88"
+    "dayBaseVlm": "2672.15"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "60765.78",
-    "prevDayPx": "0.8065",
-    "dayNtlVlm": "13282.743863",
+    "openInterest": "60705.08",
+    "prevDayPx": "0.8053",
+    "dayNtlVlm": "13258.541348",
     "premium": "0.0",
-    "oraclePx": "0.7929",
-    "markPx": "0.7925",
-    "midPx": "0.7923",
+    "oraclePx": "0.7916",
+    "markPx": "0.791",
+    "midPx": "0.7909",
     "impactPxs": [
-     "0.7893",
-     "0.795"
+     "0.7881",
+     "0.7941"
     ],
-    "dayBaseVlm": "16255.83"
+    "dayBaseVlm": "16226.34"
    },
    {
     "funding": "0.0000125",
@@ -1631,44 +1631,44 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "1.6986",
     "dayNtlVlm": "5535.445682",
     "premium": "0.0",
-    "oraclePx": "1.7305",
-    "markPx": "1.7259",
-    "midPx": "1.7258",
+    "oraclePx": "1.7215",
+    "markPx": "1.7165",
+    "midPx": "1.7173",
     "impactPxs": [
-     "1.7184",
-     "1.7329"
+     "1.7056",
+     "1.7264"
     ],
     "dayBaseVlm": "3195.06"
    },
    {
-    "funding": "0.0001134378",
-    "openInterest": "52.32922",
-    "prevDayPx": "83463.0",
-    "dayNtlVlm": "1766293.3645900001",
-    "premium": "0.0014264994",
-    "oraclePx": "83491.1",
-    "markPx": "83636.0",
-    "midPx": "83642.5",
+    "funding": "0.000108486",
+    "openInterest": "52.3332",
+    "prevDayPx": "83405.0",
+    "dayNtlVlm": "1770454.4417100018",
+    "premium": "0.0013423752",
+    "oraclePx": "83434.2",
+    "markPx": "83564.0",
+    "midPx": "83561.5",
     "impactPxs": [
-     "83610.2",
-     "83661.0"
+     "83546.2",
+     "83585.3"
     ],
-    "dayBaseVlm": "21.05656"
+    "dayBaseVlm": "21.10627"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "566.169",
-    "prevDayPx": "2653.2",
-    "dayNtlVlm": "893141.7475899998",
-    "premium": "0.0003255099",
-    "oraclePx": "2672.73",
-    "markPx": "2673.5",
-    "midPx": "2673.7",
+    "openInterest": "566.025",
+    "prevDayPx": "2648.7",
+    "dayNtlVlm": "890834.6097500001",
+    "premium": "0.0002585228",
+    "oraclePx": "2669.01",
+    "markPx": "2669.8",
+    "midPx": "2669.75",
     "impactPxs": [
-     "2673.6",
-     "2673.98"
+     "2669.7",
+     "2670.08"
     ],
-    "dayBaseVlm": "332.0312"
+    "dayBaseVlm": "331.1577"
    },
    {
     "funding": "0.0",
@@ -1683,34 +1683,34 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "dayBaseVlm": "0.0"
    },
    {
-    "funding": "0.000162106",
-    "openInterest": "119.852",
-    "prevDayPx": "759.08",
-    "dayNtlVlm": "38411.56136",
-    "premium": "0.002005388",
-    "oraclePx": "760.95",
-    "markPx": "764.06",
-    "midPx": "764.335",
+    "funding": "0.0001900394",
+    "openInterest": "120.288",
+    "prevDayPx": "758.18",
+    "dayNtlVlm": "38551.77217",
+    "premium": "0.0026778792",
+    "oraclePx": "761.05",
+    "markPx": "764.45",
+    "midPx": "764.765",
     "impactPxs": [
-     "762.476",
-     "767.999"
+     "763.088",
+     "768.245"
     ],
-    "dayBaseVlm": "50.297"
+    "dayBaseVlm": "50.48"
    },
    {
-    "funding": "0.0000125",
-    "openInterest": "12991.44",
-    "prevDayPx": "10.589",
-    "dayNtlVlm": "51229.99337",
-    "premium": "0.0001491751",
-    "oraclePx": "11.396",
-    "markPx": "11.4306",
-    "midPx": "11.427",
+    "funding": "0.0000246932",
+    "openInterest": "12987.72",
+    "prevDayPx": "10.451",
+    "dayNtlVlm": "50832.31392",
+    "premium": "0.0010318734",
+    "oraclePx": "11.3386",
+    "markPx": "11.375",
+    "midPx": "11.376",
     "impactPxs": [
-     "11.3977",
-     "11.4882"
+     "11.3503",
+     "11.4204"
     ],
-    "dayBaseVlm": "4494.05"
+    "dayBaseVlm": "4456.06"
    },
    {
     "funding": "0.0000125",
@@ -1718,12 +1718,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.008969",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.008545",
-    "markPx": "0.008543",
-    "midPx": "0.008543",
+    "oraclePx": "0.008502",
+    "markPx": "0.0085",
+    "midPx": "0.008496",
     "impactPxs": [
-     "0.008533",
-     "0.008557"
+     "0.008482",
+     "0.008512"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -1733,12 +1733,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.13662",
     "dayNtlVlm": "3630.133476",
     "premium": "0.0",
-    "oraclePx": "0.13984",
-    "markPx": "0.13978",
-    "midPx": "0.13971",
+    "oraclePx": "0.13895",
+    "markPx": "0.13886",
+    "midPx": "0.1388",
     "impactPxs": [
-     "0.1393",
-     "0.14013"
+     "0.13854",
+     "0.13902"
     ],
     "dayBaseVlm": "26122.9"
    },
@@ -1748,29 +1748,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.14611",
     "dayNtlVlm": "2402.405124",
     "premium": "0.0",
-    "oraclePx": "0.1496",
-    "markPx": "0.14943",
-    "midPx": "0.14961",
+    "oraclePx": "0.14909",
+    "markPx": "0.14903",
+    "midPx": "0.14904",
     "impactPxs": [
-     "0.149",
-     "0.15053"
+     "0.14851",
+     "0.14996"
     ],
     "dayBaseVlm": "16003.2"
    },
    {
-    "funding": "0.0000361991",
-    "openInterest": "947546.4",
-    "prevDayPx": "0.13063",
-    "dayNtlVlm": "49603.568464",
-    "premium": "0.000766401",
-    "oraclePx": "0.13048",
-    "markPx": "0.13094",
-    "midPx": "0.13095",
+    "funding": "0.0000748098",
+    "openInterest": "947012.0",
+    "prevDayPx": "0.12856",
+    "dayNtlVlm": "49532.931039",
+    "premium": "0.0011542901",
+    "oraclePx": "0.12995",
+    "markPx": "0.13044",
+    "midPx": "0.13043",
     "impactPxs": [
-     "0.13058",
-     "0.13177"
+     "0.1301",
+     "0.13114"
     ],
-    "dayBaseVlm": "374234.3"
+    "dayBaseVlm": "373684.6"
    },
    {
     "funding": "0.0000125",
@@ -1778,29 +1778,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.004137",
     "dayNtlVlm": "1496.513645",
     "premium": "0.0",
-    "oraclePx": "0.004304",
-    "markPx": "0.004306",
-    "midPx": "0.004307",
+    "oraclePx": "0.004282",
+    "markPx": "0.004284",
+    "midPx": "0.004285",
     "impactPxs": [
-     "0.004298",
-     "0.004323"
+     "0.004275",
+     "0.004305"
     ],
     "dayBaseVlm": "351696.0"
    },
    {
-    "funding": "0.0000562156",
-    "openInterest": "295270.0",
-    "prevDayPx": "0.19632",
-    "dayNtlVlm": "94817.344283",
-    "premium": "0.0019094247",
-    "oraclePx": "0.20425",
-    "markPx": "0.20504",
-    "midPx": "0.20499",
+    "funding": "0.0001187497",
+    "openInterest": "295035.6",
+    "prevDayPx": "0.19428",
+    "dayNtlVlm": "94716.226554",
+    "premium": "0.001770695",
+    "oraclePx": "0.20331",
+    "markPx": "0.20414",
+    "midPx": "0.20413",
     "impactPxs": [
-     "0.20464",
-     "0.20593"
+     "0.20367",
+     "0.20507"
     ],
-    "dayBaseVlm": "456203.5999999999"
+    "dayBaseVlm": "455647.3999999998"
    },
    {
     "funding": "0.0",
@@ -1816,18 +1816,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "187167.4",
+    "openInterest": "185784.4",
     "prevDayPx": "0.47036",
-    "dayNtlVlm": "14057.454015",
+    "dayNtlVlm": "14620.30767",
     "premium": "0.0",
-    "oraclePx": "0.49669",
-    "markPx": "0.49654",
-    "midPx": "0.49637",
+    "oraclePx": "0.49005",
+    "markPx": "0.48997",
+    "midPx": "0.48988",
     "impactPxs": [
-     "0.49488",
-     "0.49782"
+     "0.4888",
+     "0.49104"
     ],
-    "dayBaseVlm": "28457.3"
+    "dayBaseVlm": "29601.8"
    },
    {
     "funding": "0.0",
@@ -1858,13 +1858,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "openInterest": "2200.36",
     "prevDayPx": "23.282",
     "dayNtlVlm": "1245.32155",
-    "premium": "0.0015328607",
-    "oraclePx": "26.095",
-    "markPx": "26.135",
-    "midPx": "26.1825",
+    "premium": "0.0",
+    "oraclePx": "26.295",
+    "markPx": "26.317",
+    "midPx": "26.361",
     "impactPxs": [
-     "26.135",
-     "26.2602"
+     "26.2311",
+     "26.5399"
     ],
     "dayBaseVlm": "51.16"
    },
@@ -1894,31 +1894,31 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "352.66",
+    "openInterest": "348.66",
     "prevDayPx": "147.04",
-    "dayNtlVlm": "36238.9392",
+    "dayNtlVlm": "36746.3043",
     "premium": "0.0",
-    "oraclePx": "160.685",
-    "markPx": "160.6606",
-    "midPx": "160.695",
+    "oraclePx": "159.825",
+    "markPx": "159.8512",
+    "midPx": "159.895",
     "impactPxs": [
-     "160.1038",
-     "161.2125"
+     "159.1106",
+     "160.6702"
     ],
-    "dayBaseVlm": "219.34"
+    "dayBaseVlm": "222.51"
    },
    {
     "funding": "0.0000125",
     "openInterest": "22650.4",
     "prevDayPx": "0.24837",
     "dayNtlVlm": "1128.622493",
-    "premium": "0.0",
-    "oraclePx": "0.25635",
-    "markPx": "0.25683",
-    "midPx": "0.25679",
+    "premium": "0.00043222",
+    "oraclePx": "0.2545",
+    "markPx": "0.25497",
+    "midPx": "0.2551",
     "impactPxs": [
-     "0.25611",
-     "0.2579"
+     "0.25461",
+     "0.25563"
     ],
     "dayBaseVlm": "4399.0"
    },
@@ -1937,62 +1937,62 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "142594.0",
-    "prevDayPx": "0.43041",
-    "dayNtlVlm": "4012.458338",
+    "prevDayPx": "0.42967",
+    "dayNtlVlm": "3883.636625",
     "premium": "0.0",
-    "oraclePx": "0.47125",
-    "markPx": "0.47137",
-    "midPx": "0.47162",
+    "oraclePx": "0.4691",
+    "markPx": "0.46926",
+    "midPx": "0.4691",
     "impactPxs": [
-     "0.47065",
-     "0.47297"
+     "0.46802",
+     "0.47039"
     ],
-    "dayBaseVlm": "8874.6"
+    "dayBaseVlm": "8575.3"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "37737.2",
-    "prevDayPx": "1.1247",
-    "dayNtlVlm": "27610.85531",
-    "premium": "0.0000603422",
-    "oraclePx": "1.16005",
-    "markPx": "1.16283",
-    "midPx": "1.16265",
+    "openInterest": "37721.6",
+    "prevDayPx": "1.1204",
+    "dayNtlVlm": "27616.12424",
+    "premium": "0.0",
+    "oraclePx": "1.15745",
+    "markPx": "1.16036",
+    "midPx": "1.16055",
     "impactPxs": [
-     "1.16012",
-     "1.16738"
+     "1.15742",
+     "1.16471"
     ],
-    "dayBaseVlm": "23933.3"
+    "dayBaseVlm": "23928.2"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "4949.6",
+    "openInterest": "4971.8",
     "prevDayPx": "7.2457",
-    "dayNtlVlm": "10064.11269",
+    "dayNtlVlm": "10149.53829",
     "premium": "0.0",
-    "oraclePx": "7.6845",
-    "markPx": "7.69155",
-    "midPx": "7.6927",
+    "oraclePx": "7.6465",
+    "markPx": "7.65364",
+    "midPx": "7.65145",
     "impactPxs": [
-     "7.67539",
-     "7.71541"
+     "7.63687",
+     "7.67591"
     ],
-    "dayBaseVlm": "1322.7"
+    "dayBaseVlm": "1333.8"
    },
    {
     "funding": "0.0000125",
     "openInterest": "144615.2",
-    "prevDayPx": "0.3046",
-    "dayNtlVlm": "1201.683555",
+    "prevDayPx": "0.30929",
+    "dayNtlVlm": "1101.409235",
     "premium": "0.0",
-    "oraclePx": "0.31525",
-    "markPx": "0.3152",
-    "midPx": "0.31524",
+    "oraclePx": "0.31284",
+    "markPx": "0.31283",
+    "midPx": "0.3127",
     "impactPxs": [
-     "0.31432",
-     "0.3162"
+     "0.31225",
+     "0.31315"
     ],
-    "dayBaseVlm": "3776.7"
+    "dayBaseVlm": "3447.5"
    },
    {
     "funding": "0.0",
@@ -2012,12 +2012,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.005636",
     "dayNtlVlm": "307.921188",
     "premium": "0.0",
-    "oraclePx": "0.0058",
-    "markPx": "0.005799",
-    "midPx": "0.005803",
+    "oraclePx": "0.005772",
+    "markPx": "0.005772",
+    "midPx": "0.005773",
     "impactPxs": [
-     "0.00579",
-     "0.005813"
+     "0.005758",
+     "0.005787"
     ],
     "dayBaseVlm": "54045.0"
    },
@@ -2047,18 +2047,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "176864.4",
-    "prevDayPx": "1.4997",
-    "dayNtlVlm": "10221.53561",
-    "premium": "0.0003903559",
-    "oraclePx": "1.742",
-    "markPx": "1.7426",
-    "midPx": "1.7436",
+    "openInterest": "176972.8",
+    "prevDayPx": "1.5034",
+    "dayNtlVlm": "10417.79458",
+    "premium": "0.0001383684",
+    "oraclePx": "1.7345",
+    "markPx": "1.73534",
+    "midPx": "1.73575",
     "impactPxs": [
-     "1.74268",
-     "1.74455"
+     "1.73474",
+     "1.73681"
     ],
-    "dayBaseVlm": "6334.5"
+    "dayBaseVlm": "6442.5"
    },
    {
     "funding": "0.0",
@@ -2077,13 +2077,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "openInterest": "43260.2",
     "prevDayPx": "4.1159",
     "dayNtlVlm": "453.67146",
-    "premium": "0.0003834925",
-    "oraclePx": "4.0418",
-    "markPx": "4.04692",
-    "midPx": "4.0473",
+    "premium": "0.0",
+    "oraclePx": "4.0343",
+    "markPx": "4.0378",
+    "midPx": "4.0369",
     "impactPxs": [
-     "4.04335",
-     "4.05204"
+     "4.0335",
+     "4.04092"
     ],
     "dayBaseVlm": "110.4"
    },
@@ -2105,12 +2105,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "18.9",
     "dayNtlVlm": "1369.93858",
     "premium": "0.0",
-    "oraclePx": "21.03",
-    "markPx": "21.0004",
-    "midPx": "20.9875",
+    "oraclePx": "21.325",
+    "markPx": "21.296",
+    "midPx": "21.2775",
     "impactPxs": [
-     "20.7873",
-     "21.172"
+     "21.097",
+     "21.4679"
     ],
     "dayBaseVlm": "67.14"
    },
@@ -2132,12 +2132,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.008961",
     "dayNtlVlm": "1753.653828",
     "premium": "0.0",
-    "oraclePx": "0.008915",
-    "markPx": "0.008923",
-    "midPx": "0.008928",
+    "oraclePx": "0.008865",
+    "markPx": "0.008876",
+    "midPx": "0.00887",
     "impactPxs": [
-     "0.008899",
-     "0.008963"
+     "0.008852",
+     "0.008886"
     ],
     "dayBaseVlm": "195847.0"
    },
@@ -2158,13 +2158,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "openInterest": "2225948.0",
     "prevDayPx": "0.046501",
     "dayNtlVlm": "1521.762582",
-    "premium": "0.0",
-    "oraclePx": "0.043756",
-    "markPx": "0.043858",
-    "midPx": "0.043892",
+    "premium": "0.0017892781",
+    "oraclePx": "0.043593",
+    "markPx": "0.043717",
+    "midPx": "0.043737",
     "impactPxs": [
-     "0.043721",
-     "0.044132"
+     "0.043671",
+     "0.04383"
     ],
     "dayBaseVlm": "34350.0"
    },
@@ -2174,42 +2174,42 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.019547",
     "dayNtlVlm": "2579.700066",
     "premium": "0.0",
-    "oraclePx": "0.01995",
-    "markPx": "0.01995",
-    "midPx": "0.019959",
+    "oraclePx": "0.019845",
+    "markPx": "0.019852",
+    "midPx": "0.019851",
     "impactPxs": [
-     "0.019898",
-     "0.020016"
+     "0.019717",
+     "0.019988"
     ],
     "dayBaseVlm": "130197.0"
    },
    {
-    "funding": "0.000224747",
-    "openInterest": "130026.0",
+    "funding": "0.0002538113",
+    "openInterest": "129979.8",
     "prevDayPx": "0.42871",
-    "dayNtlVlm": "2933.972565",
-    "premium": "0.0024769196",
-    "oraclePx": "0.4441",
-    "markPx": "0.44635",
-    "midPx": "0.44626",
+    "dayNtlVlm": "2944.25322",
+    "premium": "0.0020602219",
+    "oraclePx": "0.4417",
+    "markPx": "0.444",
+    "midPx": "0.4438",
     "impactPxs": [
-     "0.4452",
-     "0.44878"
+     "0.44261",
+     "0.44656"
     ],
-    "dayBaseVlm": "6606.7"
+    "dayBaseVlm": "6629.8"
    },
    {
-    "funding": "-0.0004674116",
+    "funding": "-0.0003472873",
     "openInterest": "2320.1",
     "prevDayPx": "19.2",
     "dayNtlVlm": "682.84878",
-    "premium": "-0.004009009",
-    "oraclePx": "19.98",
-    "markPx": "19.0714",
-    "midPx": "19.084",
+    "premium": "-0.0030328898",
+    "oraclePx": "19.915",
+    "markPx": "19.0348",
+    "midPx": "19.049",
     "impactPxs": [
-     "18.1158",
-     "19.8999"
+     "18.115",
+     "19.8546"
     ],
     "dayBaseVlm": "35.6"
    },
@@ -2229,29 +2229,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "funding": "0.0000125",
     "openInterest": "182424.0",
     "prevDayPx": "0.24199",
-    "dayNtlVlm": "23867.94009",
+    "dayNtlVlm": "23879.50961",
     "premium": "0.0",
-    "oraclePx": "0.24545",
-    "markPx": "0.24588",
-    "midPx": "0.245995",
+    "oraclePx": "0.24495",
+    "markPx": "0.245492",
+    "midPx": "0.245475",
     "impactPxs": [
-     "0.245304",
-     "0.247076"
+     "0.244804",
+     "0.246575"
     ],
-    "dayBaseVlm": "96759.0"
+    "dayBaseVlm": "96806.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "43814.0",
     "prevDayPx": "0.15519",
     "dayNtlVlm": "1973.82396",
-    "premium": "0.0",
-    "oraclePx": "0.1428",
-    "markPx": "0.14256",
-    "midPx": "0.14262",
+    "premium": "-0.0003019663",
+    "oraclePx": "0.1424",
+    "markPx": "0.1422",
+    "midPx": "0.142165",
     "impactPxs": [
-     "0.14228",
-     "0.142991"
+     "0.141943",
+     "0.142357"
     ],
     "dayBaseVlm": "13050.0"
    },
@@ -2261,12 +2261,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.042522",
     "dayNtlVlm": "77.419012",
     "premium": "0.0",
-    "oraclePx": "0.04305",
-    "markPx": "0.043065",
-    "midPx": "0.043097",
+    "oraclePx": "0.04294",
+    "markPx": "0.042974",
+    "midPx": "0.042925",
     "impactPxs": [
-     "0.042856",
-     "0.043354"
+     "0.042855",
+     "0.043007"
     ],
     "dayBaseVlm": "1815.0"
    },
@@ -2276,12 +2276,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "1.4224",
     "dayNtlVlm": "80.62967",
     "premium": "0.0",
-    "oraclePx": "1.4174",
-    "markPx": "1.41807",
-    "midPx": "1.4185",
+    "oraclePx": "1.41163",
+    "markPx": "1.41246",
+    "midPx": "1.41165",
     "impactPxs": [
-     "1.41471",
-     "1.42221"
+     "1.40804",
+     "1.4153"
     ],
     "dayBaseVlm": "56.4"
    },
@@ -2300,17 +2300,17 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "56112.0",
-    "prevDayPx": "2.298",
-    "dayNtlVlm": "2144.9468",
+    "prevDayPx": "2.315",
+    "dayNtlVlm": "1949.6168",
     "premium": "0.0",
-    "oraclePx": "2.332",
-    "markPx": "2.332443",
-    "midPx": "2.3324",
+    "oraclePx": "2.322149",
+    "markPx": "2.322646",
+    "midPx": "2.3221",
     "impactPxs": [
-     "2.328645",
-     "2.336985"
+     "2.319254",
+     "2.325455"
     ],
-    "dayBaseVlm": "908.0"
+    "dayBaseVlm": "823.0"
    },
    {
     "funding": "0.0",
@@ -2326,18 +2326,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "85106.0",
-    "prevDayPx": "0.21781",
-    "dayNtlVlm": "2164.47639",
+    "openInterest": "84928.0",
+    "prevDayPx": "0.21747",
+    "dayNtlVlm": "1396.86203",
     "premium": "0.0",
-    "oraclePx": "0.22255",
-    "markPx": "0.22268",
-    "midPx": "0.22269",
+    "oraclePx": "0.22085",
+    "markPx": "0.2211",
+    "midPx": "0.22102",
     "impactPxs": [
-     "0.222053",
-     "0.22324"
+     "0.220445",
+     "0.221558"
     ],
-    "dayBaseVlm": "9686.0"
+    "dayBaseVlm": "6152.0"
    },
    {
     "funding": "0.0",
@@ -2352,32 +2352,32 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "dayBaseVlm": "0.0"
    },
    {
-    "funding": "0.0025580116",
+    "funding": "0.0018420805",
     "openInterest": "61108.6",
-    "prevDayPx": "4.8443",
-    "dayNtlVlm": "1413.1901",
-    "premium": "0.001462141",
-    "oraclePx": "4.979",
+    "prevDayPx": "4.8122",
+    "dayNtlVlm": "1374.99396",
+    "premium": "0.0004095702",
+    "oraclePx": "4.932",
     "markPx": "5.1541",
-    "midPx": "5.27795",
+    "midPx": "5.2558",
     "impactPxs": [
-     "4.98628",
-     "5.49307"
+     "4.93402",
+     "5.44604"
     ],
-    "dayBaseVlm": "276.2"
+    "dayBaseVlm": "268.3"
    },
    {
     "funding": "0.0000125",
     "openInterest": "13889282.0",
     "prevDayPx": "0.000598",
     "dayNtlVlm": "23.446982",
-    "premium": "0.0",
-    "oraclePx": "0.000605",
-    "markPx": "0.000608",
-    "midPx": "0.000609",
+    "premium": "0.0033167496",
+    "oraclePx": "0.000603",
+    "markPx": "0.000607",
+    "midPx": "0.000607",
     "impactPxs": [
-     "0.000604",
-     "0.000616"
+     "0.000605",
+     "0.000612"
     ],
     "dayBaseVlm": "39209.0"
    },
@@ -2387,12 +2387,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "4.5395",
     "dayNtlVlm": "229.07632",
     "premium": "0.0",
-    "oraclePx": "4.6178",
-    "markPx": "4.615",
-    "midPx": "4.6162",
+    "oraclePx": "4.6093",
+    "markPx": "4.607",
+    "midPx": "4.6082",
     "impactPxs": [
-     "4.6075",
-     "4.6249"
+     "4.5981",
+     "4.6175"
     ],
     "dayBaseVlm": "49.81"
    },
@@ -2414,12 +2414,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "2.4759",
     "dayNtlVlm": "1339.77746",
     "premium": "0.0",
-    "oraclePx": "2.5373",
-    "markPx": "2.5356",
-    "midPx": "2.5347",
+    "oraclePx": "2.5305",
+    "markPx": "2.5283",
+    "midPx": "2.5278",
     "impactPxs": [
-     "2.5276",
-     "2.5411"
+     "2.5211",
+     "2.5341"
     ],
     "dayBaseVlm": "524.91"
    },
@@ -2429,57 +2429,57 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "6.6055",
     "dayNtlVlm": "362.798622",
     "premium": "0.0",
-    "oraclePx": "6.938",
-    "markPx": "6.932",
-    "midPx": "6.932",
+    "oraclePx": "6.9075",
+    "markPx": "6.9055",
+    "midPx": "6.9008",
     "impactPxs": [
-     "6.9043",
-     "6.9545"
+     "6.8806",
+     "6.9195"
     ],
     "dayBaseVlm": "53.48"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "16735.6",
-    "prevDayPx": "1.0288",
-    "dayNtlVlm": "4153.33068",
+    "openInterest": "16690.6",
+    "prevDayPx": "1.0152",
+    "dayNtlVlm": "4035.05964",
     "premium": "0.0",
-    "oraclePx": "1.06695",
-    "markPx": "1.0663",
-    "midPx": "1.0665",
+    "oraclePx": "1.05935",
+    "markPx": "1.05894",
+    "midPx": "1.0591",
     "impactPxs": [
-     "1.06261",
-     "1.07075"
+     "1.05377",
+     "1.06472"
     ],
-    "dayBaseVlm": "3967.6"
+    "dayBaseVlm": "3851.8"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "46552.0",
-    "prevDayPx": "0.078962",
-    "dayNtlVlm": "2364.884238",
+    "openInterest": "45948.0",
+    "prevDayPx": "0.079557",
+    "dayNtlVlm": "2364.877358",
     "premium": "0.0",
-    "oraclePx": "0.079405",
-    "markPx": "0.079478",
-    "midPx": "0.079525",
+    "oraclePx": "0.078954",
+    "markPx": "0.079028",
+    "midPx": "0.079024",
     "impactPxs": [
-     "0.078863",
-     "0.080162"
+     "0.078501",
+     "0.079671"
     ],
-    "dayBaseVlm": "29940.0"
+    "dayBaseVlm": "29934.0"
    },
    {
-    "funding": "0.0000760589",
+    "funding": "0.0000984473",
     "openInterest": "8732.4",
     "prevDayPx": "0.76022",
     "dayNtlVlm": "1352.242628",
-    "premium": "0.0010021915",
-    "oraclePx": "0.74836",
-    "markPx": "0.75117",
-    "midPx": "0.75104",
+    "premium": "0.002664453",
+    "oraclePx": "0.74687",
+    "markPx": "0.74989",
+    "midPx": "0.75013",
     "impactPxs": [
-     "0.74911",
-     "0.75501"
+     "0.74886",
+     "0.75188"
     ],
     "dayBaseVlm": "1759.3"
    },
@@ -2489,12 +2489,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.25027",
     "dayNtlVlm": "628.514038",
     "premium": "0.0",
-    "oraclePx": "0.2682",
-    "markPx": "0.26836",
-    "midPx": "0.26857",
+    "oraclePx": "0.26661",
+    "markPx": "0.2671",
+    "midPx": "0.26694",
     "impactPxs": [
-     "0.26747",
-     "0.26924"
+     "0.2665",
+     "0.26793"
     ],
     "dayBaseVlm": "2395.0"
    },
@@ -2528,29 +2528,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.16649",
     "dayNtlVlm": "170.025614",
     "premium": "0.0",
-    "oraclePx": "0.16665",
-    "markPx": "0.16651",
-    "midPx": "0.16652",
+    "oraclePx": "0.1657",
+    "markPx": "0.16559",
+    "midPx": "0.16565",
     "impactPxs": [
-     "0.16594",
-     "0.16714"
+     "0.16463",
+     "0.16665"
     ],
     "dayBaseVlm": "994.9"
    },
    {
     "funding": "0.0000125",
     "openInterest": "4968848.0",
-    "prevDayPx": "0.003409",
-    "dayNtlVlm": "4752.23159",
+    "prevDayPx": "0.003412",
+    "dayNtlVlm": "4710.16453",
     "premium": "0.0",
-    "oraclePx": "0.003767",
-    "markPx": "0.003766",
-    "midPx": "0.003769",
+    "oraclePx": "0.003755",
+    "markPx": "0.003755",
+    "midPx": "0.003753",
     "impactPxs": [
-     "0.003753",
-     "0.003785"
+     "0.003729",
+     "0.003776"
     ],
-    "dayBaseVlm": "1291095.0"
+    "dayBaseVlm": "1278755.0"
    },
    {
     "funding": "0.0",
@@ -2570,12 +2570,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.19305",
     "dayNtlVlm": "221.70722",
     "premium": "0.0",
-    "oraclePx": "0.19305",
-    "markPx": "0.192845",
-    "midPx": "0.192835",
+    "oraclePx": "0.1925",
+    "markPx": "0.19231",
+    "midPx": "0.192305",
     "impactPxs": [
-     "0.192485",
-     "0.19317"
+     "0.191772",
+     "0.192849"
     ],
     "dayBaseVlm": "1142.0"
    },
@@ -2593,18 +2593,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "251840.0",
-    "prevDayPx": "0.31993",
-    "dayNtlVlm": "33097.56987",
+    "openInterest": "251696.0",
+    "prevDayPx": "0.31921",
+    "dayNtlVlm": "33062.68667",
     "premium": "0.0",
-    "oraclePx": "0.3328",
-    "markPx": "0.33235",
-    "midPx": "0.33221",
+    "oraclePx": "0.33025",
+    "markPx": "0.329781",
+    "midPx": "0.329835",
     "impactPxs": [
-     "0.331571",
-     "0.3329"
+     "0.32868",
+     "0.330927"
     ],
-    "dayBaseVlm": "102586.0"
+    "dayBaseVlm": "102474.0"
    },
    {
     "funding": "0.0",
@@ -2624,12 +2624,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.002267",
     "dayNtlVlm": "1215.183872",
     "premium": "0.0",
-    "oraclePx": "0.002244",
-    "markPx": "0.002243",
-    "midPx": "0.002242",
+    "oraclePx": "0.002226",
+    "markPx": "0.002225",
+    "midPx": "0.002226",
     "impactPxs": [
-     "0.002237",
-     "0.002248"
+     "0.002212",
+     "0.002241"
     ],
     "dayBaseVlm": "538440.0"
    },
@@ -2639,12 +2639,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.001686",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.001681",
-    "markPx": "0.00168",
-    "midPx": "0.001679",
+    "oraclePx": "0.00167",
+    "markPx": "0.00167",
+    "midPx": "0.001668",
     "impactPxs": [
-     "0.001673",
-     "0.001684"
+     "0.001664",
+     "0.001673"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -2654,56 +2654,56 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.052055",
     "dayNtlVlm": "28.11348",
     "premium": "0.0",
-    "oraclePx": "0.053029",
-    "markPx": "0.053023",
-    "midPx": "0.053005",
+    "oraclePx": "0.052921",
+    "markPx": "0.052912",
+    "midPx": "0.052885",
     "impactPxs": [
-     "0.052935",
-     "0.053076"
+     "0.052784",
+     "0.05293"
     ],
     "dayBaseVlm": "533.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "24690.0",
-    "prevDayPx": "0.54604",
-    "dayNtlVlm": "1645.14076",
+    "openInterest": "24616.0",
+    "prevDayPx": "0.54406",
+    "dayNtlVlm": "1222.74786",
     "premium": "0.0",
-    "oraclePx": "0.56735",
-    "markPx": "0.567267",
-    "midPx": "0.56651",
+    "oraclePx": "0.5644",
+    "markPx": "0.56427",
+    "midPx": "0.56459",
     "impactPxs": [
-     "0.565702",
-     "0.567825"
+     "0.56247",
+     "0.566855"
     ],
-    "dayBaseVlm": "2979.0"
+    "dayBaseVlm": "2204.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "96464.76",
-    "prevDayPx": "0.1802",
-    "dayNtlVlm": "2654.353501",
+    "prevDayPx": "0.1819",
+    "dayNtlVlm": "2554.850665",
     "premium": "0.0",
-    "oraclePx": "0.1795",
-    "markPx": "0.1794",
-    "midPx": "0.1795",
+    "oraclePx": "0.178",
+    "markPx": "0.178",
+    "midPx": "0.178",
     "impactPxs": [
-     "0.1792",
-     "0.1798"
+     "0.1778",
+     "0.1782"
     ],
-    "dayBaseVlm": "14598.05"
+    "dayBaseVlm": "14045.87"
    },
    {
-    "funding": "0.0002475632",
+    "funding": "0.0004432465",
     "openInterest": "132208.0",
     "prevDayPx": "0.22788",
     "dayNtlVlm": "865.63858",
-    "premium": "0.0060858946",
-    "oraclePx": "0.24565",
-    "markPx": "0.26594",
-    "midPx": "0.266295",
+    "premium": "0.0041468417",
+    "oraclePx": "0.2438",
+    "markPx": "0.26477",
+    "midPx": "0.26555",
     "impactPxs": [
-     "0.247145",
+     "0.244811",
      "0.290882"
     ],
     "dayBaseVlm": "3396.0"
@@ -2711,17 +2711,17 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "2241.6",
-    "prevDayPx": "2.535",
-    "dayNtlVlm": "1470.88775",
+    "prevDayPx": "2.5538",
+    "dayNtlVlm": "1339.23755",
     "premium": "0.0",
-    "oraclePx": "2.575",
-    "markPx": "2.5739",
-    "midPx": "2.57455",
+    "oraclePx": "2.56927",
+    "markPx": "2.56884",
+    "midPx": "2.56885",
     "impactPxs": [
-     "2.56593",
-     "2.58378"
+     "2.56445",
+     "2.57574"
     ],
-    "dayBaseVlm": "576.7"
+    "dayBaseVlm": "524.7"
    },
    {
     "funding": "0.0000125",
@@ -2729,12 +2729,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.009363",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.00939",
-    "markPx": "0.009386",
-    "midPx": "0.009388",
+    "oraclePx": "0.009343",
+    "markPx": "0.009341",
+    "midPx": "0.009335",
     "impactPxs": [
-     "0.009364",
-     "0.009408"
+     "0.009313",
+     "0.009357"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -2744,29 +2744,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "6.8826",
     "dayNtlVlm": "687.217104",
     "premium": "0.0",
-    "oraclePx": "7.091",
-    "markPx": "7.0892",
-    "midPx": "7.0893",
+    "oraclePx": "7.0255",
+    "markPx": "7.0298",
+    "midPx": "7.0244",
     "impactPxs": [
-     "7.0689",
-     "7.1146"
+     "6.9982",
+     "7.0537"
     ],
     "dayBaseVlm": "97.25"
    },
    {
     "funding": "0.0000125",
     "openInterest": "6644.84",
-    "prevDayPx": "8.9509",
-    "dayNtlVlm": "1286.391624",
+    "prevDayPx": "8.8813",
+    "dayNtlVlm": "1028.06865",
     "premium": "0.0",
-    "oraclePx": "9.069",
-    "markPx": "9.069",
-    "midPx": "9.0689",
+    "oraclePx": "9.035",
+    "markPx": "9.0354",
+    "midPx": "9.0364",
     "impactPxs": [
-     "9.049",
-     "9.0901"
+     "9.0175",
+     "9.0601"
     ],
-    "dayBaseVlm": "141.06"
+    "dayBaseVlm": "112.2"
    },
    {
     "funding": "0.0000125",
@@ -2774,12 +2774,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.00926",
     "dayNtlVlm": "295.684124",
     "premium": "0.0",
-    "oraclePx": "0.00932",
-    "markPx": "0.00931",
-    "midPx": "0.00931",
+    "oraclePx": "0.00926",
+    "markPx": "0.00926",
+    "midPx": "0.00925",
     "impactPxs": [
-     "0.00929",
-     "0.00932"
+     "0.00923",
+     "0.00927"
     ],
     "dayBaseVlm": "31803.3"
    },
@@ -2789,12 +2789,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.06756",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.06835",
-    "markPx": "0.06832",
-    "midPx": "0.06831",
+    "oraclePx": "0.0681",
+    "markPx": "0.06807",
+    "midPx": "0.06808",
     "impactPxs": [
-     "0.06806",
-     "0.06855"
+     "0.06792",
+     "0.06824"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -2804,12 +2804,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.42428",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.41085",
-    "markPx": "0.41107",
-    "midPx": "0.41115",
+    "oraclePx": "0.41",
+    "markPx": "0.40995",
+    "midPx": "0.40977",
     "impactPxs": [
-     "0.4099",
-     "0.41306"
+     "0.40876",
+     "0.41079"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -2828,17 +2828,17 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "30274.0",
-    "prevDayPx": "0.5046",
-    "dayNtlVlm": "10603.55323",
+    "prevDayPx": "0.4982",
+    "dayNtlVlm": "10049.78395",
     "premium": "0.0",
-    "oraclePx": "0.5015",
-    "markPx": "0.50117",
-    "midPx": "0.501315",
+    "oraclePx": "0.49845",
+    "markPx": "0.498197",
+    "midPx": "0.498315",
     "impactPxs": [
-     "0.498868",
-     "0.503772"
+     "0.495111",
+     "0.501603"
     ],
-    "dayBaseVlm": "20642.0"
+    "dayBaseVlm": "19544.0"
    },
    {
     "funding": "0.0000125",
@@ -2846,12 +2846,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.007683",
     "dayNtlVlm": "159.107247",
     "premium": "0.0",
-    "oraclePx": "0.007688",
-    "markPx": "0.00768",
-    "midPx": "0.007683",
+    "oraclePx": "0.007656",
+    "markPx": "0.007651",
+    "midPx": "0.007651",
     "impactPxs": [
-     "0.007661",
-     "0.007706"
+     "0.007633",
+     "0.007669"
     ],
     "dayBaseVlm": "20709.0"
    },
@@ -2861,12 +2861,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.05171",
     "dayNtlVlm": "47.578057",
     "premium": "0.0",
-    "oraclePx": "0.05162",
-    "markPx": "0.05171",
-    "midPx": "0.0517",
+    "oraclePx": "0.0514",
+    "markPx": "0.05149",
+    "midPx": "0.05149",
     "impactPxs": [
-     "0.0516",
-     "0.05174"
+     "0.05136",
+     "0.05157"
     ],
     "dayBaseVlm": "919.7"
    },
@@ -2876,12 +2876,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.01968",
     "dayNtlVlm": "17.5644",
     "premium": "0.0",
-    "oraclePx": "0.0197",
-    "markPx": "0.0197",
-    "midPx": "0.01971",
+    "oraclePx": "0.01962",
+    "markPx": "0.01963",
+    "midPx": "0.01961",
     "impactPxs": [
-     "0.01964",
-     "0.01978"
+     "0.01957",
+     "0.01965"
     ],
     "dayBaseVlm": "892.5"
    },
@@ -2903,12 +2903,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.013995",
     "dayNtlVlm": "29.935305",
     "premium": "0.0",
-    "oraclePx": "0.01351",
-    "markPx": "0.013511",
-    "midPx": "0.013514",
+    "oraclePx": "0.01348",
+    "markPx": "0.013479",
+    "midPx": "0.013479",
     "impactPxs": [
-     "0.01346",
-     "0.01357"
+     "0.013424",
+     "0.013536"
     ],
     "dayBaseVlm": "2139.0"
    },
@@ -2938,18 +2938,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "288.22",
+    "openInterest": "289.052",
     "prevDayPx": "297.06",
-    "dayNtlVlm": "39015.08903",
-    "premium": "0.0002674591",
-    "oraclePx": "302.85",
-    "markPx": "303.691",
-    "midPx": "303.68",
+    "dayNtlVlm": "39353.65878",
+    "premium": "0.0000298204",
+    "oraclePx": "301.807",
+    "markPx": "302.72",
+    "midPx": "302.61",
     "impactPxs": [
-     "302.931",
-     "305.347"
+     "301.816",
+     "304.103"
     ],
-    "dayBaseVlm": "127.235"
+    "dayBaseVlm": "128.35"
    },
    {
     "funding": "0.0",
@@ -2965,18 +2965,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "9417.08",
-    "prevDayPx": "4.1412",
-    "dayNtlVlm": "2587.707846",
+    "openInterest": "9405.78",
+    "prevDayPx": "4.2015",
+    "dayNtlVlm": "2563.450339",
     "premium": "0.0",
-    "oraclePx": "4.255",
-    "markPx": "4.2542",
-    "midPx": "4.2551",
+    "oraclePx": "4.2355",
+    "markPx": "4.2342",
+    "midPx": "4.2358",
     "impactPxs": [
-     "4.2351",
-     "4.2717"
+     "4.2193",
+     "4.252"
     ],
-    "dayBaseVlm": "603.15"
+    "dayBaseVlm": "597.14"
    },
    {
     "funding": "0.0",
@@ -2993,17 +2993,17 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "991325.4",
-    "prevDayPx": "0.02672",
-    "dayNtlVlm": "719.140281",
+    "prevDayPx": "0.02635",
+    "dayNtlVlm": "668.992185",
     "premium": "0.0",
-    "oraclePx": "0.02617",
-    "markPx": "0.0261",
-    "midPx": "0.0261",
+    "oraclePx": "0.02598",
+    "markPx": "0.02592",
+    "midPx": "0.02595",
     "impactPxs": [
-     "0.026",
-     "0.02622"
+     "0.02581",
+     "0.02611"
     ],
-    "dayBaseVlm": "27867.0"
+    "dayBaseVlm": "25990.2"
    },
    {
     "funding": "0.0000125",
@@ -3011,29 +3011,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.027037",
     "dayNtlVlm": "95.901801",
     "premium": "0.0",
-    "oraclePx": "0.02975",
-    "markPx": "0.029775",
-    "midPx": "0.02978",
+    "oraclePx": "0.029778",
+    "markPx": "0.029805",
+    "midPx": "0.029802",
     "impactPxs": [
-     "0.029649",
-     "0.029915"
+     "0.029715",
+     "0.029884"
     ],
     "dayBaseVlm": "3355.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "1128290.0",
-    "prevDayPx": "0.11865",
-    "dayNtlVlm": "10643.04434",
+    "openInterest": "1128530.0",
+    "prevDayPx": "0.11784",
+    "dayNtlVlm": "10642.11004",
     "premium": "0.0",
-    "oraclePx": "0.1034",
-    "markPx": "0.10335",
-    "midPx": "0.10335",
+    "oraclePx": "0.10282",
+    "markPx": "0.1028",
+    "midPx": "0.10279",
     "impactPxs": [
-     "0.102992",
-     "0.103665"
+     "0.102559",
+     "0.103041"
     ],
-    "dayBaseVlm": "94543.0"
+    "dayBaseVlm": "94595.0"
    },
    {
     "funding": "0.0000125",
@@ -3041,12 +3041,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.052124",
     "dayNtlVlm": "286.460736",
     "premium": "0.0",
-    "oraclePx": "0.053875",
-    "markPx": "0.053858",
-    "midPx": "0.053844",
+    "oraclePx": "0.053608",
+    "markPx": "0.053599",
+    "midPx": "0.053599",
     "impactPxs": [
-     "0.053733",
-     "0.053953"
+     "0.053386",
+     "0.05381"
     ],
     "dayBaseVlm": "5422.0"
    },
@@ -3067,30 +3067,30 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "openInterest": "179705.92",
     "prevDayPx": "0.2457",
     "dayNtlVlm": "322.402826",
-    "premium": "-0.0003958828",
-    "oraclePx": "0.2526",
-    "markPx": "0.2523",
-    "midPx": "0.2523",
+    "premium": "-0.0003984064",
+    "oraclePx": "0.251",
+    "markPx": "0.2508",
+    "midPx": "0.2507",
     "impactPxs": [
-     "0.2521",
-     "0.2525"
+     "0.2506",
+     "0.2509"
     ],
     "dayBaseVlm": "1281.8"
    },
    {
     "funding": "0.0000125",
     "openInterest": "577230.0",
-    "prevDayPx": "0.004",
-    "dayNtlVlm": "1032.837472",
+    "prevDayPx": "0.004002",
+    "dayNtlVlm": "933.337472",
     "premium": "0.0",
-    "oraclePx": "0.004337",
-    "markPx": "0.004335",
-    "midPx": "0.004335",
+    "oraclePx": "0.004311",
+    "markPx": "0.004311",
+    "midPx": "0.004312",
     "impactPxs": [
-     "0.004315",
-     "0.004354"
+     "0.004274",
+     "0.004348"
     ],
-    "dayBaseVlm": "246269.0"
+    "dayBaseVlm": "221394.0"
    },
    {
     "funding": "0.0000125",
@@ -3098,12 +3098,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.00049",
     "dayNtlVlm": "63.4648",
     "premium": "0.0",
-    "oraclePx": "0.000491",
-    "markPx": "0.000491",
-    "midPx": "0.000491",
+    "oraclePx": "0.000489",
+    "markPx": "0.000489",
+    "midPx": "0.000489",
     "impactPxs": [
-     "0.000489",
-     "0.000493"
+     "0.000487",
+     "0.00049"
     ],
     "dayBaseVlm": "129520.0"
    },
@@ -3113,12 +3113,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.001048",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.001018",
-    "markPx": "0.001017",
-    "midPx": "0.001017",
+    "oraclePx": "0.001012",
+    "markPx": "0.001011",
+    "midPx": "0.001012",
     "impactPxs": [
-     "0.001013",
-     "0.00102"
+     "0.001006",
+     "0.001017"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -3128,12 +3128,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.15965",
     "dayNtlVlm": "430.558753",
     "premium": "0.0",
-    "oraclePx": "0.15881",
-    "markPx": "0.15875",
-    "midPx": "0.15877",
+    "oraclePx": "0.1583",
+    "markPx": "0.15825",
+    "midPx": "0.15818",
     "impactPxs": [
-     "0.15831",
-     "0.15925"
+     "0.15776",
+     "0.15865"
     ],
     "dayBaseVlm": "2663.3"
    },
@@ -3143,12 +3143,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.005461",
     "dayNtlVlm": "40.316262",
     "premium": "0.0",
-    "oraclePx": "0.005745",
-    "markPx": "0.005755",
-    "midPx": "0.005752",
+    "oraclePx": "0.005691",
+    "markPx": "0.005703",
+    "midPx": "0.005704",
     "impactPxs": [
-     "0.005732",
-     "0.005769"
+     "0.005667",
+     "0.005742"
     ],
     "dayBaseVlm": "7230.0"
    },
@@ -3158,12 +3158,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.012308",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.012216",
-    "markPx": "0.012213",
-    "midPx": "0.012218",
+    "oraclePx": "0.012159",
+    "markPx": "0.012154",
+    "midPx": "0.012152",
     "impactPxs": [
-     "0.012177",
-     "0.012267"
+     "0.01212",
+     "0.012196"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -3209,12 +3209,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "1.9051",
     "dayNtlVlm": "877.211",
     "premium": "0.0",
-    "oraclePx": "1.9394",
-    "markPx": "1.9385",
-    "midPx": "1.93905",
+    "oraclePx": "1.9265",
+    "markPx": "1.926782",
+    "midPx": "1.92705",
     "impactPxs": [
-     "1.933926",
-     "1.944737"
+     "1.921495",
+     "1.932855"
     ],
     "dayBaseVlm": "451.0"
    },
@@ -3233,17 +3233,17 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "202318.0",
-    "prevDayPx": "0.11322",
-    "dayNtlVlm": "3908.6826",
+    "prevDayPx": "0.1148",
+    "dayNtlVlm": "3904.3158",
     "premium": "0.0",
-    "oraclePx": "0.11765",
-    "markPx": "0.11756",
-    "midPx": "0.117585",
+    "oraclePx": "0.117285",
+    "markPx": "0.117251",
+    "midPx": "0.117215",
     "impactPxs": [
-     "0.117353",
-     "0.117932"
+     "0.116908",
+     "0.117566"
     ],
-    "dayBaseVlm": "32426.0"
+    "dayBaseVlm": "32374.0"
    },
    {
     "funding": "0.0",
@@ -3263,12 +3263,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.098982",
     "dayNtlVlm": "5756.332922",
     "premium": "0.0",
-    "oraclePx": "0.099748",
-    "markPx": "0.099685",
-    "midPx": "0.099714",
+    "oraclePx": "0.099549",
+    "markPx": "0.099435",
+    "midPx": "0.099456",
     "impactPxs": [
-     "0.099563",
-     "0.099948"
+     "0.099274",
+     "0.099733"
     ],
     "dayBaseVlm": "54713.0"
    },
@@ -3278,7 +3278,7 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.000169",
     "dayNtlVlm": "10.672012",
     "premium": "0.0",
-    "oraclePx": "0.00017",
+    "oraclePx": "0.000171",
     "markPx": "0.00017",
     "midPx": "0.00017",
     "impactPxs": [
@@ -3317,12 +3317,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.08849",
     "dayNtlVlm": "10.733837",
     "premium": "0.0",
-    "oraclePx": "0.0941",
-    "markPx": "0.094",
-    "midPx": "0.09397",
+    "oraclePx": "0.09294",
+    "markPx": "0.09288",
+    "midPx": "0.093",
     "impactPxs": [
-     "0.09377",
-     "0.09414"
+     "0.09236",
+     "0.09367"
     ],
     "dayBaseVlm": "121.3"
    },
@@ -3332,12 +3332,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.019505",
     "dayNtlVlm": "79.60097",
     "premium": "0.0",
-    "oraclePx": "0.019155",
-    "markPx": "0.019188",
-    "midPx": "0.019191",
+    "oraclePx": "0.019005",
+    "markPx": "0.019048",
+    "midPx": "0.01905",
     "impactPxs": [
-     "0.019127",
-     "0.019244"
+     "0.01894",
+     "0.019162"
     ],
     "dayBaseVlm": "4110.0"
    },
@@ -3347,12 +3347,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.045475",
     "dayNtlVlm": "37.360664",
     "premium": "0.0",
-    "oraclePx": "0.047832",
-    "markPx": "0.047828",
-    "midPx": "0.047843",
+    "oraclePx": "0.047289",
+    "markPx": "0.047302",
+    "midPx": "0.0473",
     "impactPxs": [
-     "0.047706",
-     "0.047947"
+     "0.047186",
+     "0.047409"
     ],
     "dayBaseVlm": "809.0"
    },
@@ -3370,18 +3370,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "153825.2",
-    "prevDayPx": "0.57529",
-    "dayNtlVlm": "7766.040904",
-    "premium": "-0.0004413594",
-    "oraclePx": "0.74769",
-    "markPx": "0.74565",
-    "midPx": "0.74551",
+    "openInterest": "153760.6",
+    "prevDayPx": "0.60999",
+    "dayNtlVlm": "7696.0128",
+    "premium": "-0.0009279432",
+    "oraclePx": "0.74358",
+    "markPx": "0.74146",
+    "midPx": "0.74118",
     "impactPxs": [
-     "0.74337",
-     "0.74736"
+     "0.73906",
+     "0.74289"
     ],
-    "dayBaseVlm": "11124.2"
+    "dayBaseVlm": "10992.9"
    },
    {
     "funding": "0.0000125",
@@ -3389,29 +3389,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.05145",
     "dayNtlVlm": "61.369037",
     "premium": "0.0",
-    "oraclePx": "0.05395",
-    "markPx": "0.05392",
-    "midPx": "0.05392",
+    "oraclePx": "0.05368",
+    "markPx": "0.05362",
+    "midPx": "0.05366",
     "impactPxs": [
-     "0.05384",
-     "0.05399"
+     "0.05343",
+     "0.05388"
     ],
     "dayBaseVlm": "1179.5"
    },
    {
     "funding": "0.0000125",
     "openInterest": "477424.0",
-    "prevDayPx": "0.22658",
-    "dayNtlVlm": "26224.9102",
-    "premium": "0.0",
-    "oraclePx": "0.2223",
-    "markPx": "0.22258",
-    "midPx": "0.222575",
+    "prevDayPx": "0.2236",
+    "dayNtlVlm": "25756.3214",
+    "premium": "0.0000451875",
+    "oraclePx": "0.2213",
+    "markPx": "0.22154",
+    "midPx": "0.22161",
     "impactPxs": [
-     "0.222173",
-     "0.223393"
+     "0.22131",
+     "0.22235"
     ],
-    "dayBaseVlm": "115203.0"
+    "dayBaseVlm": "113136.0"
    },
    {
     "funding": "0.0",
@@ -3431,44 +3431,44 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.043702",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.04402",
-    "markPx": "0.043968",
-    "midPx": "0.043993",
+    "oraclePx": "0.04382",
+    "markPx": "0.04378",
+    "midPx": "0.043816",
     "impactPxs": [
-     "0.043885",
-     "0.044126"
+     "0.043591",
+     "0.044026"
     ],
     "dayBaseVlm": "0.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "71240.0",
-    "prevDayPx": "0.13478",
-    "dayNtlVlm": "4267.70755",
+    "openInterest": "71438.0",
+    "prevDayPx": "0.13359",
+    "dayNtlVlm": "3793.96876",
     "premium": "0.0",
-    "oraclePx": "0.125252",
-    "markPx": "0.12521",
-    "midPx": "0.12515",
+    "oraclePx": "0.12476",
+    "markPx": "0.12469",
+    "midPx": "0.124665",
     "impactPxs": [
-     "0.124791",
-     "0.125511"
+     "0.124203",
+     "0.125278"
     ],
-    "dayBaseVlm": "33059.0"
+    "dayBaseVlm": "29566.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "11479.5",
-    "prevDayPx": "3.0936",
-    "dayNtlVlm": "9795.514631",
+    "openInterest": "11485.64",
+    "prevDayPx": "3.0701",
+    "dayNtlVlm": "9817.500274",
     "premium": "0.0",
-    "oraclePx": "3.457",
-    "markPx": "3.4568",
-    "midPx": "3.4567",
+    "oraclePx": "3.3558",
+    "markPx": "3.3554",
+    "midPx": "3.3523",
     "impactPxs": [
-     "3.4498",
-     "3.4653"
+     "3.3473",
+     "3.3578"
     ],
-    "dayBaseVlm": "2957.07"
+    "dayBaseVlm": "2963.05"
    },
    {
     "funding": "0.0000125",
@@ -3476,12 +3476,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.053914",
     "dayNtlVlm": "3076.090809",
     "premium": "0.0",
-    "oraclePx": "0.05215",
-    "markPx": "0.052123",
-    "midPx": "0.05214",
+    "oraclePx": "0.051568",
+    "markPx": "0.051559",
+    "midPx": "0.051576",
     "impactPxs": [
-     "0.051952",
-     "0.052297"
+     "0.051248",
+     "0.051901"
     ],
     "dayBaseVlm": "57449.0"
    },
@@ -3501,13 +3501,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "funding": "0.0",
     "openInterest": "17.16",
     "prevDayPx": "79.82",
-    "dayNtlVlm": "7130.48639",
+    "dayNtlVlm": "7154.17239",
     "premium": null,
     "oraclePx": "31.197",
-    "markPx": "47.4915",
+    "markPx": "47.016",
     "midPx": null,
     "impactPxs": null,
-    "dayBaseVlm": "95.53"
+    "dayBaseVlm": "96.03"
    },
    {
     "funding": "0.0000125",
@@ -3515,59 +3515,59 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.07357",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.07733",
-    "markPx": "0.07728",
-    "midPx": "0.07732",
+    "oraclePx": "0.07678",
+    "markPx": "0.07672",
+    "midPx": "0.07671",
     "impactPxs": [
-     "0.07714",
-     "0.07748"
+     "0.07661",
+     "0.0768"
     ],
     "dayBaseVlm": "0.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "1106994.0",
-    "prevDayPx": "0.008669",
-    "dayNtlVlm": "1166.662373",
+    "prevDayPx": "0.008794",
+    "dayNtlVlm": "1067.792428",
     "premium": "0.0",
-    "oraclePx": "0.009008",
-    "markPx": "0.009002",
-    "midPx": "0.009004",
+    "oraclePx": "0.008955",
+    "markPx": "0.008949",
+    "midPx": "0.008946",
     "impactPxs": [
-     "0.008986",
-     "0.009019"
+     "0.008925",
+     "0.008967"
     ],
-    "dayBaseVlm": "131464.0"
+    "dayBaseVlm": "120059.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "84920.8",
-    "prevDayPx": "0.78329",
-    "dayNtlVlm": "3167.777208",
+    "openInterest": "84869.8",
+    "prevDayPx": "0.784",
+    "dayNtlVlm": "3064.070259",
     "premium": "0.0",
-    "oraclePx": "0.782",
-    "markPx": "0.78109",
-    "midPx": "0.78108",
+    "oraclePx": "0.7772",
+    "markPx": "0.77663",
+    "midPx": "0.77656",
     "impactPxs": [
-     "0.77888",
-     "0.78348"
+     "0.77176",
+     "0.78123"
     ],
-    "dayBaseVlm": "3974.2"
+    "dayBaseVlm": "3842.4"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "1215234.0",
-    "prevDayPx": "0.009028",
-    "dayNtlVlm": "5010.447823",
+    "openInterest": "1190898.0",
+    "prevDayPx": "0.00918",
+    "dayNtlVlm": "5162.576313",
     "premium": "0.0",
-    "oraclePx": "0.010265",
-    "markPx": "0.010258",
-    "midPx": "0.010254",
+    "oraclePx": "0.010072",
+    "markPx": "0.010078",
+    "midPx": "0.010086",
     "impactPxs": [
-     "0.010227",
-     "0.010279"
+     "0.009984",
+     "0.010182"
     ],
-    "dayBaseVlm": "515387.0"
+    "dayBaseVlm": "528725.0"
    },
    {
     "funding": "0.0000125",
@@ -3575,44 +3575,44 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.015031",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.01374",
-    "markPx": "0.013746",
-    "midPx": "0.013743",
+    "oraclePx": "0.013671",
+    "markPx": "0.013673",
+    "midPx": "0.01367",
     "impactPxs": [
-     "0.013692",
-     "0.013781"
+     "0.013651",
+     "0.013688"
     ],
     "dayBaseVlm": "0.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "593904.6000000001",
-    "prevDayPx": "0.16875",
-    "dayNtlVlm": "14621.565961",
+    "openInterest": "593851.6000000001",
+    "prevDayPx": "0.16456",
+    "dayNtlVlm": "14673.211328",
     "premium": "0.0",
-    "oraclePx": "0.18156",
-    "markPx": "0.18144",
-    "midPx": "0.18138",
+    "oraclePx": "0.18023",
+    "markPx": "0.18036",
+    "midPx": "0.18028",
     "impactPxs": [
-     "0.18064",
-     "0.18195"
+     "0.17898",
+     "0.1814"
     ],
-    "dayBaseVlm": "82474.6"
+    "dayBaseVlm": "82744.7"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "848406.0",
-    "prevDayPx": "0.022212",
-    "dayNtlVlm": "3433.937832",
+    "openInterest": "842160.0",
+    "prevDayPx": "0.021956",
+    "dayNtlVlm": "3405.803922",
     "premium": "0.0",
-    "oraclePx": "0.022965",
-    "markPx": "0.022928",
-    "midPx": "0.022915",
+    "oraclePx": "0.022831",
+    "markPx": "0.022798",
+    "midPx": "0.022802",
     "impactPxs": [
-     "0.022865",
-     "0.022966"
+     "0.022704",
+     "0.022897"
     ],
-    "dayBaseVlm": "151148.0"
+    "dayBaseVlm": "149799.0"
    },
    {
     "funding": "0.0",
@@ -3644,29 +3644,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.030197",
     "dayNtlVlm": "1961.187413",
     "premium": "0.0",
-    "oraclePx": "0.031335",
-    "markPx": "0.03132",
-    "midPx": "0.031329",
+    "oraclePx": "0.0312",
+    "markPx": "0.031185",
+    "midPx": "0.031138",
     "impactPxs": [
-     "0.031255",
-     "0.0314"
+     "0.031073",
+     "0.0312"
     ],
     "dayBaseVlm": "63073.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "41273.2",
-    "prevDayPx": "0.40124",
-    "dayNtlVlm": "1371.837714",
+    "prevDayPx": "0.40463",
+    "dayNtlVlm": "1367.662186",
     "premium": "0.0",
-    "oraclePx": "0.423",
-    "markPx": "0.42308",
-    "midPx": "0.42323",
+    "oraclePx": "0.42285",
+    "markPx": "0.42307",
+    "midPx": "0.42311",
     "impactPxs": [
-     "0.42217",
-     "0.42452"
+     "0.42207",
+     "0.42377"
     ],
-    "dayBaseVlm": "3333.7"
+    "dayBaseVlm": "3317.5"
    },
    {
     "funding": "0.0000125",
@@ -3674,12 +3674,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.016733",
     "dayNtlVlm": "14.591176",
     "premium": "0.0",
-    "oraclePx": "0.016625",
-    "markPx": "0.016671",
-    "midPx": "0.016668",
+    "oraclePx": "0.016636",
+    "markPx": "0.016697",
+    "midPx": "0.016687",
     "impactPxs": [
-     "0.016609",
-     "0.016724"
+     "0.016613",
+     "0.016759"
     ],
     "dayBaseVlm": "872.0"
    },
@@ -3689,44 +3689,44 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.038735",
     "dayNtlVlm": "114.846738",
     "premium": "0.0",
-    "oraclePx": "0.038045",
-    "markPx": "0.037975",
-    "midPx": "0.038022",
+    "oraclePx": "0.037795",
+    "markPx": "0.037754",
+    "midPx": "0.037755",
     "impactPxs": [
-     "0.03789",
-     "0.038211"
+     "0.037545",
+     "0.037963"
     ],
     "dayBaseVlm": "2972.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "15685.2",
-    "prevDayPx": "2.4392",
-    "dayNtlVlm": "2429.58588",
-    "premium": "0.0010978884",
-    "oraclePx": "2.4957",
-    "markPx": "2.5012",
-    "midPx": "2.50225",
+    "prevDayPx": "2.4296",
+    "dayNtlVlm": "2404.48888",
+    "premium": "0.0008160804",
+    "oraclePx": "2.4875",
+    "markPx": "2.49384",
+    "midPx": "2.49395",
     "impactPxs": [
-     "2.49844",
-     "2.50778"
+     "2.48953",
+     "2.49887"
     ],
-    "dayBaseVlm": "972.2"
+    "dayBaseVlm": "961.7"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "12854.8",
-    "prevDayPx": "1.9397",
-    "dayNtlVlm": "1719.22355",
+    "openInterest": "12712.2",
+    "prevDayPx": "1.9649",
+    "dayNtlVlm": "2263.36452",
     "premium": "0.0",
-    "oraclePx": "2.089",
-    "markPx": "2.0871",
-    "midPx": "2.08715",
+    "oraclePx": "2.074",
+    "markPx": "2.073",
+    "midPx": "2.07345",
     "impactPxs": [
-     "2.08063",
-     "2.09255"
+     "2.06089",
+     "2.08645"
     ],
-    "dayBaseVlm": "842.1"
+    "dayBaseVlm": "1102.2"
    },
    {
     "funding": "0.0000125",
@@ -3734,27 +3734,27 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.003165",
     "dayNtlVlm": "416.191932",
     "premium": "0.0",
-    "oraclePx": "0.003304",
-    "markPx": "0.0033",
-    "midPx": "0.003302",
+    "oraclePx": "0.003285",
+    "markPx": "0.003283",
+    "midPx": "0.003283",
     "impactPxs": [
-     "0.003285",
-     "0.003321"
+     "0.003272",
+     "0.003294"
     ],
     "dayBaseVlm": "129992.0"
    },
    {
-    "funding": "0.0006966783",
+    "funding": "0.0006397128",
     "openInterest": "120055.0",
     "prevDayPx": "0.10777",
     "dayNtlVlm": "15.723643",
-    "premium": "0.005219913",
-    "oraclePx": "0.10345",
-    "markPx": "0.10657",
-    "midPx": "0.10652",
+    "premium": "0.0084384093",
+    "oraclePx": "0.1031",
+    "markPx": "0.10668",
+    "midPx": "0.10677",
     "impactPxs": [
-     "0.10399",
-     "0.11018"
+     "0.10397",
+     "0.11031"
     ],
     "dayBaseVlm": "145.9"
    },
@@ -3771,19 +3771,19 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "dayBaseVlm": "0.0"
    },
    {
-    "funding": "0.0003281091",
+    "funding": "0.0003768756",
     "openInterest": "767.26",
-    "prevDayPx": "26.7",
-    "dayNtlVlm": "3862.75026",
-    "premium": "0.0037644627",
-    "oraclePx": "27.0955",
-    "markPx": "27.2655",
-    "midPx": "27.267",
+    "prevDayPx": "26.36",
+    "dayNtlVlm": "2005.78095",
+    "premium": "0.0049536977",
+    "oraclePx": "27.0505",
+    "markPx": "27.2243",
+    "midPx": "27.2215",
     "impactPxs": [
-     "27.1975",
-     "27.389"
+     "27.1845",
+     "27.2844"
     ],
-    "dayBaseVlm": "142.95"
+    "dayBaseVlm": "73.33"
    },
    {
     "funding": "0.0",
@@ -3810,19 +3810,19 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "dayBaseVlm": "0.0"
    },
    {
-    "funding": "0.0000015162",
-    "openInterest": "47097.6",
+    "funding": "-0.0000550656",
+    "openInterest": "47119.2",
     "prevDayPx": "0.20935",
-    "dayNtlVlm": "4489.624206",
-    "premium": "-0.0011356723",
-    "oraclePx": "0.24655",
-    "markPx": "0.24586",
-    "midPx": "0.24582",
+    "dayNtlVlm": "4844.39571",
+    "premium": "-0.0001590774",
+    "oraclePx": "0.25145",
+    "markPx": "0.2503",
+    "midPx": "0.24998",
     "impactPxs": [
-     "0.24508",
-     "0.24627"
+     "0.24816",
+     "0.25141"
     ],
-    "dayBaseVlm": "19348.3"
+    "dayBaseVlm": "20755.9"
    },
    {
     "funding": "0.0",
@@ -3842,12 +3842,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.079251",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.078535",
-    "markPx": "0.078512",
-    "midPx": "0.078513",
+    "oraclePx": "0.07817",
+    "markPx": "0.078202",
+    "midPx": "0.078145",
     "impactPxs": [
-     "0.078376",
-     "0.078652"
+     "0.077694",
+     "0.078592"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -3878,17 +3878,17 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "38120.0",
-    "prevDayPx": "0.32189",
-    "dayNtlVlm": "4748.0241",
+    "prevDayPx": "0.32123",
+    "dayNtlVlm": "4526.88567",
     "premium": "0.0",
-    "oraclePx": "0.337964",
-    "markPx": "0.337995",
-    "midPx": "0.338095",
+    "oraclePx": "0.3366",
+    "markPx": "0.336605",
+    "midPx": "0.33641",
     "impactPxs": [
-     "0.337445",
-     "0.338758"
+     "0.335485",
+     "0.336887"
     ],
-    "dayBaseVlm": "14107.0"
+    "dayBaseVlm": "13420.0"
    },
    {
     "funding": "0.0",
@@ -3904,33 +3904,33 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "106114.0",
-    "prevDayPx": "0.082531",
-    "dayNtlVlm": "1549.807684",
+    "openInterest": "105504.0",
+    "prevDayPx": "0.081399",
+    "dayNtlVlm": "1456.409221",
     "premium": "0.0",
-    "oraclePx": "0.07888",
-    "markPx": "0.07877",
-    "midPx": "0.078752",
+    "oraclePx": "0.0785",
+    "markPx": "0.078401",
+    "midPx": "0.078431",
     "impactPxs": [
-     "0.07839",
-     "0.079098"
+     "0.077992",
+     "0.078742"
     ],
-    "dayBaseVlm": "19431.0"
+    "dayBaseVlm": "18313.0"
    },
    {
-    "funding": "0.0000125",
-    "openInterest": "8.594",
-    "prevDayPx": "4141.3",
-    "dayNtlVlm": "12641.3415",
-    "premium": "0.0009386721",
-    "oraclePx": "4185.7",
-    "markPx": "4199.121",
-    "midPx": "4198.4",
+    "funding": "0.0000140846",
+    "openInterest": "8.584",
+    "prevDayPx": "4151.9",
+    "dayNtlVlm": "12612.6419",
+    "premium": "0.0017231679",
+    "oraclePx": "4185.895",
+    "markPx": "4199.7",
+    "midPx": "4200.35",
     "impactPxs": [
-     "4189.629",
-     "4216.664"
+     "4193.108",
+     "4210.989"
     ],
-    "dayBaseVlm": "3.045"
+    "dayBaseVlm": "3.038"
    },
    {
     "funding": "0.0",
@@ -3950,12 +3950,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.013915",
     "dayNtlVlm": "2107.995059",
     "premium": "0.0",
-    "oraclePx": "0.014035",
-    "markPx": "0.014023",
-    "midPx": "0.014021",
+    "oraclePx": "0.013995",
+    "markPx": "0.013983",
+    "midPx": "0.013979",
     "impactPxs": [
-     "0.013989",
-     "0.014054"
+     "0.013947",
+     "0.014012"
     ],
     "dayBaseVlm": "150708.0"
    },
@@ -3965,12 +3965,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.040712",
     "dayNtlVlm": "0.0",
     "premium": "0.0",
-    "oraclePx": "0.041782",
-    "markPx": "0.041745",
-    "midPx": "0.041767",
+    "oraclePx": "0.041635",
+    "markPx": "0.0416",
+    "midPx": "0.041616",
     "impactPxs": [
-     "0.041697",
-     "0.041822"
+     "0.041563",
+     "0.041674"
     ],
     "dayBaseVlm": "0.0"
    },
@@ -3980,27 +3980,27 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.070558",
     "dayNtlVlm": "2282.838605",
     "premium": "0.0",
-    "oraclePx": "0.0724",
-    "markPx": "0.072475",
-    "midPx": "0.072509",
+    "oraclePx": "0.072146",
+    "markPx": "0.072246",
+    "midPx": "0.072216",
     "impactPxs": [
-     "0.072301",
-     "0.072682"
+     "0.072075",
+     "0.072384"
     ],
     "dayBaseVlm": "31431.0"
    },
    {
-    "funding": "-0.0001572597",
+    "funding": "-0.0000433777",
     "openInterest": "1685756.0",
     "prevDayPx": "0.007801",
     "dayNtlVlm": "110.875613",
-    "premium": "-0.0015228426",
-    "oraclePx": "0.00788",
-    "markPx": "0.007844",
-    "midPx": "0.007844",
+    "premium": "0.0",
+    "oraclePx": "0.007802",
+    "markPx": "0.007788",
+    "midPx": "0.007772",
     "impactPxs": [
-     "0.007819",
-     "0.007868"
+     "0.007726",
+     "0.00782"
     ],
     "dayBaseVlm": "14213.0"
    },
@@ -4010,12 +4010,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.096245",
     "dayNtlVlm": "4358.977652",
     "premium": "0.0",
-    "oraclePx": "0.102646",
-    "markPx": "0.102595",
-    "midPx": "0.102565",
+    "oraclePx": "0.101839",
+    "markPx": "0.10189",
+    "midPx": "0.10195",
     "impactPxs": [
-     "0.102233",
-     "0.102925"
+     "0.101745",
+     "0.102142"
     ],
     "dayBaseVlm": "40932.0"
    },
@@ -4033,18 +4033,18 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    },
    {
     "funding": "0.0000125",
-    "openInterest": "1507676.0",
-    "prevDayPx": "0.092835",
-    "dayNtlVlm": "91562.049507",
+    "openInterest": "1507234.0",
+    "prevDayPx": "0.091881",
+    "dayNtlVlm": "87999.294887",
     "premium": "0.0",
-    "oraclePx": "0.094075",
-    "markPx": "0.094134",
-    "midPx": "0.094141",
+    "oraclePx": "0.093765",
+    "markPx": "0.093831",
+    "midPx": "0.093822",
     "impactPxs": [
-     "0.093981",
-     "0.094391"
+     "0.093647",
+     "0.094046"
     ],
-    "dayBaseVlm": "971283.0"
+    "dayBaseVlm": "932925.0"
    },
    {
     "funding": "0.0",
@@ -4064,12 +4064,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.2323",
     "dayNtlVlm": "30.199",
     "premium": "0.0",
-    "oraclePx": "0.23243",
-    "markPx": "0.23215",
-    "midPx": "0.232145",
+    "oraclePx": "0.23168",
+    "markPx": "0.23143",
+    "midPx": "0.231515",
     "impactPxs": [
-     "0.231691",
-     "0.232614"
+     "0.230314",
+     "0.232583"
     ],
     "dayBaseVlm": "130.0"
    },
@@ -4079,12 +4079,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.00355",
     "dayNtlVlm": "27.00664",
     "premium": "0.0",
-    "oraclePx": "0.003562",
-    "markPx": "0.00355",
-    "midPx": "0.003551",
+    "oraclePx": "0.003545",
+    "markPx": "0.003537",
+    "midPx": "0.003535",
     "impactPxs": [
-     "0.003533",
-     "0.003566"
+     "0.00352",
+     "0.003552"
     ],
     "dayBaseVlm": "7630.0"
    },
@@ -4094,12 +4094,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.018884",
     "dayNtlVlm": "64.96096",
     "premium": "0.0",
-    "oraclePx": "0.018863",
-    "markPx": "0.018865",
-    "midPx": "0.018864",
+    "oraclePx": "0.018813",
+    "markPx": "0.018815",
+    "midPx": "0.018813",
     "impactPxs": [
-     "0.0188",
-     "0.018928"
+     "0.018719",
+     "0.018913"
     ],
     "dayBaseVlm": "3440.0"
    },
@@ -4109,42 +4109,42 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.22983",
     "dayNtlVlm": "1899.2082",
     "premium": "0.0",
-    "oraclePx": "0.2363",
-    "markPx": "0.236151",
-    "midPx": "0.236115",
+    "oraclePx": "0.2343",
+    "markPx": "0.23417",
+    "midPx": "0.234035",
     "impactPxs": [
-     "0.235614",
-     "0.236556"
+     "0.233589",
+     "0.234514"
     ],
     "dayBaseVlm": "7739.0"
    },
    {
-    "funding": "0.0007547778",
+    "funding": "0.0008432256",
     "openInterest": "25787196.0",
-    "prevDayPx": "0.004993",
-    "dayNtlVlm": "6526.89198",
-    "premium": "0.0083191851",
-    "oraclePx": "0.00589",
+    "prevDayPx": "0.004801",
+    "dayNtlVlm": "6489.853333",
+    "premium": "0.0081799591",
+    "oraclePx": "0.005868",
     "markPx": "0.006479",
     "midPx": "0.006497",
     "impactPxs": [
-     "0.005939",
+     "0.005916",
      "0.006594"
     ],
-    "dayBaseVlm": "1152179.0"
+    "dayBaseVlm": "1143810.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "12560.0",
     "prevDayPx": "0.22523",
     "dayNtlVlm": "1631.68995",
-    "premium": "0.0",
-    "oraclePx": "0.2399",
-    "markPx": "0.23964",
-    "midPx": "0.239575",
+    "premium": "-0.000442404",
+    "oraclePx": "0.2396",
+    "markPx": "0.23938",
+    "midPx": "0.23907",
     "impactPxs": [
-     "0.23892",
-     "0.240288"
+     "0.238689",
+     "0.239494"
     ],
     "dayBaseVlm": "6813.0"
    },
@@ -4161,79 +4161,79 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "dayBaseVlm": "0.0"
    },
    {
-    "funding": "0.0002944191",
+    "funding": "0.0002906752",
     "openInterest": "213816.0",
-    "prevDayPx": "0.096215",
-    "dayNtlVlm": "1653.723582",
-    "premium": "0.0030713734",
-    "oraclePx": "0.097025",
-    "markPx": "0.097544",
-    "midPx": "0.097507",
+    "prevDayPx": "0.095287",
+    "dayNtlVlm": "1666.45156",
+    "premium": "0.0037859143",
+    "oraclePx": "0.09641",
+    "markPx": "0.096905",
+    "midPx": "0.096882",
     "impactPxs": [
-     "0.097323",
-     "0.097789"
+     "0.096775",
+     "0.09713"
     ],
-    "dayBaseVlm": "16721.0"
+    "dayBaseVlm": "16841.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "79912.0",
-    "prevDayPx": "0.05627",
-    "dayNtlVlm": "1684.786012",
-    "premium": "-0.0011013986",
-    "oraclePx": "0.0572",
-    "markPx": "0.057047",
-    "midPx": "0.057057",
+    "prevDayPx": "0.056953",
+    "dayNtlVlm": "1680.502984",
+    "premium": "-0.0016785564",
+    "oraclePx": "0.057192",
+    "markPx": "0.057028",
+    "midPx": "0.056997",
     "impactPxs": [
-     "0.05694",
-     "0.057137"
+     "0.056862",
+     "0.057096"
     ],
-    "dayBaseVlm": "29780.0"
+    "dayBaseVlm": "29694.0"
    },
    {
-    "funding": "0.0000120404",
+    "funding": "0.0000125",
     "openInterest": "2245092.0",
     "prevDayPx": "0.002978",
     "dayNtlVlm": "552.066108",
-    "premium": "-0.0003423485",
-    "oraclePx": "0.002921",
-    "markPx": "0.002911",
-    "midPx": "0.002912",
+    "premium": "0.0",
+    "oraclePx": "0.002906",
+    "markPx": "0.002896",
+    "midPx": "0.002895",
     "impactPxs": [
-     "0.0029",
-     "0.00292"
+     "0.00288",
+     "0.002909"
     ],
     "dayBaseVlm": "191186.0"
    },
    {
-    "funding": "0.0004120079",
+    "funding": "0.0004100674",
     "openInterest": "167956.0",
     "prevDayPx": "0.080745",
     "dayNtlVlm": "217.570735",
-    "premium": "0.0049302667",
-    "oraclePx": "0.08174",
-    "markPx": "0.082257",
-    "midPx": "0.082242",
+    "premium": "0.0045446193",
+    "oraclePx": "0.081635",
+    "markPx": "0.082151",
+    "midPx": "0.082125",
     "impactPxs": [
-     "0.082143",
-     "0.082712"
+     "0.082006",
+     "0.082286"
     ],
     "dayBaseVlm": "2607.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "11898.0",
-    "prevDayPx": "0.69988",
-    "dayNtlVlm": "5164.60524",
+    "openInterest": "11842.0",
+    "prevDayPx": "0.69976",
+    "dayNtlVlm": "5061.59824",
     "premium": "0.0",
-    "oraclePx": "0.7488",
-    "markPx": "0.74947",
-    "midPx": "0.749695",
+    "oraclePx": "0.7439",
+    "markPx": "0.744965",
+    "midPx": "0.744955",
     "impactPxs": [
-     "0.748002",
-     "0.751791"
+     "0.743663",
+     "0.746522"
     ],
-    "dayBaseVlm": "7086.0"
+    "dayBaseVlm": "6937.0"
    },
    {
     "funding": "0.0000125",
@@ -4241,12 +4241,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.12562",
     "dayNtlVlm": "1518.17469",
     "premium": "0.0",
-    "oraclePx": "0.12415",
-    "markPx": "0.124153",
-    "midPx": "0.12419",
+    "oraclePx": "0.124",
+    "markPx": "0.123988",
+    "midPx": "0.123965",
     "impactPxs": [
-     "0.12395",
-     "0.124434"
+     "0.123761",
+     "0.124161"
     ],
     "dayBaseVlm": "12089.0"
    },
@@ -4256,44 +4256,44 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.026115",
     "dayNtlVlm": "45.80571",
     "premium": "0.0",
-    "oraclePx": "0.0263",
-    "markPx": "0.026361",
-    "midPx": "0.026357",
+    "oraclePx": "0.026232",
+    "markPx": "0.0263",
+    "midPx": "0.026303",
     "impactPxs": [
-     "0.026223",
-     "0.02648"
+     "0.026207",
+     "0.026385"
     ],
     "dayBaseVlm": "1754.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "11674.0",
+    "openInterest": "11398.0",
     "prevDayPx": "0.30621",
-    "dayNtlVlm": "5493.1354",
+    "dayNtlVlm": "5773.78868",
     "premium": "0.0",
-    "oraclePx": "0.326518",
-    "markPx": "0.32649",
-    "midPx": "0.32652",
+    "oraclePx": "0.3234",
+    "markPx": "0.3233",
+    "midPx": "0.32324",
     "impactPxs": [
-     "0.325541",
-     "0.327626"
+     "0.322485",
+     "0.323964"
     ],
-    "dayBaseVlm": "16814.0"
+    "dayBaseVlm": "17680.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "515922.0",
-    "prevDayPx": "0.005952",
-    "dayNtlVlm": "435.381166",
+    "prevDayPx": "0.006101",
+    "dayNtlVlm": "410.388184",
     "premium": "0.0",
-    "oraclePx": "0.006255",
-    "markPx": "0.00626",
-    "midPx": "0.00626",
+    "oraclePx": "0.00623",
+    "markPx": "0.006232",
+    "midPx": "0.006229",
     "impactPxs": [
-     "0.006233",
-     "0.006286"
+     "0.006218",
+     "0.006241"
     ],
-    "dayBaseVlm": "71188.0"
+    "dayBaseVlm": "66820.0"
    },
    {
     "funding": "0.0000125",
@@ -4301,29 +4301,29 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.28521",
     "dayNtlVlm": "1238.08931",
     "premium": "0.0",
-    "oraclePx": "0.26015",
-    "markPx": "0.26019",
-    "midPx": "0.26021",
+    "oraclePx": "0.26035",
+    "markPx": "0.2606",
+    "midPx": "0.260495",
     "impactPxs": [
-     "0.259627",
-     "0.260708"
+     "0.259374",
+     "0.26146"
     ],
     "dayBaseVlm": "4395.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "98660.0",
+    "openInterest": "99954.0",
     "prevDayPx": "0.065803",
-    "dayNtlVlm": "6450.019577",
-    "premium": "0.0003655472",
-    "oraclePx": "0.065655",
-    "markPx": "0.065818",
-    "midPx": "0.065828",
+    "dayNtlVlm": "6503.785091",
+    "premium": "0.0000303734",
+    "oraclePx": "0.065847",
+    "markPx": "0.066013",
+    "midPx": "0.066019",
     "impactPxs": [
-     "0.065679",
-     "0.066147"
+     "0.065849",
+     "0.066202"
     ],
-    "dayBaseVlm": "95910.0"
+    "dayBaseVlm": "96724.0"
    },
    {
     "funding": "0.0",
@@ -4340,32 +4340,32 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    {
     "funding": "0.0000125",
     "openInterest": "1182700.0",
-    "prevDayPx": "0.027422",
-    "dayNtlVlm": "1971.934406",
-    "premium": "0.0",
-    "oraclePx": "0.027085",
-    "markPx": "0.027158",
-    "midPx": "0.027169",
+    "prevDayPx": "0.027249",
+    "dayNtlVlm": "1936.851926",
+    "premium": "0.0017436468",
+    "oraclePx": "0.026955",
+    "markPx": "0.02705",
+    "midPx": "0.027047",
     "impactPxs": [
-     "0.027076",
-     "0.0273"
+     "0.027002",
+     "0.027109"
     ],
-    "dayBaseVlm": "70849.0"
+    "dayBaseVlm": "69577.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "25704.0",
-    "prevDayPx": "0.31064",
-    "dayNtlVlm": "299.85682",
+    "openInterest": "25560.0",
+    "prevDayPx": "0.30941",
+    "dayNtlVlm": "263.09557",
     "premium": "0.0",
-    "oraclePx": "0.3364",
-    "markPx": "0.33604",
-    "midPx": "0.335915",
+    "oraclePx": "0.33985",
+    "markPx": "0.339453",
+    "midPx": "0.339345",
     "impactPxs": [
-     "0.335212",
-     "0.336709"
+     "0.338869",
+     "0.339854"
     ],
-    "dayBaseVlm": "944.0"
+    "dayBaseVlm": "817.0"
    },
    {
     "funding": "0.0000125",
@@ -4373,57 +4373,57 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.041823",
     "dayNtlVlm": "1054.848579",
     "premium": "0.0",
-    "oraclePx": "0.04285",
-    "markPx": "0.042795",
-    "midPx": "0.0428",
+    "oraclePx": "0.04257",
+    "markPx": "0.042525",
+    "midPx": "0.042575",
     "impactPxs": [
-     "0.042653",
-     "0.042913"
+     "0.042423",
+     "0.042764"
     ],
     "dayBaseVlm": "24956.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "84184.0",
-    "prevDayPx": "0.12982",
-    "dayNtlVlm": "820.41423",
+    "prevDayPx": "0.13333",
+    "dayNtlVlm": "795.38219",
     "premium": "0.0",
-    "oraclePx": "0.125183",
-    "markPx": "0.125143",
-    "midPx": "0.125245",
+    "oraclePx": "0.12575",
+    "markPx": "0.12566",
+    "midPx": "0.12575",
     "impactPxs": [
-     "0.125014",
-     "0.125553"
+     "0.125408",
+     "0.126121"
     ],
-    "dayBaseVlm": "6437.0"
+    "dayBaseVlm": "6250.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "11792.0",
-    "prevDayPx": "0.80218",
-    "dayNtlVlm": "3415.7378",
+    "prevDayPx": "0.79608",
+    "dayNtlVlm": "3391.9499",
     "premium": "0.0",
-    "oraclePx": "0.81155",
-    "markPx": "0.81143",
-    "midPx": "0.81138",
+    "oraclePx": "0.80665",
+    "markPx": "0.80705",
+    "midPx": "0.806905",
     "impactPxs": [
-     "0.808664",
-     "0.813826"
+     "0.802844",
+     "0.810493"
     ],
-    "dayBaseVlm": "4163.0"
+    "dayBaseVlm": "4133.0"
    },
    {
-    "funding": "-0.000202375",
+    "funding": "-0.0001303479",
     "openInterest": "533222.0",
     "prevDayPx": "0.02939",
     "dayNtlVlm": "37.767174",
-    "premium": "-0.0008364118",
-    "oraclePx": "0.028694",
-    "markPx": "0.028587",
-    "midPx": "0.028546",
+    "premium": "-0.0031334865",
+    "oraclePx": "0.028722",
+    "markPx": "0.028579",
+    "midPx": "0.028553",
     "impactPxs": [
-     "0.028339",
-     "0.02867"
+     "0.028414",
+     "0.028632"
     ],
     "dayBaseVlm": "1291.0"
    },
@@ -4433,89 +4433,89 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.005197",
     "dayNtlVlm": "15.180437",
     "premium": "0.0",
-    "oraclePx": "0.005374",
-    "markPx": "0.005374",
-    "midPx": "0.005375",
+    "oraclePx": "0.00534",
+    "markPx": "0.005339",
+    "midPx": "0.005338",
     "impactPxs": [
-     "0.005365",
-     "0.005382"
+     "0.005327",
+     "0.005351"
     ],
     "dayBaseVlm": "2921.0"
    },
    {
-    "funding": "0.0006355079",
+    "funding": "0.0006834697",
     "openInterest": "13972.0",
     "prevDayPx": "4.3737",
-    "dayNtlVlm": "1560.8267",
-    "premium": "0.006121627",
-    "oraclePx": "3.7985",
-    "markPx": "4.1815",
-    "midPx": "4.20015",
+    "dayNtlVlm": "1573.0571",
+    "premium": "0.0079929467",
+    "oraclePx": "3.828",
+    "markPx": "4.0768",
+    "midPx": "4.199",
     "impactPxs": [
-     "3.821753",
-     "4.387699"
+     "3.858597",
+     "4.376644"
     ],
-    "dayBaseVlm": "359.0"
+    "dayBaseVlm": "362.0"
    },
    {
-    "funding": "0.0002022061",
+    "funding": "0.0002144774",
     "openInterest": "72.24",
-    "prevDayPx": "536.9",
-    "dayNtlVlm": "3900.3368",
-    "premium": "0.0033911843",
-    "oraclePx": "543.35",
-    "markPx": "546.04",
-    "midPx": "546.225",
+    "prevDayPx": "540.8",
+    "dayNtlVlm": "3889.5988",
+    "premium": "0.0031867605",
+    "oraclePx": "542.62",
+    "markPx": "545.28",
+    "midPx": "545.31",
     "impactPxs": [
-     "545.1926",
-     "548.5581"
+     "544.3492",
+     "547.7194"
     ],
-    "dayBaseVlm": "7.15"
+    "dayBaseVlm": "7.13"
    },
    {
     "funding": "0.0000125",
     "openInterest": "2515.0",
-    "prevDayPx": "1.0901",
-    "dayNtlVlm": "2275.03228",
+    "prevDayPx": "1.0988",
+    "dayNtlVlm": "2122.09125",
     "premium": "0.0",
-    "oraclePx": "1.15445",
-    "markPx": "1.1548",
-    "midPx": "1.1545",
+    "oraclePx": "1.1465",
+    "markPx": "1.14688",
+    "midPx": "1.1466",
     "impactPxs": [
-     "1.15264",
-     "1.15662"
+     "1.14473",
+     "1.14851"
     ],
-    "dayBaseVlm": "2004.4"
+    "dayBaseVlm": "1864.1"
    },
    {
     "funding": "0.0000125",
     "openInterest": "205.36",
-    "prevDayPx": "60.997",
-    "dayNtlVlm": "2712.60782",
-    "premium": "0.0000864318",
-    "oraclePx": "61.32",
-    "markPx": "61.442",
-    "midPx": "61.445",
+    "prevDayPx": "60.451",
+    "dayNtlVlm": "2584.37252",
+    "premium": "0.0013547646",
+    "oraclePx": "60.97",
+    "markPx": "61.0963",
+    "midPx": "61.111",
     "impactPxs": [
-     "61.3253",
-     "61.6209"
+     "61.0526",
+     "61.3416"
     ],
-    "dayBaseVlm": "44.23"
+    "dayBaseVlm": "42.12"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "373500.0",
-    "prevDayPx": "0.018464",
-    "dayNtlVlm": "219.955684",
+    "openInterest": "370882.0",
+    "prevDayPx": "0.01847",
+    "dayNtlVlm": "219.80701",
     "premium": "0.0",
-    "oraclePx": "0.018348",
-    "markPx": "0.018365",
-    "midPx": "0.018361",
+    "oraclePx": "0.018299",
+    "markPx": "0.018312",
+    "midPx": "0.018311",
     "impactPxs": [
-     "0.018276",
-     "0.018443"
+     "0.018248",
+     "0.018359"
     ],
-    "dayBaseVlm": "11968.0"
+    "dayBaseVlm": "11972.0"
    },
    {
     "funding": "0.0000125",
@@ -4523,89 +4523,89 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prevDayPx": "0.018136",
     "dayNtlVlm": "1618.939485",
     "premium": "0.0",
-    "oraclePx": "0.01671",
-    "markPx": "0.016718",
-    "midPx": "0.016709",
+    "oraclePx": "0.016605",
+    "markPx": "0.016615",
+    "midPx": "0.016604",
     "impactPxs": [
-     "0.016668",
-     "0.016746"
+     "0.016526",
+     "0.016679"
     ],
     "dayBaseVlm": "92535.0"
    },
    {
     "funding": "0.0000125",
-    "openInterest": "24446.0",
-    "prevDayPx": "0.042553",
-    "dayNtlVlm": "812.73053",
+    "openInterest": "23512.0",
+    "prevDayPx": "0.042313",
+    "dayNtlVlm": "695.480428",
     "premium": "0.0",
-    "oraclePx": "0.044515",
-    "markPx": "0.044457",
-    "midPx": "0.044466",
+    "oraclePx": "0.044237",
+    "markPx": "0.044215",
+    "midPx": "0.044196",
     "impactPxs": [
-     "0.044234",
-     "0.044672"
+     "0.043855",
+     "0.044536"
     ],
-    "dayBaseVlm": "18849.0"
+    "dayBaseVlm": "16073.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "3138.0",
-    "prevDayPx": "1.543",
-    "dayNtlVlm": "3368.1023",
+    "prevDayPx": "1.5445",
+    "dayNtlVlm": "3290.9523",
     "premium": "0.0",
-    "oraclePx": "1.4855",
-    "markPx": "1.4872",
-    "midPx": "1.48755",
+    "oraclePx": "1.4775",
+    "markPx": "1.4798",
+    "midPx": "1.47985",
     "impactPxs": [
-     "1.483662",
-     "1.492197"
+     "1.476354",
+     "1.483875"
     ],
-    "dayBaseVlm": "2209.0"
+    "dayBaseVlm": "2159.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "17182.0",
-    "prevDayPx": "0.1682",
-    "dayNtlVlm": "1704.72829",
+    "prevDayPx": "0.1748",
+    "dayNtlVlm": "1679.77539",
     "premium": "0.0",
-    "oraclePx": "0.176525",
-    "markPx": "0.17639",
-    "midPx": "0.176385",
+    "oraclePx": "0.178385",
+    "markPx": "0.178088",
+    "midPx": "0.17815",
     "impactPxs": [
-     "0.174627",
-     "0.178481"
+     "0.176504",
+     "0.180007"
     ],
-    "dayBaseVlm": "9700.0"
+    "dayBaseVlm": "9546.0"
    },
    {
-    "funding": "0.0000125",
+    "funding": "0.0000516547",
     "openInterest": "18508.0",
     "prevDayPx": "0.53428",
-    "dayNtlVlm": "14608.9173",
-    "premium": "0.000109532",
-    "oraclePx": "0.547785",
-    "markPx": "0.54984",
-    "midPx": "0.5496",
+    "dayNtlVlm": "14715.13099",
+    "premium": "0.0041319732",
+    "oraclePx": "0.54405",
+    "markPx": "0.54672",
+    "midPx": "0.546895",
     "impactPxs": [
-     "0.547845",
-     "0.551084"
+     "0.546298",
+     "0.547936"
     ],
-    "dayBaseVlm": "27441.0"
+    "dayBaseVlm": "27634.0"
    },
    {
     "funding": "0.0000125",
     "openInterest": "24850.0",
-    "prevDayPx": "0.22849",
-    "dayNtlVlm": "1347.43989",
-    "premium": "0.0",
-    "oraclePx": "0.241532",
-    "markPx": "0.24211",
-    "midPx": "0.24207",
+    "prevDayPx": "0.2317",
+    "dayNtlVlm": "1247.58976",
+    "premium": "0.0005172097",
+    "oraclePx": "0.239748",
+    "markPx": "0.24027",
+    "midPx": "0.24019",
     "impactPxs": [
-     "0.241461",
-     "0.242542"
+     "0.239872",
+     "0.240418"
     ],
-    "dayBaseVlm": "5638.0"
+    "dayBaseVlm": "5201.0"
    }
   ]
  ],
@@ -4624,8 +4624,8 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "prazo_da_passiva_ms": 3000,
    "destino_do_resto": "agressivo",
    "reduce_only": false,
-   "referencia_do_cliente": "mesa-3971-000739",
-   "marca_de_posse": 2081948387
+   "referencia_do_cliente": "mesa-3323-000091",
+   "marca_de_posse": 1742209115
   }
  },
  "P2_traducao": {
@@ -4636,20 +4636,20 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "tipo": "mercado",
    "tif": "Ioc",
    "quantidade": "0.00023",
-   "preco": "84051",
-   "nocional": "19.33173",
+   "preco": "83983",
+   "nocional": "19.31609",
    "alavancagem": "2",
    "reduce_only": false,
-   "cloid": "0xc57e93808026f20307b1f21f2f192e3c",
-   "preco_de_referencia": "83633.0",
+   "cloid": "0x2a5e9348938d88b4250c59bac7ec5deb",
+   "preco_de_referencia": "83566.0",
    "desvio_maximo": "0.5"
   }
  },
  "envio_abertura": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abertura/mesa-3971-000739\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3971-000739\",\"marca_de_posse\":2081948387}}",
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abertura/mesa-3323-000091\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3323-000091\",\"marca_de_posse\":1742209115}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abertura/mesa-3971-000739/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33265\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42027\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abertura/mesa-3971-000739\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33265\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42027\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61431355719\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83643.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83643.0\",\"oid\":61431355719,\"cloid\":\"0xc57e93808026f20307b1f21f2f192e3c\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abertura/mesa-3323-000091/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.31402\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41987\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abertura/mesa-3323-000091\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.31402\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41987\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61432410111\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83566.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83566.0\",\"oid\":61432410111,\"cloid\":\"0x2a5e9348938d88b4250c59bac7ec5deb\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -4660,12 +4660,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734349142 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735300467 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3971-000739\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.435864\",\"marca\":\"83637.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0xc57e93808026f20307b1f21f2f192e3c\",\"quantidade\":\"0.00023\",\"nocional\":\"19.33265\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83643.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3323-000091\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.304509\",\"marca\":\"83557.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0x2a5e9348938d88b4250c59bac7ec5deb\",\"quantidade\":\"0.00023\",\"nocional\":\"19.31402\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83566.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
@@ -4692,20 +4693,20 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
   "porque": "Aceite: a posicao existe, e a mesa sabe o que tem porque a corretora o disse."
  },
  "P5_conta": {
-  "equity": "990.426977",
+  "equity": "990.29379",
   "posicao": {
    "coin": "BTC",
    "szi": "0.00023",
    "leverage": {
     "type": "cross",
-    "value": 40
+    "value": 2
    },
-   "entryPx": "83643.0",
-   "positionValue": "19.23766",
-   "unrealizedPnl": "-0.00023",
-   "returnOnEquity": "-0.0004782229",
+   "entryPx": "83566.0",
+   "positionValue": "19.21811",
+   "unrealizedPnl": "-0.00207",
+   "returnOnEquity": "-0.0002153986",
    "liquidationPx": null,
-   "marginUsed": "0.480941",
+   "marginUsed": "9.609055",
    "maxLeverage": 40,
    "cumFunding": {
     "allTime": "0.0",
@@ -4715,73 +4716,73 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
   },
   "cinco": {
    "quantidade": "0.00023",
-   "nocional": "19.23766",
-   "margem_empenhada": "0.480941",
-   "alavancagem_efectiva": 40,
+   "nocional": "19.21811",
+   "margem_empenhada": "9.609055",
+   "alavancagem_efectiva": 2,
    "preco_de_liquidacao": null
   },
   "ultimas_execucoes": [
    {
     "coin": "BTC",
-    "px": "83643.0",
+    "px": "83566.0",
     "sz": "0.00023",
     "side": "B",
-    "time": 1790734357775,
+    "time": 1790735309795,
     "startPosition": "0.0",
     "dir": "Open Long",
     "closedPnl": "0.0",
-    "hash": "0x77737229606b874578ed042a89bb760000ae8a0efb6ea6171b3c1d7c1f6f6130",
-    "oid": 61431355719,
+    "hash": "0x259d65393f17154b2717042a89f5a1010c007d1eda1a341dc966108bfe1aef35",
+    "oid": 61432410111,
     "crossed": true,
-    "fee": "0.008657",
-    "tid": 396904251295065,
-    "cloid": "0xc57e93808026f20307b1f21f2f192e3c",
+    "fee": "0.008649",
+    "tid": 540819607938917,
+    "cloid": "0x2a5e9348938d88b4250c59bac7ec5deb",
     "feeToken": "USDC",
     "twapId": null
    },
    {
     "coin": "BTC",
-    "px": "83663.0",
-    "sz": "0.11956",
+    "px": "83634.0",
+    "sz": "0.00023",
     "side": "A",
-    "time": 1790734303763,
-    "startPosition": "0.11956",
+    "time": 1790734504756,
+    "startPosition": "0.00023",
     "dir": "Close Long",
-    "closedPnl": "1.1956",
-    "hash": "0x07453705bea7342d08be042a89b81d0101004eeb59aa52ffab0de2587dab0e17",
-    "oid": 61431298417,
+    "closedPnl": "-0.00115",
+    "hash": "0x4e9a135ddf2007615013042a89c4ab0103002b437a232633f262beb09e23e14b",
+    "oid": 61431521265,
     "crossed": true,
-    "fee": "4.501236",
-    "tid": 936561982914877,
-    "cloid": "0x96e31a032bc836a2312ef265f31133bc",
+    "fee": "0.008656",
+    "tid": 416124560902063,
+    "cloid": "0x32c6a0c750169061d3f7b1b8178a6484",
     "feeToken": "USDC",
     "twapId": null
    },
    {
     "coin": "BTC",
-    "px": "83653.0",
-    "sz": "0.11956",
+    "px": "83639.0",
+    "sz": "0.00023",
     "side": "B",
-    "time": 1790734261999,
+    "time": 1790734490217,
     "startPosition": "0.0",
     "dir": "Open Long",
     "closedPnl": "0.0",
-    "hash": "0xc2422fefd8e63946c3bb042a89b59e00007d47d573e95818660adb4297ea1331",
-    "oid": 61431251655,
+    "hash": "0x171f7123aaadc06b1899042a89c3c3010300890945a0df3dbae81c7669a19a55",
+    "oid": 61431504089,
     "crossed": true,
-    "fee": "4.500698",
-    "tid": 226972716764687,
-    "cloid": "0x4ace15f76c18927d8aa07c7a02c6599f",
+    "fee": "0.008656",
+    "tid": 443496810781971,
+    "cloid": "0x4f4417fcd8a0ff0da64d4da36be12cd4",
     "feeToken": "USDC",
     "twapId": null
    }
   ]
  },
  "envio_abertura-repetida": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abertura-repetida/mesa-3971-000739\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3971-000739\",\"marca_de_posse\":2081948387}}",
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abertura-repetida/mesa-3323-000091\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3323-000091\",\"marca_de_posse\":1742209115}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abertura-repetida/mesa-3971-000739/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33196\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42026\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abertura-repetida/mesa-3971-000739\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33196\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42026\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61431370522\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83643.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83643.0\",\"oid\":61431370522,\"cloid\":\"0xc57e93808026f20307b1f21f2f192e3c\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abertura-repetida/mesa-3323-000091/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.3154\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41990\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abertura-repetida/mesa-3323-000091\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.3154\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41990\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61432425021\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83565.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83565.0\",\"oid\":61432425021,\"cloid\":\"0x2a5e9348938d88b4250c59bac7ec5deb\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -4792,56 +4793,57 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734363172 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735315668 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3971-000739\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.425137\",\"marca\":\"83634.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0xc57e93808026f20307b1f21f2f192e3c\",\"quantidade\":\"0.00023\",\"nocional\":\"19.33196\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83643.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3323-000091\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.295078\",\"marca\":\"83562.6\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0x2a5e9348938d88b4250c59bac7ec5deb\",\"quantidade\":\"0.00023\",\"nocional\":\"19.3154\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83565.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
  },
  "P6_idempotencia": {
-  "entrada": "mesa-3971-000739",
+  "entrada": "mesa-3323-000091",
   "desfecho": {
    "classificacao": "aceite",
    "resolucao": {
     "quantidade": "0.00023",
-    "nocional": "19.33196",
-    "margem_empenhada": "9.66",
+    "nocional": "19.3154",
+    "margem_empenhada": "9.65",
     "alavancagem_efectiva": "2",
-    "preco_de_liquidacao": "42026"
+    "preco_de_liquidacao": "41990"
    },
    "resposta_do_venue": {
     "estado": "filled",
-    "order_id": "61431370522",
+    "order_id": "61432425021",
     "preenchido": "0.00023",
-    "preco_medio": "83643.0",
+    "preco_medio": "83565.0",
     "origem_dos_numeros": "calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)",
     "bruto": {
      "totalSz": "0.00023",
-     "avgPx": "83643.0",
-     "oid": 61431370522,
-     "cloid": "0xc57e93808026f20307b1f21f2f192e3c"
+     "avgPx": "83565.0",
+     "oid": 61432425021,
+     "cloid": "0x2a5e9348938d88b4250c59bac7ec5deb"
     }
    }
   },
-  "execucoes_antes": 85,
-  "execucoes_depois": 86,
+  "execucoes_antes": 97,
+  "execucoes_depois": 98,
   "posicao": {
    "coin": "BTC",
    "szi": "0.00046",
    "leverage": {
     "type": "cross",
-    "value": 40
+    "value": 2
    },
-   "entryPx": "83643.0",
-   "positionValue": "38.47164",
-   "unrealizedPnl": "-0.00414",
-   "returnOnEquity": "-0.0043040063",
+   "entryPx": "83565.5",
+   "positionValue": "38.4399",
+   "unrealizedPnl": "-0.00023",
+   "returnOnEquity": "-0.0000119667",
    "liquidationPx": null,
-   "marginUsed": "0.961791",
+   "marginUsed": "19.21995",
    "maxLeverage": 40,
    "cumFunding": {
     "allTime": "0.0",
@@ -4851,10 +4853,10 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
   }
  },
  "envio_fecho": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"fecho/mesa-3973-000741\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"2.04\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3973-000741\",\"marca_de_posse\":2082996965}}",
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"fecho/mesa-3325-000093\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"2.04\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3325-000093\",\"marca_de_posse\":1743257693}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"fecho/mesa-3973-000741/resolucao\",\"carga\":{\"quantidade\":\"0.00048\",\"nocional\":\"39.93648\",\"margem_empenhada\":\"19.96\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41600\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"fecho/mesa-3973-000741\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00048\",\"nocional\":\"39.93648\",\"margem_empenhada\":\"19.96\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41600\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61431385958\",\"preenchido\":\"0.00046\",\"preco_medio\":\"83619.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00046\",\"avgPx\":\"83619.0\",\"oid\":61431385958,\"cloid\":\"0x7a62199ee0a3579a4f440eaa6e82f73b\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"fecho/mesa-3325-000093/resolucao\",\"carga\":{\"quantidade\":\"0.00048\",\"nocional\":\"39.90672\",\"margem_empenhada\":\"19.95\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41569\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"fecho/mesa-3325-000093\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00048\",\"nocional\":\"39.90672\",\"margem_empenhada\":\"19.95\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41569\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61432439037\",\"preenchido\":\"0.00046\",\"preco_medio\":\"83556.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00046\",\"avgPx\":\"83556.0\",\"oid\":61432439037,\"cloid\":\"0x0ea32d3b17d7a59a13b1ac9365c86cb4\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -4865,12 +4867,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734377500 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735330185 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3973-000741\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.40751\",\"marca\":\"83619.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0x7a62199ee0a3579a4f440eaa6e82f73b\",\"quantidade\":\"0.00048\",\"nocional\":\"39.93648\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00046\",\"preco_medio\":\"83619.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3325-000093\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.282842\",\"marca\":\"83556.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0x0ea32d3b17d7a59a13b1ac9365c86cb4\",\"quantidade\":\"0.00048\",\"nocional\":\"39.90672\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00046\",\"preco_medio\":\"83556.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
@@ -4881,27 +4884,27 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "classificacao": "parcial",
    "resolucao": {
     "quantidade": "0.00048",
-    "nocional": "39.93648",
-    "margem_empenhada": "19.96",
+    "nocional": "39.90672",
+    "margem_empenhada": "19.95",
     "alavancagem_efectiva": "2",
-    "preco_de_liquidacao": "41600"
+    "preco_de_liquidacao": "41569"
    },
    "resposta_do_venue": {
     "estado": "partially_filled",
-    "order_id": "61431385958",
+    "order_id": "61432439037",
     "preenchido": "0.00046",
-    "preco_medio": "83619.0",
+    "preco_medio": "83556.0",
     "origem_dos_numeros": "calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)",
     "bruto": {
      "totalSz": "0.00046",
-     "avgPx": "83619.0",
-     "oid": 61431385958,
-     "cloid": "0x7a62199ee0a3579a4f440eaa6e82f73b"
+     "avgPx": "83556.0",
+     "oid": 61432439037,
+     "cloid": "0x0ea32d3b17d7a59a13b1ac9365c86cb4"
     }
    }
   },
   "posicao_depois": null,
-  "equity": "990.390201"
+  "equity": "990.265546"
  },
  "P8_recusas": [
   {
@@ -4927,12 +4930,12 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "tipo": "mercado",
    "tif": "Ioc",
    "quantidade": "0.00023",
-   "preco": "84051",
-   "nocional": "19.33173",
+   "preco": "83983",
+   "nocional": "19.31609",
    "alavancagem": "2",
    "reduce_only": false,
-   "cloid": "0xa1a03abef479d327e7a5bad4c9507a34",
-   "preco_de_referencia": "83633.0",
+   "cloid": "0xaf3cd2c61433a1fc29639bc660fd13ea",
+   "preco_de_referencia": "83566.0",
    "desvio_maximo": "0.5"
   },
   "com_stop": {
@@ -4943,19 +4946,19 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
   "limite_prazo_curto": {
    "ok": false,
    "motivo": "valor_fora_da_banda",
-   "porque": "o preco 83633.0 nao cabe na regra do venue: o venue aceita no maximo 5 algarismos significativos no preco e o preco 83633.0 tem 6 — recusa, nao arredonda"
+   "porque": "o preco 83566.0 nao cabe na regra do venue: o venue aceita no maximo 5 algarismos significativos no preco e o preco 83566.0 tem 6 — recusa, nao arredonda"
   },
   "limite_prazo_longo_e_cancelar": {
    "ok": false,
    "motivo": "valor_fora_da_banda",
-   "porque": "o preco 83633.0 nao cabe na regra do venue: o venue aceita no maximo 5 algarismos significativos no preco e o preco 83633.0 tem 6 — recusa, nao arredonda"
+   "porque": "o preco 83566.0 nao cabe na regra do venue: o venue aceita no maximo 5 algarismos significativos no preco e o preco 83566.0 tem 6 — recusa, nao arredonda"
   }
  },
  "P11_alavancagem": {
   "pedida_na_boleta": "2",
   "venue": {
    "type": "cross",
-   "value": 40
+   "value": 2
   },
   "posicao": null
  },
@@ -5081,11 +5084,11 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "certo": true
   }
  ],
- "envio_abrir-sell-749": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-sell-749/mesa-3981-000749\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3981-000749\",\"marca_de_posse\":2087191277}}",
+ "envio_abrir-sell-101": {
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-sell-101/mesa-3333-000101\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3333-000101\",\"marca_de_posse\":1747452005}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-sell-749/mesa-3981-000749/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.13876\",\"margem_empenhada\":\"9.56\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41606\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-sell-749/mesa-3981-000749\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.23789\",\"margem_empenhada\":\"0.480947\",\"alavancagem_efectiva\":\"40\",\"preco_de_liquidacao\":\"4335456.5067096082\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61431415690\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83643.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83643.0\",\"oid\":61431415690,\"cloid\":\"0x5d96e93f86c51dcd56e77808e5842568\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-sell-101/mesa-3333-000101/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.12105\",\"margem_empenhada\":\"9.56\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41567\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-sell-101/mesa-3333-000101\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.21627\",\"margem_empenhada\":\"9.608135\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"4334828.422973698\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61432462006\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83549.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83549.0\",\"oid\":61432462006,\"cloid\":\"0xdc85edd722a649bf6c4da294cf331a43\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5096,21 +5099,22 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734400213 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735352686 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3981-000749\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.390201\",\"marca\":\"83630.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0x5d96e93f86c51dcd56e77808e5842568\",\"quantidade\":\"0.00023\",\"nocional\":\"19.13876\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83643.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3333-000101\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.265546\",\"marca\":\"83551.9\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0xdc85edd722a649bf6c4da294cf331a43\",\"quantidade\":\"0.00023\",\"nocional\":\"19.12105\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83549.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
  },
  "envio_fecho-do-vendido": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"fecho-do-vendido/mesa-3982-000750\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1.02\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3982-000750\",\"marca_de_posse\":2087715566}}",
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"fecho-do-vendido/mesa-3334-000102\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1.02\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3334-000102\",\"marca_de_posse\":1747976294}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"fecho-do-vendido/mesa-3982-000750/resolucao\",\"carga\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.17848\",\"margem_empenhada\":\"10.08\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42038\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"fecho-do-vendido/mesa-3982-000750\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.17848\",\"margem_empenhada\":\"10.08\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42038\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61431431864\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83662.4\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83662.4\",\"oid\":61431431864,\"cloid\":\"0x835ad96ae8a5d2edb9ff3959f41bc105\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"fecho-do-vendido/mesa-3334-000102/resolucao\",\"carga\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.15184\",\"margem_empenhada\":\"10.07\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41983\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"fecho-do-vendido/mesa-3334-000102\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.15184\",\"margem_empenhada\":\"10.07\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41983\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61432475415\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83559.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83559.0\",\"oid\":61432475415,\"cloid\":\"0xd63aec487d4f2cfbefc2d31280905eb6\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5121,12 +5125,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734414476 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735367450 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3982-000750\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.379244\",\"marca\":\"83659.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0x835ad96ae8a5d2edb9ff3959f41bc105\",\"quantidade\":\"0.00024\",\"nocional\":\"20.17848\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83662.4\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3334-000102\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.256899\",\"marca\":\"83549.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0xd63aec487d4f2cfbefc2d31280905eb6\",\"quantidade\":\"0.00024\",\"nocional\":\"20.15184\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83559.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
@@ -5137,33 +5142,33 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "classificacao": "parcial",
    "resolucao": {
     "quantidade": "0.00024",
-    "nocional": "20.17848",
-    "margem_empenhada": "10.08",
+    "nocional": "20.15184",
+    "margem_empenhada": "10.07",
     "alavancagem_efectiva": "2",
-    "preco_de_liquidacao": "42038"
+    "preco_de_liquidacao": "41983"
    },
    "resposta_do_venue": {
     "estado": "partially_filled",
-    "order_id": "61431431864",
+    "order_id": "61432475415",
     "preenchido": "0.00023",
-    "preco_medio": "83662.4",
+    "preco_medio": "83559.0",
     "origem_dos_numeros": "calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)",
     "bruto": {
      "totalSz": "0.00023",
-     "avgPx": "83662.4",
-     "oid": 61431431864,
-     "cloid": "0x835ad96ae8a5d2edb9ff3959f41bc105"
+     "avgPx": "83559.0",
+     "oid": 61432475415,
+     "cloid": "0xd63aec487d4f2cfbefc2d31280905eb6"
     }
    }
   },
   "posicao_depois": null,
-  "equity": "990.368406"
+  "equity": "990.245951"
  },
- "envio_abrir-buy-759": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-buy-759/mesa-3991-000759\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3991-000759\",\"marca_de_posse\":2092434167}}",
+ "envio_abrir-buy-111": {
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-buy-111/mesa-3343-000111\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3343-000111\",\"marca_de_posse\":1752694895}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-buy-759/mesa-3991-000759/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33955\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42042\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-buy-759/mesa-3991-000759\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33955\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42042\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61431447510\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83667.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83667.0\",\"oid\":61431447510,\"cloid\":\"0x65421a05b4a61956fd2a0f09e744feb7\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-buy-111/mesa-3343-000111/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.31425\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41987\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-buy-111/mesa-3343-000111\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.31425\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41987\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61432488381\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83558.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83558.0\",\"oid\":61432488381,\"cloid\":\"0x43d69bb84e193302939b3e5046c9d879\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5174,21 +5179,22 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734428588 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735381647 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3991-000759\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.368406\",\"marca\":\"83667.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0x65421a05b4a61956fd2a0f09e744feb7\",\"quantidade\":\"0.00023\",\"nocional\":\"19.33955\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83667.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3343-000111\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.245951\",\"marca\":\"83558.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0x43d69bb84e193302939b3e5046c9d879\",\"quantidade\":\"0.00023\",\"nocional\":\"19.31425\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83558.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
  },
  "envio_virada-passo-1-fechar": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"virada-passo-1-fechar/mesa-3992-000760\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1.03\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3992-000760\",\"marca_de_posse\":2092958456}}",
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"virada-passo-1-fechar/mesa-3344-000112\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1.02\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3344-000112\",\"marca_de_posse\":1753219184}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"virada-passo-1-fechar/mesa-3992-000760/resolucao\",\"carga\":{\"quantidade\":\"0.00024\",\"nocional\":\"19.97304\",\"margem_empenhada\":\"9.98\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41610\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"virada-passo-1-fechar/mesa-3992-000760\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00024\",\"nocional\":\"19.97304\",\"margem_empenhada\":\"9.98\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41610\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61431463593\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83630.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83630.0\",\"oid\":61431463593,\"cloid\":\"0xf90ad7632f457ea27cb4cd75e8de9ba1\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"virada-passo-1-fechar/mesa-3344-000112/resolucao\",\"carga\":{\"quantidade\":\"0.00024\",\"nocional\":\"19.95456\",\"margem_empenhada\":\"9.97\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41572\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"virada-passo-1-fechar/mesa-3344-000112\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00024\",\"nocional\":\"19.95456\",\"margem_empenhada\":\"9.97\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41572\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61432504230\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83562.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83562.0\",\"oid\":61432504230,\"cloid\":\"0x348db6e91cac9e843cd3f083696eeba5\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5199,49 +5205,50 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734442414 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735396746 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3992-000760\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.353307\",\"marca\":\"83639.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0xf90ad7632f457ea27cb4cd75e8de9ba1\",\"quantidade\":\"0.00024\",\"nocional\":\"19.97304\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83630.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3344-000112\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.237993\",\"marca\":\"83561.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0x348db6e91cac9e843cd3f083696eeba5\",\"quantidade\":\"0.00024\",\"nocional\":\"19.95456\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83562.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
  },
  "fecho_virada-passo-1-fechar": {
-  "saldo_pct": 1.03,
+  "saldo_pct": 1.02,
   "desfecho": {
    "classificacao": "parcial",
    "resolucao": {
     "quantidade": "0.00024",
-    "nocional": "19.97304",
-    "margem_empenhada": "9.98",
+    "nocional": "19.95456",
+    "margem_empenhada": "9.97",
     "alavancagem_efectiva": "2",
-    "preco_de_liquidacao": "41610"
+    "preco_de_liquidacao": "41572"
    },
    "resposta_do_venue": {
     "estado": "partially_filled",
-    "order_id": "61431463593",
+    "order_id": "61432504230",
     "preenchido": "0.00023",
-    "preco_medio": "83630.0",
+    "preco_medio": "83562.0",
     "origem_dos_numeros": "calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)",
     "bruto": {
      "totalSz": "0.00023",
-     "avgPx": "83630.0",
-     "oid": 61431463593,
-     "cloid": "0xf90ad7632f457ea27cb4cd75e8de9ba1"
+     "avgPx": "83562.0",
+     "oid": 61432504230,
+     "cloid": "0x348db6e91cac9e843cd3f083696eeba5"
     }
    }
   },
   "posicao_depois": null,
-  "equity": "990.342582"
+  "equity": "990.229575"
  },
- "envio_abrir-sell-761": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-sell-761/mesa-3993-000761\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3993-000761\",\"marca_de_posse\":2093482745}}",
+ "envio_abrir-sell-113": {
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-sell-113/mesa-3345-000113\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3345-000113\",\"marca_de_posse\":1753743473}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-sell-761/mesa-3993-000761/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.13876\",\"margem_empenhada\":\"9.56\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41606\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-sell-761/mesa-3993-000761\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.2349\",\"margem_empenhada\":\"0.480872\",\"alavancagem_efectiva\":\"40\",\"preco_de_liquidacao\":\"4335238.2050456246\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61431477197\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83629.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83629.0\",\"oid\":61431477197,\"cloid\":\"0xe8f2b1c96443b8bb82036aff13b56021\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-sell-113/mesa-3345-000113/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.12358\",\"margem_empenhada\":\"9.56\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41573\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-sell-113/mesa-3345-000113\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.21926\",\"margem_empenhada\":\"9.60963\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"4334681.8550724639\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61432519121\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83557.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83557.0\",\"oid\":61432519121,\"cloid\":\"0x021b79b068c7381129310ab29fcff846\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5252,21 +5259,22 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734455603 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735410902 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3993-000761\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.342582\",\"marca\":\"83630.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0xe8f2b1c96443b8bb82036aff13b56021\",\"quantidade\":\"0.00023\",\"nocional\":\"19.13876\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83629.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3345-000113\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.229575\",\"marca\":\"83563.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0x021b79b068c7381129310ab29fcff846\",\"quantidade\":\"0.00023\",\"nocional\":\"19.12358\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83557.0\",\"origem_dos_numeros\":\"posicao_lida_depois_do_envio\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
  },
  "envio_virada-passo-3-fechar": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"virada-passo-3-fechar/mesa-3994-000762\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1.02\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3994-000762\",\"marca_de_posse\":2094007034}}",
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"virada-passo-3-fechar/mesa-3346-000114\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1.02\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":true,\"referencia_do_cliente\":\"mesa-3346-000114\",\"marca_de_posse\":1754267762}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"virada-passo-3-fechar/mesa-3994-000762/resolucao\",\"carga\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.17248\",\"margem_empenhada\":\"10.08\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42026\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"virada-passo-3-fechar/mesa-3994-000762\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.17248\",\"margem_empenhada\":\"10.08\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42026\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61431490968\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83639.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83639.0\",\"oid\":61431490968,\"cloid\":\"0xf3f6b4c42fbc74c555187422f691a61d\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"virada-passo-3-fechar/mesa-3346-000114/resolucao\",\"carga\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.15376\",\"margem_empenhada\":\"10.07\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41987\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"virada-passo-3-fechar/mesa-3346-000114\",\"carga\":{\"classificacao\":\"parcial\",\"resolucao\":{\"quantidade\":\"0.00024\",\"nocional\":\"20.15376\",\"margem_empenhada\":\"10.07\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41987\"},\"resposta_do_venue\":{\"estado\":\"partially_filled\",\"order_id\":\"61432538279\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83562.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83562.0\",\"oid\":61432538279,\"cloid\":\"0xc2d655ef70119de43dc2e62eec0bd157\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5277,12 +5285,13 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734467998 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735425596 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3994-000762\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.332087\",\"marca\":\"83634.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0xf3f6b4c42fbc74c555187422f691a61d\",\"quantidade\":\"0.00024\",\"nocional\":\"20.17248\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83639.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3346-000114\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.221065\",\"marca\":\"83556.4\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0xc2d655ef70119de43dc2e62eec0bd157\",\"quantidade\":\"0.00024\",\"nocional\":\"20.15376\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"parcial\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83562.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
@@ -5293,27 +5302,27 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "classificacao": "parcial",
    "resolucao": {
     "quantidade": "0.00024",
-    "nocional": "20.17248",
-    "margem_empenhada": "10.08",
+    "nocional": "20.15376",
+    "margem_empenhada": "10.07",
     "alavancagem_efectiva": "2",
-    "preco_de_liquidacao": "42026"
+    "preco_de_liquidacao": "41987"
    },
    "resposta_do_venue": {
     "estado": "partially_filled",
-    "order_id": "61431490968",
+    "order_id": "61432538279",
     "preenchido": "0.00023",
-    "preco_medio": "83639.0",
+    "preco_medio": "83562.0",
     "origem_dos_numeros": "calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)",
     "bruto": {
      "totalSz": "0.00023",
-     "avgPx": "83639.0",
-     "oid": 61431490968,
-     "cloid": "0xf3f6b4c42fbc74c555187422f691a61d"
+     "avgPx": "83562.0",
+     "oid": 61432538279,
+     "cloid": "0xc2d655ef70119de43dc2e62eec0bd157"
     }
    }
   },
   "posicao_depois": null,
-  "equity": "990.322971"
+  "equity": "990.211129"
  },
  "P14_virada": {
   "passo_1_comprado": {
@@ -5328,30 +5337,30 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prazo_da_passiva_ms": 3000,
     "destino_do_resto": "agressivo",
     "reduce_only": false,
-    "referencia_do_cliente": "mesa-3991-000759",
-    "marca_de_posse": 2092434167
+    "referencia_do_cliente": "mesa-3343-000111",
+    "marca_de_posse": 1752694895
    },
    "posicao": "0.00023",
    "desfecho": {
     "classificacao": "aceite",
     "resolucao": {
      "quantidade": "0.00023",
-     "nocional": "19.33955",
-     "margem_empenhada": "9.66",
+     "nocional": "19.31425",
+     "margem_empenhada": "9.65",
      "alavancagem_efectiva": "2",
-     "preco_de_liquidacao": "42042"
+     "preco_de_liquidacao": "41987"
     },
     "resposta_do_venue": {
      "estado": "filled",
-     "order_id": "61431447510",
+     "order_id": "61432488381",
      "preenchido": "0.00023",
-     "preco_medio": "83667.0",
+     "preco_medio": "83558.0",
      "origem_dos_numeros": "calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)",
      "bruto": {
       "totalSz": "0.00023",
-      "avgPx": "83667.0",
-      "oid": 61431447510,
-      "cloid": "0x65421a05b4a61956fd2a0f09e744feb7"
+      "avgPx": "83558.0",
+      "oid": 61432488381,
+      "cloid": "0x43d69bb84e193302939b3e5046c9d879"
      }
     }
    }
@@ -5361,36 +5370,36 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "instrumento": "BTC",
     "lado": "sell",
     "tipo": "mercado",
-    "saldo_pct": "1.03",
+    "saldo_pct": "1.02",
     "alavancagem": "2",
     "parcial": "o_que_der",
     "desvio_maximo": "0.5",
     "prazo_da_passiva_ms": 3000,
     "destino_do_resto": "agressivo",
     "reduce_only": true,
-    "referencia_do_cliente": "mesa-3992-000760",
-    "marca_de_posse": 2092958456
+    "referencia_do_cliente": "mesa-3344-000112",
+    "marca_de_posse": 1753219184
    },
    "desfecho": {
     "classificacao": "parcial",
     "resolucao": {
      "quantidade": "0.00024",
-     "nocional": "19.97304",
-     "margem_empenhada": "9.98",
+     "nocional": "19.95456",
+     "margem_empenhada": "9.97",
      "alavancagem_efectiva": "2",
-     "preco_de_liquidacao": "41610"
+     "preco_de_liquidacao": "41572"
     },
     "resposta_do_venue": {
      "estado": "partially_filled",
-     "order_id": "61431463593",
+     "order_id": "61432504230",
      "preenchido": "0.00023",
-     "preco_medio": "83630.0",
+     "preco_medio": "83562.0",
      "origem_dos_numeros": "calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)",
      "bruto": {
       "totalSz": "0.00023",
-      "avgPx": "83630.0",
-      "oid": 61431463593,
-      "cloid": "0xf90ad7632f457ea27cb4cd75e8de9ba1"
+      "avgPx": "83562.0",
+      "oid": 61432504230,
+      "cloid": "0x348db6e91cac9e843cd3f083696eeba5"
      }
     }
    },
@@ -5408,22 +5417,22 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "prazo_da_passiva_ms": 3000,
     "destino_do_resto": "agressivo",
     "reduce_only": false,
-    "referencia_do_cliente": "mesa-3993-000761",
-    "marca_de_posse": 2093482745
+    "referencia_do_cliente": "mesa-3345-000113",
+    "marca_de_posse": 1753743473
    },
    "posicao": {
     "coin": "BTC",
     "szi": "-0.00023",
     "leverage": {
      "type": "cross",
-     "value": 40
+     "value": 2
     },
-    "entryPx": "83629.0",
-    "positionValue": "19.2349",
-    "unrealizedPnl": "-0.00023",
-    "returnOnEquity": "-0.000478303",
-    "liquidationPx": "4335238.2050456246",
-    "marginUsed": "0.480872",
+    "entryPx": "83557.0",
+    "positionValue": "19.21926",
+    "unrealizedPnl": "-0.00115",
+    "returnOnEquity": "-0.0001196788",
+    "liquidationPx": "4334681.8550724639",
+    "marginUsed": "9.60963",
     "maxLeverage": 40,
     "cumFunding": {
      "allTime": "0.0",
@@ -5435,22 +5444,22 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "classificacao": "aceite",
     "resolucao": {
      "quantidade": "0.00023",
-     "nocional": "19.2349",
-     "margem_empenhada": "0.480872",
-     "alavancagem_efectiva": "40",
-     "preco_de_liquidacao": "4335238.2050456246"
+     "nocional": "19.21926",
+     "margem_empenhada": "9.60963",
+     "alavancagem_efectiva": "2",
+     "preco_de_liquidacao": "4334681.8550724639"
     },
     "resposta_do_venue": {
      "estado": "filled",
-     "order_id": "61431477197",
+     "order_id": "61432519121",
      "preenchido": "0.00023",
-     "preco_medio": "83629.0",
+     "preco_medio": "83557.0",
      "origem_dos_numeros": "posicao_lida_depois_do_envio",
      "bruto": {
       "totalSz": "0.00023",
-      "avgPx": "83629.0",
-      "oid": 61431477197,
-      "cloid": "0xe8f2b1c96443b8bb82036aff13b56021"
+      "avgPx": "83557.0",
+      "oid": 61432519121,
+      "cloid": "0x021b79b068c7381129310ab29fcff846"
      }
     }
    }
@@ -5460,33 +5469,33 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
     "classificacao": "parcial",
     "resolucao": {
      "quantidade": "0.00024",
-     "nocional": "20.17248",
-     "margem_empenhada": "10.08",
+     "nocional": "20.15376",
+     "margem_empenhada": "10.07",
      "alavancagem_efectiva": "2",
-     "preco_de_liquidacao": "42026"
+     "preco_de_liquidacao": "41987"
     },
     "resposta_do_venue": {
      "estado": "partially_filled",
-     "order_id": "61431490968",
+     "order_id": "61432538279",
      "preenchido": "0.00023",
-     "preco_medio": "83639.0",
+     "preco_medio": "83562.0",
      "origem_dos_numeros": "calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)",
      "bruto": {
       "totalSz": "0.00023",
-      "avgPx": "83639.0",
-      "oid": 61431490968,
-      "cloid": "0xf3f6b4c42fbc74c555187422f691a61d"
+      "avgPx": "83562.0",
+      "oid": 61432538279,
+      "cloid": "0xc2d655ef70119de43dc2e62eec0bd157"
      }
     }
    },
    "posicao_depois": null
   }
  },
- "envio_abrir-buy-769": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-buy-769/mesa-4001-000769\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-4001-000769\",\"marca_de_posse\":2097677057}}",
+ "envio_abrir-buy-121": {
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"abrir-buy-121/mesa-3353-000121\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"buy\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3353-000121\",\"marca_de_posse\":1757937785}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-buy-769/mesa-4001-000769/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33265\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42027\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-buy-769/mesa-4001-000769\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.33265\",\"margem_empenhada\":\"9.66\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"42027\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61431504089\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83639.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83639.0\",\"oid\":61431504089,\"cloid\":\"0x4f4417fcd8a0ff0da64d4da36be12cd4\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"abrir-buy-121/mesa-3353-000121/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.31218\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41983\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"abrir-buy-121/mesa-3353-000121\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.31218\",\"margem_empenhada\":\"9.65\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41983\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61432554436\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83562.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83562.0\",\"oid\":61432554436,\"cloid\":\"0xf4047f4bb50df9e44e5b87a104cc20f3\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5497,21 +5506,22 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734482341 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735441744 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-4001-000769\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.322971\",\"marca\":\"83637.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0x4f4417fcd8a0ff0da64d4da36be12cd4\",\"quantidade\":\"0.00023\",\"nocional\":\"19.33265\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83639.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3353-000121\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.211129\",\"marca\":\"83548.6\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0xf4047f4bb50df9e44e5b87a104cc20f3\",\"quantidade\":\"0.00023\",\"nocional\":\"19.31218\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83562.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (a posicao do venue nao publica preco de liquidacao)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
  },
  "envio_inverso-sem-fechar": {
-  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"inverso-sem-fechar/mesa-4002-000770\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-4002-000770\",\"marca_de_posse\":2098201346}}",
+  "entrada": "{\"contrato\":\"1.7.0\",\"tipo\":\"boleta\",\"id\":\"inverso-sem-fechar/mesa-3354-000122\",\"carga\":{\"instrumento\":\"BTC\",\"lado\":\"sell\",\"tipo\":\"mercado\",\"saldo_pct\":\"1\",\"alavancagem\":\"2\",\"parcial\":\"o_que_der\",\"desvio_maximo\":\"0.5\",\"prazo_da_passiva_ms\":3000,\"destino_do_resto\":\"agressivo\",\"reduce_only\":false,\"referencia_do_cliente\":\"mesa-3354-000122\",\"marca_de_posse\":1758462074}}",
   "saida": [
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"inverso-sem-fechar/mesa-4002-000770/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.13991\",\"margem_empenhada\":\"9.56\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41608\"}}",
-   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"inverso-sem-fechar/mesa-4002-000770\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.13991\",\"margem_empenhada\":\"9.56\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41608\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61431521265\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83634.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83634.0\",\"oid\":61431521265,\"cloid\":\"0x32c6a0c750169061d3f7b1b8178a6484\"}}}}"
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"resolucao\",\"id\":\"inverso-sem-fechar/mesa-3354-000122/resolucao\",\"carga\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.11783\",\"margem_empenhada\":\"9.55\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41560\"}}",
+   "{\"contrato\":\"1.7.0\",\"tipo\":\"desfecho\",\"id\":\"inverso-sem-fechar/mesa-3354-000122\",\"carga\":{\"classificacao\":\"aceite\",\"resolucao\":{\"quantidade\":\"0.00023\",\"nocional\":\"19.11783\",\"margem_empenhada\":\"9.55\",\"alavancagem_efectiva\":\"2\",\"preco_de_liquidacao\":\"41560\"},\"resposta_do_venue\":{\"estado\":\"filled\",\"order_id\":\"61432569887\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83557.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\",\"bruto\":{\"totalSz\":\"0.00023\",\"avgPx\":\"83557.0\",\"oid\":61432569887,\"cloid\":\"0x4b535f43c3ff7ca31fd1dcd375292c67\"}}}}"
   ],
   "erros": [
    "{\"etapa\":\"ficha\",\"de\":\"configuracao do dono (/home/cerucci/Projects/MesaCore/config/contas/hl-teste-plugin.json)\",\"conector\":\"hyperliquid\",\"ambiente\":\"teste\",\"url\":\"https://api.hyperliquid-testnet.xyz\",\"instrumentos\":[\"BTC\"],\"contrato_da_ficha\":\"1.7.0\",\"nota\":\"o VALOR da credencial nao entra em linha nenhuma deste processo (FR-023)\"}",
@@ -5522,18 +5532,19 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "{\"porta\":\"chave\",\"veredicto\":\"passou\",\"porque\":\"credencial `hl-teste-plugin` resolvida de ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key (ficheiro fora do repositorio, modo 600); o VALOR da chave nunca entra no registo deste processo (FR-023)\"}",
    "{\"porta\":\"ligacao\",\"veredicto\":\"passou\",\"porque\":\"estado da ligacao pelo protocolo do venue: ligada (o venue RESPONDEU ao pedido da conta; o silencio do protocolo seria `desconhecido`, nunca `ligada` nem `caido` — FR-020). Leituras respondidas: perpetuo, spot, activo, agentes. Carteiras: perpetuo, spot\"}",
    "{\"porta\":\"sonda_e_manifesto\",\"veredicto\":\"passou\",\"porque\":\"sonda do venue lida e manifesto publicado: 1 instrumento(s) com unidade declarada, tipos de ordem [\\\"mercado\\\",\\\"limite\\\"], parcial [\\\"o_que_der\\\"]; a bateria declarou minimo_de_valor_por_ordem, desvio_maximo, ajusta_alavancagem, stop_anexo, idempotencia, marca_liga_ordem_a_posicao\"}",
-   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790734495918 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
+   "{\"porta\":\"identidade\",\"veredicto\":\"passou\",\"porque\":\"o agente que assina (0x7b3A39cCAdb8Dd294bbB83D3e0bBd1b3b411Ca81) esta REGISTADO na conta 0xF87138D298E338962E1a2e0ff23267Dc32c15621 e dentro do prazo (1798477732304 ms > 1790735456612 ms): a credencial que o processo carregou por referencia e' desta conta\"}",
    "{\"etapa\":\"manifesto_publicado\",\"id\":\"hyperliquid/manifesto\",\"versao\":\"1.7.0\",\"instrumentos\":1,\"tipos_de_ordem\":[\"mercado\",\"limite\"],\"idempotencia\":true,\"marca_de_posse\":\"cloid\",\"estado_da_ligacao\":\"ligada\",\"carteiras_nao_lidas\":[],\"credencial_de\":\"ficheiro:/home/cerucci/.config/mesacore/credenciais/hl-teste-plugin.key\"}",
-   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-4002-000770\",\"instrumento\":\"BTC\"}",
-   "{\"etapa\":\"conta\",\"equity\":\"990.313395\",\"marca\":\"83635.0\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
-   "{\"etapa\":\"traducao\",\"cloid\":\"0x32c6a0c750169061d3f7b1b8178a6484\",\"quantidade\":\"0.00023\",\"nocional\":\"19.13991\",\"tif\":\"Ioc\"}",
-   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83634.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
+   "{\"etapa\":\"boleta\",\"referencia_do_cliente\":\"mesa-3354-000122\",\"instrumento\":\"BTC\"}",
+   "{\"etapa\":\"conta\",\"equity\":\"990.197076\",\"marca\":\"83538.5\",\"origem_marca\":\"info.activeAssetData({user,coin}).markPx — [V]\"}",
+   "{\"etapa\":\"traducao\",\"cloid\":\"0x4b535f43c3ff7ca31fd1dcd375292c67\",\"quantidade\":\"0.00023\",\"nocional\":\"19.11783\",\"tif\":\"Ioc\"}",
+   "{\"etapa\":\"alavancagem\",\"pedida\":\"2\",\"antes\":\"\",\"depois\":\"2\",\"modo\":\"cruzado\"}",
+   "{\"etapa\":\"envio\",\"veredicto\":\"aceite\",\"preenchido\":\"0.00023\",\"preco_medio\":\"83557.0\",\"origem_dos_numeros\":\"calculo_antes_do_envio (o venue nao reporta posicao neste instrumento depois do envio)\"}",
    "{\"etapa\":\"fim\",\"atendidas\":1,\"nota\":\"o cano fechou: nenhuma operacao fica nas maos deste processo\"}"
   ],
   "codigo": 0
  },
  "P16_banda_do_saldo": {
-  "equity": "990.435864",
+  "equity": "990.304509",
   "dentro": {
    "veredicto": "dentro",
    "accao": "seguir",
@@ -5557,14 +5568,14 @@ SAIDA CRUA (o que o venue respondeu, sem resumo):
    "fora": [
     {
      "campo": "saldo_pct",
-     "valor": "19808.71728",
-     "minimo": "0.990435864",
-     "maximo": "49.52179320",
-     "porque": "a posicao ficou com nocional 19808.71728 sobre um equity de 990.435864, e o maximo declarado (5%) vale 49.52179320 de nocional"
+     "valor": "19806.09018",
+     "minimo": "0.990304509",
+     "maximo": "49.51522545",
+     "porque": "a posicao ficou com nocional 19806.09018 sobre um equity de 990.304509, e o maximo declarado (5%) vale 49.51522545 de nocional"
     }
    ],
    "nao_conferidas": [],
-   "porque": "1 de 3 conferidas cairam FORA da banda declarada: a posicao ficou com nocional 19808.71728 sobre um equity de 990.435864, e o maximo declarado (5%) vale 49.52179320 de nocional. Ja esta executado: reduz-se e registra-se a divergencia, e nao se abre risco novo neste instrumento ate ela estar explicada."
+   "porque": "1 de 3 conferidas cairam FORA da banda declarada: a posicao ficou com nocional 19806.09018 sobre um equity de 990.304509, e o maximo declarado (5%) vale 49.51522545 de nocional. Ja esta executado: reduz-se e registra-se a divergencia, e nao se abre risco novo neste instrumento ate ela estar explicada."
   }
  }
 }
