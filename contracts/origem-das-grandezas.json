@@ -16,7 +16,7 @@
     "boleta.marca_de_posse": {"origem": "mesa", "regra": "RN-B10: composta pela mesa (ficha x ciclo); o layout esta declarado em vocabulario.json"},
     "proposta.relogio.proxima_consulta_ms": {"origem": "setup", "chave": "fichas/<i>.setup.relogio.proxima_consulta_ms", "regra": "RN-S2/RN-T5: o setup DECLARA quando quer ser consultado de novo"},
     "mercado.tempo_do_venue_ms": {"origem": "venue", "regra": "RN-D3: o relogio e o do venue"},
-    "mercado.idade_do_dado_ms": {"origem": "venue", "regra": "RN-D3: e a idade MEDIDA; o limite e que e do dono (conta.idade_maxima_do_dado_ms)"},
+    "mercado.idade_do_dado_ms": {"origem": "venue", "regra": "RN-D3 (revisto na emenda do dono, 28 set 2026): e a idade MEDIDA do dado. Deixou de existir limite de idade do dono (`conta.idade_maxima_do_dado_ms` SAIU) - quem diz que a mesa esta cega e' o estado da ligacao reportado PELO PROTOCOLO (obrigacao 1 do manifesto, `ligacao_por_protocolo`, contrato 1.7.0), e a idade da barra e' regra do setup"},
     "mercado.posicao.marca_de_posse": {"origem": "venue", "regra": "RN-T16.1: a marca vem do venue, e e por ela que a posse se le"},
     "historico.instante_ms": {"origem": "venue", "regra": "RN-C11"},
     "historico.execucoes[].instante_ms": {"origem": "venue", "regra": "RN-C11"},

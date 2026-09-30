@@ -41,16 +41,24 @@ export interface RespostaDaMesa extends Resposta {
 export interface OpcoesDaMesa {
   caminhoDasMarcas?: string;
   caminhoDoRegisto?: string;
+  /**
+   * `conta.identificador` da configuracao - de que conta fala esta mesa (residuo do D-004: a atribuicao por
+   * conta no registo). Ausente = a mesa nao sabe qual e'; nesse caso escreve as linhas SEM conta, e isso
+   * fica dito na linha em vez de ser adivinhado aqui.
+   */
+  conta?: string;
 }
 
 export class Mesa {
   estado: Estado = "parada";
   private readonly caminhoDasMarcas: string;
   private readonly caminhoDoRegisto: string;
+  private readonly conta: string | undefined;
 
   constructor(opcoes: OpcoesDaMesa = {}) {
     this.caminhoDasMarcas = opcoes.caminhoDasMarcas ?? marcas_mod.CAMINHO_DAS_MARCAS;
     this.caminhoDoRegisto = opcoes.caminhoDoRegisto ?? join(RAIZ_DO_CORE, "estado", ".registo.jsonl");
+    this.conta = opcoes.conta;
   }
 
   marcas(): marcas_mod.Marcas {
@@ -170,6 +178,7 @@ export class Mesa {
       r.motivo,
       `${nota}: ${r.porque}`,
       this.caminhoDoRegisto,
+      this.conta,
     );
 
     return {
@@ -202,6 +211,7 @@ export class Mesa {
       null,
       "liquidacao cumprida: nao ha posicao nossa para fechar em instrumento nenhum - a mesa fica parada",
       this.caminhoDoRegisto,
+      this.conta,
     );
   }
 
@@ -218,6 +228,7 @@ export class Mesa {
         validacao.motivo,
         validacao.detalhe,
         this.caminhoDoRegisto,
+        this.conta,
       );
       return {
         verbo: typeof verbo === "string" ? verbo : "(sem verbo)",
@@ -285,6 +296,7 @@ export class Mesa {
         null,
         resposta.nota,
         this.caminhoDoRegisto,
+        this.conta,
       );
     } else {
       registarRecusa(
@@ -295,6 +307,7 @@ export class Mesa {
         resposta.motivo ?? "(sem motivo)",
         resposta.nota,
         this.caminhoDoRegisto,
+        this.conta,
       );
     }
 

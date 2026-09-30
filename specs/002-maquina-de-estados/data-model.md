@@ -36,6 +36,15 @@ O que se sabe sobre um instrumento agora. **Não persiste**: recalcula-se das le
 | `fecha` | booleano derivado | `normal` **ou** `sem_ligacao` (nunca em `sem_leitura`, `divergente`, `congelada`, `mercado_fechado`) | FR-016 a FR-020 |
 | `alarma` | booleano derivado | `sem_ligacao` ou condição ≠ `normal` | FR-042, RN-E15 |
 
+> **Nota de 29/09/2026 — a linha do `sem_ligacao` está ERRADA, e fica escrita por ser auditável.** O que
+> vale é: `sem_ligacao` vem do **estado da ligação reportado pelo protocolo** (condição `sem_ligacao`, §8 do
+> inventário, e a obrigação 1 do manifesto — `ligacao_por_protocolo`, contrato **1.7.0**), **nunca** de
+> `idade_do_dado_ms ≥ conta.idade_maxima_do_dado_ms`. Essa chave **saiu por inteiro** na emenda do dono de
+> 28 set 2026 (o inventário §8.1 diz porquê) e `core/ciclo/condicoes.ts` já não a lê — diz, em comentário,
+> que em varejo o silêncio do tick não distingue «ligado sem ticks» de «ligação morta». Ficou como o
+> `[falta]` mais antigo do inventário: uma regra que mandava invalidar «acima do limite declarado» com o
+> limite declarado em lado nenhum. Ver `docs/inventario-de-chaves.md` §6.1.
+
 **A distinção que este objecto existe para forçar** (as "três confusões" do documento de estados):
 
 | | `sem_ligacao` | `sem_leitura` | `divergente` |

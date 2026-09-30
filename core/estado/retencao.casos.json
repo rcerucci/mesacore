@@ -1,0 +1,110 @@
+{
+  "nota": "Os casos do LEITOR da retencao do ledger (RN-L6). Cada caso diz a declaracao (`retencao`), as linhas do registo (so o `instante_ms` importa para a classificacao) e o que a leitura tem de devolver. A fronteira e' INCLUSIVA do lado do integral - e as duas metades dessa borda estao aqui, porque uma borda que ninguem mede e' uma borda que muda sozinha.",
+  "fonte_da_regra": "docs/regra-de-negocio.md - RN-L6 (o ledger nunca se reescreve; a retencao e declarada)",
+  "fonte_da_forma": "tools/verificar-config/conferir-config.ts - `conta.retencao_ledger.dias_integral` (inteiro, banda 0..36500) e `.depois` (texto)",
+  "agora_ms": 1790628000000,
+  "casos": [
+    {
+      "nome": "retencao/dentro-da-janela-e-integral",
+      "retencao": { "dias_integral": 7, "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790627999000 }, { "instante_ms": 1790541600000 }],
+      "esperado": { "integrais": 2, "passadas": 0, "recusa": false },
+      "historico": "Duas linhas dentro dos sete dias (uma de agora, uma de ha um dia)."
+    },
+    {
+      "nome": "retencao/na-fronteira-e-integral",
+      "retencao": { "dias_integral": 7, "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790023200000 }],
+      "esperado": { "integrais": 1, "passadas": 0, "recusa": false },
+      "historico": "A linha esta EXACTAMENTE na fronteira (agora - 7 dias = 1790023200000). A borda e' inclusiva do lado do integral, e isto e' uma decisao, nao um acidente."
+    },
+    {
+      "nome": "retencao/um-ms-antes-da-fronteira-ja-passou",
+      "retencao": { "dias_integral": 7, "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790023199999 }],
+      "esperado": { "integrais": 0, "passadas": 1, "recusa": false },
+      "historico": "O PAR DE CONTROLE do caso da fronteira: o mesmo instante, um milissegundo antes, ja passou. Sem esta metade, `na-fronteira-e-integral` podia estar a medir o lado errado sem ninguem dar por isso."
+    },
+    {
+      "nome": "retencao/zero-dias-so-o-instantaneo-fica-integral",
+      "retencao": { "dias_integral": 0, "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790627999999 }, { "instante_ms": 1790628000000 }],
+      "esperado": { "integrais": 1, "passadas": 1, "recusa": false },
+      "historico": "A banda comeca em zero: com zero dias, so a linha do proprio instante fica integral. E' o limite inferior da banda declarada, e o limite tambem se mede."
+    },
+    {
+      "nome": "retencao/sem-declaracao-nada-passa",
+      "retencao": null,
+      "linhas": [
+        { "instante_ms": 1756888140000 },
+        { "instante_ms": 1700000000000 },
+        { "instante_ms": 1600000000000 }
+      ],
+      "esperado": { "integrais": 3, "passadas": 0, "recusa": true },
+      "historico": "SEM declaracao nao se classifica nada como passado: o registo fica integral por inteiro. E' a regra da RN-L6 lida ao contrario - o que se perde por nao haver regra e' a distincao, nunca o arquivo de tumulos."
+    },
+    {
+      "nome": "retencao/registo-vazio-nao-e-erro",
+      "retencao": { "dias_integral": 7, "depois": "resumo_diario" },
+      "linhas": [],
+      "esperado": { "integrais": 0, "passadas": 0, "recusa": false },
+      "historico": "Um registo vazio e' um registo vazio, e nao uma falha da leitura."
+    },
+    {
+      "nome": "retencao/a-banda-mais-longa-tambem-se-mede",
+      "retencao": { "dias_integral": 36500, "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": -1362972000001 }, { "instante_ms": -1362972000000 }],
+      "esperado": { "integrais": 1, "passadas": 1, "recusa": false },
+      "historico": "O limite SUPERIOR da banda (36500 dias = 100 anos), com o par de controle outra vez: um ms antes ja passou. A fronteira nao tem caso especial para valores grandes."
+    },
+    {
+      "nome": "retencao/dias-como-texto-e-aceite",
+      "retencao": { "dias_integral": "7", "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790627999000 }, { "instante_ms": 1790541600000 }],
+      "esperado": { "integrais": 2, "passadas": 0, "recusa": false },
+      "historico": "A configuracao aceita o inteiro na forma textual (`\"7\"`, `/^-?(0|[1-9][0-9]*)$/`) - e a conta de teste escreve-o assim. Uma casa, uma regra: o leitor aceita o mesmo que o conferidor da configuracao."
+    },
+    {
+      "nome": "retencao/dias-com-casas-decimais-recusa",
+      "retencao": { "dias_integral": "7.5", "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790627999000 }],
+      "esperado": { "integrais": 1, "passadas": 0, "recusa": true },
+      "historico": "Meio dia de retencao nao e' uma declaracao: recusa, e nada passa (a recusa NAO vira `7` nem `8`)."
+    },
+    {
+      "nome": "retencao/dias-negativo-recusa",
+      "retencao": { "dias_integral": -1, "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790627999000 }],
+      "esperado": { "integrais": 1, "passadas": 0, "recusa": true },
+      "historico": "Retencao negativa seria uma fronteira no futuro - tudo passado. Recusa-se."
+    },
+    {
+      "nome": "retencao/dias-acima-da-banda-recusa",
+      "retencao": { "dias_integral": 36501, "depois": "resumo_diario" },
+      "linhas": [{ "instante_ms": 1790627999000 }],
+      "esperado": { "integrais": 1, "passadas": 0, "recusa": true },
+      "historico": "Um dia acima da banda da configuracao (36500)."
+    },
+    {
+      "nome": "retencao/depois-vazio-recusa",
+      "retencao": { "dias_integral": 7, "depois": "" },
+      "linhas": [{ "instante_ms": 1790627999000 }],
+      "esperado": { "integrais": 1, "passadas": 0, "recusa": true },
+      "historico": "Sem destino declarado, a fronteira nao manda nada para lado nenhum: recusa em vez de assumir um agregado que ninguem escolheu."
+    },
+    {
+      "nome": "retencao/depois-so-espacos-recusa",
+      "retencao": { "dias_integral": 7, "depois": "   " },
+      "linhas": [{ "instante_ms": 1790627999000 }],
+      "esperado": { "integrais": 1, "passadas": 0, "recusa": true },
+      "historico": "Um nome de agregado que so tem espacos nao e' um nome."
+    },
+    {
+      "nome": "retencao/o-que-nao-e-objecto-recusa",
+      "retencao": "7",
+      "linhas": [{ "instante_ms": 1790627999000 }],
+      "esperado": { "integrais": 1, "passadas": 0, "recusa": true },
+      "historico": "A declaracao tem DUAS partes (`dias_integral` e `depois`): um numero solto nao declara para onde vai o que passa."
+    }
+  ]
+}

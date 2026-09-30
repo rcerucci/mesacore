@@ -17,7 +17,7 @@ import { decidirInstrumento } from "../../core/ciclo/ciclo.ts";
 import { correrPedidoDeParada } from "../../core/ciclo/encerramento.ts";
 import { lerParaOCiclo } from "../../core/leitura/fixtures.ts";
 import { marcasVazias } from "../../core/estado/marcas.ts";
-import { reconstruir, registarCiclo, type LinhaDoRegisto } from "../../core/estado/registo.ts";
+import { contasNoRegisto, lerRegisto, reconstruir, registarCiclo, type LinhaDoRegisto } from "../../core/estado/registo.ts";
 import { Mesa } from "../../core/mesa.ts";
 import { motivoConhecido } from "../../core/livro-de-motivos.ts";
 import type { ConfiguracaoDaConta } from "../../core/config/configuracao.ts";
@@ -167,6 +167,61 @@ exigir(
   naoFez.length >= 5 && razoes.size >= 4,
   `SC-011 (5): ${naoFez.length} decisoes de nao-fazer, explicadas por ${razoes.size} razoes distintas do livro`,
   [`razoes: ${[...razoes].join(", ")}`],
+);
+
+// 6. A CONTA NA LINHA (residuo do D-004)
+//
+// O dia que corre acima e' de uma conta so'. Para medir ATRIBUICAO faz-se o que o defeito pede: as mesmas
+// operacoes em DUAS mesas, com contas diferentes, escritas no MESMO registo - e a reconstrucao de cada uma
+// tem de fechar no estado DELA. E' por isso que ha a metade de controle: a mesma corrida com as contas
+// trocadas, para "atribuiu certo" nao poder ser coincidencia de haver uma conta so'.
+function correrDuasContas(contaDaPrimeira: string, contaDaSegunda: string) {
+  const caminho = `${caminhoDoRegisto}.duas`;
+  rmSync(caminho, { force: true });
+  const mA = new Mesa({ caminhoDasMarcas: `${caminho}.marcas.a`, caminhoDoRegisto: caminho, conta: contaDaPrimeira });
+  const mB = new Mesa({ caminhoDasMarcas: `${caminho}.marcas.b`, caminhoDoRegisto: caminho, conta: contaDaSegunda });
+  mA.receber({ verbo: "start", autor: "dono", pedido_id: "A-1" }, ctx);
+  mB.receber({ verbo: "start", autor: "dono", pedido_id: "B-1" }, ctx);
+  mA.receber({ verbo: "pause", autor: "dono", pedido_id: "A-2" }, ctx);
+  return { linhas: lerRegisto(caminho), estadoA: mA.estado, estadoB: mB.estado };
+}
+
+const duas = correrDuasContas("conta-A", "conta-B");
+const contas = contasNoRegisto(duas.linhas);
+exigir(
+  contas.contas.join(",") === "conta-A,conta-B" && contas.sem_conta === 0,
+  `SC-011 (6): as ${duas.linhas.length} linhas dizem de que conta falam (contas: ${contas.contas.join(", ")}, sem conta: ${contas.sem_conta})`,
+  [`contas ${contas.contas.join(",")}, sem_conta ${contas.sem_conta}`],
+);
+
+// 6a. cada conta reconstroi o SEU dia - e os dois estados finais sao diferentes (senao o teste nao distinguia)
+const reconstruidoA = reconstruir(duas.linhas, "parada", "conta-A");
+const reconstruidoB = reconstruir(duas.linhas, "parada", "conta-B");
+exigir(
+  reconstruidoA === duas.estadoA && reconstruidoB === duas.estadoB && duas.estadoA !== duas.estadoB,
+  `SC-011 (6a): por conta, a reconstrucao fecha no estado de cada uma (A: '${reconstruidoA}'=='${duas.estadoA}' | B: '${reconstruidoB}'=='${duas.estadoB}')`,
+  [`A ${reconstruidoA}/${duas.estadoA}, B ${reconstruidoB}/${duas.estadoB}`],
+);
+
+// 6b. o CONJUNTO nao e' uma reconstrucao valida: as transicoes de uma intercalam-se nas da outra e a cadeia
+//     parte-se. E' a razao de existir da atribuicao - quem reconstruir tudo de uma vez le um dia que nao houve.
+//     (Repare-se que o estado final do conjunto CALHA ser o da ultima linha escrita: com uma conta so' a
+//     coincidencia nao aparece, e e' por isso que o que se mede aqui e' a cadeia, e nao o estado.)
+const furosDoConjunto = buracos(duas.linhas);
+exigir(
+  furosDoConjunto.length >= 1,
+  `SC-011 (6b): o registo das duas contas JUNTO nao e uma cadeia (${furosDoConjunto.length} buraco(s)): quem reconstruir tudo de uma vez le um dia que nao houve`,
+  furosDoConjunto,
+);
+
+// 6c. A METADE DE CONTROLE: a mesma corrida com as contas trocadas - as linhas mudam de conta.
+const trocadas = correrDuasContas("conta-B", "conta-A");
+const contasTrocadas = contasNoRegisto(trocadas.linhas);
+exigir(
+  contasTrocadas.contas.join(",") === "conta-A,conta-B" &&
+    reconstruir(trocadas.linhas, "parada", "conta-A") === trocadas.estadoB,
+  `SC-011 (6c): trocadas as contas, as mesmas operacoes passam a ser da outra conta ('conta-A' reconstroi '${reconstruir(trocadas.linhas, "parada", "conta-A")}', que era o dia da B)`,
+  [`contas ${contasTrocadas.contas.join(",")}`],
 );
 
 // --- as provas negativas: um registo adulterado tem de ser reprovado

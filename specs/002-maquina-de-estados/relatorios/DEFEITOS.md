@@ -387,3 +387,50 @@ tem de haver onde isso esteja medido).
 **Como se saberá que está fechado.** Um caso, na porta (não só na tabela), em que a mesa está `encerrando`
 **com a liquidação a correr** e o `start` é recusado — e a prova negativa de que, sem a liquidação declarada,
 o mesmo `start` cancela a pergunta (o caminho do US7 continua a existir).
+
+---
+
+## D-008 — As bandas do mandato têm leitores a menos, e duas chaves das regras não existem (declarado 29/09/2026)
+
+**Encontrado ao fechar o item das chaves sem leitor.** Três coisas medidas, e a terceira não estava na lista.
+
+**(1) Duas chaves que as regras exigem não existem em ficheiro nenhum.** Medido com
+`grep -rn 'tolera_posicao_manual|tempo_maximo_em_posicao'` em todo o repositório: **as duas só aparecem no
+inventário** — nenhuma configuração, nenhuma ficha, nenhum validador, nenhum leitor. E as duas governariam
+comportamento que **também** não existe:
+
+- `tolera_posicao_manual` (RN-T16): a regra é «posição que apareça sem ter sido a mesa a abri-la é vista,
+  dita e **não gerida**; se a ficha não tolerar, a mesa fica **em pausa** nesse instrumento». Para isso a mesa
+  tem de saber **quais posições são dela** — e isso é o **mapa marca → ciclo/ficha** (RN-T16.1), que não
+  existe. Sem o mapa, a chave não teria o que decidir;
+- `bandas.tempo_maximo_em_posicao` (a banda que o inventário §2 lista): fechar por tempo exige saber **quando
+  a posição abriu**, e o registo dessa abertura é a mesma coisa que falta — `mercado.posicao` traz lado,
+  unidades, preço médio e marca de posse, e **não** traz o instante de abertura. Nota: a chave nem sequer
+  está na lista de bandas que o arranque confere («saldo_pct», «alavancagem»).
+
+**(2) Duas bandas que EXISTEM e ninguém confere — estas são piores, porque parecem cumpridas.** O inventário
+dá-lhes «mesa e validação (RN-S11, RN-M4.12)» como leitor; medido, é falso:
+
+| Chave | Leitor medido |
+|---|---|
+| `bandas.saldo_pct` | `core/ciclo/arranque.ts` (porta do mandato) ✓ |
+| `bandas.alavancagem` | idem + `core/ciclo/banda.ts` (D-001) ✓ |
+| `bandas.distancia_minima_liquidacao_pct` | `core/ciclo/banda.ts` ✓ |
+| **`bandas.stop_pct`** | **nenhum.** O `setup.stop_pct` é copiado para a boleta (`core/ciclo/decisao.ts:118-119`) e a banda que o devia limitar (RN-B7, RN-S11) não é conferida em lado nenhum |
+| **`bandas.tp_pct`** | **nenhum** (idem) |
+
+A consequência é a que o RN-M6.2 existe para impedir: **um setup pode declarar um stop fora da banda do
+mandato e a mesa aceita-o**. Não é um número inventado — é um limite que existe escrito e não morde.
+
+**Porque não se fechou isto aqui.** A correcção é pequena, mas não cabe numa linha e não é só de código:
+(a) a comparação tem de ser **exacta** (inteiros escalados, como o `banda.ts` do D-001 — vírgula flutuante num
+limite de risco é o defeito seguinte); (b) um valor do setup fora da banda é uma **recusa nomeada**, e um
+motivo novo que cruze a fronteira é **contrato novo** (o conjunto é fechado — `conjuntos_do_vigia`), logo é
+uma emenda com subida de versão; (c) a (1) depende do **mapa de posse**, que é trabalho do ledger (R8).
+
+**Como se saberá que está fechado.** (i) Para as duas bandas: um par de controle no arranque — o mesmo setup
+com o stop **dentro** da banda (passa) e **um passo fora** (recusa nomeada, e o valor não é corrigido);
+(ii) para as duas chaves: uma ficha com `tolera_posicao_manual` declarado e uma posição **não nossa** no
+venue, com a mesa a dizer que a viu e a **não a gerir** (e, no caso `false`, a pausar o instrumento);
+(iii) para o tempo em posição: a posição aberta há mais do que a banda, e o fecho a acontecer — com o par de
+controle de uma posição **dentro** do tempo, que fica.

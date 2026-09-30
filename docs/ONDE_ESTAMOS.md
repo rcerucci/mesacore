@@ -21,10 +21,12 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 
 | Bancada | Comando | Número medido (29/09, 19:39–21:2x) |
 |---|---|---|
-| A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **27 de 27 passaram** (numa cópia com a árvore gravada — ver §4) |
+| A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **28 de 28 passaram** (numa cópia com a árvore gravada — ver §4) |
 | A **conferência da banda** (D-001, fechado hoje) | `bun run core/ciclo/provar.ts` | **90 verificações · 0 divergentes** — 12 de condição · 27 de ciclo · 10 de desfecho · **15 de banda** · 6 de reconciliação |
 | A **tabela de transições** (D-006, fechado hoje) | `bun run core/estados/provar.ts` + `bun run tools/verificar-maquina/tabela.ts` | **38 casos · 13 aceites · 25 recusados · 0 divergentes** (eram 35) + **36 linhas · 0 falhas nos 7 invariantes** |
 | A **fronteira** vigia ↔ mesa (motivos) | `uv run python tools/verificar-contrato/py/fronteira.py --motivos` | **0 falhas** — livro **50** motivos · **26** cruzam · 24 ficam · **1** excepção da porta |
+| A **retenção do ledger** (RN-L6, leitor novo) | `bun run core/estado/retencao.prova.ts` | **14 casos · 7 declarações aceites · 7 recusadas · 0 divergentes** |
+| A **conta na linha do registo** (D-004, fechado hoje) | `bun run tools/verificar-maquina/registo.ts` | **12 verificações · 0 divergentes** — duas contas, reconstrução **por conta**, e a troca como controle |
 | O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **40** · leitura 14 · histórico **26** |
 | **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** |
 | A conformidade do conector | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 241 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
@@ -39,6 +41,13 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
   medido por grep, **0 atribuições** desse campo em todo o repositório. Numa corrida a sério, `encerrando +
   start` cai sempre na linha `sempre` e volta a `em_operacao`. A decisão (trazer o estado da liquidação ao
   contexto, ou assumir que `start` durante `encerrando` é sempre «não feche») é do desenho.
+- **As bandas do mandato têm leitores a menos: D-008** (declarado hoje). Medido o que o **código** lê:
+  `bandas.saldo_pct` e `bandas.alavancagem` são conferidas (arranque + `banda.ts`), `bandas.distancia_minima_
+  liquidacao_pct` também — mas **`bandas.stop_pct` e `bandas.tp_pct` não são conferidas em lado nenhum**: o
+  `setup.stop_pct` é copiado para a boleta (`core/ciclo/decisao.ts:118`) e a banda que o devia limitar nunca
+  morde. E duas chaves que as regras exigem (`tolera_posicao_manual`, `bandas.tempo_maximo_em_posicao`) **não
+  existem em ficheiro nenhum** (só no inventário) — as duas dependem do **mapa de posse** (RN-T16.1), que não
+  existe.
 - **A medição do envio contra o venue.** O envio **existe** desde hoje — o conector assina e submete (T072), com
   a régua conferida e a porta `identidade` a travar quem não é agente desta conta (T073) — e está provado em
   bancada: **38 casos · 0 divergentes** (eram 36 antes da emenda 1.7.0). O que **não** existe é uma ordem a sério: nenhuma foi enviada, e a
@@ -66,16 +75,28 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
    a mesa **recusa** (`posicao_desconhecida`, `porta_do_arranque_falhou` nomeando `(nao conferidas)`) em vez de
    parar sem perguntar ou arrancar sem conferir. **FECHADO** — e um chamador que **dependia** do defeito foi
    apanhado pela bancada (o dia do `registo.ts`).‌
-5. A banda da moeda passou a ser a medida (contrato 1.6.0, `^[A-Za-z0-9]{1,11}$`) — e o número `1400 trazem
+5. **A retenção do ledger ganhou leitor** (`core/estado/retencao.ts`, RN-L6 — era uma das chaves sem leitor): lê
+   a declaração, recusa a que está ilegível e diz de que lado da fronteira cai cada linha, com a borda
+   **inclusiva** do lado do integral. **Sem declaração nada passa** — o que se perde por não haver regra é a
+   distinção, nunca o arquivo de túmulos.
+6. **A conta passou a estar na linha do registo** (o que sobrava do **D-004**): a mesa carimba
+   `conta.identificador` em cada linha que escreve, e a reconstrução passa a fechar **por conta** — com o par
+   de controle medido (duas contas no mesmo registo: cada uma reconstrói o seu dia; juntas, a cadeia **parte-se**;
+   e trocadas as contas, as mesmas operações mudam de conta).
+7. **A contradição da `idade_maxima_do_dado_ms` ficou reconciliada nos documentos** (`specs/002/data-model.md`,
+   o inventário §1 e `contracts/origem-das-grandezas.json` diziam que `sem_ligacao` vinha de um limiar de idade
+   do dono; o código diz, desde a emenda de 28 set, que vem do **protocolo**). O que **não** se fechou — as
+   bandas `stop_pct`/`tp_pct` sem conferência e as duas chaves que não existem — está declarado como **D-008**.
+8. A banda da moeda passou a ser a medida (contrato 1.6.0, `^[A-Za-z0-9]{1,11}$`) — e o número `1400 trazem
    dígito`, que estava no esquema, na porta e no `versao.json`, foi **corrigido para 72** (contava também nomes
    de *pares* de spot, que não são moedas).
-6. O *stash* que estava parado foi **aplicado** e não há nada em stash: o trabalho vinha com **3 casos
+9. O *stash* que estava parado foi **aplicado** e não há nada em stash: o trabalho vinha com **3 casos
    divergentes**, e um deles era sério (o do ponto 2).
 
-Os dois primeiros itens estão no commit `af70d46`; o terceiro no `905fc03`; o quarto é o desta vaga.
-`provar.sh` dá **27 de 27** com a árvore **gravada** — no repositório, a única porta que fica vermelha antes de
-gravar é a **prova negativa da frescura**, e por uma razão mecânica e dita: ela exige `contracts/gerado`
-**limpo em git** antes de correr.
+Os dois primeiros itens estão no commit `af70d46`; o terceiro no `905fc03`; o quarto no `e08e6d3`; o quinto é o
+desta vaga. `provar.sh` dá **28 de 28** com a árvore **gravada** — no repositório, a única porta que fica
+vermelha antes de gravar é a **prova negativa da frescura**, e por uma razão mecânica e dita: ela exige
+`contracts/gerado` **limpo em git** antes de correr.
 
 As três tarefas abertas do recorte 004 pedem todas **enviar** ao venue: **T042** (SC-003, a contagem de
 idempotência lá), **T048** (SC-007, os cinco números com posição viva), **T057** (SC-004, as 8 provas no
@@ -88,6 +109,9 @@ ambiente de TESTE). A passagem a produção (`conexao.ambiente: producao`) é de
 | `README.md` §«O que existe hoje» | descreve só os recortes 001–002 | 003 fechado e 004 medido | nota datada no próprio README |
 | `specs/004/relatorios/RESULTADO.md` | «contrato: **1.4.0**» e «o **FR-018 não está implementado**» | contrato **1.5.0**; o leitor do histórico **existe** e o contrato **aceita** a carga real (**26 casos ok**) | correcção datada no topo, com o original por baixo |
 | `specs/004/tasks.md` §«O que fica aberto» | «o CONTRATO recusa a carga» / «não se remenda por aqui» / «histórico: 24 casos» | a emenda **foi feita** (`3b730ec`) e a carga é **aceite**; **26** casos | correcção datada na própria secção |
+| `specs/002/data-model.md` §`sem_ligacao` | «`idade_do_dado_ms` ≥ `conta.idade_maxima_do_dado_ms`» | o código (`core/ciclo/condicoes.ts`) diz desde 28 set que a ligação vem do **protocolo** — e a chave **saiu** | nota datada sob a tabela, com a linha original mantida |
+| `docs/inventario-de-chaves.md` §1 · `contracts/origem-das-grandezas.json` | a chave `conta.idade_maxima_do_dado_ms` como `[falta]` / «o limite é do dono» | idem: a chave não existe, e nada tem de a ler | linha riscada + **nota datada**; a regra da grandeza reescrita |
+| `docs/inventario-de-chaves.md` §2 (bandas) | `bandas.stop_pct`/`tp_pct` com leitor «mesa e validação» | **nenhum leitor** — medido: nada confere a banda do stop/tp do setup (`core/ciclo/decisao.ts:118` copia-o e mais nada) | **nota datada** na linha + **D-008** declarado |
 
 ## 6. O venue, medido agora (só leitura, sem chave)
 
@@ -130,7 +154,13 @@ O que eu proporia, pela ordem que combinou a 29/09 (do menos capital ao mais, **
 Ficam **de fora**, como decidiu: as ordens dimensionadas por percentagem de saldo e as que mexem em alavancagem.
 
 E há uma coisa que continua pendente e não é do conector: **nada deste trabalho está gravado em git** — 2
-ficheiros novos e ~55 modificados, com o `provar.sh` a fechar 27 de 27 só numa cópia onde a árvore está gravada.
+ficheiros novos e ~55 modificados, com o `provar.sh` a fechar 28 de 28 só numa cópia onde a árvore está gravada.
 Diga-me se gravo, e o repositório fica com a vaga inteira num commit.
+
+> **Nota de 29/09/2026, 21:5x — GRAVADO.** O parágrafo acima é o retrato de 19:52 e fica por ser auditável. A
+> vaga está em git: `af70d46` (o envio + a banda), `905fc03` (emenda 1.7.0), `e08e6d3` (D-006) e o commit desta
+> vaga (o D-004, a retenção e a reconciliação da `idade_maxima_do_dado_ms`). No repositório, com a árvore
+> limpa, o `provar.sh` fecha **28 de 28** — a porta vermelha era só a prova negativa da frescura, que exige
+> `contracts/gerado` limpo.
 
 Não faço o envio sem a sua palavra: mexe em ordens na sua conta.

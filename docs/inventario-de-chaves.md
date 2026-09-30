@@ -36,8 +36,8 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 | `conta.conectores[]` | lista de **nomes** de conector | ausente = recusa; nome sem dublê/plugin = não está de pé | arranque, porta dos conectores (T027, RN-E21) |
 | `conta.invalidos_seguidos_para_inibir` | contagem | **`[novo]`** — RN-T4 dizia `ABERTA` e a chave não existia | mesa, ao contar inválidos seguidos (RN-T4) |
 | `conta.credencial` | **referência**, nunca o valor | — | conector (RN-E14) |
-| `conta.idade_maxima_do_dado_ms` | ms | **`[falta]`** — RN-D3 diz "limite declarado" e ninguém o declarou | mesa, cada ciclo (RN-D3) |
-| `conta.retencao_ledger` | `{dias_integral, depois}` | **`[falta]`** — RN-L6 manda declarar | ledger (RN-L6) |
+| ~~`conta.idade_maxima_do_dado_ms`~~ | ms | **SAIU** na emenda do dono de 28 set 2026: o limite deixou de existir por inteiro — quem diz que a mesa está cega é o estado da ligação (`sem_ligacao`, §8), e a idade da barra é regra do setup (RN-D3 revisto). O `[falta]` que aqui esteve era o mais antigo do inventário: RN-D3 mandava invalidar «acima do limite declarado» e o limite não estava declarado em lado nenhum. Ver §6.1 | — (nada a lê, e não há nada a ler) |
+| `conta.retencao_ledger` | `{dias_integral, depois}` | **LEITOR DESDE 29/09/2026**: `core/estado/retencao.ts` (bateria `core/estado/retencao.prova.ts`, 14 casos) — lê a declaração (aceita o inteiro e a sua forma textual, recusa o resto) e diz de que lado da fronteira cai cada linha, com a borda **inclusiva** do lado do integral. **Sem declaração nada passa**: o que se perde por não haver regra é a distinção, nunca o arquivo de túmulos. A **compactação em si** (agregar o que passou) é acto operacional, fora da mesa — o leitor diz a fronteira e o destino a quem a corre (RN-L6) |
 
 ## 2. `fichas/<instrumento>.risco.*` — a posição (forma fixa, do core)
 
@@ -48,12 +48,12 @@ chave é defeito.** Por isso a última coluna não é decoração — é a prova
 | `distancia_minima_liquidacao_pct` | % de movimento, **opcional** | ausente = ordem livre | porteiro na abertura (RN-M4.13) **e** a conferência da resolução (`core/ciclo/banda.ts`, D-001 fechado a 29/09) |
 | `janela` | da posição (do setup) | — | mesa (RN-M5, RN-S3) |
 | `estudo` | referência + data | ausente | validação (RN-E13) |
-| `tolera_posicao_manual` | booleano | **`[novo][falta]`** — RN-T16 exige e a chave não tinha nome | mesa (RN-T16) |
+| `tolera_posicao_manual` | booleano | **`[novo][falta]`** — RN-T16 exige e a chave não tinha nome. **Nota de 29/09/2026:** medido, a chave **não existe em ficheiro nenhum** (só aqui) e o comportamento que a leria também não: «não gerir o que não abrimos» precisa de saber **quais posições são nossas**, o que é o mapa marca → ciclo/ficha do RN-T16.1 (D-008) | **nada** — a chave e o comportamento estão por fazer (D-008) |
 | `bandas.saldo_pct` | `[min, max]` | **`[falta]`** — RN-M6.2 fala de banda e não a enumera para este item (o **valor** é do dono; o **leitor** existe desde 29/09: `core/ciclo/banda.ts` confere a exposição da posição contra esta banda, D-001) | validação (RN-M6.2) **e** conferência da resolução |
 | `bandas.alavancagem` | `[min, max]` | **`[falta]`** (o **valor**; o **leitor**: `core/ciclo/banda.ts`, que confere a alavancagem EFECTIVA que a corretora aplicou — D-001) | validação (RN-M6.2, RN-M4.4) **e** conferência da resolução |
-| `bandas.stop_pct` | `[min, max]` | **`[falta]`** | mesa e validação (RN-S11, RN-M4.12) |
-| `bandas.tp_pct` | `[min, max]` | **`[falta]`** | idem |
-| `bandas.tempo_maximo_em_posicao` | duração | **`[falta]`** | mesa (RN-S11) |
+| `bandas.stop_pct` | `[min, max]` | **`[falta]`** no **valor**. **Nota de 29/09/2026:** o leitor que aqui estava escrito **não existe** — medido, o `setup.stop_pct` é copiado para a boleta (`core/ciclo/decisao.ts:118`) e a banda nunca é conferida (D-008) | **nenhum** — um setup pode declarar um stop fora da banda e a mesa aceita-o (D-008) |
+| `bandas.tp_pct` | `[min, max]` | **`[falta]`** no **valor**. **Nota de 29/09/2026:** idem ao `stop_pct` — a banda existe escrito e não morde (D-008) | **nenhum** (D-008) |
+| `bandas.tempo_maximo_em_posicao` | duração | **`[falta]`** — e **a chave não existe em ficheiro nenhum** (medido 29/09/2026: só aqui, e fora da lista de bandas que o arranque confere). Fechar por tempo precisa do **instante de abertura** da posição, que `mercado.posicao` não traz (D-008) | **nada** (D-008) |
 | `versao_do_mandato` | texto não vazio | — | **o dono versona o seu mandato**; a mesa lê-a para fechar a **unidade de comparação** da sessão (`ficha`, `versao_do_setup`, `versao_do_mandato` — FR-034). Sem ela o `nova_sessao` **recusa** (`unidade_de_comparacao_nao_declarada`): dois números da mesma mesa sem unidade não se comparam entre si |
 
 ## 3. `fichas/<instrumento>.setup.*` — a estratégia (forma publicada pelo setup)

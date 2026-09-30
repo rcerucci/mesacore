@@ -226,6 +226,21 @@ function lerPrazoDoDono(caminhoDaConfig: string | undefined): number | null {
   return [...declarados][0]!;
 }
 
+/**
+ * `conta.identificador` - de que conta fala esta mesa (residuo do D-004: a atribuicao por conta no registo).
+ *
+ * Sem configuracao, ou com o campo ausente ou vazio, devolve `null` e as linhas saem SEM conta. Nao ha aqui
+ * nome inventado: uma linha muda sobre a conta e' uma linha que se sabe nao atribuivel, o que e' melhor do
+ * que uma que parece atribuida e nao esta'.
+ */
+function lerIdentificadorDaConta(caminhoDaConfig: string | undefined): string | null {
+  if (caminhoDaConfig === undefined) return null;
+  let config: any;
+  try { config = JSON.parse(readFileSync(caminhoDaConfig, "utf8")); } catch { return null; }
+  const id = config?.conta?.identificador;
+  return typeof id === "string" && id.trim() !== "" ? id : null;
+}
+
 /** A pergunta do encerramento, quando a mesa entrou em `encerrando`. */
 function pergunta(pedidoId: string, prazoMs: number, numeros: NumerosDaCorretora): string {
   const carga = cargaDaPergunta(pedidoId, prazoMs, numeros);
@@ -416,6 +431,9 @@ async function main() {
   const mesa = new Mesa({
     caminhoDasMarcas: opcoes.caminhoDasMarcas,
     caminhoDoRegisto: opcoes.caminhoDoRegisto,
+    // A CONTA (D-004): sai da configuracao, e nao de uma bandeira na linha de comando - quem sabe de que
+    // conta fala e' a configuracao dela. Sem configuracao, as linhas saem sem conta (e isso le-se na linha).
+    conta: lerIdentificadorDaConta(opcoes.caminhoDaConfig) ?? undefined,
   });
   // Escrever para um cano fechado (o vigia morreu) NAO pode matar a mesa: seria a morte a chegar pela
   // costura, que e exactamente o que a FR-006 proibe.
