@@ -15,6 +15,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
+import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 
 const NOME = "cruzamento_de_media";
 const RAIZ = join(import.meta.dir, "..", "..");
@@ -86,7 +87,10 @@ if (rapida > lenta) lado = "buy";
 else if (rapida < lenta) lado = "sell";
 
 const linha = JSON.stringify({
-  contrato: "1.8.0",
+  // A VERSAO DO CONTRATO LE-SE, NAO SE ESCREVE AQUI: era `"1.8.0"` a mao, e este exemplo — que e' MOLDE para o
+  // proximo setup — passava a emitir propostas que o contrato recusa logo que houvesse uma emenda. A versao
+  // vive num so' sitio (`contracts/versao.json`).
+  contrato: versaoVigente(),
   tipo: "proposta",
   id: `${NOME}-${instrumento}-${Date.now()}`,
   carga: { setup: { nome: NOME, versao: "1.0.0" }, lado, barra_ms: ultima.t },

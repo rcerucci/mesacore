@@ -22,7 +22,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
 import { calcular, type Vela, type Constantes } from "./sinal.ts";
-import { validar } from "../../contracts/esqueleto/framing.ts";
+import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 
 const NOME = "sigma";
 const VERSAO = "0.1.0";
@@ -75,7 +75,11 @@ function naoProponho(porque: string): never {
 }
 const dizer: (lado: string, porque: string) => never = (lado, porque) => {
   const linha = JSON.stringify({
-    contrato: "1.8.0",
+    // A VERSAO DO CONTRATO LE'-SE, NAO SE ESCREVE AQUI. Era `"1.8.0"` escrito a mao, e quando o contrato
+    // passou a 1.9.0 (as ordens vivas da conta) este plugin ficou MUDO em operacao: a proposta era recusada
+    // por `versao_do_contrato_divergente` e a auto-conferencia calava-a — o portao fez o que devia, e quem
+    // nao soube foi o dono. A versao vive num so' sitio (`contracts/versao.json`) e le-se de la'.
+    contrato: versaoVigente(),
     tipo: "proposta",
     id: `${NOME}-${instrumento}-${Date.now()}`,
     carga: { setup: { nome: NOME, versao: VERSAO }, lado, barra_ms: tFechada },
