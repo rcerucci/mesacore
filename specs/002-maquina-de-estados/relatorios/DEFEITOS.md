@@ -411,22 +411,62 @@ comportamento que **também** não existe:
 **(2) Duas bandas que EXISTEM e ninguém confere — estas são piores, porque parecem cumpridas.** O inventário
 dá-lhes «mesa e validação (RN-S11, RN-M4.12)» como leitor; medido, é falso:
 
+> **FECHADO — 29/09/2026 (as duas bandas).** `bandas.stop_pct` e `bandas.tp_pct` passaram a **morder**. O
+> valor do setup é conferido **onde ele aparece** — no ciclo, quando a boleta se compõe (`core/ciclo/ciclo.ts`,
+> bloco 3.6) — contra a banda do mandato (`Mandato.bandas`, `core/ciclo/decisao.ts`), pela função
+> **`cabeNaBanda`** (`core/ciclo/banda.ts`), que usa a **mesma aritmética exacta** (inteiros escalados) do
+> `conferirBanda` do D-001. Fora da banda → `nada` com o motivo **`parametro_do_setup_fora_da_banda`**;
+> banda declarada e valor ilegível → **`parametro_do_setup_nao_conferivel`** (não saber que cabe não é caber);
+> **fechar/reduzir continua a passar** (o stop não viaja numa ordem que só fecha). Dois motivos novos, no
+> **livro** da mesa e a **não cruzar** a fronteira (é decisão de ciclo, não resposta a comando) — logo **sem
+> emenda**: o conjunto fechado do contrato não se toca. O livro vai de 50 para **52** motivos (26 cruzam,
+> 26 ficam), contagens conferidas pelo próprio conferidor da fronteira.
+>
+> **Medido:** `bun run core/ciclo/provar.ts` → **99 verificações · 0 divergentes · 36 de ciclo** (eram 27);
+> `bash tools/verificar-maquina/provar.sh` → **28 de 28**; `fronteira.py --motivos` → **0 falhas**.
+>
+> **Casos (8 novos, com o par de controle e as duas bordas):** `stop-na-borda-maxima-cabe`
+> (**o máximo é dentro**) + `stop-um-passo-acima-da-borda-recusa` (**o par**); `tp-fora-da-banda-recusa`
+> (o tp é conferido tanto como o stop); `a-banda-so-tem-minimo-e-o-valor-esta-abaixo`; `valor-ilegivel-nao-e-
+> passe-livre` (`0,3` com vírgula); `setup-sem-stop-e-banda-declarada-passa` (não há valor a limitar, e a
+> boleta prova que **não leva stop inventado**); `fechar-com-a-banda-violada-continua-a-passar` (o outro
+> lado da regra); e **dois casos que provam que a aritmética exacta é carga e não enfeite** —
+> `1.0000000000000000001` contra o máximo `1`, e `1` contra o mínimo `1.0000000000000000001`: a vírgula
+> flutuante de JavaScript arredonda os dois e diria «cabe» nos dois.
+>
+> **Provas negativas** (cópia; reposição por `sha256`): a trava sai do ciclo → **5 divergentes**; o ilegível
+> passa a valer como «cabe» → a boleta sai com um valor que o **contrato** recusa (`formato_invalido`,
+> segunda linha de defesa, e o processo **grita** em vez de seguir); a comparação volta a `Number()` no
+> máximo → **1 divergente** (o caso dos 19 algarismos); idem no mínimo → **1** (o caso simétrico); a trava
+> passa a valer para o fecho → **1** (o caso do fecho); o motivo sai do livro → **1** (o conferidor da
+> bateria reprova «os 21 motivos produzidos constam do livro»).
+
 | Chave | Leitor medido |
 |---|---|
 | `bandas.saldo_pct` | `core/ciclo/arranque.ts` (porta do mandato) ✓ |
 | `bandas.alavancagem` | idem + `core/ciclo/banda.ts` (D-001) ✓ |
 | `bandas.distancia_minima_liquidacao_pct` | `core/ciclo/banda.ts` ✓ |
-| **`bandas.stop_pct`** | **nenhum.** O `setup.stop_pct` é copiado para a boleta (`core/ciclo/decisao.ts:118-119`) e a banda que o devia limitar (RN-B7, RN-S11) não é conferida em lado nenhum |
-| **`bandas.tp_pct`** | **nenhum** (idem) |
+| ~~**`bandas.stop_pct`**~~ | ~~nenhum~~ → **`core/ciclo/ciclo.ts` (3.6) + `cabeNaBanda`** ✓ (fechado 29/09) |
+| ~~**`bandas.tp_pct`**~~ | ~~nenhum~~ → idem ✓ (fechado 29/09) |
 
 A consequência é a que o RN-M6.2 existe para impedir: **um setup pode declarar um stop fora da banda do
 mandato e a mesa aceita-o**. Não é um número inventado — é um limite que existe escrito e não morde.
+
+> **Nota de 29/09/2026:** esta consequência **deixou de ser verdade** no mesmo dia (ver o FECHO acima). Fica
+> escrita porque era o retrato medido antes da correcção.
 
 **Porque não se fechou isto aqui.** A correcção é pequena, mas não cabe numa linha e não é só de código:
 (a) a comparação tem de ser **exacta** (inteiros escalados, como o `banda.ts` do D-001 — vírgula flutuante num
 limite de risco é o defeito seguinte); (b) um valor do setup fora da banda é uma **recusa nomeada**, e um
 motivo novo que cruze a fronteira é **contrato novo** (o conjunto é fechado — `conjuntos_do_vigia`), logo é
 uma emenda com subida de versão; (c) a (1) depende do **mapa de posse**, que é trabalho do ledger (R8).
+
+> **Nota de 29/09/2026 — o que este parágrafo acertou e o que errou.** Acertou no (a): a comparação é exacta,
+> e há dois casos que o provam (o da vírgula flutuante, que arredonda 19 algarismos, e a prova negativa que
+> o apanha). Errou no (b): **não foi precisa emenda nenhuma** — o motivo é de **ciclo**, não de resposta a
+> comando, e o conjunto fechado do contrato só governa o que **cruza** a fronteira (`motivos_de_comando`).
+> O que resta desta declaração é o **(1)**: as duas chaves que dependem do mapa de posse (RN-T16.1) e o
+> comportamento que as leria.
 
 **Como se saberá que está fechado.** (i) Para as duas bandas: um par de controle no arranque — o mesmo setup
 com o stop **dentro** da banda (passa) e **um passo fora** (recusa nomeada, e o valor não é corrigido);

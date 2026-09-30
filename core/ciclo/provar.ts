@@ -199,6 +199,16 @@ for (const caso of bateriaCiclo.casos) {
     contexto.push(`boleta: nao esperada, e houve uma (${JSON.stringify(decisao.boleta)})`);
   }
 
+  // A AUSENCIA tambem se prova: `ausentes` lista campos que NAO podem estar na boleta (D-008 - um setup que
+  // nao declarou stop nao pode receber um stop inventado pela mesa).
+  if (d.ausentes !== undefined && decisao.boleta !== null) {
+    for (const campo of d.ausentes) {
+      if (campo in (decisao.boleta as any)) {
+        contexto.push(`boleta.${campo}: nao devia estar la, e esta (${JSON.stringify((decisao.boleta as any)[campo])})`);
+      }
+    }
+  }
+
   exigir(contexto.length === 0, `ciclo/${caso.nome}`, contexto);
 
   // As contagens dos criterios, medidas e nao afirmadas.

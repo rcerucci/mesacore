@@ -125,6 +125,103 @@ function texto(a: Dec): string {
   return negativo ? `-${corpo}` : corpo;
 }
 
+// ---------------------------------------------------------------- o que o SETUP pede
+
+/**
+ * Um valor que o SETUP declara cabe na banda que o dono declarou para ele? (RN-B7, RN-M6.2, RN-S11; D-008.)
+ *
+ * E' o irmao pequeno do `conferirBanda`, e a diferenca esta no MOMENTO: a conferencia olha para o que a
+ * corretora EXECUTOU (depois do envio, contra o mandato); esta olha para o que o setup PEDE (antes de a
+ * ordem existir). A aritmetica e' a mesma, e pelo mesmo motivo: um limite de risco comparado em virgula
+ * flutuante e' o defeito seguinte.
+ *
+ * Os tres veredictos, e o que cada um NAO quer dizer:
+ *   - `dentro`: o valor cai na banda; OU nao ha' nada a limitar (o dono nao declarou banda para o campo, ou
+ *     o setup nao declarou valor). As duas coisas sao «nada a conferir», e nao «conferiu e passou» - por
+ *     isso a resposta diz tambem se a comparacao se FEZ (`conferido`);
+ *   - `fora`: o valor declarado nao cabe na banda declarada (comparacao exacta, o valor na fronteira CABE);
+ *   - `nao_conferivel`: ha' banda e ha' valor, e um dos dois nao se le' - uma declaracao que nao se
+ *     conseguiu conferir nunca passa por omissao.
+ */
+export interface VeredictoDoParametro {
+  veredicto: VeredictoDaBanda;
+  /** `true` so' quando havia valor E banda, e a comparacao se fez. */
+  conferido: boolean;
+  valor: string;
+  minimo: string | null;
+  maximo: string | null;
+  porque: string;
+}
+
+export function cabeNaBanda(
+  valor: unknown,
+  banda?: { minimo?: string; maximo?: string },
+): VeredictoDoParametro {
+  const { minimo, maximo, declarada } = limites(banda);
+  const comoVeio = typeof valor === "string" ? valor : JSON.stringify(valor ?? null);
+
+  if (!declarada) {
+    return {
+      veredicto: "dentro",
+      conferido: false,
+      valor: comoVeio,
+      minimo: null,
+      maximo: null,
+      porque: "o dono nao declarou banda para este parametro: nao ha' limite a aplicar, e a ausencia de banda nao se inventa",
+    };
+  }
+  if (valor === undefined || valor === null) {
+    return {
+      veredicto: "dentro",
+      conferido: false,
+      valor: comoVeio,
+      minimo: pctTexto(minimo),
+      maximo: pctTexto(maximo),
+      porque: `o setup nao declarou este parametro: nao ha' valor a limitar pela banda (${pctTexto(minimo)} a ${pctTexto(maximo)})`,
+    };
+  }
+
+  const v = ler(valor);
+  if (v === null) {
+    return {
+      veredicto: "nao_conferivel",
+      conferido: false,
+      valor: comoVeio,
+      minimo: pctTexto(minimo),
+      maximo: pctTexto(maximo),
+      porque: `o valor ${comoVeio} nao se le' como decimal do contrato, e a banda existe (${pctTexto(minimo)} a ${pctTexto(maximo)}): nao saber nao e' passar`,
+    };
+  }
+  if (minimo !== null && comparar(v, minimo) < 0) {
+    return {
+      veredicto: "fora",
+      conferido: true,
+      valor: texto(v),
+      minimo: texto(minimo),
+      maximo: pctTexto(maximo),
+      porque: `${texto(v)} esta' ABAIXO do minimo ${texto(minimo)} que o dono declarou`,
+    };
+  }
+  if (maximo !== null && comparar(v, maximo) > 0) {
+    return {
+      veredicto: "fora",
+      conferido: true,
+      valor: texto(v),
+      minimo: pctTexto(minimo),
+      maximo: texto(maximo),
+      porque: `${texto(v)} PASSA o maximo ${texto(maximo)} que o dono declarou`,
+    };
+  }
+  return {
+    veredicto: "dentro",
+    conferido: true,
+    valor: texto(v),
+    minimo: pctTexto(minimo),
+    maximo: pctTexto(maximo),
+    porque: `${texto(v)} cabe na banda declarada (${pctTexto(minimo)} a ${pctTexto(maximo)})`,
+  };
+}
+
 // ---------------------------------------------------------------- a conferencia
 
 function limites(banda?: { minimo?: string; maximo?: string }): { minimo: Dec | null; maximo: Dec | null; declarada: boolean } {

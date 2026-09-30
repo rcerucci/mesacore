@@ -301,6 +301,18 @@
       "quando": "o ciclo deste instrumento corre com a conferencia da banda REPROVADA - uma divergencia provada, ou um numero que nao se conseguiu conferir",
       "regra": "RN-M9, FR-032, D-001",
       "porque": "Nao se abre risco novo sobre uma conta cuja ultima resolucao nao cabe no que o dono autorizou (ou nao se conseguiu conferir). Reduzir e fechar continuam permitidos: travar o fecho seria defender-se do lado errado."
+    },
+    "parametro_do_setup_fora_da_banda": {
+      "cruzam_a_fronteira": false,
+      "quando": "abrir, com o `stop_pct` ou o `tp_pct` que o setup declarou fora da banda do mandato",
+      "regra": "RN-B7, RN-M6.2, RN-S11",
+      "porque": "A ficha NUNCA afrouxa a banda, e o valor do setup e' conferido onde ele aparece. Um stop fora da banda nao se encolhe para caber (RN-M9): nao se abre, e di-lo. Fechar/reduzir passa - o stop nao viaja numa ordem que so' fecha."
+    },
+    "parametro_do_setup_nao_conferivel": {
+      "cruzam_a_fronteira": false,
+      "quando": "abrir, com banda declarada para `stop_pct`/`tp_pct` e o valor do setup ilegivel (nao e' decimal da forma do contrato)",
+      "regra": "RN-B7, RN-M6.2",
+      "porque": "Ha' banda e ha' valor, e um dos dois nao se le': nao saber que cabe nao e' caber. E' a mesma polaridade do `nao_conferivel` da conferencia da banda (D-001) - o que nao se conseguiu conferir nunca passa por omissao."
     }
   },
   "ordem_de_leitura": [
@@ -309,6 +321,6 @@
   "fronteira": {
     "de_onde_vem": "`cruzam_a_fronteira` e o ambito da conferencia das duas direcoes (recorte 003, T017): `true` = este motivo pode sair numa resposta ao vigia; `false` = nasce e morre dentro de um ciclo. Os nomes marcados `true` tem de existir no conjunto fechado `conjuntos_do_vigia` de contracts/vocabulario.json, e o inverso tambem: o conjunto nao pode ter nome que o livro nao conheca (a excecao e' o que estiver declarado como vindo da PORTA - hoje so `versao_do_contrato_divergente`, porque quem recusa e' o CONTRATO e a porta relata-o tal e qual). ATE 29/09/2026 havia duas excecoes: `posicao_desconhecida` saiu da lista ao fechar o D-006 - quem o produz passou a ser uma linha da TABELA, e um nome que a tabela produz e' motivo do livro.",
     "cruzam": 26,
-    "nao_cruzam": 24
+    "nao_cruzam": 26
   }
 }

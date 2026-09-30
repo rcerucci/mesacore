@@ -10,7 +10,7 @@
 // A mesa NAO envia nada (R5): devolve a decisao. Quem envia e o processo que liga o core ao conector.
 
 import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
-import type { ConferenciaDaBanda } from "./banda.ts";
+import { cabeNaBanda, type ConferenciaDaBanda } from "./banda.ts";
 import { situacaoDoInstrumento, type Falhas, type NomeDeCondicao } from "./condicoes.ts";
 import { montarBoleta, type Decisao, type Mandato, type Template } from "./decisao.ts";
 
@@ -200,6 +200,32 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     };
   }
 
+  // 3.6. O QUE O SETUP PEDE CONTRA A BANDA DO DONO (RN-B7, RN-M6.2, RN-S11; D-008). O stop e o tp viajam na
+  // boleta como o setup os declarou - e um setup NAO afrouxa a banda. Nao se abre com o parametro fora da
+  // banda, nem com um parametro que se declarou e nao se conseguiu conferir (o RN-M6.2 recusa «na validacao»,
+  // e a validacao do mandato acontece aqui, onde o valor do setup aparece). Fechar/reduzir continua a passar:
+  // o stop nao viaja numa ordem que so' fecha, e reduzir risco e' sempre permitido.
+  if (acao === "abrir") {
+    for (const campo of ["stop_pct", "tp_pct"] as const) {
+      const doSetup = entrada.template?.[campo];
+      if (doSetup === undefined) continue; // nao ha' valor a limitar: nada a dizer
+      const veredicto = cabeNaBanda(doSetup, entrada.mandato?.bandas?.[campo]);
+      if (veredicto.veredicto === "dentro") continue;
+      return {
+        ...base,
+        acao: "nada",
+        motivo:
+          veredicto.veredicto === "fora"
+            ? "parametro_do_setup_fora_da_banda"
+            : "parametro_do_setup_nao_conferivel",
+        // E' um erro de DECLARACAO do lado do setup, e o dono escreveu que quer ser avisado do que trava a
+        // mesa por configuracao: sem aviso, o setup ficaria a pedir um stop que nunca sai e ninguem saberia.
+        avisa: true,
+        boleta: null,
+      };
+    }
+  }
+
   if (acao === "abrir" && !situacao.abre) {
     return {
       ...base,
@@ -209,7 +235,6 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
       boleta: null,
     };
   }
-
   if (acao === "fechar" && !situacao.fecha) {
     return {
       ...base,

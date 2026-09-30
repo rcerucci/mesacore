@@ -709,7 +709,11 @@
       "banda": {
         "veredicto": "fora",
         "accao": "reduzir_e_registar",
-        "conferidas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+        "conferidas": [
+          "alavancagem",
+          "saldo_pct",
+          "distancia_de_liquidacao"
+        ],
         "fora": [
           {
             "campo": "alavancagem",
@@ -749,11 +753,17 @@
       },
       "ficha": "3232",
       "ciclo": 41,
-      "marcas_nossas_conhecidas": [1694498816],
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
       "banda": {
         "veredicto": "fora",
         "accao": "reduzir_e_registar",
-        "conferidas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+        "conferidas": [
+          "alavancagem",
+          "saldo_pct",
+          "distancia_de_liquidacao"
+        ],
         "fora": [
           {
             "campo": "alavancagem",
@@ -795,7 +805,11 @@
       "banda": {
         "veredicto": "dentro",
         "accao": "seguir",
-        "conferidas": ["alavancagem", "saldo_pct", "distancia_de_liquidacao"],
+        "conferidas": [
+          "alavancagem",
+          "saldo_pct",
+          "distancia_de_liquidacao"
+        ],
         "fora": [],
         "nao_conferidas": [],
         "porque": "3 de 3 conferidas, e todas dentro da banda declarada (alavancagem, saldo_pct, distancia_de_liquidacao). Nada ficou por conferir."
@@ -813,6 +827,341 @@
       },
       "historico": "O CONTROLE: com a banda conferida e dentro, a mesa abre como sempre abriu. Sem este lado, 'bloqueou' podia ser o codigo a bloquear tudo.",
       "ligacao": "ligada"
+    },
+    {
+      "nome": "banda-do-setup/stop-na-borda-maxima-cabe",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 7,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "minimo": "0.1",
+            "maximo": "0.3"
+          }
+        }
+      },
+      "historico": "D-008: o valor do setup esta' EXACTAMENTE no maximo da banda - e a fronteira e' inclusiva do lado de dentro, como na conferencia do D-001. E' o CONTROLE do caso seguinte.",
+      "decisao_esperada": {
+        "acao": "abrir",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "stop_pct": "0.3",
+          "tp_pct": "0.6"
+        }
+      }
+    },
+    {
+      "nome": "banda-do-setup/stop-um-passo-acima-da-borda-recusa",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 7,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "maximo": "0.29"
+          }
+        }
+      },
+      "historico": "D-008: o MESMO stop do caso anterior, com o maximo um passo abaixo. A comparacao e' exacta (inteiros escalados): `0.3` nao cabe em `0.29`, e nao se encolhe para caber (RN-M9) - nao se abre, e di-lo.",
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "parametro_do_setup_fora_da_banda",
+        "condicao": "normal",
+        "avisa": true
+      }
+    },
+    {
+      "nome": "banda-do-setup/tp-fora-da-banda-recusa",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 7,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "tp_pct": {
+            "minimo": "0.1",
+            "maximo": "0.5"
+          }
+        }
+      },
+      "historico": "D-008: o tp (0.6) e' conferido tanto como o stop - as duas bandas, e nao so' uma.",
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "parametro_do_setup_fora_da_banda",
+        "condicao": "normal",
+        "avisa": true
+      }
+    },
+    {
+      "nome": "banda-do-setup/a-banda-so-tem-minimo-e-o-valor-esta-abaixo",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 7,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "minimo": "0.5"
+          }
+        }
+      },
+      "historico": "D-008: a banda pode declarar so' o minimo. Um stop mais apertado do que o minimo do dono tambem nao cabe - o limite e' do dono nos dois sentidos.",
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "parametro_do_setup_fora_da_banda",
+        "condicao": "normal",
+        "avisa": true
+      }
+    },
+    {
+      "nome": "banda-do-setup/valor-ilegivel-nao-e-passe-livre",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 7,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "maximo": "0.5"
+          }
+        }
+      },
+      "historico": "D-008: ha' banda e ha' valor, e o valor nao e' um decimal da forma do contrato (`0,3` com virgula). Nao saber que cabe nao e' caber - mesma polaridade do `nao_conferivel` do D-001.",
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "parametro_do_setup_nao_conferivel",
+        "condicao": "normal",
+        "avisa": true
+      },
+      "template": {
+        "politica_de_execucao": "mercado",
+        "parcial": "o_que_der",
+        "desvio_maximo": "0.5",
+        "prazo_da_passiva_ms": 3000,
+        "destino_do_resto": "cancelar",
+        "stop_pct": "0,3",
+        "tp_pct": "0.6"
+      }
+    },
+    {
+      "nome": "banda-do-setup/setup-sem-stop-e-banda-declarada-passa",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 7,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "minimo": "0.1",
+            "maximo": "0.5"
+          },
+          "tp_pct": {
+            "maximo": "0.5"
+          }
+        }
+      },
+      "historico": "D-008: a banda existe e o setup NAO declarou stop nem tp - nao ha' valor a limitar, e a ausencia de valor nao e' uma violacao. A boleta sai sem eles, e o `ausentes` prova-o (um campo que nao pode estar la tambem se mede).",
+      "decisao_esperada": {
+        "acao": "abrir",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "buy",
+          "saldo_pct": "1"
+        },
+        "ausentes": [
+          "stop_pct",
+          "tp_pct"
+        ]
+      },
+      "template": {
+        "politica_de_execucao": "mercado",
+        "parcial": "o_que_der",
+        "desvio_maximo": "0.5",
+        "prazo_da_passiva_ms": 3000,
+        "destino_do_resto": "cancelar"
+      }
+    },
+    {
+      "nome": "banda-do-setup/um-algarismo-que-a-virgula-flutuante-perde-recusa",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 8,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "maximo": "1"
+          }
+        }
+      },
+      "template": {
+        "politica_de_execucao": "mercado",
+        "parcial": "o_que_der",
+        "desvio_maximo": "0.5",
+        "prazo_da_passiva_ms": 3000,
+        "destino_do_resto": "cancelar",
+        "stop_pct": "1.0000000000000000001",
+        "tp_pct": "0.6"
+      },
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "parametro_do_setup_fora_da_banda",
+        "condicao": "normal",
+        "avisa": true
+      },
+      "historico": "D-008: `1.0000000000000000001` PASSA o maximo `1`, e um `Number()` de JavaScript arredonda-o para 1 - a comparacao em virgula flutuante diria «cabe». E' este caso que prova que a aritmetica exacta (inteiros escalados, a mesma do `conferirBanda`) e' carga e nao enfeite."
+    },
+    {
+      "nome": "banda-do-setup/fechar-com-a-banda-violada-continua-a-passar",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00",
+        "posicao": {
+          "lado": "buy",
+          "unidades": "1000",
+          "preco_medio": "1.0850",
+          "marca_de_posse": 1694498816
+        }
+      },
+      "proposta": {
+        "lado": "caixa"
+      },
+      "ficha": "3232",
+      "ciclo": 9,
+      "marcas_nossas_conhecidas": [
+        1694498816
+      ],
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "maximo": "0.1"
+          }
+        }
+      },
+      "decisao_esperada": {
+        "acao": "fechar",
+        "motivo": null,
+        "condicao": "normal",
+        "avisa": false,
+        "boleta": {
+          "lado": "sell",
+          "reduce_only": true
+        }
+      },
+      "historico": "D-008: o MESMO stop fora da banda que trava a abertura (0.3 contra um maximo de 0.1) nao trava o fecho. E' o outro lado da regra: um setup mal declarado nao pode prender uma posicao aberta - reduzir risco e' sempre permitido."
+    },
+    {
+      "nome": "banda-do-setup/um-algarismo-abaixo-do-minimo-que-a-virgula-flutuante-perde",
+      "leitura": {
+        "instrumento": "EURUSD",
+        "idade_do_dado_ms": 300,
+        "estado_do_mercado": "aberto",
+        "equity": "1000.00"
+      },
+      "proposta": {
+        "lado": "buy"
+      },
+      "ficha": "3232",
+      "ciclo": 10,
+      "mandato": {
+        "saldo_pct": "1",
+        "alavancagem": "2",
+        "bandas": {
+          "stop_pct": {
+            "minimo": "1.0000000000000000001"
+          }
+        }
+      },
+      "template": {
+        "politica_de_execucao": "mercado",
+        "parcial": "o_que_der",
+        "desvio_maximo": "0.5",
+        "prazo_da_passiva_ms": 3000,
+        "destino_do_resto": "cancelar",
+        "stop_pct": "1",
+        "tp_pct": "0.6"
+      },
+      "decisao_esperada": {
+        "acao": "nada",
+        "motivo": "parametro_do_setup_fora_da_banda",
+        "condicao": "normal",
+        "avisa": true
+      },
+      "historico": "D-008: a metade simetrica do outro caso - `1` esta' ABAIXO do minimo `1.0000000000000000001`, e a virgula flutuante diria que sao iguais (dentro). As duas bordas (maximo e minimo) tem caso proprio, porque um limite que so' se mede de um lado e' meio limite."
     }
   ]
 }

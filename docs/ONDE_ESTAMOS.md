@@ -22,7 +22,7 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 | Bancada | Comando | Número medido (29/09, 19:39–21:2x) |
 |---|---|---|
 | A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **28 de 28 passaram** (numa cópia com a árvore gravada — ver §4) |
-| A **conferência da banda** (D-001, fechado hoje) | `bun run core/ciclo/provar.ts` | **90 verificações · 0 divergentes** — 12 de condição · 27 de ciclo · 10 de desfecho · **15 de banda** · 6 de reconciliação |
+| O **ciclo** e as bandas (D-001 e D-008) | `bun run core/ciclo/provar.ts` | **99 verificações · 0 divergentes** — 12 de condição · **36 de ciclo** (eram 27) · 10 de desfecho · 15 de banda · 6 de reconciliação |
 | A **tabela de transições** (D-006, fechado hoje) | `bun run core/estados/provar.ts` + `bun run tools/verificar-maquina/tabela.ts` | **38 casos · 13 aceites · 25 recusados · 0 divergentes** (eram 35) + **36 linhas · 0 falhas nos 7 invariantes** |
 | A **fronteira** vigia ↔ mesa (motivos) | `uv run python tools/verificar-contrato/py/fronteira.py --motivos` | **0 falhas** — livro **50** motivos · **26** cruzam · 24 ficam · **1** excepção da porta |
 | A **retenção do ledger** (RN-L6, leitor novo) | `bun run core/estado/retencao.prova.ts` | **14 casos · 7 declarações aceites · 7 recusadas · 0 divergentes** |
@@ -41,13 +41,13 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
   medido por grep, **0 atribuições** desse campo em todo o repositório. Numa corrida a sério, `encerrando +
   start` cai sempre na linha `sempre` e volta a `em_operacao`. A decisão (trazer o estado da liquidação ao
   contexto, ou assumir que `start` durante `encerrando` é sempre «não feche») é do desenho.
-- **As bandas do mandato têm leitores a menos: D-008** (declarado hoje). Medido o que o **código** lê:
-  `bandas.saldo_pct` e `bandas.alavancagem` são conferidas (arranque + `banda.ts`), `bandas.distancia_minima_
-  liquidacao_pct` também — mas **`bandas.stop_pct` e `bandas.tp_pct` não são conferidas em lado nenhum**: o
-  `setup.stop_pct` é copiado para a boleta (`core/ciclo/decisao.ts:118`) e a banda que o devia limitar nunca
-  morde. E duas chaves que as regras exigem (`tolera_posicao_manual`, `bandas.tempo_maximo_em_posicao`) **não
-  existem em ficheiro nenhum** (só no inventário) — as duas dependem do **mapa de posse** (RN-T16.1), que não
-  existe.
+- **As bandas do mandato — meio fechado hoje (D-008).** As **duas que existiam e não mordiam**
+  (`bandas.stop_pct` e `bandas.tp_pct`) passaram a **morder**: o valor do setup é conferido no ciclo
+  (`core/ciclo/ciclo.ts` 3.6 + `cabeNaBanda`, aritmética exacta) e **não abre** fora da banda nem com um valor
+  que não se leia — com **8 casos** novos, incluindo dois que provam que a aritmética exacta é carga (um
+  valor de 19 algarismos que a vírgula flutuante arredonda e diria «cabe»). Resta **aberto**: as duas chaves
+  que as regras exigem e **não existem em ficheiro nenhum** (`tolera_posicao_manual`,
+  `bandas.tempo_maximo_em_posicao`) — as duas dependem do **mapa de posse** (RN-T16.1), que não existe.
 - **A medição do envio contra o venue.** O envio **existe** desde hoje — o conector assina e submete (T072), com
   a régua conferida e a porta `identidade` a travar quem não é agente desta conta (T073) — e está provado em
   bancada: **38 casos · 0 divergentes** (eram 36 antes da emenda 1.7.0). O que **não** existe é uma ordem a sério: nenhuma foi enviada, e a
@@ -92,9 +92,14 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
    de *pares* de spot, que não são moedas).
 9. O *stash* que estava parado foi **aplicado** e não há nada em stash: o trabalho vinha com **3 casos
    divergentes**, e um deles era sério (o do ponto 2).
+10. **As bandas `stop_pct`/`tp_pct` passaram a morder** (a correcção do que o ponto 7 declarou): o valor que o
+    setup pede é conferido **no ciclo**, contra a banda do mandato, com aritmética **exacta** — e não abre
+    fora da banda nem com um valor que não se leia. **8 casos** novos, incluindo o **par de controle** das duas
+    bordas e **dois casos que provam a aritmética** (`1.0000000000000000001` contra o máximo `1`: a vírgula
+    flutuante arredonda-o e diria «cabe»). Fechar/reduzir continua a passar — o outro lado, também em caso.
 
-Os dois primeiros itens estão no commit `af70d46`; o terceiro no `905fc03`; o quarto no `e08e6d3`; o quinto é o
-desta vaga. `provar.sh` dá **28 de 28** com a árvore **gravada** — no repositório, a única porta que fica
+Os dois primeiros itens estão no commit `af70d46`; o terceiro no `905fc03`; o quarto no `e08e6d3`; o quinto e o
+sexto nas duas vagas de hoje. `provar.sh` dá **28 de 28** com a árvore **gravada** — no repositório, a única porta que fica
 vermelha antes de gravar é a **prova negativa da frescura**, e por uma razão mecânica e dita: ela exige
 `contracts/gerado` **limpo em git** antes de correr.
 
@@ -111,7 +116,7 @@ ambiente de TESTE). A passagem a produção (`conexao.ambiente: producao`) é de
 | `specs/004/tasks.md` §«O que fica aberto» | «o CONTRATO recusa a carga» / «não se remenda por aqui» / «histórico: 24 casos» | a emenda **foi feita** (`3b730ec`) e a carga é **aceite**; **26** casos | correcção datada na própria secção |
 | `specs/002/data-model.md` §`sem_ligacao` | «`idade_do_dado_ms` ≥ `conta.idade_maxima_do_dado_ms`» | o código (`core/ciclo/condicoes.ts`) diz desde 28 set que a ligação vem do **protocolo** — e a chave **saiu** | nota datada sob a tabela, com a linha original mantida |
 | `docs/inventario-de-chaves.md` §1 · `contracts/origem-das-grandezas.json` | a chave `conta.idade_maxima_do_dado_ms` como `[falta]` / «o limite é do dono» | idem: a chave não existe, e nada tem de a ler | linha riscada + **nota datada**; a regra da grandeza reescrita |
-| `docs/inventario-de-chaves.md` §2 (bandas) | `bandas.stop_pct`/`tp_pct` com leitor «mesa e validação» | **nenhum leitor** — medido: nada confere a banda do stop/tp do setup (`core/ciclo/decisao.ts:118` copia-o e mais nada) | **nota datada** na linha + **D-008** declarado |
+| `docs/inventario-de-chaves.md` §2 (bandas) | `bandas.stop_pct`/`tp_pct` com leitor «mesa e validação» | **nenhum leitor** — medido: nada conferia a banda do stop/tp do setup | **nota datada** + **D-008** declarado, e **corrigido no mesmo dia**: as duas passaram a ter leitor nomeado (`core/ciclo/ciclo.ts` 3.6) com 8 casos e 6 provas negativas |
 
 ## 6. O venue, medido agora (só leitura, sem chave)
 

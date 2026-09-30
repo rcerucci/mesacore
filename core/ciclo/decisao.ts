@@ -22,6 +22,12 @@ export interface Mandato {
   /** Multiplo - valor do dono. */
   alavancagem: string;
   distancia_minima_liquidacao_pct?: string;
+  /**
+   * As bandas que o dono declarou para os parametros do setup (RN-S10, RN-M6.2). O `arranque` confere as
+   * bandas de `saldo_pct`/`alavancagem`; estas duas - `stop_pct` e `tp_pct` - sao conferidas no CICLO, onde
+   * o valor do setup aparece (D-008). Ausente = o dono nao declarou banda, e nao ha' limite a aplicar.
+   */
+  bandas?: Record<string, { minimo?: string; maximo?: string }>;
 }
 
 export interface Template {
