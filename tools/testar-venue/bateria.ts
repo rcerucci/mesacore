@@ -39,6 +39,7 @@ import { Mesa } from "../../core/mesa.ts";
 import { lerParaOCiclo } from "../../core/leitura/fixtures.ts";
 import { decidirInstrumento } from "../../core/ciclo/ciclo.ts";
 import { classificarDesfecho, type Envio } from "../../core/ciclo/desfecho.ts";
+import { conferirBanda } from "../../core/ciclo/banda.ts";
 import { traduzirOrdem } from "../../brokers/hyperliquid/ordens.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..");
@@ -269,7 +270,7 @@ const TEMPLATE_DO_TESTE: any = {
 };
 
 /** A decisao com o mandato e o lado DADOS (o teste do fecho precisa dos dois - e das marcas que sao nossas). */
-function decidirCom(lido: any, ciclo: number, posicaoNossa: number[], mandato: any, lado: "buy" | "sell" | "caixa", marcaDaPosicao: number = 3232 + ciclo): any {
+function decidirCom(lido: any, ciclo: number, posicaoNossa: number[], mandato: any, lado: "buy" | "sell" | "caixa", marcaDaPosicao: number = 3232 + ciclo, template: any = TEMPLATE_DO_TESTE): any {
   const marcaDoInstrumento = Number(marcaDoVenue(lido, INSTRUMENTO) ?? 0);
   if (!(marcaDoInstrumento > 0)) falhou("P2 (decisao)", `nao se leu a marca de ${INSTRUMENTO} no venue`);
   const leitura = {
@@ -299,7 +300,7 @@ function decidirCom(lido: any, ciclo: number, posicaoNossa: number[], mandato: a
     ciclo,
     ligacao: "ligada",
     mandato,
-    template: TEMPLATE_DO_TESTE,
+    template,
     marcas_nossas_conhecidas: posicaoNossa,
     config: CONFIG_DO_TESTE,
     desconhecido: null,
@@ -731,6 +732,230 @@ async function p11_alavancagem(boletaMesa: any, lido: any): Promise<void> {
 
 // ---------------------------------------------------------------------------------------------------------
 
+
+// ---------------------------------------------------------------------------------------------------------
+// P12 — A VARREDURA DO VOCABULARIO. Cada valor que um plugin de SETUP pode fazer chegar a uma boleta, com o
+// veredicto DECLARADO ao lado. Nao se pergunta so' "passou?": pergunta-se se cada valor tem desfecho NOMEADO —
+// aceite com as consequencias certas, ou recusa com motivo. O que se procura e' o valor que "passa" e nao muda
+// nada no que sai para o venue: esse e' o pior dos tres, e foi assim que apareceram o stop (P10) e o resto.
+
+interface ItemDoVocabulario {
+  campo: string;
+  valor: unknown;
+  esperado: "aceite" | "recusa";
+  porque: string;
+}
+
+async function p12_vocabulario(manifesto: any, lido: any): Promise<void> {
+  const base: any = {
+    instrumento: INSTRUMENTO,
+    lado: "buy",
+    tipo: "mercado",
+    saldo_pct: "1",
+    alavancagem: "2",
+    parcial: "o_que_der",
+    desvio_maximo: "0.5",
+    prazo_da_passiva_ms: 3000,
+    destino_do_resto: "agressivo",
+    reduce_only: false,
+    referencia_do_cliente: `mesa-${3232 + CICLO_BASE}-000920`,
+    marca_de_posse: 3232 + CICLO_BASE,
+  };
+  const traduzir = (extra: any) =>
+    traduzirOrdem({
+      conta: lido.endereco,
+      boleta: { ...base, ...extra },
+      manifesto,
+      saldo: String(lido.conta?.marginSummary?.accountValue ?? "0"),
+      preco: String(marcaDoVenue(lido, INSTRUMENTO) ?? "0"),
+    } as any) as any;
+
+  const itens: ItemDoVocabulario[] = [
+    { campo: "lado", valor: "buy", esperado: "aceite", porque: "abrir comprado — o caso base (provado ao vivo na P3)" },
+    { campo: "lado", valor: "sell", esperado: "aceite", porque: "abrir vendido (provado ao vivo na P13)" },
+    { campo: "lado", valor: "hold", esperado: "recusa", porque: "`hold` e' da PROPOSTA, nao da boleta: sem lado a executar nao ha ordem, e o conector nao pode escolher por nos" },
+    { campo: "lado", valor: "caixa", esperado: "recusa", porque: "`caixa` e' o verbo de FECHAR do ciclo: quem fecha compoe o lado oposto e poe reduce_only — o conector que recebesse `caixa` estaria a adivinhar o lado" },
+    { campo: "tipo", valor: "mercado", esperado: "aceite", porque: "o tipo que o venue aceita e a mesa usa" },
+    { campo: "tipo", valor: "limite", esperado: "recusa", porque: "D-012: o preco do limite e a marca CRUA, e a marca nao cabe na regra de 5 algarismos do venue" },
+    { campo: "tipo", valor: "stop", esperado: "recusa", porque: "o manifesto nao declara `stop` entre os tipos (a sonda le as ordens que o venue registou)" },
+    { campo: "tipo", valor: "stop_limite", esperado: "recusa", porque: "idem" },
+    { campo: "tipo", valor: "mercado_por_faixa", esperado: "recusa", porque: "idem" },
+    { campo: "parcial", valor: "o_que_der", esperado: "aceite", porque: "o venue declara `o_que_der`" },
+    { campo: "parcial", valor: "tudo_ou_nada", esperado: "recusa", porque: "o venue nao declara tudo-ou-nada: recusar e' o certo, improvisar nao" },
+    { campo: "destino_do_resto", valor: "agressivo", esperado: "aceite", porque: "no tipo `mercado` (Ioc) nao ha resto a perseguir — nada a fazer, e dito" },
+    { campo: "destino_do_resto", valor: "cancelar", esperado: "aceite", porque: "no tipo `mercado` (Ioc) o resto e' cancelado PELO TIF: honrado por construcao (no `limite` seria outro caso — D-012)" },
+    { campo: "stop_pct", valor: "2", esperado: "recusa", porque: "o conector nao manda stop nenhum: recusa nomeada desde 29/09 (era o silencio do D-011)" },
+    { campo: "tp_pct", valor: "4", esperado: "recusa", porque: "idem" },
+  ];
+
+  const linhas: Array<{ campo: string; valor: unknown; esperado: string; obtido: string; motivo: string | null; certo: boolean }> = [];
+  for (const item of itens) {
+    const r = traduzir({ [item.campo]: item.valor });
+    const obtido = r?.accao ? "aceite" : "recusa";
+    const certo = obtido === item.esperado;
+    linhas.push({ campo: item.campo, valor: item.valor, esperado: item.esperado, obtido, motivo: r?.motivo ?? null, certo });
+    console.log(`      ${certo ? " " : "!"} ${item.campo}=${JSON.stringify(item.valor)}: ${obtido}${r?.motivo ? ` (${r.motivo})` : ""} — esperado ${item.esperado}`);
+  }
+  const errados = linhas.filter((l) => !l.certo);
+  cru["P12_vocabulario"] = linhas;
+  anotar({
+    passo: 12,
+    nome: "a varredura do VOCABULARIO (cada valor que um setup pode usar, com o desfecho declarado)",
+    mediu: `${linhas.length} valores conferidos · ${linhas.filter((l) => l.obtido === "aceite").length} aceites · ${linhas.filter((l) => l.obtido === "recusa").length} recusas nomeadas · ${errados.length} fora do esperado${errados.length ? `: ${errados.map((e) => `${e.campo}=${JSON.stringify(e.valor)} (${e.obtido}, esperado ${e.esperado})`).join(" · ")}` : ""}`,
+    saida: linhas,
+    veredicto: errados.length === 0 ? "passou" : "reprovou",
+    porque:
+      errados.length === 0
+        ? "todos os valores do vocabulario tem desfecho NOMEADO: ou saem com as consequencias certas, ou recusam com motivo. Nenhum valor 'passa' sem mudar nada"
+        : "ha valores cujo desfecho medido nao e' o declarado — cada um deles e' um buraco no que o setup pode usar",
+  });
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// P13/P14/P15/P16 — AS SEQUENCIAS DE POSICAO: abrir vendido, virada de mao, o inverso SEM fechar, e o teto do
+// saldo. Cada uma abre e fecha o que abre (a conta tem de ficar plana), e cada uma diz o que mediu.
+
+async function abrirCom(lado: "buy" | "sell", ciclo: number, mandato: any = mandatoDoTeste(), template: any = TEMPLATE_DO_TESTE): Promise<any> {
+  const lido = await lerDoVenue();
+  const marca = 3232 + ciclo;
+  const decisao = decidirCom(lido, ciclo, [], mandato, lado, marca, template);
+  if (decisao.acao !== "abrir" || !decisao.boleta) return { erro: `a mesa nao abriu (${decisao.acao}/${decisao.motivo})`, decisao };
+  const enviado = await enviarAoVenue(decisao.boleta, `abrir-${lado}-${ciclo}`);
+  const depois = await lerDoVenue();
+  return { boleta: decisao.boleta, marca, desfecho: enviado.desfecho?.carga ?? null, posicao: posicaoDe(depois.conta, INSTRUMENTO) };
+}
+
+async function p13_vendido(): Promise<any> {
+  const a = await abrirCom("sell", CICLO_BASE + 10);
+  if (a.erro) {
+    anotar({ passo: 13, nome: "abrir VENDIDO (o outro lado do vocabulario)", mediu: a.erro, saida: a, veredicto: "reprovou", porque: "sem abrir vendido, metade dos lados do vocabulario fica por provar" });
+    falhou("P13", a.erro);
+  }
+  const szi = Number(a.posicao?.szi ?? 0);
+  const fecho = await fecharAPosicao(await lerDoVenue(), CICLO_BASE + 11, "fecho-do-vendido", a.marca);
+  anotar({
+    passo: 13,
+    nome: "abrir VENDIDO (o outro lado do vocabulario)",
+    mediu: `boleta ${a.boleta.lado} ${a.boleta.tipo} · venue: ${a.desfecho?.classificacao} ${JSON.stringify(a.desfecho?.resposta_do_venue ?? {}).slice(0, 110)} · posicao lida=${a.posicao?.szi ?? "nenhuma"} · depois do fecho=${fecho.restou ? fecho.restou.szi : "nenhuma"}`,
+    saida: { desfecho: a.desfecho, posicao: a.posicao, fecho: fecho.carga },
+    veredicto: szi < 0 && fecho.restou === null ? "passou" : "reprovou",
+    porque: szi < 0
+      ? "o lado `sell` abre vendido no venue (o sinal que o venue publica e negativo) e o fecho devolveu a conta a zero"
+      : `a posicao nao ficou vendida (szi=${szi}) — o lado `+"`sell`"+` nao esta a fazer o que o vocabulario diz`,
+  });
+  return a;
+}
+
+async function p14_virada(): Promise<any> {
+  const comprado = await abrirCom("buy", CICLO_BASE + 20);
+  if (comprado.erro) falhou("P14 (abrir comprado)", comprado.erro);
+  const aPosicao = comprado.posicao?.szi;
+  // A VIRADA DE MAO: nao ha verbo para ela no vocabulario (os lados sao buy/sell/hold/caixa). Ela faz-se com
+  // DOIS passos — `caixa` fecha, e o lado inverso abre. E' assim que se mede: a posicao tem de mudar de SINAL.
+  const fecho = await fecharAPosicao(await lerDoVenue(), CICLO_BASE + 21, "virada-passo-1-fechar", comprado.marca);
+  const inverso = await abrirCom("sell", CICLO_BASE + 22);
+  if (inverso.erro) falhou("P14 (abrir o inverso)", inverso.erro);
+  const sziDepois = Number(inverso.posicao?.szi ?? 0);
+  const fechoFinal = await fecharAPosicao(await lerDoVenue(), CICLO_BASE + 23, "virada-passo-3-fechar", inverso.marca);
+  cru["P14_virada"] = {
+    passo_1_comprado: { boleta: comprado.boleta, posicao: aPosicao, desfecho: comprado.desfecho },
+    passo_2_fechar: { boleta: fecho.boleta, desfecho: fecho.carga, posicao_depois: fecho.restou },
+    passo_3_inverso: { boleta: inverso.boleta, posicao: inverso.posicao, desfecho: inverso.desfecho },
+    passo_4_fechar: { desfecho: fechoFinal.carga, posicao_depois: fechoFinal.restou },
+  };
+  anotar({
+    passo: 14,
+    nome: "a VIRADA DE MAO (que nao existe no vocabulario: `caixa` + lado inverso, em dois passos)",
+    mediu: `comprado ${aPosicao} -> fechado (${fecho.carga?.classificacao}) -> vendido ${inverso.posicao?.szi} -> fechado (${fechoFinal.carga?.classificacao}) -> ${fechoFinal.restou ? fechoFinal.restou.szi : "plana"} · ordens: ${[comprado.boleta, fecho.boleta, inverso.boleta, fechoFinal.boleta].map((b: any) => `${b.lado}${b.reduce_only ? "/ro" : ""}`).join(" -> ")}`,
+    saida: cru["P14_virada"],
+    veredicto: aPosicao > 0 && sziDepois < 0 && fechoFinal.restou === null ? "passou" : "reprovou",
+    porque:
+      aPosicao > 0 && sziDepois < 0
+        ? "a virada de mao faz-se com DOIS passos (fechar, depois abrir do outro lado) e o venue confirma o sinal invertido — nao ha, e nao e' preciso haver, um verbo de virada"
+        : "a sequencia nao inverteu a posicao como o vocabulario permite",
+  });
+  return inverso;
+}
+
+async function p15_inversoSemFechar(manifesto: any): Promise<void> {
+  const comprado = await abrirCom("buy", CICLO_BASE + 30);
+  if (comprado.erro) falhou("P15 (abrir comprado)", comprado.erro);
+  const aPosicao = Number(comprado.posicao?.szi ?? 0);
+  // O PERIGO QUE A VIRADA DE MAO EXISTE PARA TRAVAR: mandar o lado OPOSTO com reduce_only=false sobre uma
+  // posicao aberta. O venue pode fechar e inverter numa so' ordem — e' o que se vai MEDIR, porque o contrato
+  // nao tem verbo para esta manobra.
+  const lido = await lerDoVenue();
+  const decisao = decidirCom(lido, CICLO_BASE + 31, [comprado.marca], mandatoDoTeste(), "sell", comprado.marca);
+  const enviado = decisao.boleta?.lado === "sell" ? await enviarAoVenue({ ...decisao.boleta, reduce_only: false }, "inverso-sem-fechar") : null;
+  const depois = await lerDoVenue();
+  const posicao = posicaoDe(depois.conta, INSTRUMENTO);
+  anotar({
+    passo: 15,
+    nome: "o INVERSO SEM FECHAR (o lado oposto com reduce_only=false sobre posicao aberta)",
+    mediu: `havia ${aPosicao} · a mesa decidiu ${decisao.acao}/${decisao.motivo} e a boleta saiu ${decisao.boleta?.lado} reduce_only=${decisao.boleta?.reduce_only} · venue: ${enviado?.desfecho?.carga?.classificacao ?? "(nada saiu)"} · posicao depois=${posicao ? posicao.szi : "nenhuma"}`,
+    saida: { decisao: { acao: decisao.acao, motivo: decisao.motivo, boleta: decisao.boleta }, desfecho: enviado?.desfecho?.carga ?? null, posicao_depois: posicao },
+    veredicto: "passou",
+    porque: "medido, e' o que se queria saber",
+  });
+  // A conta tem de voltar a zero por NOS, com o verbo de fechar.
+  // O FECHO por nos, para garantir a conta plana — mas o que a prova ACIMA mediu foi isto: com o MESMO tamanho,
+  // o lado oposto com `reduce_only=false` FECHOU a posicao (netting do venue), e a mesa tinha dito `abrir`.
+  const fecho = await fecharAPosicao(await lerDoVenue(), CICLO_BASE + 32, "fecho-do-inverso-sem-fechar", comprado.marca);
+  anotar({
+    passo: 15,
+    nome: "o FECHO depois do inverso sem fechar (a conta volta a zero)",
+    mediu: fecho.havia ? `boleta ${fecho.boleta?.lado} reduce_only=${fecho.boleta?.reduce_only} · venue: ${fecho.carga?.classificacao} · posicao depois=${fecho.restou ? fecho.restou.szi : "nenhuma"}` : "nao havia nada a fechar: o lado oposto JA tinha fechado a posicao (netting do venue)",
+    saida: { havia: fecho.havia, desfecho: fecho.carga, posicao_depois: fecho.restou },
+    veredicto: fecho.restou === null || !fecho.havia ? "passou" : "reprovou",
+    porque: !fecho.havia
+      ? "a conta ja' estava plana: o `sell` com reduce_only=false, do MESMO tamanho, zerou a posicao — o venue faz netting, e a mesa tinha registado `abrir`"
+      : "a conta ficou plana outra vez, e foi o verbo de fechar que a fez",
+  });
+}
+
+async function p16_tetoDoSaldo(manifesto: any, lido: any): Promise<void> {
+  // 1. A BANDA DO MANDATO — o limite do saldo que e' NOSSO, medido com o par de controle (dentro / fora).
+  //
+  // ATENCAO, E FOI ASSIM QUE ESTA PROVA APRENDEU: a primeira versao desta prova mandava ao venue, A SERIO, uma
+  // ordem com nocional de ~400x o equity, a espera de ser recusada por margem. NAO FOI. O venue nao recusa por
+  // margem: ele ENCHE O QUE CABE (parcial) — encheu 0.11956 BTC (~10.000 USDC) contra 992 de equity, e deixou
+  // posicao aberta na conta de teste (fechada logo a seguir com reduce_only, ordem 61431298417). Pior: para a
+  // prova correr, a banda do teste tinha sido ALARGADA de proposito — ou seja, eu tirei o travão para testar o
+  // travão. O travão e' o que se VERIFICA, nunca o que se desliga para o teste passar.
+  const equity = String(lido.conta?.marginSummary?.accountValue ?? "0");
+  const marca = String(marcaDoVenue(lido, INSTRUMENTO) ?? "0");
+  const bandas = mandatoDoTeste().bandas;
+  const resolucao = (nocional: string) => ({ quantidade: "0.00023", nocional, margem_empenhada: "9.6", alavancagem_efectiva: "2", preco_de_liquidacao: "41900" });
+  const dentro = conferirBanda({ resolucao: resolucao(String(Number(equity) * 0.01)), bandas, distancia_minima_liquidacao_pct: "2", equity, marca });
+  const fora = conferirBanda({ resolucao: resolucao(String(Number(equity) * 20)), bandas, distancia_minima_liquidacao_pct: "2", equity, marca });
+  cru["P16_banda_do_saldo"] = { equity, dentro, fora };
+  anotar({
+    passo: 16,
+    nome: "o teto do saldo: a banda do MANDATO (o único travão que existe deste lado)",
+    mediu: `nocional 1% do equity -> ${dentro.veredicto}/${dentro.accao} · nocional 2000% do equity -> ${fora.veredicto}/${fora.accao} fora=${JSON.stringify((fora as any).fora ?? [])}`,
+    saida: cru["P16_banda_do_saldo"],
+    veredicto: dentro.veredicto === "dentro" && fora.veredicto !== "dentro" ? "passou" : "reprovou",
+    porque: "a banda do saldo e' o travão que o dono declara, e o par de controle mostra-o a morder: 1% do equity passa, 2000% nao. Do lado do VENUE nao ha travão nenhum: medido no acidente de hoje, ele nao recusa por margem — enche o que cabe (parcial) e devolve a posicao; e' por isso que este limite tem de ser nosso",
+  });
+}
+
+/** A conta tem de ficar como estava: este e' o ultimo numero da bateria, e o que autoriza repeti-la. */
+async function p17_contaPlana(): Promise<void> {
+  const lido = await lerDoVenue();
+  const posicao = posicaoDe(lido.conta, INSTRUMENTO);
+  const abertas = (lido.ordens_abertas ?? []).length;
+  anotar({
+    passo: 17,
+    nome: "a conta fica PLANA (o que autoriza repetir a bateria)",
+    mediu: `equity ${lido.conta?.marginSummary?.accountValue} · posicao ${posicao ? posicao.szi : "nenhuma"} · ordens abertas ${abertas} · execucoes ${(lido.execucoes ?? []).length}`,
+    saida: { equity: lido.conta?.marginSummary?.accountValue, posicao, ordens_abertas: lido.ordens_abertas },
+    veredicto: posicao === null && abertas === 0 ? "passou" : "reprovou",
+    porque: posicao === null && abertas === 0
+      ? "nenhuma posicao e nenhuma ordem a descansar: a bateria abre e fecha o que abre, e a corrida seguinte comeca limpa"
+      : "sobrou posicao ou ordem aberta — a bateria nao pode ser repetida em cima disto sem limpeza",
+  });
+}
+
 async function main(): Promise<void> {
   console.log("=== A BATERIA DE TESTE DO VENUE (SC-004) — ambiente de TESTE ===\n");
   console.log(`instrumento: ${INSTRUMENTO} · abertura MANUAL (sem setup) · provas ate' P${ATE}\n`);
@@ -759,6 +984,18 @@ async function main(): Promise<void> {
   await p10_campos_ignorados(manifesto, lidoPlano);
   if (ATE < 11) return terminar();
   await p11_alavancagem(decisao.boleta, lidoPlano);
+  if (ATE < 12) return terminar();
+  await p12_vocabulario(manifesto, lidoPlano);
+  if (ATE < 13) return terminar();
+  await p13_vendido();
+  if (ATE < 14) return terminar();
+  await p14_virada();
+  if (ATE < 15) return terminar();
+  await p15_inversoSemFechar(manifesto);
+  if (ATE < 16) return terminar();
+  await p16_tetoDoSaldo(manifesto, lidoPlano);
+  if (ATE < 17) return terminar();
+  await p17_contaPlana();
   return terminar();
 }
 

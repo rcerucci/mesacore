@@ -343,6 +343,41 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
     );
   }
 
+  // ---- porta 3-bis: O STOP E O TP TEM DE SAIR OU RECUSAR — nunca sair sem eles (29/09/2026) ---------------
+  //
+  // MEDIDO (bateria de teste, P10): a boleta com `stop_pct`/`tp_pct` produzia um payload IDENTICO ao de uma
+  // boleta sem nada disso — o campo era aceite pela validacao e nao chegava a lado nenhum. O stop VEM DO SETUP
+  // (RN-S11) e e' a proteccao que o dono autorizou: uma ordem que sai sem ele, em silencio, deixa a mesa a
+  // acreditar numa proteccao que nao existe. E' o FR-007 — nada se adapta em silencio.
+  //
+  // A RECUSA e' o estado de hoje, e e' deliberada: este conector NAO sabe ainda mandar o stop. O venue TEM o
+  // verbo (medido nos tipos do SDK: `t: { trigger: { tpsl: "tp"|"sl", triggerPx, isMarket } }`), e o manifesto
+  // declara se ele prende o stop a' ordem (`stop_anexo`). Enquanto a ordem trigger nao for implementada — com o
+  // cancelamento que ela exige para nao deixar ordem a descansar, D-012 — a resposta honesta e' esta: recusar
+  // COM NOME, em vez de entregar uma posicao desprotegida a quem pediu proteccao.
+  for (const campo of ["stop_pct", "tp_pct"] as const) {
+    const pedido = (boleta as Record<string, unknown>)[campo];
+    if (pedido === undefined) continue;
+    return recusa(
+      "capacidade_nao_declarada",
+      `a boleta pede \`${campo}\` e este conector NAO manda stop nenhum: o venue declara ` +
+        `\`stop_anexo: ${JSON.stringify(m.stop_anexo)}\` e o verbo que existe nele e' a ordem \`trigger\` (tpsl), que ainda nao ` +
+        `esta implementada. Recusa nomeada, e nao uma posicao que sai desprotegida — a mesa ficaria a acreditar ` +
+        `numa proteccao que nao existe (FR-007)`,
+    );
+  }
+
+  // ---- porta 3-ter: o `destino_do_resto` nao vira recusa — a razao, medida, esta' escrita aqui ------------
+  //
+  // MEDIDO (P10 da bateria): `cancelar` e `agressivo` produziam o MESMO payload. A primeira leitura disto foi
+  // "silêncio, recusa-se". Foi CORRIGIDA pela medicao seguinte (a bancada das ordens, 22 de 40 casos vermelhos de
+  // uma vez): para o UNICO tipo alcancavel depois do D-012 (`mercado`, tif `Ioc`), o resto NAO existe — o `Ioc`
+  // cancela o que nao encheu, e portanto `cancelar` esta' HONRADO pelo proprio TIF, por construcao. O que fica
+  // por honrar e' o `agressivo` (nao ha nada que persiga o resto) e o par no tipo `limite` (`Alo`, que descansa) —
+  // esse e' inalcancavel enquanto o D-012 recusar o `limite`. Nao se inventa uma recusa para um campo que o
+  // venue cumpre por outra via: isso trocaria um silencio por um bloqueio, e a matriz da cobertura diz qual dos
+  // dois casos e' qual.
+
   // ---- porta 4: a alavancagem e QUALQUER inteiro de 1 ate ao maximo do instrumento (RN-H6) -------------------
   if (m.sabe_ajustar_alavancagem !== true) {
     return recusa("capacidade_nao_declarada", "a boleta pede alavancagem e o manifesto nao declara `sabe_ajustar_alavancagem`");

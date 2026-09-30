@@ -13,7 +13,7 @@ ambiente de TESTE da corretora, que existe para isto, e cada prova DIZ o que med
 E a unica bancada do repositorio que MOVE dinheiro, e move-o na TESTE. Nao entra no `provar.sh` por isso: o
 portao corre a cada passo, e um portao que envia ordens a cada passo nao e' um portao.
 
-O QUE CORREU, POR ORDEM — 14 provas · 11 passaram · 3 REPROVARAM (P6, P10 e P11)
+O QUE CORREU, POR ORDEM — 21 provas · 19 passaram · 2 REPROVARAM (P6 e P11)
 -------------------------------------------------------------
 P0  arranque ao vivo (as 8 portas)                    OK
       ficha=passou · versao_do_contrato=passou · uma_conta=passou · ambiente_e_rede=passou ·
@@ -106,6 +106,57 @@ E uma incapacidade achada ao tentar exercer o outro tipo de ordem declarado:
       descansa no livro e nao pode ser retirado por nos — um `destino_do_resto: "cancelar"` comporta-se como
       `agressivo`. => DECLARADO COMO D-012.
 
+--- SEGUNDA VAGA (29/09/2026, a pedido do dono: «todos os requisitos que o venue tem de atender») -----------
+
+P12 a varredura do VOCABULARIO                        OK
+      15 valores conferidos (os 4 lados, os 5 tipos, as 2 politicas de parcial, os 2 destinos, stop_pct, tp_pct)
+      · 6 aceites · 9 recusas NOMEADAS · 0 fora do esperado
+      lado buy/sell -> aceite · lado hold/caixa -> recusa `valor_fora_do_conjunto` (sao da PROPOSTA, nao da boleta)
+      tipo mercado -> aceite · limite -> recusa `valor_fora_da_banda` (D-012) · stop/stop_limite/mercado_por_faixa
+      -> recusa `capacidade_nao_declarada` · parcial o_que_der -> aceite · tudo_ou_nada -> recusa
+      destino agressivo/cancelar -> aceite (no `mercado` o Ioc cancela o resto por construcao)
+      stop_pct/tp_pct -> recusa (era o SILENCIO do D-011, fechado nesta vaga)
+      A tabela completa, valor a valor, com a prova de cada um: `cobertura-do-vocabulario.md`.
+
+P13 abrir VENDIDO                                      OK
+      boleta sell mercado -> aceite, ordem 61431120364, preenchida 0.00023 a 83689.0; a posicao le-se
+      NEGATIVA (-0.00023) e o fecho devolve a conta a zero.
+
+P14 a VIRADA DE MAO (que NAO existe no vocabulario)     OK
+      ordens: buy -> sell/ro -> sell -> buy/ro · +0.00023 -> fechado -> -0.00023 -> fechado -> plana
+      A virada faz-se com DOIS passos (`caixa` fecha, o lado inverso abre) e o venue confirma o sinal
+      invertido. Nao ha', nem e' preciso haver, um verbo de virada — e a razao de ela ser em dois passos e'
+      nao deixar que uma ordem maior que a posicao vire a mao sem passar pelo fecho.
+
+P15 o INVERSO SEM FECHAR (o perigo que a P14 evita)     OK (medido)
+      havia 0.00023 · a mesa decidiu `abrir` · a boleta saiu sell reduce_only=false · venue: aceite ·
+      posicao depois: NENHUMA. O venue faz NETTING: o lado oposto, do mesmo tamanho, ZEROU a posicao — e a mesa
+      tinha registado `abrir`. Se a boleta fosse maior, o mesmo caminho entregaria uma virada numa so' ordem.
+      => DECLARADO COMO D-013.
+
+P16 o teto do saldo (a banda do MANDATO)                OK
+      nocional de 1% do equity -> `dentro/seguir` · nocional de 2000% -> `fora/reduzir_e_registar`
+      (fora por `saldo_pct`: 19808.71728 sobre um equity de 990.435864, maximo declarado 5% = 49.52)
+      O LIMITE DO SALDO E' NOSSO: do lado do venue nao ha' travao nenhum (ver o acidente, abaixo).
+
+P17 a conta fica PLANA                                  OK
+      equity 990.304509 · posicao nenhuma · ordens abertas 0 · execucoes 96
+
+--- O ACIDENTE DESTA VAGA, contado por inteiro (erro meu, medido) ------------------------------------------
+A primeira versao da P16 mandava ao venue, a SERIO, ~400x o equity, a espera de recusa por margem. NAO FOI
+RECUSADA: o venue enche o que cabe (parcial) — encheu 0.11956 BTC (~10.000 USDC) contra ~992 de equity e deixou
+posicao aberta. Fechada logo a seguir com reduce_only (ordem 61431298417, `sell` de 0.11956 a 83663.0), custo do
+acidente ~7 USDC de teste. Pior que o tamanho: para a prova poder correr, eu tinha ALARGADO a banda do teste — ou
+seja, desliguei o travao para testar o travao. A prova esta' refeita (par de controle, sem ordem nenhuma ao
+venue) e a licao esta' escrita na matriz: `saldo_pct` mal dimensionado nao vira recusa no venue, vira POSICAO.
+
+--- O QUE FICA POR FAZER (por ordem) ------------------------------------------------------------------------
+1. FR-008: pedir a alavancagem ao venue (P11 fica verde) — `updateLeverage` existe no SDK.
+2. O verbo de cancelamento (`cancel`/`cancelByCloid`).
+3. A ordem `trigger` (tpsl) — e' o que entrega `stop_pct`/`tp_pct` e o tipo `stop`.
+4. O `limite` utilizavel (D-012): preco derivado com a quantizacao do venue, em vez da marca crua.
+5. D-013: o lado oposto a' nossa posicao passa a ser `reduzir` nomeado, ou recusa.
+
 O REGISTO
 ---------
 `specs/004-conector-hyperliquid/relatorios/registos-do-venue/1.7.0-teste.txt` — por versao do contrato, com a saida crua inteira
@@ -117,7 +168,7 @@ dos passos que decidem.
 
 O QUE FICA POR FAZER, e que nao se esconde
 ------------------------------------------
-1. D-009 (a idempotencia): 11 de 14. Enquanto nao for corrigida, o SC-004 NAO esta cumprido — a prova que
+1. D-009 (a idempotencia): 19 de 21. Enquanto nao for corrigida, o SC-004 NAO esta cumprido — a prova que
    falha e' a que promete ao dono que a mesma referencia nao cria segunda ordem. As duas saidas (recusar em
    nos, consultando o historico; ou tirar a `idempotencia` do manifesto) sao decisao de desenho.
 2. D-010 (a alavancagem, FR-008): o verbo existe no venue e nunca e' usado; os numeros da resolucao saem de

@@ -536,6 +536,15 @@ ele recusar, **recusar a boleta** em vez de seguir com outra alavancagem — o s
 
 ## D-011 — A boleta pede stop e o stop não sai: o conector aceita e não lê (declarado 29/09/2026)
 
+> **ESTADO EM 29/09/2026, ao fechar a varredura do vocabulário: o SILÊNCIO acabou; o stop ainda não sai.**
+> O tradutor passou a **recusar com nome** (`capacidade_nao_declarada`) qualquer boleta que traga `stop_pct`
+> ou `tp_pct` — a posição já não sai desprotegida em silêncio, e o setup com stop falha alto em vez de falhar
+> calado. Medido nos tipos do SDK instalado: o venue **tem** o verbo (`t: { trigger: { tpsl: "tp"|"sl",
+> triggerPx, isMarket } }`), e o manifesto declara `stop_anexo: false` (não prende o stop à ordem de entrada).
+> Ou seja: o stop é **entregável** como ordem `trigger` separada — falta implementá-lo, e com ele o
+> cancelamento (D-012) que impede deixar a trigger a descansar depois de a posição fechar. Prova viva: P10/P12
+> da bateria de teste (`specs/004-.../relatorios/registos-do-venue/1.7.0-teste.txt`).
+
 **Encontrado ao medir, com o tradutor a correr, o que os campos da boleta mudam no que sai.** A mesma boleta
 enviada **com** `stop_pct: "2"` e `tp_pct: "4"` e **sem** eles produz um payload **idêntico** — mesma
 quantidade, mesmo preço, mesmo `cloid`:
@@ -588,3 +597,30 @@ como `agressivo`.
 **O que fecharia:** (a) um preço de limite que caiba na regra do venue (derivar da marca com a quantização da
 regra, em vez de a usar crua) — ou declarar no manifesto que o `limite` não é utilizável; (b) o verbo de
 cancelamento, sem o qual `destino_do_resto` não tem sentido.
+
+## D-013 — O lado oposto à NOSSA posição não é distinguido de «abrir» (declarado 29/09/2026)
+
+**Encontrado ao provar a virada de mão** (o dono pediu-a, e o vocabulário não a tem). Medido na bateria (P15),
+com posição nossa aberta de `0.00023 BTC`:
+
+```
+a mesa decidiu      abrir/null        <- o ciclo trata `sell` como abrir
+a boleta saiu       sell  reduce_only=false
+o venue respondeu   aceite
+a posicao depois    nenhuma           <- o venue ZEROU a posicao (netting)
+```
+
+O registo fica a dizer **`abrir`** e o que aconteceu foi uma **redução**. E o agravante está a uma linha de
+distância: se a boleta fosse **maior** que a posição, o mesmo caminho entrega uma **virada numa só ordem** — que é
+exactamente o que a virada de mão em dois passos existe para não deixar acontecer (P14 mede a via correcta:
+`buy -> sell/ro -> sell -> buy/ro`).
+
+**Porque é que isto importa.** O vocabulário só tem `buy`/`sell`/`hold`/`caixa`: não há verbo para *reduzir
+parcialmente* nem para *virar*. O tamanho da boleta é a percentagem do saldo do mandato (`montarBoleta`), logo
+uma redução parcial não se exprime pela via do ciclo. Consequência: a mesa tem uma acção (`reduzir_e_registar`, a
+4ª da tabela de razões) que **não tem boleta correspondente** — sabe que deve reduzir e não tem como o dizer.
+
+**O que fecharia** (decisão de desenho, e não a tomar por aqui): (a) o ciclo passa a distinguir a proposta cujo
+lado é oposto ao da nossa posição — nomeia-a `reduzir` (reduce_only, tamanho explícito) e **recusa** uma boleta
+que aumentaria além da posição; ou (b) o vocabulário ganha o que lhe falta — um tamanho neutro na boleta
+(percentagem da POSIÇÃO, não do saldo), que é o que permite dizer «reduz metade» sem tocar no mandato.
