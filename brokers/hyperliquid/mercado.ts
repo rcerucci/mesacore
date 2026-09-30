@@ -224,6 +224,25 @@ async function main(): Promise<void> {
       console.error(JSON.stringify({ erro: "velas_do_venue_nao_sao_lista", veio: typeof velas, instrumento, intervalo }));
       process.exit(2);
     }
+    // O VENUE DIZ O NOME EM CADA VELA — e é essa a razão de não haver dicionário nenhum: a ficha nomeia o par
+    // como o venue o escreve, e este nome vai TAL E QUAL para a API. Se a vela que voltou traz outro símbolo (ou
+    // outro intervalo), o nome que se pediu não é o nome do venue — para-se aqui, em vez de escrever um ficheiro
+    // de velas que a mesa e o setup leriam como se fossem deste par. Medido: o venue escreve `s: "SOL"`, `i: "1h"`.
+    // (Sem velas não há nada a conferir: um instrumento novo não tem histórico, e isso é um resultado, não anomalia.)
+    const deOutroPar = velas.filter((v: any) => v?.s !== instrumento || v?.i !== intervalo);
+    if (deOutroPar.length > 0) {
+      console.error(
+        JSON.stringify({
+          erro: "vela_de_outro_par",
+          pedido: { instrumento, intervalo },
+          veio: { s: (deOutroPar[0] as any)?.s, i: (deOutroPar[0] as any)?.i },
+          quantas: deOutroPar.length,
+          porque:
+            "o nome do instrumento e' o do VENUE e nada traduz nomes: uma vela com outro simbolo nao e' deste par",
+        }),
+      );
+      process.exit(2);
+    }
     const quantas = velas.length;
     // A FORMA crua, declarada: as chaves que o venue publicou na primeira vela. Nao se inventa esquema nenhum.
     const chaves = quantas > 0 ? Object.keys(velas[0] as object).sort() : [];

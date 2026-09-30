@@ -4,6 +4,34 @@
 ficheiro, não duas árvores. A conta é o nome do ficheiro de credencial (`config/contas/<conta>.json`), e é o
 mesmo nome aqui, no nome do ficheiro e no cabeçalho.
 
+## O nome do instrumento é **o do venue** — e é isso que dispensa o dicionário
+
+O contrato já o diz, textual (`contracts/_defs/forma.schema.json`):
+
+> `"instrumento"` — `"pattern": "^[A-Z0-9][A-Z0-9._/-]{1,31}$"` — **«Símbolo do instrumento, como o venue o
+> escreve.»**
+
+Medido, e é isto que faz a regra valer: **nada no sistema traduz nomes de instrumentos.**
+
+- a sonda copia o universo do venue **«a forma crua, sem traduzir»** (`brokers/hyperliquid/sonda.ts`, tipo
+  `LinhaDoUniverso`);
+- o conector **compara** o que o venue devolve com o nome da ficha, tal e qual (`historico.ts`:
+  `if (coin !== pedido.instrumento) continue`), e chama a API com esse nome (`l2Book({ coin })`,
+  `candleSnapshot({ coin, … })`);
+- o ficheiro das velas (`velas-<INSTRUMENTO>-<RELOGIO>.jsonl`), as chaves da config da mesa, o registo e o
+  `--par` do operador: todos usam o nome **verbatim**.
+
+Logo, o valor certo é o que **cada venue** escreve — e é o venue que decide, ficha a ficha:
+
+| venue | o que ele publica | o que a ficha tem de dizer |
+|---|---|---|
+| hyperliquid (perpétuos) | o nome da moeda, sozinho — medido nos fixtures do universo: `BTC`, `ETH`, `MATIC`; e a corrida de 30/09 leu livro, velas e equity com `coin: "SOL"` | **`SOL`** (é o nome dele) |
+| venue que escreve o par inteiro (p.ex. Binance/cTrader-style) | `SOLUSDC`, `SOLUSD`, … | **o que ele escrever** — `SOLUSDC` se for assim |
+
+Um nome errado **não é traduzido em silêncio**: a porta `sonda_e_manifesto` do arranque recusa, porque o venue
+não publica esse instrumento. Sem conector para a corretora, o nome da ficha é uma **assunção** — e é isso que o
+`tools/verificar-setup/fichas.py` reporta a cada corrida do portão, com o nome dela ao lado.
+
 ## As três regras de identidade — o operador RECUSA se não baterem
 
 Medidas em `vigia/operador.ts` (função `lerFichasDaConta`), e não são gosto:

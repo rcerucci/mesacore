@@ -17,6 +17,7 @@ Uso: fichas.py [caminho-das-fichas]     (por omissão, `fichas/`)
 """
 import json
 import os
+import re
 import sys
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,6 +37,26 @@ LIDAS = {
 }
 BANDAS = ["saldo_pct", "alavancagem", "stop_pct", "tp_pct"]
 
+
+def padrao_do_instrumento():
+    """O padrão do nome do instrumento LE-SE do contrato (`contracts/_defs/forma.schema.json`).
+
+    O contrato diz, textual: «Símbolo do instrumento, **como o venue o escreve**». E' essa a regra que dispensa
+    o dicionario: o nome que a ficha declara e' o nome que o conector manda ao venue, tal e qual. Aqui le-se o
+    padrao de forma — nao se copia —, para o conferidor nao envelhecer quando o contrato mudar.
+    """
+    caminho = os.path.join(RAIZ, "contracts", "_defs", "forma.schema.json")
+    with open(caminho, encoding="utf-8") as fh:
+        forma = json.load(fh)
+    definicao = forma.get("$defs", {}).get("instrumento")
+    if not isinstance(definicao, dict) or "pattern" not in definicao:
+        raise SystemExit(
+            f"fichas: o contrato ({caminho}) nao define `$defs.instrumento.pattern` — sem a forma do nome do "
+            "instrumento nao se confere nada, e um conferidor que adivinha nao vale",
+        )
+    return definicao["pattern"], definicao["description"]
+
+
 # Chaves que NINGUÉM lê mas que estão à espera de decisão do dono: são reportadas, não reprovadas — ficar
 # escondidas era pior (o dono acreditaria num comportamento que não existe).
 A_ESPERA_DE_DECISAO = {
@@ -46,6 +67,7 @@ A_ESPERA_DE_DECISAO = {
 
 def conferir(caminho, pasta_esperada):
     falhas, notas = [], []
+    padrao, descricao = padrao_do_instrumento()
     with open(caminho, encoding="utf-8") as fh:
         f = json.load(fh)
     if not isinstance(f, dict):
@@ -71,6 +93,17 @@ def conferir(caminho, pasta_esperada):
     if isinstance(cab.get("prazo_de_resposta_ms"), int) and not isinstance(cab.get("prazo_de_resposta_ms"), bool):
         if cab["prazo_de_resposta_ms"] <= 0:
             falhas.append(f"{caminho}: `prazo_de_resposta_ms` tem de ser > 0")
+
+    # O NOME DO INSTRUMENTO E' O DO VENUE — e e' isso que dispensa o dicionario.
+    nome = cab.get("instrumento")
+    if isinstance(nome, str) and not re.match(padrao, nome):
+        falhas.append(f"{caminho}: o `instrumento` nao respeita a forma do contrato ({padrao}): {descricao}")
+    if isinstance(nome, str):
+        notas.append(
+            f"{caminho}: `instrumento={nome}` — este nome vai ao venue TAL E QUAL (o conector nao traduz nada). "
+            "Quem confirma que o venue o conhece e' a porta `sonda_e_manifesto`, na corrida; sem conector para esta "
+            "corretora, o nome e' uma ASSUNCAO ate' haver corrida",
+        )
     bandas = cab.get("bandas")
     if isinstance(bandas, dict):
         for b in BANDAS:

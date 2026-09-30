@@ -41,5 +41,6 @@
   "zz_atr": "2.0",
   "atr_len": 14
  },
- "_nota": "Mesmo par, mesmo setup, OUTRA corretora. O conector do cTrader ainda não existe."
+ "_nota": "Mesmo par, mesmo setup, OUTRA corretora. O conector do cTrader ainda não existe.",
+ "_o_nome_do_instrumento": "ATENCAO — assumcao por confirmar: o `instrumento` desta ficha diz `SOL`, que e' o nome que o VENUE do hyperliquid publica (os perps dele chamam-se pelo nome da moeda: BTC, ETH, MATIC). O cTrader NAO usa essa forma: o simbolo dele escreve o par inteiro (ex.: `SOLUSD`, `SOLUSDC` — a confirmar). Enquanto nao houver conector do cTrader, este nome e' uma ASSUNCAO: quando o conector existir, ele tem de passar a ser o simbolo do cTrader, tal e qual, porque NADA no sistema traduz nomes (o conector manda o nome da ficha ao venue e compara-o com o que o venue devolve). A ficha esta' `run: false` por isso: nada depende dela hoje."
 }
