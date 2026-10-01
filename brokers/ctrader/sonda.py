@@ -18,6 +18,18 @@ DUAS GRANDEZAS QUE O CONTRATO EXIGE E ESTE VENUE NAO PUBLICA — resolvidas sem 
 2. `profundidade_de_livro` — o venue nao declara quantos niveis da'; da'-os. A sonda subscreve a profundidade de
    um instrumento, espera pelo primeiro retrato, e CONTA os niveis que vieram. Sem retrato dentro do prazo, a
    sonda FALHA: um numero de niveis inventado seria uma capacidade a mais do que a real.
+
+A UNIDADE DAS DISTANCIAS DO STOP/ALVO — O QUE A FONTE DECIDE, E O QUE AQUI FICA AUSENTE. O §0 do data-model
+da'-a como «(unidade do simbolo)», sem a decidir. A FONTE OFICIAL DECIDE-A: `ProtoOASymbol.distanceSetIn`
+(`ProtoOASymbolDistanceType`, `help.ctrader.com/open-api/model-messages/`) diz, por simbolo, se
+`slDistance`/`tpDistance` estao em PONTOS (`SYMBOL_DISTANCE_IN_POINTS` = 1) ou em PERCENTAGEM do preco
+(`SYMBOL_DISTANCE_IN_PERCENTAGE` = 2) — a unidade NAO e' livre, o SIMBOLO declara-a. MAS a sonda so' publica o
+que LE': a biblioteca instalada (0.11.0) NAO expoe `distanceSetIn` (traz `sl_distance`/`tp_distance` e nao a
+unidade), e por isso `unidade_das_distancias` fica AUSENTE no manifesto — nunca um valor por omissao. E, mesmo
+legivel, o CONTRATO NAO aceita o campo no instrumento (`contracts/manifesto.schema.json` fecha-o com
+`additionalProperties: false`): QUEM TEM DE RESPONDER A ISTO e' a DEMONSTRACAO, que le' `distanceSetIn` de um
+simbolo a serio, e depois o contrato — a procura comeca em `help.ctrader.com/open-api/model-messages/`,
+§ProtoOASymbol, campo `distanceSetIn`.
 """
 
 from __future__ import annotations
@@ -61,6 +73,18 @@ MODELO_DE_POSICAO = {"HEDGED": "hedging", "NETTED": "netting"}
 
 #: Do modelo de posicao para o modo de margem neutro. E' um MAPEAMENTO NOSSO, a confirmar em demonstracao.
 MODOS_DE_MARGEM = {"hedging": ["isolado"], "netting": ["cruzado"]}
+
+#: O CAMPO DO VENUE que declara a UNIDADE das distancias minimas do stop/alvo, no nome que o transporte usa.
+#: FONTE (oficial, lida): `help.ctrader.com/open-api/model-messages/` §ProtoOASymbol — o campo `distanceSetIn`
+#: (tipo `ProtoOASymbolDistanceType`): «Whether slDistance, tpDistance, gslDistance and gslCharge are expressed
+#: in points or as a percentage of the price». E' ESTA a resposta ao «(unidade do simbolo)» que o §0 do
+#: data-model deixava em aberto.
+CAMPO_DA_UNIDADE_DAS_DISTANCIAS = "distance_set_in"
+
+#: Do valor do venue (`ProtoOASymbolDistanceType`) para o nome NEUTRO, que aqui e' o do proprio venue.
+#: Conjunto FECHADO, e so' dois (a doc di-lo): `SYMBOL_DISTANCE_IN_POINTS` (1) e
+#: `SYMBOL_DISTANCE_IN_PERCENTAGE` (2). Um valor fora daqui NAO se assume (ver a funcao abaixo).
+UNIDADE_DAS_DISTANCIAS_DO_VENUE = {1: "pontos", 2: "percentagem_do_preco"}
 
 
 @dataclass(frozen=True)
@@ -162,6 +186,13 @@ def montar_manifesto(
                 "passo": _decimal(simbolo["passo"] / 100.0),
                 "tick": _tick(simbolo["digitos"], simbolo["posicao_do_pip"]),
                 "alavancagem_maxima": _decimal(alavancagem),
+                # `unidade_das_distancias` fica AUSENTE de proposito, e por DOIS motivos, os dois medidos:
+                # (1) a fonte DECIDE-A (`ProtoOASymbol.distanceSetIn`: pontos ou percentagem do preco), mas a
+                #     biblioteca instalada (0.11.0) NAO expoe esse campo — nao ha' valor a ler (e' o que a
+                #     funcao `unidade_das_distancias_do_simbolo` devolve: AUSENTE);
+                # (2) mesmo legivel, o CONTRATO NAO aceita o campo no instrumento — `contracts/manifesto.schema.json`,
+                #     `additionalProperties: false` no item de `instrumentos` (medido: `campo_desconhecido`).
+                # O contrato tem de mudar PRIMEIRO: nao se inventa a unidade, nem se publica o que ele recusa.
                 # `funding_intervalo_horas` fica AUSENTE de proposito: o venue nao declara a cadencia do swap
                 # como um numero de horas (o calendario e' o dele, e o `chargeSwapAtWeekends` nem vem no modelo
                 # da biblioteca). Ausente = nao declarado, e nao um 24 inventado.
@@ -207,6 +238,31 @@ def _tick(digitos: Any, posicao_do_pip: Any) -> str:
     if not isinstance(digitos, int) or digitos < 0:
         raise ValueError(f"o simbolo nao declarou digitos utilizaveis: {digitos!r}")
     return _decimal(10.0 ** (-digitos))
+
+
+def unidade_das_distancias_do_simbolo(linha_do_simbolo: dict[str, Any]) -> str | None:
+    """A unidade das distancias minimas do stop/alvo, como o VENUE a declara — ou AUSENTE (`None`).
+
+    O VENUE DECIDE-A, e nao e' uma «(unidade do simbolo)» em aberto: o campo `distanceSetIn` diz, por simbolo,
+    se `slDistance`/`tpDistance` estao em PONTOS ou em PERCENTAGEM do preco (a doc oficial,
+    `help.ctrader.com/open-api/model-messages/` §ProtoOASymbol; ver `UNIDADE_DAS_DISTANCIAS_DO_VENUE`).
+
+    MAS a sonda so' PUBLICA o que LE': a biblioteca instalada (0.11.0) NAO expoe `distanceSetIn` — a linha que o
+    transporte entrega traz `sl_distance`/`tp_distance` e NAO traz a unidade. Logo, para este venue, a resposta
+    e' AUSENTE (`None`), e ausencia NUNCA vira um valor por omissao (D4): um `1` (pontos) posto por nos seria
+    uma unidade do venue escrita por engano. Um valor que venha fora do conjunto conhecido RECUSA (ValueError) —
+    nao se assume a unidade.
+    """
+    if CAMPO_DA_UNIDADE_DAS_DISTANCIAS not in linha_do_simbolo:
+        return None
+    valor = linha_do_simbolo[CAMPO_DA_UNIDADE_DAS_DISTANCIAS]
+    if valor not in UNIDADE_DAS_DISTANCIAS_DO_VENUE:
+        raise ValueError(
+            f"o simbolo declarou `{CAMPO_DA_UNIDADE_DAS_DISTANCIAS}` = {valor!r}, que nao esta' no conjunto "
+            f"fechado da unidade das distancias ({sorted(UNIDADE_DAS_DISTANCIAS_DO_VENUE)}): a unidade nao se "
+            "adivinha"
+        )
+    return UNIDADE_DAS_DISTANCIAS_DO_VENUE[valor]
 
 
 # -----------------------------------------------------------------------------------------------------------

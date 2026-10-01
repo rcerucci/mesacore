@@ -1,0 +1,90 @@
+{
+  "nota": "Casos da SONDA sobre a UNIDADE das distancias minimas do stop/alvo (`slDistance`/`tpDistance`). O que se prova: a sonda LE' a unidade SO' quando o simbolo a DECLARA, e um simbolo que nao a traga fica AUSENTE — NUNCA um valor por omissao (D4). A `linha_de_simbolo_base` e' o que o transporte entrega HOJE (a biblioteca 0.11.0 expoe `sl_distance`/`tp_distance` e NAO a unidade `distanceSetIn`), por isso o caso sem o campo e' o caso REAL deste venue. A fonte oficial DECIDE a unidade (o campo `distanceSetIn`, conjunto fechado de DOIS valores), mas a sonda nao a pode PUBLICAR no manifesto: (a) a biblioteca nao a expoe, e (b) o contrato fecha o instrumento (`contracts/manifesto.schema.json`, `additionalProperties: false`) — o ultimo caso mede essa recusa. Quem tem de responder a isto e' a DEMONSTRACAO (le' `distanceSetIn` de um simbolo a serio) e depois o contrato.",
+  "fonte_da_unidade": {
+    "documento": "help.ctrader.com/open-api/model-messages/",
+    "campo_do_venue": "ProtoOASymbol.distanceSetIn",
+    "tipo_do_venue": "ProtoOASymbolDistanceType",
+    "citacao": "Whether slDistance, tpDistance, gslDistance and gslCharge are expressed in points or as a percentage of the price.",
+    "conjunto_fechado": {
+      "SYMBOL_DISTANCE_IN_POINTS": 1,
+      "SYMBOL_DISTANCE_IN_PERCENTAGE": 2
+    },
+    "nome_do_campo_no_transporte": "distance_set_in",
+    "nome_do_campo_no_contrato": "unidade_das_distancias"
+  },
+  "linha_de_simbolo_base": {
+    "symbol_id": 42,
+    "digitos": 5,
+    "posicao_do_pip": 3,
+    "tamanho_do_lote": 10000000,
+    "minimo": 1000,
+    "maximo": 10000000,
+    "passo": 1000,
+    "modo_de_negociacao": "ENABLED",
+    "stop_garantido": false,
+    "distancia_minima_do_stop": 2000,
+    "distancia_minima_do_alvo": 2000,
+    "unidades_de_medida": "EUR"
+  },
+  "casos": [
+    {
+      "caso": "sonda/simbolo-com-a-unidade-das-distancias-declarada-em-pontos-aceite",
+      "leitura": "unidade_das_distancias_do_simbolo",
+      "linha_do_simbolo": {"distance_set_in": 1},
+      "esperadoOk": true,
+      "conferir": {"unidade_das_distancias": "pontos"},
+      "nota": "O simbolo DECLARA a unidade (`SYMBOL_DISTANCE_IN_POINTS`): a sonda ACEITA-a e le'-a como o venue a da — `pontos`."
+    },
+    {
+      "caso": "sonda/simbolo-com-a-unidade-das-distancias-declarada-em-percentagem-aceite",
+      "leitura": "unidade_das_distancias_do_simbolo",
+      "linha_do_simbolo": {"distance_set_in": 2},
+      "esperadoOk": true,
+      "conferir": {"unidade_das_distancias": "percentagem_do_preco"},
+      "nota": "O outro valor do conjunto fechado (`SYMBOL_DISTANCE_IN_PERCENTAGE`): a unidade e' a percentagem do preco — e nao ha' um terceiro valor."
+    },
+    {
+      "caso": "sonda/simbolo-sem-a-unidade-das-distancias-fica-ausente",
+      "leitura": "unidade_das_distancias_do_simbolo",
+      "linha_do_simbolo": {},
+      "esperadoOk": true,
+      "conferir": {"unidade_das_distancias": null},
+      "nota": "ESTE e' o caso REAL deste venue: a biblioteca 0.11.0 nao expoe `distanceSetIn`. A sonda devolve AUSENTE — `null` aqui e' a AUSENCIA declarada, NUNCA `1`/`pontos` por omissao: um valor posto por nos seria uma unidade do venue escrita por engano."
+    },
+    {
+      "caso": "sonda/unidade-das-distancias-fora-do-conjunto-fechado-recusa",
+      "leitura": "unidade_das_distancias_do_simbolo",
+      "linha_do_simbolo": {"distance_set_in": 3},
+      "esperadoOk": false,
+      "excecao_esperada": "ValueError",
+      "nota": "Um valor que nao esteja no conjunto fechado (1/2) NAO se assume: a sonda RECUSA com erro nomeado, em vez de uma unidade adivinhada."
+    }
+  ],
+  "checagens_de_manifesto": [
+    {
+      "caso": "sonda/manifesto-sem-o-campo-no-instrumento-passa-o-contrato",
+      "instrumento": {
+        "simbolo": "EURUSD",
+        "minimo": "10",
+        "passo": "0.1",
+        "tick": "0.00001",
+        "alavancagem_maxima": "30"
+      },
+      "esperado": {"veredicto": "aceite"},
+      "nota": "O instrumento que a sonda publica hoje (SEM `unidade_das_distancias`) passa o contrato."
+    },
+    {
+      "caso": "sonda/manifesto-com-o-campo-no-instrumento-o-contrato-recusa",
+      "instrumento": {
+        "simbolo": "EURUSD",
+        "minimo": "10",
+        "passo": "0.1",
+        "tick": "0.00001",
+        "alavancagem_maxima": "30",
+        "unidade_das_distancias": "pontos"
+      },
+      "esperado": {"veredicto": "recusado", "motivo": "campo_desconhecido"},
+      "nota": "PROVA de que o CONTRATO tem de mudar PRIMEIRO: `contracts/manifesto.schema.json` fecha o item de `instrumentos` com `additionalProperties: false` e RECUSA o campo `unidade_das_distancias` com `campo_desconhecido`. Por isso a sonda NAO o publica — nem se inventa a unidade, nem se publica o que o contrato recusa."
+    }
+  ]
+}
