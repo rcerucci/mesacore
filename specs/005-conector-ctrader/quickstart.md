@@ -11,8 +11,9 @@ sempre**; a de demonstração só quando há tokens. Se as duas discordarem, o d
 | Ambiente do plugin | criado pela tarefa da costura | `brokers/ctrader/.venv` (ignorado pelo git) |
 | App registada na cTrader Open API | **o dono** | dá `client_id`/`client_secret` |
 | Conta de **demonstração** (NETTED) | **o dono** | ver `data-model.md` §7 achado 3 |
-| Par de tokens (access + refresh) | **o dono**, uma vez (Playground serve) | guardado em ficheiro **fora do repositório** |
-| Ficheiro da conta | este recorte | referências, **nunca valores** (FR-050) |
+| Par de tokens (access + refresh) | **o dono**, uma vez (Playground serve) | `ctrader_mesa_access_token.key` e `ctrader_mesa_refresh_token.key`, fora do repositório, modo 600 |
+| Credenciais da aplicação (client_id + client_secret) | **o dono** | `ctrader_mesa_client_id.key` e `ctrader_mesa_client_secret.key` — **fixas** (só o venue as roda) |
+| Ficheiro da conta | este recorte | referências, **nunca valores** (FR-050) + o `ctid_trader_account_id` |
 
 **Se faltar token**: a bancada offline corre na mesma (é o que ela serve para provar); a bateria de demonstração
 recusa correr e **diz o que falta** — não falha em silêncio.

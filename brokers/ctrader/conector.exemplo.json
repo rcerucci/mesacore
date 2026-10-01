@@ -3,12 +3,13 @@
     "Copie para brokers/ctrader/<nome>.conector.json e edite o que estiver null.",
     "O ambiente e os enderecos NAO sao segredo: vivem aqui.",
     "O que NAO vive aqui: nenhum valor de credencial. Aqui vive so o NOME dela (credencial.referencia) e ONDE esta cada valor (credencial.arquivos).",
-    "Os QUATRO valores deste venue (client_id, client_secret, access_token, refresh_token) vivem em QUATRO ficheiros `.key`, um por valor, FORA do repositorio e em modo 600 — o venue reescreve DOIS deles quando roda o par de tokens, e por isso nao se juntam todos num ficheiro so'.",
+    "Os QUATRO valores deste venue vivem em QUATRO ficheiros `.key`, um por valor, FORA do repositorio e em modo 600 — o venue reescreve DOIS deles quando roda o par de tokens, e por isso nao se juntam todos num ficheiro so'.",
+    "O prefixo e' da APLICACAO (`ctrader_mesa`, o nome da app no portal), e nao da conta: os tokens deste venue sao do UTILIZADOR (cTID), e apos o ApplicationAuth a lista de contas vem do token. Um conjunto de credenciais serve contas de demonstracao e contas reais — a conta escolhe-se pelo `ctid_trader_account_id` DESTA ficha.",
     "Duas formas aceites por valor: \"env:NOME_DA_VARIAVEL\" ou \"ficheiro:/caminho/fora/do/repo.key\".",
     "O carregador RECUSA se algum tiver modo diferente de 600, se faltar algum, ou se algum valor aparecer num ficheiro versionado.",
-    "O `ctid_trader_account_id` NAO e' segredo: e' a identidade da conta, e e' contra ela que o conector compara o que o venue devolve."
+    "O `ctid_trader_account_id` NAO e' segredo: e' a identidade da conta, e e' contra ela que o conector compara o que o venue devolve. Trocar de conta (demo <-> real) e' trocar este numero."
   ],
-  "conector": "ctrader-demo",
+  "conector": "ctrader-mesa",
   "contrato": "1.9.0",
   "venue": "ctrader",
   "ambiente": "demonstracao",
@@ -20,12 +21,12 @@
     "EUR/USD"
   ],
   "credencial": {
-    "referencia": "ctrader_demo",
+    "referencia": "ctrader_mesa",
     "arquivos": {
-      "client_id": "ficheiro:~/.config/mesacore/credenciais/ctrader_demo_client_id.key",
-      "client_secret": "ficheiro:~/.config/mesacore/credenciais/ctrader_demo_secret.key",
-      "access_token": "ficheiro:~/.config/mesacore/credenciais/ctrader_demo_access.key",
-      "refresh_token": "ficheiro:~/.config/mesacore/credenciais/ctrader_demo_refresh.key"
+      "client_id": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_client_id.key",
+      "client_secret": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_client_secret.key",
+      "access_token": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_access_token.key",
+      "refresh_token": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_refresh_token.key"
     },
     "_nota": "a REFERENCIA viaja na mensagem e no manifesto; os VALORES ficam fora do repositorio, do ledger e do log (RN-E14, RN-C20)"
   }

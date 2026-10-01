@@ -36,6 +36,21 @@ Regras que este conector cumpre (e que se verificam por comando):
   mexia no segredo da aplicacao). O `ctid_trader_account_id` nao e' segredo: e' a identidade da conta, declarada
   na ficha, e e' contra ela que o conector compara o que o venue devolve.
 
+## De quem e' a credencial (e porque o nome e' da APLICACAO, nao da conta)
+
+Os tokens deste venue sao do **utilizador (cTID)**, e nao da conta: depois do `ApplicationAuth` (client_id +
+client_secret), a lista de contas **vem do token** (`ProtoOAGetAccountListByAccessTokenReq`), e a conta escolhe-se
+pelo `ctidTraderAccountId`. Consequencia pratica, e e' a razao dos nomes `ctrader_mesa_*`: **um conjunto de
+credenciais serve contas de demonstracao e contas reais**, e trocar de conta e' trocar o
+`ctid_trader_account_id` da ficha — coisa que nao se faz por um ficheiro de token, faz-se por um numero declarado.
+
+O padrao de armazenamento e' o da casa, e foi medido no conector 1 antes de ser copiado: um `.key` por valor,
+**texto simples**, modo 600, fora do repositorio, lido **cru** pelo carregador — o ficheiro da Hyperliquid tem
+`0x` + 64 hexadecimais, uma linha, e nao tem cifra nenhuma (nem cabecalho, nem base64). Nao ha encriptacao nesta
+casa, e nao se acrescenta: cifrar aqui so' mudaria a chave de sitio, e a chave dessa cifra teria de viver na mesma
+maquina. O que protege e' o modo, o sitio, e as recusas do carregador (modo diferente de 600, valor ausente, ou
+valor que apareca num ficheiro versionado).
+
 ## O que este venue obrigou a decidir (e que fica declarado)
 
 1. **O `equity` e' DERIVADO.** A conta nao publica o total; publica as parcelas (`balance` e o nao realizado por
