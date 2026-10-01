@@ -1,0 +1,17 @@
+[Unit]
+Description=MesaCore - painel (retrato do risco + tela estatica na LAN, 192.168.15.24:8788)
+Documentation=file:///home/cerucci/Projects/MesaCore/tools/painel/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bash /home/cerucci/Projects/MesaCore/tools/painel/servir.sh --porta 8788 --intervalo 60
+WorkingDirectory=/home/cerucci/Projects/MesaCore
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

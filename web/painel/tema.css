@@ -1,0 +1,78 @@
+/* O TEMA DO PAINEL — UM SÓ SÍTIO DE VERDADE PARA A COR.
+ *
+ * A paleta é a da Hyperliquid, e foi MEDIDA, não copiada a olho. O que se fez, e é repetível:
+ *
+ *     curl -sL https://app.hyperliquid.xyz/ -o hl.html          # acha o css do app
+ *     curl -sL https://app.hyperliquid.xyz/assets/config-D_PV_vWJ.css -o hl.css
+ *     grep -oE '\-\-[a-zA-Z0-9-]+:[^;]+;' hl.css | sort -u
+ *
+ * De lá saíram, com o nome que a própria HL lhes dá (a correspondência é 1:1, para se poder voltar à fonte):
+ *
+ *     --hl-surface        #0f1a1f   -> --fundo        (o fundo do app)
+ *     --hl-surface-inset  #273035   -> --painel-alto  (a superfície de dentro; é também a --hl-border)
+ *     --hl-border         #273035   -> --borda
+ *     --hl-text           #f6fefd   -> --tinta
+ *     --hl-title          #ffffff   -> --titulo
+ *     --hl-text-muted     #9aa3a4   -> --tinta-fraca
+ *     --hl-text-faint     #9aa3a48c -> --tinta-fantasma
+ *     --hl-accent         #97fce4   -> --compra      (o verde-menta do lado comprado)
+ *     --hl-accent-soft    #50d2c1   -> --compra-suave
+ *     --hl-accent-text    #04060c   -> --tinta-no-acento
+ *     --hl-error          #ed7088   -> --venda       (o rosa do lado vendido)
+ *     --hl-radius         12px      -> --raio
+ *
+ * E três que o css da HL também traz e que resolvem casos que faltavam, sem um hex inventado:
+ *
+ *     #1f2d33  (o degrau entre o fundo e a superfície de dentro)   -> --painel
+ *     #17453f  (o verde escuro dos fundos tingidos)                -> --zona-morta (a faixa do indicador)
+ *     #949e9c  (o cinza neutro, ao lado do --hl-text-muted)        -> --neutro    (o "sem lado")
+ *
+ * O que NÃO existe na paleta da HL e teve de ser derivado está dito como derivado: `--painel-baixo` é o ponto
+ * médio entre o fundo e a superfície (para as listas zebradas), e a linha de grelha e o divisor derivam da
+ * tinta por `color-mix` — assim não nasce um `rgba()` fixo que deixa de seguir o tema (é a segunda paleta que
+ * se instala sem ninguém dar por ela).
+ *
+ * A paleta é SUAVE porque é assim que a HL a fez: a tinta nunca é branco puro (é #f6fefd, um branco esverdeado),
+ * os lados não são verde/vermelho de sinalização (são um menta e um rosa dessaturados), e as superfícies são
+ * azul-petróleo em vez de preto. Num ecrã olhado durante horas — que é o caso — é esta a diferença que se sente.
+ */
+
+:root {
+  /* --- as superfícies, do fundo para fora --- */
+  --fundo: #0f1a1f;
+  --painel: #1f2d33;
+  --painel-baixo: #1b252a; /* derivado: ponto médio entre --fundo e --painel-alto */
+  --painel-alto: #273035;
+  --borda: #273035;
+
+  /* --- as tintas --- */
+  --tinta: #f6fefd;
+  --titulo: #ffffff;
+  --tinta-fraca: #9aa3a4;
+  --tinta-fantasma: #9aa3a48c;
+  --tinta-no-acento: #04060c;
+
+  /* --- os dois lados, e o que não tem lado --- */
+  --compra: #97fce4;
+  --compra-suave: #50d2c1;
+  --venda: #ed7088;
+  --neutro: #949e9c;
+
+  /* --- o que é do indicador, e não do mercado --- */
+  --media: #50d2c1;
+  --banda: color-mix(in srgb, var(--media) 50%, transparent); /* derivado: a média, apagada para a zona morta */
+  --zona-morta: #17453f;
+  --extremo: #6f7f85; /* derivado: o degrau de tinta mais apagado, para a memória do zigzag */
+
+  /* --- derivados por mistura: um só dono, e o tema segue-o todo --- */
+  --divisor: color-mix(in srgb, var(--tinta) 6%, transparent);
+  --grelha: color-mix(in srgb, var(--tinta) 7%, transparent);
+  --sombra: color-mix(in srgb, #0b0d10 55%, transparent);
+
+  /* --- geometria e tipografia (a fonte é a mesma família da HL: um mono/sans de sistema) --- */
+  --raio: 12px;
+  --raio-pequeno: 8px;
+  --raio-grande: 16px;
+  --fonte: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fonte-da-tela: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}

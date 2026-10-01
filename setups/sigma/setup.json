@@ -7,6 +7,11 @@
   "run",
   "plugin.ts"
  ],
+ "sobreposicao": [
+  "bun",
+  "run",
+  "sobreposicao.ts"
+ ],
  "nota": "O `sign(mid - MA) + ZZ` do Pine, automatico. A conta esta' em `sinal.ts` (funcao pura, rebobinavel); este manifesto diz o que o setup publica e o que ele NAO usa. O template leva os itens do indicador E os da execucao (politica, parcial, desvio, prazo da passiva, destino do resto): sem os segundos a boleta nao se compoe.",
  "template": {
   "relogio": {
