@@ -36,13 +36,15 @@ forma() {
   local campo="$1" valor="$2" n=${#2}
   case "$campo" in
     client_id)
-      # O Client ID do portal tem a forma `<numero>_<codigo>` e ~19 caracteres (medido na imagem do dono:
-      # `42285_segERrNeSnqWV` — 19). A banda fecha nos 25: um valor de 56 caracteres nao e' um Client ID, e' uma
-      # seleccao de rato que apanhou texto a' volta.
-      if [[ "$valor" =~ ^[0-9]+_[A-Za-z0-9]+$ ]] && (( n >= 15 && n <= 25 )); then
-        echo "parece um Client ID (numero + underscore + codigo)"
+      # A FORMA do Client ID do portal e' `<digitos>_<codigo alfanumerico>` — e o COMPRIMENTO nao tem regra
+      # declarada por este venue. Medido a 01/10/2026: o Client ID do dono tem **56** caracteres, e eu recusei-o
+      # porque tinha inventado um «~19» a partir de uma imagem CORTADA. Nao se inventa uma regua contra o dono:
+      # confere-se a FORMA, e o comprimento leva so' um piso (nao e' um codigo de 3 caracteres) e um tecto de
+      # sanidade (nao e' um documento colado). Quem diz se o valor serve e' o venue, na porta `ligacao`.
+      if [[ "$valor" =~ ^[0-9]+_[A-Za-z0-9]+$ ]] && (( n >= 10 && n <= 128 )); then
+        echo "parece um Client ID (digitos + underscore + codigo alfanumerico)"
       else
-        echo "NAO parece um Client ID (esperado: numero, underscore, e um codigo — ~19 caracteres, e nao texto de comando)"
+        echo "NAO parece um Client ID (esperado: digitos, UM underscore, e um codigo alfanumerico — sem espacos nem texto)"
       fi
       ;;
     *)
