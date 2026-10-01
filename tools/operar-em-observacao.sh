@@ -8,9 +8,9 @@
 #   * tudo o que ambos dizem vai para ficheiros de log e para o REGISTO.
 #
 # O QUE ISTO NÃO FAZ — e é a razão de ser dito aqui, em cima:
-#   ** nenhuma ordem sai para o venue. ** A decisão é tomada e registada; a boleta não é enviada, porque o
-#   caminho mesa -> conector (a mão que aperta o gatilho) ainda não está fechado, e um gatilho a meio não se
-#   improvisa: foi assim que se encheu uma posição de ~400x o equity na testnet (P16, 29/09).
+#   ** nenhuma ordem sai para o venue. ** A mão mesa -> conector está FECHADA (o carteiro leva a boleta), e quem
+#   a trava é a ficha: `enviar: false` faz o carteiro entregar a boleta ao conector e REGISTAR que não a enviou,
+#   com a razão. Nenhuma ficha do repositório diz `enviar: true`, e nada sai por omissão.
 #   Isto é OPERAÇÃO EM OBSERVAÇÃO: junta o que o sistema decidiria, com números reais, sem risco.
 #
 # Uso:  bash tools/operar-em-observacao.sh <conta> [par]
