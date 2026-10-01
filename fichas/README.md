@@ -123,6 +123,8 @@ um lugar vazio à espera de ser preenchido por alguém que nunca vai ser lido.
 |---|---|---|---|---|
 | `sigma/SOL-hl-teste-plugin.json` | `hl-teste-plugin` (hyperliquid, **teste**) | SOL | `true` | `false` |
 | `sigma/BTC-hl-teste-plugin.json` | `hl-teste-plugin` (hyperliquid, teste) | BTC | `false` | `false` |
-| `sigma/SOL-hl-real-sol.json` | `hl-real-sol` (hyperliquid, produção) | SOL | `true` | `false` |
-| `sigma/SOL-hl-real-sol-2.json` | `hl-real-sol-2` (hyperliquid, produção) | SOL | `false` | `false` |
-| `sigma/SOL-ctrader-real-sol.json` | `ctrader-real-sol` (ctrader — **sem conector**) | SOL | `false` | `false` |
+
+*Nota datada — 30/09/2026.* Havia aqui cinco fichas. As três de outras contas (`hl-real-sol`, `hl-real-sol-2`,
+`ctrader-real-sol`) foram **apagadas por ordem do dono**: eram fichas de contas que este sistema não corre (uma
+delas ainda com `run: true` e sem credencial nenhuma — o operador recusava ao ligar), e uma ficha que não se
+corre só faz peso e mentira. Uma conta nova ganha ficha nova; a ficha que aqui está é a da conta que se corre.

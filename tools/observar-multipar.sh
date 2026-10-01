@@ -100,12 +100,16 @@ PY
 echo "### o estado inicial fica registado"
 cp "$CONTA_JSON" "$BASE/conta-antes.json"; cp "$FICHAS/SOL-$CONTA.json" "$BASE/sol-antes.json"; cp "$FICHAS/BTC-$CONTA.json" "$BASE/btc-antes.json"
 
-correr "1-dois-ativos"    "SOL,BTC" sim sim
-correr "2-so-sol"         "SOL"     sim nao
-correr "3-so-btc"         "BTC"     nao sim
-correr "4-nenhum"         "SOL,BTC" nao nao
+# Quais cenarios correr (`SO=5` corre so' o quinto — util para reensaiar uma correccao sem repetir tudo).
+CORRER="${SO:-1,2,3,4,5}"
+quer() { case ",$CORRER," in *",$1,"*) return 0;; *) return 1;; esac; }
+
+quer 1 && correr "1-dois-ativos"    "SOL,BTC" sim sim
+quer 2 && correr "2-so-sol"         "SOL"     sim nao
+quer 3 && correr "3-so-btc"         "BTC"     nao sim
+quer 4 && correr "4-nenhum"         "SOL,BTC" nao nao
 # O INICIO A QUENTE: arranca com so o SOL, e a meio liga-se o BTC (ficha + conta), sem reiniciar nada.
-correr "5-quente-btc-ligado-a-meio" "SOL" sim nao "btc-on"
+quer 5 && correr "5-quente-btc-ligado-a-meio" "SOL" sim nao "btc-on"
 
 repor
 echo "### estado reposto (SOL ligado, BTC desligado, conta a ler o SOL)"

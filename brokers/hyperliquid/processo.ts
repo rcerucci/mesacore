@@ -1240,7 +1240,14 @@ async function main(): Promise<void> {
             const f = JSON.parse(readFileSync(join(caminhoDaPasta, ficheiro), "utf8"));
             const c = f?.cabecalho;
             if (c === undefined) continue;
-            if (c.conta !== ficha.conta) continue;      // ficha de outra conta: nao e' desta
+            // A CONTA DA FICHA E' O NOME DELA, NÃO O ENDEREÇO DA CONTA. Era `c.conta !== ficha.conta`, e
+            // `ficha.conta` é o ENDEREÇO (`0xF87138…`, que é o que o venue conhece): a comparação nunca batia,
+            // TODAS as fichas eram saltadas, e a lista de pares a ler ficava a do mandato lido no arranque — ou
+            // seja, «a lista é RELIDA das fichas a cada volta» era prosa: nenhuma ficha chegava a acrescentar
+            // nada. Medido a 30/09/2026 (`tools/observar-multipar.sh`): ligar a ficha do BTC a quente não lhe
+            // deu leitura nenhuma, e a razão era esta linha. O nome da conta é o da credencial — o mesmo do
+            // ficheiro `config/contas/<conta>.json` e da pasta das fichas.
+            if (c.conta !== ficha.credencial?.referencia) continue;   // ficha de outra conta: nao e' desta
             if (c.run !== true) continue;               // desligada: nao se le'
             if (typeof c.instrumento === "string" && c.instrumento !== "") daFicha.add(c.instrumento);
           } catch {

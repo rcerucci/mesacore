@@ -170,6 +170,21 @@ const todas = lerFichasDaConta(nomeDaConta);
 const ligadas = todas.filter((f) => f.cabecalho.run === true && (soOPar === null || f.cabecalho.instrumento === soOPar));
 
 /**
+ * AS FICHAS LIGADAS AGORA — relidas do disco.
+ *
+ * Era uma lista de arranque (`ligadas`, um `const`) usada em sítios onde tinha de ser a de agora: o pedido ao
+ * setup, a config da mesa, a autorização do carteiro. Medido em 30/09/2026 (ensaio `tools/observar-multipar.sh`):
+ * ligar um par a quente punha-o na operação (porque a operação já relia) e NÃO o punha na config da mesa — e a
+ * mesa, ao ver um instrumento sem mandato, RECUSA e rebenta (`instrumento sem mandato do dono`). Meio-quente é
+ * pior do que frio: derruba quem está a trabalhar. Agora há uma só fonte, e é a do agora.
+ */
+function fichasLigadasAgora(): Ficha[] {
+  return lerFichasDaConta(nomeDaConta).filter(
+    (f) => f.cabecalho.run === true && (soOPar === null || f.cabecalho.instrumento === soOPar),
+  );
+}
+
+/**
  * A ULTIMA PROPOSTA RECEBIDA, por instrumento — e o instante em que chegou.
  *
  * O setup propoe UMA VEZ por barra fechada e cala-se: a proposta existe no ficheiro durante uma leitura so'.
@@ -246,24 +261,88 @@ function manifestoDe(f: Ficha): ManifestoDoSetup {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// AS VELAS — pedidas no RELÓGIO DA FICHA. Uma actualização por (instrumento, relógio).
+// AS VELAS — pedidas no RELÓGIO DA FICHA, e GARANTIDAS NO CICLO.
+//
+// O QUE ISTO ERA, E O DEFEITO QUE FAZIA (medido a 30/09/2026, com `tools/observar-multipar.sh`): as velas eram
+// puxadas UMA VEZ, no arranque, sobre as fichas ligadas naquele instante. Duas consequências, as duas más:
+//   * um par ligado a quente (ficha com `run: true` a meio da corrida) nunca tinha velas — e o plugin, sem
+//     ficheiro de velas, não propõe (e faz bem), mas o par nunca entrava;
+//   * numa corrida LONGA o ficheiro ficava parado na barra do arranque: o setup decidia sobre barras velhas, a
+//     barra nunca rolava, e a trava de «uma entrada por barra» (D-021) bloqueava tudo para sempre.
+// Agora as velas de cada par activo são garantidas NO CICLO: puxa-se quando o ficheiro falta, e quando já há uma
+// barra fechada que o ficheiro não tem — uma vez por barra, não uma vez por volta.
+const MS_DO_RELOGIO: Record<string, number> = {
+  "1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000, "1h": 3_600_000, "2h": 7_200_000,
+  "4h": 14_400_000, "1d": 86_400_000,
+};
+/** Quando se puxou cada par (por instrumento E relógio: o relógio da ficha pode mudar), para não se repetir. */
+const puxadasEm = new Map<string, number>();
 
-if (pastaDoMercado !== null) {
-  for (const f of ligadas) {
-    const relogio = String(f.cabecalho.relogio);
-    const instrumento = String(f.cabecalho.instrumento);
-    void 0;
-    const pedido = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "mercado.ts"),
-      "--velas", instrumento, "--intervalo", relogio, "--dias", String(diasDeHistorico),
-      "--ambiente", ambienteDaConta, "--para-pasta", pastaDoMercado, "--actualizar"],
-      { cwd: RAIZ, env: process.env, stdio: ["ignore", "ignore", "pipe"] });
-    let queixa = "";
-    pedido.stderr.on("data", (b) => (queixa += b.toString()));
-    const codigo = await new Promise<number | null>((r) => pedido.on("close", (c) => r(c)));
-    if (codigo !== 0) {
-      dizer({ etapa: "operador", aviso: "as velas nao se actualizaram", instrumento, relogio, codigo, queixa: queixa.slice(-300) });
-    }
+function caminhoDasVelas(ficha: Ficha): string | null {
+  if (pastaDoMercado === null) return null;
+  return join(pastaDoMercado, `velas-${String(ficha.cabecalho.instrumento)}-${String(ficha.cabecalho.relogio)}.jsonl`);
+}
+
+async function puxarVelas(ficha: Ficha): Promise<boolean> {
+  const instrumento = String(ficha.cabecalho.instrumento);
+  const relogio = String(ficha.cabecalho.relogio);
+  const pedido = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "mercado.ts"),
+    "--velas", instrumento, "--intervalo", relogio, "--dias", String(diasDeHistorico),
+    "--ambiente", ambienteDaConta, "--para-pasta", String(pastaDoMercado), "--actualizar"],
+    { cwd: RAIZ, env: process.env, stdio: ["ignore", "ignore", "pipe"] });
+  let queixa = "";
+  pedido.stderr.on("data", (b) => (queixa += b.toString()));
+  const codigo = await new Promise<number | null>((r) => pedido.on("close", (c) => r(c)));
+  if (codigo !== 0) {
+    dizer({ etapa: "operador", aviso: "as velas nao se actualizaram", instrumento, relogio, codigo, queixa: queixa.slice(-300) });
+    return false;
   }
+  return true;
+}
+
+/**
+ * AS VELAS DESTE PAR ESTÃO PRONTAS? Puxa-as se não estiverem, e diz se ficaram.
+ *
+ * Três razões para puxar, e só três: (a) o ficheiro não existe (par ligado agora); (b) a última barra do
+ * ficheiro já fechou e já passou um passo inteiro desde ela — há barra nova para buscar; (c) nunca se puxou
+ * este par nesta corrida. O tecto de uma puxada por passo evita bater no venue a cada volta quando ele não tem
+ * barras novas (um instrumento novo, ou um intervalo sem negócio).
+ *
+ * Sem pasta de mercado, ou com um relógio que a tabela não conhece, isto devolve `false` e NÃO puxa nada: quem
+ * decide o que fazer com a ausência é quem chama — aqui não se inventa um caminho nem um intervalo.
+ */
+async function garantirVelas(ficha: Ficha): Promise<boolean> {
+  const instrumento = String(ficha.cabecalho.instrumento);
+  const relogio = String(ficha.cabecalho.relogio);
+  const passo = MS_DO_RELOGIO[relogio];
+  const caminho = caminhoDasVelas(ficha);
+  if (caminho === null || passo === undefined) return false;
+  const agora = Date.now();
+  const existe = existsSync(caminho);
+  let precisa = !existe;
+  if (existe) {
+    // A ÚLTIMA BARRA do ficheiro. Sem tempo na última linha, o ficheiro não é um ficheiro de velas: pára-se aqui
+    // em vez de se decidir «está velho» ou «está fresco» a partir de um valor que não se leu.
+    const linhas = readFileSync(caminho, "utf8").split("\n").filter((l) => l.trim() !== "");
+    const ultima: unknown = linhas.length > 0 ? (JSON.parse(linhas[linhas.length - 1]!) as { t?: unknown }).t : undefined;
+    if (typeof ultima !== "number" || !Number.isFinite(ultima)) {
+      throw new Error(
+        `o ficheiro de velas de ${instrumento} (${caminho}) tem uma ultima linha sem tempo: sem barra nao se ` +
+          "sabe se o ficheiro esta' actual, e uma leitura que nao se sabe nao serve para decidir",
+      );
+    }
+    precisa = agora >= ultima + 2 * passo;
+  }
+  const chave = `${instrumento}-${relogio}`;
+  const ultimaPuxada = puxadasEm.get(chave);
+  if (precisa) {
+    // Já se puxou neste passo? Não se repete. Sem marca no mapa não há puxada anterior — é a primeira, e a
+    // primeira tem de acontecer (não há aqui valor por omissão: a ausência da marca É a informação).
+    if (ultimaPuxada !== undefined && agora - ultimaPuxada < passo) return existe;
+    puxadasEm.set(chave, agora);
+    return await puxarVelas(ficha);
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -358,6 +437,12 @@ async function main(): Promise<void> {
   const conector = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
     "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(tickMs)],
     { cwd: RAIZ, env: process.env });
+  // O `stderr` DO CONECTOR É DRENADO — e isto é uma correcção, não um enfeite. Era um `pipe` que ninguém lia:
+  // (a) os diagnósticos dele (as portas, as leituras recusadas) eram INVISÍVEIS no registo do operador — e foi
+  // isso que deixou sem resposta a pergunta «porque é que o BTC não foi lido depois de a ficha dele ligar?» no
+  // ensaio de 30/09/2026; (b) um `pipe` cheio bloqueia quem escreve nele, logo o conector podia parar por
+  // ninguém ler. Drena-se para o nosso `stderr`, que é o ficheiro onde o operador já escreve.
+  conector.stderr.on("data", (b: Buffer) => process.stderr.write(b));
 
   // ---- O CARTEIRO: a mao que aperta o gatilho --------------------------------------------------------
   //
@@ -396,7 +481,9 @@ async function main(): Promise<void> {
       }
       const referencia = String(referenciaBruta);
       if (referencia === "" || envios.has(referencia)) continue; // sem referencia nao ha ordem; e nao se repete
-      const ficha = ligadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
+      // A FICHA DE AGORA, não a do arranque: um par desligado a meio da corrida deixa de autorizar envio, e a
+      // boleta dele fica no registo com a razão dita.
+      const ficha = fichasLigadasAgora().find((f) => String(f.cabecalho.instrumento) === instrumento);
       const autorizado = ficha !== undefined && ficha.cabecalho.enviar === true;
       const marca = Number(boleta.marca_de_posse);
       envios.set(referencia, { marca, referencia, instrumento, recusado: !autorizado });
@@ -493,13 +580,12 @@ async function main(): Promise<void> {
         continue;
       }
       const instrumento = String(msg.carga?.instrumento);
-      // AS FICHAS SAO RELIDAS A CADA LEITURA: uma ficha nova entra sozinha, sem reiniciar o operador (o pedido
-      // do dono: "se tivesse uma ficha de eth ... ele nao precisa de reinicio"). Uma leitura por minuto: a
-      // releitura custa um `readdir` e poupa um reinicio.
-      const agoraLigadas = lerFichasDaConta(nomeDaConta).filter(
-        (f) => f.cabecalho.run === true && (soOPar === null || f.cabecalho.instrumento === soOPar),
-      );
-      const ficha = ligadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
+      // AS FICHAS SÃO RELIDAS A CADA LEITURA, E É ESTA A LISTA QUE MANDA: uma ficha nova entra sozinha, sem
+      // reiniciar o operador (o pedido do dono: "se tivesse uma ficha de eth ... ele nao precisa de reinicio").
+      // Reler custa um `readdir` por leitura e poupa um reinicio — e é a mesma lista que vai na operação E na
+      // config da mesa, que era o que faltava para o par ligado a quente não fazer a mesa recusar.
+      const agoraLigadas = fichasLigadasAgora();
+      const ficha = agoraLigadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
       if (ficha === undefined) {
         // Par que o conector leu e a conta nao tem ligado: nao serve. E se isto se repetir, os pares ligados
         // que ninguem le' ficam a espera de nada — o prazo corta isso.
@@ -558,7 +644,20 @@ async function main(): Promise<void> {
       }
 
       const manifestoDaFicha = manifestoDe(ficha);
-      const { proposta, erro, respondeu } = await correrSetup(msg, ficha, manifestoDaFicha);
+      // AS VELAS DESTE PAR, GARANTIDAS AGORA. Sem velas o setup não propõe (e diz por quê) — mas um par ligado
+      // a quente não pode ficar à espera de um ficheiro que só se puxava no arranque. Puxa-se aqui, e a operação
+      // sai na mesma: o par entra com a leitura e SEM proposta, que é a verdade.
+      let proposta: unknown | null = null;
+      let erro: string | null = null;
+      let respondeu = false;
+      if (await garantirVelas(ficha)) {
+        ({ proposta, erro, respondeu } = await correrSetup(msg, ficha, manifestoDaFicha));
+      } else {
+        erro =
+          `as velas de ${instrumento} no relogio ${String(ficha.cabecalho.relogio)} nao estao prontas: ` +
+          "sem barras nao se pede proposta ao setup";
+        dizer({ etapa: "operador", instrumento, veredicto: "sem_velas", porque: erro });
+      }
       // Guarda-se a proposta que acabou de chegar, com o instante em que chegou (auditoria: quando o setup
       // falou, e nao so' o que disse). A barra vai dentro da propria proposta (contrato 1.8.0).
       if (proposta !== null) {
@@ -621,8 +720,12 @@ async function main(): Promise<void> {
       }
       // A CONFIG DA MESA, gerada das fichas (o `--config` do core ainda le a ficha num objecto so', D-014).
       // E' uma VISTA: os valores vem das fichas, e nenhum e' inventado aqui.
+      //
+      // E É A MESMA LISTA QUE VAI NA OPERAÇÃO (`agoraLigadas`): um par que a operação reporta e a config não
+      // governa faz a mesa RECUSAR a operação inteira e morrer (`instrumento sem mandato do dono: BTC`), medido
+      // a 30/09/2026. Operação e config saem sempre do mesmo conjunto, ou não sai nenhuma.
       const fichasParaAMesa: Record<string, unknown> = {};
-      for (const f of ligadas) {
+      for (const f of agoraLigadas) {
         fichasParaAMesa[String(f.cabecalho.instrumento)] = {
           saldo_pct: f.cabecalho.saldo_pct,
           alavancagem: f.cabecalho.alavancagem,
