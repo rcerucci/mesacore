@@ -17,7 +17,7 @@ import { tiposDeLinhaDoRegisto } from "../livro-de-motivos.ts";
 export const CAMINHO_DO_REGISTO = join(import.meta.dir, ".registo.jsonl");
 
 /** Os tipos de linha da MESA. Nao se confundem com os do contrato (ver cabecalho). */
-export const TIPOS_DA_MESA = ["transicao", "recusa", "ciclo", "marca"] as const;
+export const TIPOS_DA_MESA = ["transicao", "recusa", "ciclo", "marca", "mandato"] as const;
 export type TipoDaLinha = (typeof TIPOS_DA_MESA)[number];
 
 import type { PedidoDeBoleta } from "../ciclo/decisao.ts";
@@ -48,6 +48,16 @@ export interface LinhaDoRegisto {
    * torna o dia inexplicavel (a mesa nao fez, e ninguem sabe porque).
    */
   acao?: string | null;
+  /**
+   * Em `ciclo` com `acao: "abrir"`: A BARRA DA ENTRADA (D-021) — o instante do venue arredondado ao relogio da
+   * ficha. E' OBRIGATORIA nessa linha, e `registarCiclo` recusa a entrada sem ela.
+   *
+   * Porque vive no registo, e nao so' em memoria: o travao de uma entrada por barra era uma `Map` que um
+   * reinicio apagava, e o reinicio passou a ser caminho normal (ficha ligada a quente, RN-V10). Sem a barra
+   * escrita, um reinicio a meio de uma barra deixaria passar uma SEGUNDA entrada na mesma barra — e uma
+   * segunda entrada na mesma barra e' dinheiro a dobrar sem sinal nenhum a dobrar.
+   */
+  barra_ms?: number;
   de?: string;
   para?: string;
   instrumento?: string;
@@ -118,6 +128,8 @@ export function registarCiclo(
   caminho?: string,
   conta?: string,
   boleta?: PedidoDeBoleta,
+  /** A barra da entrada (D-021). Obrigatoria quando `acao === "abrir"` — ver a regra abaixo. */
+  barra_ms?: number,
 ): void {
   if (acao === "nada" && !motivo) {
     // A linha mais perigosa do registo: a mesa nao fez, e nao diz porque. SC-011 conta estas.
@@ -126,7 +138,72 @@ export function registarCiclo(
         "quem le o registo nao distingue 'nao havia nada a fazer' de 'havia e a mesa nao fez'.",
     );
   }
-  registar({ instante_ms, tipo: "ciclo", conta, instrumento, acao, motivo, nota, boleta }, caminho);
+  if (acao === "abrir" && (typeof barra_ms !== "number" || !Number.isFinite(barra_ms))) {
+    // A BARRA DA ENTRADA E' OBRIGATORIA, e nao por gosto de completude: e' dela que a mesa volta a saber, depois
+    // de um reinicio, se a barra actual ja' teve entrada. Sem ela, um reinicio a meio de uma barra compraria uma
+    // segunda posicao no mesmo sinal (D-021) — e o registo, que existe para o dia ser reconstruivel, ficaria sem
+    // a resposta justamente na linha em que ela decide dinheiro.
+    throw new Error(
+      `entrada sem barra no registo (${instrumento}): sem a barra da entrada, um reinicio da mesa nao sabe se a ` +
+        "barra actual ja' teve entrada, e o travao de uma entrada por barra (D-021) ficaria por repor.",
+    );
+  }
+  registar({ instante_ms, tipo: "ciclo", conta, instrumento, acao, motivo, nota, boleta, barra_ms }, caminho);
+}
+
+/**
+ * UMA MUDANCA DO MANDATO EM VIGOR: um par que ENTRA no mandato, ou que SAI dele (RN-V10).
+ *
+ * Mudar os termos de uma mesa em operacao e' outro assunto — e a RN-V10 diz que tem registo proprio. Passou a
+ * ser um acontecimento normal: quem escreve a configuracao e' o operador (a vista das fichas do dono, reescrita
+ * a cada leitura), e uma ficha ligada a quente tem de entrar sem reiniciar a mesa. Entra um par por linha, com
+ * o motivo — uma mudanca de termos em silencio seria exactamente o que a RN-V10 proibe.
+ */
+export function registarMudancaDeMandato(
+  instante_ms: number,
+  instrumento: string,
+  entrou: boolean,
+  motivo: string,
+  nota: string,
+  caminho?: string,
+  conta?: string,
+): void {
+  registar({
+    instante_ms,
+    tipo: "mandato",
+    conta,
+    instrumento,
+    de: entrou ? "fora_do_mandato" : "em_vigor",
+    para: entrou ? "em_vigor" : "fora_do_mandato",
+    motivo,
+    nota,
+  }, caminho);
+}
+
+/**
+ * AS BARRAS DAS ULTIMAS ENTRADAS, por instrumento, lidas do registo (D-021).
+ *
+ * A mesa chama isto ao armar o relogio: e' assim que o travao de uma entrada por barra sobrevive ao processo
+ * morrer. Quem nao tem entrada no registo fica FORA do mapa — que e' diferente de ter barra nula.
+ *
+ * Uma entrada sem barra no registo e' uma anomalia que se RECUSA: sem ela nao se sabe se a barra actual ja' teve
+ * entrada, e semear o travao com o que nao se sabe seria repor o buraco por outra via.
+ */
+export function barrasDasUltimasEntradas(caminho?: string): Map<string, number> {
+  const barras = new Map<string, number>();
+  for (const linha of lerRegisto(caminho)) {
+    if (linha.tipo !== "ciclo" || linha.acao !== "abrir" || typeof linha.instrumento !== "string") continue;
+    if (typeof linha.barra_ms !== "number" || !Number.isFinite(linha.barra_ms)) {
+      throw new Error(
+        `o registo tem uma entrada de ${linha.instrumento} sem barra (instante ${linha.instante_ms}): sem ela ` +
+          "nao se sabe se a barra actual ja' teve entrada, e semear o travao com o que nao se sabe seria repor o " +
+          "buraco por outra via.",
+      );
+    }
+    // O ULTIMO vence: o registo esta' por ordem, e a barra que interessa e' a da entrada mais recente.
+    barras.set(linha.instrumento, linha.barra_ms);
+  }
+  return barras;
 }
 
 /** Le as linhas do registo. Ficheiro ausente = nenhuma linha (e nao um erro). */

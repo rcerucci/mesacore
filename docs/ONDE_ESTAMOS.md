@@ -315,13 +315,15 @@ do dono — e antes dela, os pontos 3b e 4.
 |---|---|---|---|
 | 3b | O mapa de marcas marca→ficha (RN-T16.1, D-008) | ✅ | `marcas-<conta>.jsonl` (append-only, ao lado da operação) escrito quando o venue aceita uma ordem; a operação publica `marcas_nossas_conhecidas` por instrumento; a LEITURA atribui a posse cruzando as execuções da conta (`userFills`) com o mapa, e a marca entra DENTRO de `posicao`; sem cloid conhecido a posição vai sem dono e a mesa trata-a como alheia |
 | 4 | A mão: mesa → conector (a boleta sai) | ✅ | o CARTEIRO, no operador (que já tem o `stdin` do conector): lê a boleta da linha do ciclo do registo, leva-a ao conector, e o conector assina e submete (provado antes pela bateria). O desfecho que volta vai para `desfechos-<conta>.jsonl` e alimenta o mapa |
+| 4b | **Multipar e início a quente** | ✅ | `tools/observar-multipar.sh` (6 configurações, conta de teste, `enviar: false`): é multipar; ligar um par a quente faz o conector lê-lo, o operador pedir-lhe o setup e a mesa GOVERNA-LO — com a mudança no registo (`mandato`); desligar um par a quente tira-o da operação e do mandato, sem a mesa morrer |
 
 **O INTERRUPTOR — é a única coisa que falta, e é tua:** o cabeçalho de cada ficha tem agora
-`enviar: true|false`, campo **obrigatório** (as sete fichas dizem `false`). Com `false`, a boleta fica no
-registo e o operador **regista por que não saiu** — nada sai por omissão e nada se esconde. Para rodar a sério:
-pôr `enviar: true` na ficha do par, e aí a mão fecha-se.
+`enviar: true|false`, campo **obrigatório** (as duas fichas de hoje — SOL e BTC, da conta de teste — dizem
+`false`). Com `false`, a boleta fica no registo e o operador **regista por que não saiu** — nada sai por omissão
+e nada se esconde. Para rodar a sério: pôr `enviar: true` na ficha do par, e aí a mão fecha-se.
 
-Provado até aqui, sem disparar nada: portão **30 de 30**, tipos 0 erros, fallbacks **167** (a catraca apanhou
+Provado até aqui, sem disparar nada: portão **33 de 33**, tipos 0 erros, fallbacks **0** (a catraca apanhou
 dois meus hoje, ambos corrigidos), a leitura AO VIVO na testnet a passar o contrato com as ordens vivas e as
-execuções incluídas, e o registo da observação a mostrar o travão da barra (`abrir x1` + `nada
-(entrada_ja_feita_nesta_barra)`). **Nenhuma ordem foi enviada e nenhum processo ficou a correr.**
+execuções incluídas, o início a quente medido nas duas direções (ligar e desligar um par a meio da corrida), e o
+registo da observação a mostrar o travão da barra (`abrir x1` + `nada (entrada_ja_feita_nesta_barra)`).
+**Nenhuma ordem foi enviada e nenhum processo ficou a correr.**

@@ -51,10 +51,11 @@ import { Mesa, type ContextoDaMesa } from "./mesa.ts";
 import { aplicar, verbosDeclarados } from "./estados/maquina.ts";
 import { haInibicao, lerMarcas } from "./estado/marcas.ts";
 import { motivoConhecido } from "./livro-de-motivos.ts";
-import { conferirMandatos, correrUmCiclo, lerOperacao } from "./ciclo/relogio.ts";
+import { conferirMandatos, correrUmCiclo, lerOperacao, semearTravosDeBarra } from "./ciclo/relogio.ts";
 import { cargaDaPergunta, NUMEROS_DA_CORRETORA, type NumerosDaCorretora } from "./ciclo/encerramento.ts";
+import type { ConfiguracaoDaConta } from "./config/configuracao.ts";
 import type { ConfiguracaoEmVigor } from "./estado/marcas.ts";
-import { ultimaTransicaoPara } from "./estado/registo.ts";
+import { barrasDasUltimasEntradas, registarMudancaDeMandato, ultimaTransicaoPara } from "./estado/registo.ts";
 
 /** O contrato recusa a MENSAGEM; a mesa fala dos seus motivos. Nada atravessa sem nome de um dos dois. */
 export const TRADUCAO: Record<string, string> = {
@@ -283,6 +284,32 @@ function lerIdentificadorDaConta(caminhoDaConfig: string | undefined): string | 
   return typeof id === "string" && id.trim() !== "" ? id : null;
 }
 
+/**
+ * O MANDATO, EM TEXTO CANONICO: as mesmas chaves, sempre pela mesma ordem, em qualquer profundidade.
+ *
+ * Serve para comparar duas leituras da configuracao e dizer se o mandato MUDOU. Comparar o texto do ficheiro
+ * seria mais simples e estaria errado: quem o reescreve (o operador, a cada leitura) pode mudar a ordem das
+ * chaves sem mudar um valor — e o registo encheria-se de linhas de mudanca que nao mudaram nada.
+ */
+function canonico(valor: unknown): string {
+  if (Array.isArray(valor)) return `[${valor.map(canonico).join(",")}]`;
+  if (valor !== null && typeof valor === "object") {
+    const obj = valor as Record<string, unknown>;
+    return `{${Object.keys(obj).sort().map((k) => `${JSON.stringify(k)}:${canonico(obj[k])}`).join(",")}}`;
+  }
+  return JSON.stringify(valor);
+}
+
+/**
+ * OS PARES QUE O MANDATO GOVERNA, por nome. Sem `fichas` na configuracao governa ZERO pares — que e' a verdade
+ * (e `conferirMandatos` recusa a operacao que reporte algum, como deve), nao um valor por omissao.
+ */
+function paresDoMandato(config: unknown): string[] {
+  const fichas = (config as { fichas?: unknown }).fichas;
+  if (fichas === null || fichas === undefined || typeof fichas !== "object") return [];
+  return Object.keys(fichas as Record<string, unknown>);
+}
+
 /** A pergunta do encerramento, quando a mesa entrou em `encerrando`. */
 function pergunta(pedidoId: string, prazoMs: number, numeros: NumerosDaCorretora): string {
   const carga = cargaDaPergunta(pedidoId, prazoMs, numeros);
@@ -503,7 +530,24 @@ async function main() {
           "sem o mandato do dono seria decidir por ele.",
       );
     }
-    const config = JSON.parse(readFileSync(opcoes.caminhoDaConfig, "utf8"));
+    // O MANDATO DO DONO E' RELIDO A CADA VOLTA — E O QUE MUDA REGISTA-SE (RN-V10).
+    //
+    // Era lido UMA VEZ, aqui, com o argumento de que «mudar os termos de uma mesa em operacao e' outro assunto,
+    // com a RN-V10 e registo proprio». O outro assunto passou a ser o caminho normal: quem escreve esta
+    // configuracao e' o operador — e' a VISTA das fichas do dono, reescrita a cada leitura — e uma ficha ligada a
+    // quente tem de entrar sem reiniciar a mesa. Medido a 30/09/2026 (`tools/observar-multipar.sh`): o par entrava
+    // na operacao, o mandato do arranque nao o governava, e a mesa RECUSAVA e morria. Meio-quente e' pior do que
+    // frio: mesa morta nao defende posicao nenhuma. Agora rele-se, e a diferenca fica no registo — um par por
+    // linha, com o motivo — que e' o que a RN-V10 exige de quem muda os termos de uma mesa em operacao.
+    const lerConfig = (): ConfiguracaoDaConta =>
+      JSON.parse(readFileSync(opcoes.caminhoDaConfig!, "utf8")) as ConfiguracaoDaConta;
+    let config: ConfiguracaoDaConta = lerConfig();
+    let impressaoDoMandato = canonico(config);
+
+    // A SEMENTE DO TRAVAO DA BARRA (D-021). A mesa escreve a barra de cada entrada no registo; ao armar o relogio
+    // volta a ler o que ela propria fez. Sem isto, um reinicio a meio de uma barra apagava o travao de uma entrada
+    // por barra — e o reinicio passou a ser caminho normal (ficha ligada a quente).
+    semearTravosDeBarra(barrasDasUltimasEntradas(opcoes.caminhoDoRegisto));
     let ciclo = 0;
     relogio = setInterval(() => {
       if (mesa.estado === "parada") return; // sem operacao para defender, a volta nao decide
@@ -516,9 +560,32 @@ async function main() {
       // o operador reescreve a cada leitura (escrita atomica: temp + rename, por isso nunca se le' meio
       // ficheiro). O que a mesa decide tem de ser o que ACABOU de ser lido.
       //
-      // O que NAO se relê: a `--config` (os termos do dono). Essa e' lida uma vez, no arranque, e mudar os
-      // termos de uma mesa em operacao e' outro assunto — com a RN-V10 e registo proprio.
+      // O MANDATO E' RELIDO AQUI, A CADA VOLTA (a nota esta' no arranque do relogio). Quando ele MUDA, a mudanca
+      // vai para o registo ANTES de a volta decidir: um dia de operacao tem de se reconstruir sem ler codigo
+      // (SC-011), e «os termos do dono mudaram» e' dos acontecimentos que mais explicam o que veio depois.
       const operacao = lerOperacao(opcoes.caminhoDaOperacao!);
+      const configDaVolta = lerConfig();
+      const impressaoDaVolta = canonico(configDaVolta);
+      if (impressaoDaVolta !== impressaoDoMandato) {
+        const antes = paresDoMandato(config);
+        const agora = paresDoMandato(configDaVolta);
+        const emVigor = agora.length > 0 ? agora.join(", ") : "(nenhum par)";
+        const conta = lerIdentificadorDaConta(opcoes.caminhoDaConfig) ?? undefined;
+        for (const instrumento of agora) {
+          if (antes.includes(instrumento)) continue;
+          registarMudancaDeMandato(Date.now(), instrumento, true,
+            "a ficha do dono passou a mandar neste par: entra no mandato da mesa sem a mesa reiniciar",
+            `mandato em vigor: ${emVigor}`, opcoes.caminhoDoRegisto, conta);
+        }
+        for (const instrumento of antes) {
+          if (agora.includes(instrumento)) continue;
+          registarMudancaDeMandato(Date.now(), instrumento, false,
+            "a ficha do dono deixou de mandar neste par: a mesa deixa de o governar",
+            `mandato em vigor: ${emVigor}`, opcoes.caminhoDoRegisto, conta);
+        }
+        config = configDaVolta;
+        impressaoDoMandato = impressaoDaVolta;
+      }
       conferirMandatos(operacao, config);
 
       // EM `encerrando` ha DUAS coisas a fazer, e sao diferentes:

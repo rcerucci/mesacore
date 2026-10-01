@@ -91,6 +91,11 @@ ciclos = [c for c in mesa if c.get("tipo") == "ciclo"]
 porpar = collections.Counter(c.get("instrumento") for c in ciclos)
 print(f"   operador: {len(op)} linhas · veredictos={dict(veredictos)}")
 print(f"   instrumentos na operacao: {vistos}")
+# AS MUDANCAS DE MANDATO (RN-V10): a prova de que a mesa rele os termos do dono e REGISTA o que mudou.
+mandatos = [m for m in mesa if m.get("tipo") == "mandato"]
+print(f"   mudancas de mandato no registo: {len(mandatos)}")
+for m in mandatos:
+    print(f"     {m.get('de')} -> {m.get('para')} · {m.get('instrumento')} · {str(m.get('motivo'))[:70]}")
 print(f"   ciclos da mesa: {len(ciclos)} {dict(porpar)}")
 for c in ciclos[:6]:
     print(f"     ciclo {c.get('acao')} · {c.get('instrumento')} · {c.get('motivo')} · {str(c.get('nota'))[:60]}")
@@ -101,7 +106,7 @@ echo "### o estado inicial fica registado"
 cp "$CONTA_JSON" "$BASE/conta-antes.json"; cp "$FICHAS/SOL-$CONTA.json" "$BASE/sol-antes.json"; cp "$FICHAS/BTC-$CONTA.json" "$BASE/btc-antes.json"
 
 # Quais cenarios correr (`SO=5` corre so' o quinto — util para reensaiar uma correccao sem repetir tudo).
-CORRER="${SO:-1,2,3,4,5}"
+CORRER="${SO:-1,2,3,4,5,6}"
 quer() { case ",$CORRER," in *",$1,"*) return 0;; *) return 1;; esac; }
 
 quer 1 && correr "1-dois-ativos"    "SOL,BTC" sim sim
@@ -110,6 +115,9 @@ quer 3 && correr "3-so-btc"         "BTC"     nao sim
 quer 4 && correr "4-nenhum"         "SOL,BTC" nao nao
 # O INICIO A QUENTE: arranca com so o SOL, e a meio liga-se o BTC (ficha + conta), sem reiniciar nada.
 quer 5 && correr "5-quente-btc-ligado-a-meio" "SOL" sim nao "btc-on"
+# E A OUTRA METADE: arranca com os dois, e a meio DESLIGA-SE o BTC. A mesa tem de deixar de o governar sem
+# morrer — e o registo tem de dizer que ele SAIU do mandato (RN-V10).
+quer 6 && correr "6-quente-btc-desligado-a-meio" "SOL,BTC" sim sim "btc-off"
 
 repor
 echo "### estado reposto (SOL ligado, BTC desligado, conta a ler o SOL)"

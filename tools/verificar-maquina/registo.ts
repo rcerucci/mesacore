@@ -16,12 +16,12 @@
 // fechar. As bancadas declaram-na aqui, como UM numero so', e o caso que quiser exercitar a barra
 // errada declara a sua propria `barra_ms` na proposta.
 const BARRA_DO_SINAL = 1730001600000;
-import { readFileSync, rmSync, appendFileSync } from "node:fs";
+import { readFileSync, rmSync, appendFileSync, writeFileSync } from "node:fs";
 import { decidirInstrumento } from "../../core/ciclo/ciclo.ts";
 import { correrPedidoDeParada } from "../../core/ciclo/encerramento.ts";
 import { lerParaOCiclo } from "../../core/leitura/fixtures.ts";
 import { marcasVazias } from "../../core/estado/marcas.ts";
-import { contasNoRegisto, lerRegisto, reconstruir, registarCiclo, type LinhaDoRegisto } from "../../core/estado/registo.ts";
+import { barrasDasUltimasEntradas, contasNoRegisto, lerRegisto, reconstruir, registarCiclo, registarMudancaDeMandato, type LinhaDoRegisto } from "../../core/estado/registo.ts";
 import { Mesa } from "../../core/mesa.ts";
 import { motivoConhecido } from "../../core/livro-de-motivos.ts";
 import type { ConfiguracaoDaConta } from "../../core/config/configuracao.ts";
@@ -103,8 +103,12 @@ dia.push({ nota: "proposta ausente (hold contado)", d: decidir(mercadoAberto, nu
 dia.push({ nota: "condicao sem leitura", d: decidir({ instrumento: "EURUSD", idade_do_dado_ms: 0, estado_do_mercado: "aberto", ordens_abertas: [] }, { lado: "buy" }, 65, { mesa_pausada: true, falhas: { leitura: true } }) });
 
 let t = 1790628001000;
+// O RELOGIO DESTA BANCADA E' O DE H1 (o mesmo dos casos de pausa), e a barra da entrada sai dele — como na mesa.
+const PASSO_DA_BANCADA = 3_600_000;
 for (const { nota, d } of dia) {
-  registarCiclo(t, "EURUSD", d.acao, d.motivo, nota, caminhoDoRegisto);
+  // A BARRA DA ENTRADA vai escrita, como a mesa a escreve (D-021): numa decisao de `abrir` ela e' obrigatoria.
+  const barra = d.acao === "abrir" ? Math.floor(t / PASSO_DA_BANCADA) * PASSO_DA_BANCADA : undefined;
+  registarCiclo(t, "EURUSD", d.acao, d.motivo, nota, caminhoDoRegisto, undefined, undefined, barra);
   t += 1000;
   linhasDoRelatorio.push(JSON.stringify({ nota, acao: d.acao, motivo: d.motivo, condicao: d.condicao, avisa: d.avisa }));
 }
@@ -228,6 +232,56 @@ exigir(
     reconstruir(trocadas.linhas, "parada", "conta-A") === trocadas.estadoB,
   `SC-011 (6c): trocadas as contas, as mesmas operacoes passam a ser da outra conta ('conta-A' reconstroi '${reconstruir(trocadas.linhas, "parada", "conta-A")}', que era o dia da B)`,
   [`contas ${contasTrocadas.contas.join(",")}`],
+);
+
+// --- 7. O TRAVAO DA BARRA SOBREVIVE AO REINICIO (D-021)
+//
+// A barra de cada entrada fica ESCRITA no registo, e a mesa volta a lê-la quando arma o relógio: era uma `Map`
+// que um reinício apagava, e com o mandato a quente o reinício passou a ser caminho normal. Mede-se em três
+// passos, e os dois últimos são PROVAS NEGATIVAS — uma entrada sem barra não se escreve, e não se semeia nada a
+// partir dela. Semear o que não se sabe seria repor o buraco por outra via.
+const entradasDeAbertura = decisoes.filter((l) => l.acao === "abrir");
+const barrasEscritas = barrasDasUltimasEntradas(caminhoDoRegisto);
+const ultimaEntrada = entradasDeAbertura[entradasDeAbertura.length - 1];
+exigir(
+  entradasDeAbertura.length >= 1 && ultimaEntrada !== undefined && barrasEscritas.get("EURUSD") === ultimaEntrada.barra_ms,
+  `SC-011 (7): a barra da ultima entrada le-se do registo (${entradasDeAbertura.length} entrada(s), barra ${barrasEscritas.get("EURUSD")}) — e' com ela que a mesa rearma o travao`,
+  [`barra escrita ${ultimaEntrada === undefined ? "(sem entradas)" : String(ultimaEntrada.barra_ms)}, barra lida ${String(barrasEscritas.get("EURUSD"))}`],
+);
+
+let recusouEscreverSemBarra = false;
+try {
+  registarCiclo(t, "EURUSD", "abrir", "a mesma barra outra vez", "entrada sem barra (tem de ser RECUSADA)", caminhoDoRegisto);
+} catch {
+  recusouEscreverSemBarra = true;
+}
+exigir(recusouEscreverSemBarra, "SC-011 (7b): `registarCiclo` RECUSA escrever uma entrada sem a barra — a linha sem barra seria o buraco");
+
+const registoManco = `${caminhoDoRegisto}.manco`;
+writeFileSync(registoManco, JSON.stringify({
+  instante_ms: 1790628001000, tipo: "ciclo", instrumento: "EURUSD", acao: "abrir", motivo: "entrou", nota: "entrada antiga, sem barra",
+}) + "\n");
+let recusouSemear = false;
+try {
+  barrasDasUltimasEntradas(registoManco);
+} catch {
+  recusouSemear = true;
+}
+exigir(recusouSemear, "SC-011 (7c): semear o travao a partir de um registo com uma entrada sem barra e' RECUSADO — nao se inventa a barra de uma entrada");
+rmSync(registoManco, { force: true });
+
+// --- 7d. A MUDANCA DE MANDATO E' UMA LINHA PROPRIETARIA (RN-V10)
+// A mesa relê os termos do dono a cada volta, e quando eles mudam tem de o DIZER no registo — sem isso, uma
+// mesa que passou a governar outro par seria um dia que nao se reconstroi (SC-011).
+registarMudancaDeMandato(t, "GBPUSD", true, "a ficha do dono passou a mandar neste par", "mandato em vigor: EURUSD, GBPUSD", caminhoDoRegisto);
+const linhasDeMandato = lerRegisto(caminhoDoRegisto).filter((l) => l.tipo === "mandato");
+exigir(
+  linhasDeMandato.length === 1 &&
+    linhasDeMandato[0]!.instrumento === "GBPUSD" &&
+    linhasDeMandato[0]!.de === "fora_do_mandato" &&
+    linhasDeMandato[0]!.para === "em_vigor" &&
+    typeof linhasDeMandato[0]!.motivo === "string" && linhasDeMandato[0]!.motivo !== "",
+  "SC-011 (7d): a mudanca de mandato entra no registo como linha propria, com o par e o motivo (RN-V10)",
 );
 
 // --- as provas negativas: um registo adulterado tem de ser reprovado

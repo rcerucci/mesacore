@@ -156,11 +156,24 @@ const MS_DO_RELOGIO: Record<string, number> = {
 /**
  * A BARRA DA ULTIMA ENTRADA, por instrumento — o travao do D-021.
  *
- * O processo da mesa le a operacao UMA VEZ, e e' por isso que o silencio do setup nas voltas seguintes nao
- * chega ca'. Vive em memoria de proposito: um reinicio limpa-o, e um reinicio e' decisao do dono com registo
- * proprio (RN-V10).
+ * VIVE EM MEMORIA, MAS NAO SE PERDE: ao armar o relogio a mesa semeia-o do REGISTO (`barrasDasUltimasEntradas`),
+ * onde cada entrada deixa a sua barra escrita. O que um reinicio apaga e' a memoria, nao o que a mesa ja' fez.
+ *
+ * (Isto foi uma decisao invertida, e a razao esta' medida: antes vivia so' aqui, com o argumento de que «um
+ * reinicio limpa-o, e um reinicio e' decisao do dono com registo proprio (RN-V10)». O argumento caia por duas
+ * vias — o reinicio passou a ser caminho normal (ficha ligada a quente), e o que se perde ao reiniciar nao e' um
+ * direito do dono, e' a trava que impede uma segunda entrada na mesma barra. Um reinicio tem de ser neutro para
+ * o dinheiro.)
  */
 const barraDaUltimaEntrada = new Map<string, number>();
+
+/** Semeia o travao com as barras lidas do registo. Um instrumento ja' semeado NAO se sobrepoe: o registo e' a
+ *  semente inicial, e a mesa a correr sabe mais do que o registo (ela acabou de decidir). */
+export function semearTravosDeBarra(barras: Map<string, number>): void {
+  for (const [instrumento, barra] of barras) {
+    if (!barraDaUltimaEntrada.has(instrumento)) barraDaUltimaEntrada.set(instrumento, barra);
+  }
+}
 
 /** Limpa os travoes de barra. Existe para as BANCADAS: uma bancada corre muitos casos no MESMO processo, e o
  *  tempo de uma mesa e' um caso so'. Sem isto, o caso seguinte herda a barra do anterior e a medicao mente. */
@@ -288,6 +301,9 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       // separado. E' daqui que a mao (mesa -> conector) a vai tirar quando fechar.
       undefined,
       decisao.boleta ?? undefined,
+      // A BARRA DA ENTRADA, ESCRITA (D-021): e' daqui que a mesa a volta a ler quando reiniciar. Obrigatoria
+      // quando a decisao e' `abrir` — `registarCiclo` recusa uma entrada sem ela.
+      decisao.acao === "abrir" ? barraAtual : undefined,
     );
     acoes[instrumento] = decisao.acao;
     motivos[instrumento] = decisao.motivo;

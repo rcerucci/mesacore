@@ -366,3 +366,49 @@ ter-se-ia perdido inteira: só não se perdeu porque o `stash` guardou em vez de
 nesta casa — **trabalho longo grava-se em git** — e agora tem guarda: quem entra num directório que não é o seu, ou
 que outra sessão tem aberto, **não reescreve a árvore: para e reporta** (`git status --short` no corpo do cartão,
 `kanban_block` quando a decisão não é sua).
+
+---
+
+## Nota datada — 30/09/2026, 23:0x (-03) — o início a quente, e as duas decisões que ele inverteu
+
+*(Escrita por quem trabalha nesta árvore — sessão `20260930_183913_07925d`, profile `appbuilder`.)*
+
+O dono mandou ligar e desligar um par **a meio da corrida**. Medido com `tools/observar-multipar.sh` (conta de
+teste, `enviar: false`, agora 6 configurações):
+
+| configuração | antes desta vaga | agora |
+|---|---|---|
+| par **ligado** a quente | o operador punha-o na operação e a mesa **morria**: `instrumento sem mandato do dono: BTC` | o conector lê-o, o operador pede-lhe o setup e a mesa **governa-o**: ciclos `SOL:3 BTC:2`, registo `fora_do_mandato → em_vigor · BTC` |
+| par **desligado** a quente | (o mesmo mecanismo, teria morrido) | sai da operação e do mandato sem a mesa morrer: ciclos `SOL:3 BTC:1`, registo `em_vigor → fora_do_mandato · BTC` |
+| **nenhum** par | `nada_a_fazer` do operador, a mesa não cicla | (confirmado, inalterado) |
+
+A raiz **não era nenhuma das quatro correcções propostas** — era **uma linha do conector**: `processo.ts`
+comparava a conta da ficha com o **endereço** da conta (`0xF87138…`) em vez do **nome**, e por isso saltava *todas*
+as fichas. A lista de pares a ler ficava a do mandato lido no arranque, e o comentário «a lista é RELIDA das fichas
+a cada volta» era prosa. O `stderr` do conector, que ninguém lia (e que podia entupir o `pipe`), passou a ser
+drenado — foi isso que deixou a razão **visível** em vez de conjecturável.
+
+**Duas decisões invertidas, cada uma com a razão medida:**
+
+1. **O mandato da mesa passou a ser relido a cada volta, e a mudança REGISTA-SE** (RN-V10 cumprida: uma linha
+   `tipo: "mandato"` por par, com o motivo). Estava escrito no código que mudar os termos de uma mesa em operação
+   era «outro assunto, com a RN-V10 e registo próprio»; o outro assunto passou a ser o caminho normal — e o que a
+   RN-V10 exige é o **registo**, não o congelamento. O operador escreve em **três tempos** (união → operação →
+   mandato final) para que nenhuma fotografia intermédia tenha um par na operação que a configuração não governe.
+2. **A trava da barra (D-021) sobrevive ao reinício.** A barra de cada entrada fica **escrita** no registo
+   (`barra_ms`, obrigatória na linha `abrir` — `registarCiclo` **recusa** uma entrada sem ela) e a mesa semeia o
+   travão ao armar o relógio (`semearTravosDeBarra(barrasDasUltimasEntradas(...))`). Vivia só em memória, com o
+   argumento de que «um reinício limpa-o, e um reinício é decisão do dono com registo próprio» — mas o que se
+   perdia não era um direito do dono: era a trava que impede uma **segunda entrada na mesma barra**, e o reinício
+   passou a ser caminho normal.
+
+**As provas.** Portão **33/33** · fallbacks **0** · tipos **0 erros**. A bancada do registo ganhou quatro
+verificações (`SC-011 (7)`, `(7b)`, `(7c)`, `(7d)`): a barra da última entrada lê-se do registo, uma entrada sem
+barra não se escreve, não se semeia a partir de uma entrada sem barra, e a mudança de mandato é linha própria com
+motivo. Prova **viva** da semente, com **CONTROLE** (`tools/medir-travo-da-barra.sh`, a mesma operação e a mesma
+barra, só o registo diferente): **com semente** → `nada · entrada_ja_feita_nesta_barra`; **sem semente** →
+`abrir · com boleta`, barra `1790816400000`. A barra fica escrita nos dois casos.
+
+**O que fica por fazer, dito:** (a) a prova da semente não está no portão — a bancada prova a função e a regra, e
+o ensaio de hoje correu sobre uma operação real da observação; uma bancada hermética (operação de fixture, dois
+processos) é o degrau seguinte; (b) `ao_desligar` continua promessa sem cumpridor (nota no conferidor de fichas).

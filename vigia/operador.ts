@@ -278,6 +278,14 @@ const MS_DO_RELOGIO: Record<string, number> = {
 /** Quando se puxou cada par (por instrumento E relógio: o relógio da ficha pode mudar), para não se repetir. */
 const puxadasEm = new Map<string, number>();
 
+/**
+ * O MANDATO QUE A ÚLTIMA CONFIG ESCRITA DECLAROU — o que a mesa ainda pode ter em mãos.
+ *
+ * Serve à ordem das escritas (o bloco das três escritas, no fim de cada volta): a união do mandato novo com este
+ * é o que garante que nenhuma leitura intermédia da config fica sem um par que a operação ainda reporta.
+ */
+let mandatoEscrito: Record<string, unknown> | null = null;
+
 function caminhoDasVelas(ficha: Ficha): string | null {
   if (pastaDoMercado === null) return null;
   return join(pastaDoMercado, `velas-${String(ficha.cabecalho.instrumento)}-${String(ficha.cabecalho.relogio)}.jsonl`);
@@ -734,20 +742,47 @@ async function main(): Promise<void> {
           setup: { prazo_de_resposta_ms: f.cabecalho.prazo_de_resposta_ms },
         };
       }
-      writeFileSync(`${para}.config.json`, JSON.stringify({
-        _nota: "vista das fichas para a mesa (D-014: o core ainda le a ficha num objecto so'). Nao editar a mao.",
-        // A LISTA DO DONO, no TOPO (FR-042): sem ela a mesa rebenta o ciclo, e faz bem - avisar por omissao
-        // era a mesa a escolher pelo dono.
-        eventos_que_avisam: ["cb", "encerramento", "desconhecido", "recusa", "divergencia", "falha_de_leitura", "contenda"],
-        arranque_apos_cb: "exige_decisao",
-        fichas: fichasParaAMesa,
-      }, null, 1) + "\n");
+      // -----------------------------------------------------------------------------------------------
+      // A ORDEM DAS ESCRITAS É UM PROTOCOLO — a mesa relê o mandato a cada volta (`core/servidor.ts`).
+      //
+      // Entre a escrita da config e a da operação há um instante em que a mesa pode ler as duas. Se a config
+      // chegasse primeiro SEM um par que a operação ainda reporta, a mesa recusava a operação inteira e morria
+      // (`instrumento sem mandato do dono`) — uma armadilha pronta a disparar de cada vez que o dono desligasse um
+      // par a quente. Escreve-se por isso em três tempos: (1) a UNIÃO do mandato anterior com o novo, (2) a
+      // operação, (3) o mandato final. Nenhuma leitura intermédia tem um par na operação que a config não governe.
+      const escreverConfig = (fichas: Record<string, unknown>): void => {
+        writeFileSync(`${para}.config.json`, JSON.stringify({
+          _nota: "vista das fichas para a mesa (D-014: o core ainda le a ficha num objecto so'). Nao editar a mao.",
+          // A LISTA DO DONO, no TOPO (FR-042): sem ela a mesa rebenta o ciclo, e faz bem - avisar por omissao
+          // era a mesa a escolher pelo dono.
+          eventos_que_avisam: ["cb", "encerramento", "desconhecido", "recusa", "divergencia", "falha_de_leitura", "contenda"],
+          arranque_apos_cb: "exige_decisao",
+          fichas,
+        }, null, 1) + "\n");
+      };
+      // (1) O MANDATO QUE COBRE TUDO: o novo, mais o anterior — um par que SAI fica coberto até a operação deixar
+      // de o reportar, e um par que ENTRA já está coberto quando a operação o reportar.
+      const mandatoQueCobreTudo: Record<string, unknown> = {};
+      for (const [instrumento, ficha] of Object.entries(fichasParaAMesa)) mandatoQueCobreTudo[instrumento] = ficha;
+      if (mandatoEscrito !== null) {
+        for (const [instrumento, ficha] of Object.entries(mandatoEscrito)) {
+          if (!(instrumento in mandatoQueCobreTudo)) mandatoQueCobreTudo[instrumento] = ficha;
+        }
+      }
+      escreverConfig(mandatoQueCobreTudo);
 
+      // (2) A OPERAÇÃO.
       escreverOperacao({
         nota: `escrito pelo operador · ${new Date().toISOString()} · conta ${nomeDaConta} · conector hyperliquid · setups ${[...new Set(agoraLigadas.map((f) => `${f.setup} ${manifestoDe(f).versao}`))].join(", ")}`,
         ligacao: "ligada",
         instrumentos,
       });
+      // (3) O MANDATO FINAL. Só é uma escrita diferente quando algum par SAIU (na união ele ainda estava) — e é
+      // esta a escrita que o tira: depois dela a operação já não o reporta, logo o mandato pode deixar de o cobrir.
+      if (Object.keys(mandatoQueCobreTudo).length !== Object.keys(fichasParaAMesa).length) {
+        escreverConfig(fichasParaAMesa);
+      }
+      mandatoEscrito = fichasParaAMesa;
       dizer({
         etapa: "operador", volta: voltas, conta: nomeDaConta, instrumento,
         equity: (msg.carga as any).equity, bid: (msg.carga as any).bid, ask: (msg.carga as any).ask,
