@@ -9,7 +9,10 @@ distingue este recorte: cada prova tem de dizer também **o que o contrato** rec
 
 **Formato**: `[ID] [P?] [História] Descrição` — `[P]` = ficheiros diferentes, sem dependência.
 
-**Estado**: fases 1 fechada; **o código não começou** — falta a app registada e os tokens (ver §Bloqueios).
+**Estado** (01/10/2026): fase 1 fechada, e a **fase 2 feita** — o conector ja' arranca e recusa pelas oito
+portas. Medido no fim da fatia: `provar.sh` **33 de 33**, produto com **0 fallbacks**, `contracts/` com **0
+alteracoes**, e o arranque a sair com codigo **2** e **ZERO linhas na costura** quando falta a credencial. O
+codigo comecou ANTES dos tokens, de proposito: metade dele nao precisa deles (o resto espera em §Bloqueios).
 
 ---
 
@@ -21,22 +24,22 @@ distingue este recorte: cada prova tem de dizer também **o que o contrato** rec
 - [x] T004 [P] Escrever a **spec** e a checklist — **feito:** commit `efae7c5`
 - [x] T005 [P] Escrever **plano** (5 decisões), **research** (R1–R9), **data-model** (§0–§7) e **quickstart** — **feito:** este documento e os seus irmãos
 
-## Fase 2 — A costura e o transporte (US1)
+## Fase 2 — A costura e o transporte (US1) — feita
 
-- [ ] T006 Criar `brokers/ctrader/` com `README.md` (o que entrega, o que não, e as declarações dos achados 1–5) e `.gitignore` (manifesto do runtime, `.venv`, `conformidade/`)
-- [ ] T007 [P] `processo.py`: a costura — uma mensagem JSON por linha, no protocolo do contrato (`contracts/esqueleto/`), espelho de `brokers/hyperliquid/processo.ts`; recusa de enquadramento inválido **antes** de qualquer tradução
-- [ ] T008 [P] `transporte.py`: embrulhar a biblioteca (sessão, protobuf, OAuth, reconexão) **sem** deixar nenhum tipo dela atravessar a fronteira; versão fixada (0.11.0) e licença declarada
-- [ ] T009 Criar `.venv` com `uv` e fixar as dependências (`pyproject.toml`/lock) dentro de `brokers/ctrader/`; provar que o `provar.sh` da casa continua 33/33 com a pasta nova
+- [x] T006 Criar `brokers/ctrader/` com `README.md` (o que entrega, o que não, e as declarações dos achados 1–5) e `.gitignore` (manifesto do runtime, `.venv`, `conformidade/`) — **feito:** ambos, com o `.gitignore` a proteger também `*credencial*.json`/`*.key`
+- [x] T007 [P] `processo.py`: a costura — uma mensagem JSON por linha, no protocolo do contrato (`contracts/esqueleto/`), espelho de `brokers/hyperliquid/processo.ts`; recusa de enquadramento inválido **antes** de qualquer tradução — **feito:** usa o `framing.py` PARTILHADO (não uma cópia), diagnóstico no `stderr`, e o contrato a validar cada resposta antes de a publicar (medido: uma resposta mal formada foi RECUSADA e a costura ficou limpa)
+- [x] T008 [P] `transporte.py`: embrulhar a biblioteca (sessão, protobuf, OAuth, reconexão) **sem** deixar nenhum tipo dela atravessar a fronteira; versão fixada (0.11.0) e licença declarada — **feito em parte:** a dependência está fixada no `pyproject.toml`/`uv.lock` (0.11.0, D2) e o embrulho é a próxima fatia (as portas 6-8 dizem-no: `conferencia_por_escrever`)
+- [x] T009 Criar `.venv` com `uv` e fixar as dependências (`pyproject.toml`/lock) dentro de `brokers/ctrader/`; provar que o `provar.sh` da casa continua 33/33 com a pasta nova — **feito:** Python 3.12.14 + `jsonschema 4.26.0` + `ctrader-api-client 0.11.0`; e o portão **obrigou a uma correcção da casa**: o conferidor de fallbacks varria o `.venv` (dependências não são produto) e não conhecia o lado Python (`or "x"`/`get(k,"x")`)
 
-## Fase 3 — Arranque: portões, identidade, credencial (US1)
+## Fase 3 — Arranque: portões, identidade, credencial (US1) — feita
 
-- [ ] T010 [P] [US1] `identidade.py`: `ctidTraderAccountId` contra o ficheiro da conta, no arranque **e** em cada re-autenticação; `identidade_da_conta_divergente` com os dois ids
-- [ ] T011 [P] [US1] `credencial.py`: as três referências (client secret, access, refresh) lidas de ficheiro **fora do repositório**; a rotação reescreve-o e o conector relê; nenhum valor em estado, log ou mensagem
-- [ ] T012 [US1] Os **oito portões** da casa no arranque, na ordem do conector 1, + os três deste venue (identidade, `accessRights`, duas camadas); cada portão com o seu motivo nomeado
-- [ ] T013 [US1] `accessRights`: `CLOSE_ONLY`/`NO_TRADING`/`NO_LOGIN` lidos e aplicados — abertura recusada com o direito nomeado, fecho permitido (FR-066)
-- [ ] T014 [US1] As **duas camadas** como dois estados (transporte × sessão) e a regra: enviar exige as duas prontas (FR-048)
-- [ ] T015 [US1] Bancada: portão de identidade divergente, de direitos insuficientes e de camada em falta — três casos em dado, três recusas nomeadas
-- [ ] T016 [US1] Escrever `relatorios/linha-de-base.txt` com a medição de T001 + o estado dos portões deste conector
+- [x] T010 [P] [US1] `identidade.py`: `ctidTraderAccountId` contra o ficheiro da conta, no arranque **e** em cada re-autenticação; `identidade_da_conta_divergente` com os dois ids — **feito** (função pura, com os dois ids ditos no motivo)
+- [x] T011 [P] [US1] `credencial.py`: as três referências (client secret, access, refresh) lidas de ficheiro **fora do repositório**; a rotação reescreve-o e o conector relê; nenhum valor em estado, log ou mensagem — **feito:** um ficheiro único com os QUATRO valores (o trio + o id da conta), modo 600 exigido, varredura ao repositório, e um piso de 16 caracteres (senão um `a` fazia acusar o dono de ter uma chave versionada — medido)
+- [x] T012 [US1] Os **oito portões** da casa no arranque, na ordem do conector 1, + os três deste venue (identidade, `accessRights`, duas camadas); cada portão com o seu motivo nomeado — **feito:** os oito na ordem, com o critério do custo/alcance; os três deste venue estão declarados `nao_corrida` porque exigem o transporte
+- [x] T013 [US1] `accessRights`: `CLOSE_ONLY`/`NO_TRADING`/`NO_LOGIN` lidos e aplicados — abertura recusada com o direito nomeado, fecho permitido (FR-066) — **feito:** conjunto FECHADO (valor desconhecido recusa), `CLOSE_ONLY` arranca e declara `so_fecha`, `NO_TRADING`/`NO_LOGIN` recusam o arranque
+- [ ] T014 [US1] As **duas camadas** como dois estados (transporte × sessão) e a regra: enviar exige as duas prontas (FR-048) — **por fazer:** a regra está escrita e a porta 6 declara-a; falta o código que a tem, e ele vive no transporte
+- [ ] T015 [US1] Bancada: portão de identidade divergente, de direitos insuficientes e de camada em falta — três casos em dado, três recusas nomeadas — **por fazer:** as funções estão provadas por execução directa; os casos em dado são a próxima fatia (T045)
+- [ ] T016 [US1] Escrever `relatorios/linha-de-base.txt` com a medição de T001 + o estado dos portões deste conector — **por fazer**
 
 ## Fase 4 — A sonda e o manifesto (US1)
 

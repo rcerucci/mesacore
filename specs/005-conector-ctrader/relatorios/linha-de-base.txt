@@ -1,0 +1,56 @@
+LINHA DE BASE — o conector cTrader (recorte 005)
+Medido em 01/10/2026, antes de o conector falar com o venue.
+
+PORTAO DA CASA (tools/verificar-maquina/provar.sh)
+  33 de 33 passaram  (corrido duas vezes: antes e depois de o conector entrar na arvore, e depois de a raiz
+  .gitignore ter ganho a excepcao do modulo `credencial.py`)
+  fallbacks no produto: 0 sitios em 0 ficheiros (com os padroes de PYTHON ja' activos)
+  tipos: 0 erros nos 6 directorios
+
+CONTRATO
+  versao vigente: 1.9.0  (contracts/versao.json — a versao vive num so' sitio)
+  formas em contracts/_defs/forma.schema.json: 22
+  tipos de mensagem do envelope: 11
+  ficheiros alterados em contracts/ por causa deste recorte: 0  (SC-015 medido com `git status`, nao prometido)
+
+O CONECTOR cTrader, no fim da fatia 1 (T006-T013)
+  lingua: Python 3.12.14 (ambiente proprio em brokers/ctrader/.venv, ignorado pelo git)
+  camada de protocolo: ctrader-api-client 0.11.0, FIXADA (D2) — parecer em docs/AVALIACAO-BIBLIOTECA-CTRADER.md
+  enquadramento: contracts/esqueleto/framing.py, PARTILHADO (a mesma versao e o mesmo vocabulario do lado TS)
+  ficheiros no git: 9 (README, .gitignore, conector.exemplo.json, pyproject.toml, uv.lock, credencial.py,
+  ficha.py, identidade.py, processo.py)
+
+  ARRANQUE, medido por execucao:
+    com a credencial em falta  -> portas 1-4 passam, `chave` FALHA (campo_obrigatorio_ausente), saida 2,
+                                  ZERO linhas na costura
+    com a credencial boa       -> portas 1-5 passam, 6-8 `nao_corrida` (motivo: conferencia_por_escrever),
+                                  saida 2, ZERO linhas na costura  (o processo NAO sobe sem as oito)
+    ficha com ambiente e rede a discordar -> `ambiente_e_rede_incoerentes`
+    ficha com `venue` = hyperliquid       -> `valor_fora_do_conjunto`
+    ficha com chave que ninguem le'       -> `campo_desconhecido`
+    credencial em modo 644                -> `valor_fora_da_banda`
+    credencial com segredo de 3 caracteres-> `valor_fora_da_banda` (piso de 16, senão a varredura ao
+                                             repositorio dava um diagnostico FALSO — medido)
+    credencial com valor presente num ficheiro versionado -> `valor_fora_da_banda`
+    id da conta divergente do que o venue devolve        -> `identidade_da_conta_divergente`
+    accessRights = NO_TRADING / NO_LOGIN                 -> `sem_direito_de_operar`
+    accessRights = CLOSE_ONLY                            -> ARRANCA e declara `so_fecha`
+    accessRights desconhecido                            -> `valor_fora_do_conjunto` (conjunto fechado)
+
+  COSTURA, medido por execucao (4 entradas):
+    boleta valida     -> 1 desfecho `recusado` (motivo `capacidade_nao_declarada`), e a resposta PASSA o contrato
+    comando           -> nenhuma resposta de contrato: um conector nao recebe `comando` (e' da mesa)
+    linha que nao e' JSON -> `enquadramento_invalido`, nada escrito
+    versao 9.9.9      -> `versao_do_contrato_divergente` com «declarada 9.9.9, vigente 1.9.0»
+
+PORTAO DA CASA — DUAS CORRECCOES QUE ESTE RECORTE OBRIGOU (ferramentas/verificar-contrato/py/fallbacks.py)
+  1. dependencias instaladas nao sao produto: `node_modules`, `.venv` e `site-packages` saem da varredura.
+     (Medido: o `.venv` novo fez o conferidor REPROVAR por causa de um `??` dentro do `black`.)
+  2. o conferidor passou a conhecer o lado PYTHON: `x = a or "b"` e `d.get("k", "b")` sao o `?? "x"` desta
+     lingua, e o comentario e' o `#` (docstrings fora, como a prosa do `plugin.ts`). O padrao do `or` exige que
+     o literal FECHE a expressao — sem isso, `isinstance(url, str) or ":" not in url` (uma CONDICAO) dava falso
+     positivo. A cobertura que fica de fora esta' declarada no ficheiro.
+
+O QUE AINDA NAO SE PODE MEDIR (e porque')
+  portas 6, 7 e 8 (ligacao, sonda_e_manifesto, identidade) — exigem o transporte, que e' a proxima fatia.
+  A bateria de conformidade (T049-T052) — exige a app registada na Open API e os tokens do dono.
