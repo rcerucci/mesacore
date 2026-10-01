@@ -83,3 +83,75 @@ export function derivarCloid(conta: string, instrumento: string, referencia: str
   }
   return { ok: true, cloid };
 }
+
+/**
+ * AS CLASSIFICACOES EM QUE O VENUE CONFIRMA A NOSSA ORDEM — o subconjunto do conjunto FECHADO do contrato
+ * (`contracts/vocabulario.json`, `classificacoes_de_desfecho` = `aceite|parcial|desconhecido|recusado`).
+ *
+ * `desconhecido` NAO confirma (o venue nao respondeu) e `recusado` NAO confirma (o venue negou). So' em
+ * `aceite` e `parcial` a ordem que NOS enviamos ficou — e so' nelas o `cloid` que o venue publicou identifica
+ * uma posicao NOSSA.
+ */
+export const CLASSIFICACOES_QUE_CONFIRMAM_A_ORDEM: readonly string[] = ["aceite", "parcial"];
+
+export type CloidDoPreenchimento =
+  | { ok: true; cloid: string }
+  | { ok: false; porque: string };
+
+/**
+ * O `cloid` que o VENUE publicou no preenchimento da ordem que NOS enviamos, lido do desfecho.
+ *
+ * PORQUE ISTO EXISTE, e o defeito que o torna necessario (medido a 01/10/2026, conta `hl-teste-plugin`): a
+ * ordem `61581177468` foi preenchida (0.00117 @ 84367.0) e o venue devolveu a NOSSA marca no `cloid`
+ * (`resposta_do_venue.bruto.cloid = 0xbf62594cce5cacfd083dd6d15cd97aa8`). O mapa de marcas ficou VAZIO por
+ * duas razoes, e e' esta funcao que fecha as duas:
+ *
+ *   1. a guarda comparava a classificacao com `aceita`/`preenchida` — palavras que o conjunto fechado do
+ *      contrato NAO tem (o vocabulario e' `aceite`, nunca `aceita`). Nenhum desfecho passava;
+ *   2. a chave registada era o `cloid` DERIVADO AQUI, do NOME da conta — e o conector deriva-o do ENDERECO
+ *      (`estado.ficha.conta`). Sao valores diferentes (medido: `0xbf62594c...` do venue contra
+ *      `0x349994e8...` do nome): a chave do mapa tem de ser a que o venue guarda, porque e' com ela que se
+ *      cruza o que ele publica em `userFills` (`leitura-do-mercado.ts`).
+ *
+ * Fail-closed: sem confirmacao, sem `cloid`, ou com uma carga que nao se leia, NAO se regista marca nenhuma —
+ * e diz-se por que'. Nunca se inventa uma chave: uma marca registada com a chave errada nao liga posicao
+ * nenhuma, e uma marca registada sem confirmacao diz que a posicao e' nossa quando o venue nao o disse.
+ */
+export function cloidDoPreenchimento(carga: unknown): CloidDoPreenchimento {
+  if (typeof carga !== "object" || carga === null || Array.isArray(carga)) {
+    return {
+      ok: false,
+      porque: `a carga do desfecho nao e' um objecto (veio ${JSON.stringify(carga)}): sem ela nao se sabe o que o venue respondeu`,
+    };
+  }
+  const c = carga as Record<string, unknown>;
+  const classificacao = c.classificacao;
+  if (typeof classificacao !== "string" || !CLASSIFICACOES_QUE_CONFIRMAM_A_ORDEM.includes(classificacao)) {
+    return {
+      ok: false,
+      porque:
+        `a classificacao ${JSON.stringify(classificacao)} nao confirma a nossa ordem: so' ` +
+        `\`${CLASSIFICACOES_QUE_CONFIRMAM_A_ORDEM.join("`|`")}\` dizem que a ordem que NOS enviamos ficou. ` +
+        "Um desfecho sem confirmacao nao regista marca nenhuma (o `cloid` derivado aqui nao vale por confirmacao).",
+    };
+  }
+  const resposta = c.resposta_do_venue;
+  const bruto =
+    typeof resposta === "object" && resposta !== null && !Array.isArray(resposta)
+      ? (resposta as Record<string, unknown>).bruto
+      : undefined;
+  const cloid =
+    typeof bruto === "object" && bruto !== null && !Array.isArray(bruto)
+      ? (bruto as Record<string, unknown>).cloid
+      : undefined;
+  if (typeof cloid !== "string" || cloid === "") {
+    return {
+      ok: false,
+      porque:
+        "o venue confirmou a ordem mas nao publicou o `cloid` do preenchimento em `resposta_do_venue.bruto`: " +
+        "sem a chave que o VENUE guardou a marca nao se registe — o `cloid` derivado aqui (do nome da conta) " +
+        "nao e' o que o venue guardou, e um mapa com a chave errada nao liga posicao nenhuma",
+    };
+  }
+  return { ok: true, cloid };
+}

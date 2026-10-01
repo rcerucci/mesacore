@@ -36,7 +36,7 @@ import { spawn } from "node:child_process";
 import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, appendFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { validar, versaoVigente } from "../contracts/esqueleto/framing.ts";
-import { derivarCloid } from "../brokers/hyperliquid/cloid.ts";
+import { cloidDoPreenchimento } from "../brokers/hyperliquid/cloid.ts";
 
 const RAIZ = join(import.meta.dir, "..");
 const argv = process.argv.slice(2);
@@ -520,9 +520,16 @@ function gravarPortas(): void {
 
 async function main(): Promise<void> {
   const casos = join(RAIZ, "brokers", "hyperliquid", "casos", "processo.casos.json");
+  // O CAMINHO DO MAPA DE MARCAS VAI NO AMBIENTE DO CONECTOR — sem isto o mapa escreve-se e ninguem o le'.
+  //
+  // A leitura de mercado (`leitura-do-mercado.ts`, `mapaDeMarcas()`) le' o caminho de `MARCAS_DA_CONTA`, e o
+  // conector e' filho DESTE processo: o ambiente dele passa por aqui. Era `env: process.env`, e ninguem punha
+  // `MARCAS_DA_CONTA` la' — mesmo com o mapa escrito (a marca registada ao confirmar o preenchimento), a
+  // posicao chegava a mesa SEM marca, e uma posicao sem marca e' alheia. O caminho e' O MESMO ficheiro que
+  // este processo escreve (`caminhoDasMarcas()`): nao se inventa formato nenhum, liga-se o que ja' existia.
   const conector = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
     "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(tickMs)],
-    { cwd: RAIZ, env: process.env });
+    { cwd: RAIZ, env: { ...process.env, MARCAS_DA_CONTA: caminhoDasMarcas() } });
   // O `stderr` DO CONECTOR É DRENADO — e isto é uma correcção, não um enfeite. Era um `pipe` que ninguém lia:
   // (a) os diagnósticos dele (as portas, as leituras recusadas) eram INVISÍVEIS no registo do operador — e foi
   // isso que deixou sem resposta a pergunta «porque é que o BTC não foi lido depois de a ficha dele ligar?» no
@@ -662,10 +669,35 @@ async function main(): Promise<void> {
         const id = o?.id === undefined ? "" : String(o.id);
         if (envios.has(id) && (o?.tipo === "desfecho" || o?.tipo === "resolucao")) {
           const envio = envios.get(id)!;
-          const derivado = derivarCloid(String(nomeDaConta), envio.instrumento, envio.referencia);
           appendFileSync(caminhoDosDesfechos, JSON.stringify({ quando: new Date().toISOString(), ...envio, desfecho: o.carga }) + "\n");
-          if (derivado.ok && o?.tipo === "desfecho" && (o.carga?.classificacao === "aceita" || o.carga?.classificacao === "preenchida")) {
-            apontarMarca({ cloid: derivado.cloid, marca: envio.marca, referencia: envio.referencia, instrumento: envio.instrumento });
+          // A MARCA E' NOSSA QUANDO O VENUE CONFIRMA — E A CHAVE E' A QUE ELE GUARDOU.
+          //
+          // O DEFEITO QUE ISTO CORRIGE (medido a 01/10/2026, conta `hl-teste-plugin`): a ordem
+          // `61581177468` foi preenchida (0.00117 @ 84367.0) e o venue devolveu a NOSSA marca no `cloid`
+          // (`resposta_do_venue.bruto.cloid = 0xbf62594cce5cacfd083dd6d15cd97aa8`) — e o mapa de marcas
+          // ficou VAZIO, por duas razoes:
+          //
+          //   1. a guarda comparava a classificacao com `aceita`/`preenchida`, palavras que o conjunto
+          //      FECHADO do contrato NAO tem (`contracts/vocabulario.json`: `aceite`, nunca `aceita`) —
+          //      nenhum desfecho passava, e o mapa nunca se escrevia;
+          //   2. a chave registada era o `cloid` DERIVADO AQUI, do NOME da conta — e o conector deriva-o do
+          //      ENDERECO (`estado.ficha.conta`): valores diferentes (medido: `0xbf62594c...` do venue
+          //      contra `0x349994e8...` do nome). A leitura cruza o mapa com o `cloid` que o venue publica
+          //      em `userFills`: so' a chave DELE liga a posicao a marca.
+          //
+          // Sem marca, a posicao le-se como ALHEIA: a mesa relatou a posicao que ela propria abriu e nao a
+          // geriu durante 121 ciclos. Quem decide o que se faz a uma posicao ALHEIA nao muda (fica como
+          // esta', em `core/ciclo/ciclo.ts`); o que muda e' a mesa passar a reconhecer a sua.
+          if (o?.tipo === "desfecho") {
+            const confirmado = cloidDoPreenchimento(o.carga);
+            if (confirmado.ok) {
+              apontarMarca({ cloid: confirmado.cloid, marca: envio.marca, referencia: envio.referencia, instrumento: envio.instrumento });
+              dizer({ etapa: "carteiro", instrumento: envio.instrumento, referencia: envio.referencia, marca: envio.marca,
+                      marca_registada: true, cloid: confirmado.cloid });
+            } else {
+              dizer({ etapa: "carteiro", instrumento: envio.instrumento, referencia: envio.referencia, marca: envio.marca,
+                      marca_registada: false, porque: confirmado.porque });
+            }
           }
         }
         console.error(`[conector] ${linha.slice(0, 300)}`);

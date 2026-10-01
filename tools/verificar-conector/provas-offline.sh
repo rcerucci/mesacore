@@ -94,6 +94,18 @@ else
   echo "FALHOU"; printf '%s\n' "$saida_h" | grep -i "diverge\|provocacao" | head -5; falhas=$((falhas+1))
 fi
 
+# A POSSE DO PREENCHIMENTO (regressao de 01/10/2026): a marca que o venue devolveu no preenchimento tem de
+# ser registada como NOSSA, e a posicao com essa marca tem de ser GERIDA — nao relatada como alheia. O caso
+# corre a cadeia inteira (desfecho -> mapa -> leitura -> ciclo) nos dois bracos: o antigo (a guarda
+# `aceita`/`preenchida` e a chave derivada do NOME) tem de reproduzir a posicao ALHEIA; o novo, reconhece-la.
+declarar "posse do preenchimento (defeito de 01/10/2026)"
+saida_p=$(bun tools/verificar-conector/posse-do-preenchimento.ts 2>&1); p_rc=$?
+if [ "$p_rc" -eq 0 ] && printf '%s\n' "$saida_p" | grep -qE "posse do preenchimento: [0-9]+ de [0-9]+ passaram"; then
+  echo "OK   $(printf '%s\n' "$saida_p" | tail -1)"
+else
+  echo "FALHOU (exit $p_rc)"; printf '%s\n' "$saida_p" | grep -E "^FALHA" | head -5; falhas=$((falhas+1))
+fi
+
 # 2. A porta das dependencias: o conector importa `contracts`, NUNCA `core` (RN-E1).
 declarar "porta: imports do conector declarados na raiz"
 saida_d=$(bun tools/verificar-conector/porta-das-dependencias.ts 2>&1)
