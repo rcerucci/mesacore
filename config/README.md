@@ -121,17 +121,21 @@ aplicação por outra (abaixo).
 # 1. a pasta (0700) — a MESMA de sempre; o `install -d` nao se repete por venue
 install -d -m 700 ~/.config/mesacore/credenciais
 
-# 2. um ficheiro por valor, escrito SEM passar pela linha de comando
-for campo in client_id client_secret access_token refresh_token; do
-  install -m 600 /dev/null ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
-  read -rs -p "ctrader_mesa_$campo: " V && printf '%s' "$V" > ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
-  unset V
-  chmod 600 ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
+# 2. um valor de cada vez, por um programa que esta' no disco
+#    (e nao por um bloco de comandos colado: um `read` dentro de um bloco ENGOLE as linhas seguintes do
+#     proprio bloco, e o que fica gravado e' texto de comando — medido a 01/10/2026)
+bash tools/guardar-credencial.sh gravar client_id
+bash tools/guardar-credencial.sh gravar client_secret
+bash tools/guardar-credencial.sh gravar access_token
+bash tools/guardar-credencial.sh gravar refresh_token
 
-  # 3. conferir que so o dono le (tem de dizer 600 em todos)
-  stat -c '%a %n' ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
-done
+# 3. conferir sem mostrar valor nenhum: modo, tamanho e FORMA de cada um
+bash tools/guardar-credencial.sh conferir
 ```
+
+O `guardar-credencial.sh` mostra a **forma** do que foi colado (comprimento e os primeiros caracteres), pergunta
+antes de gravar, escreve com modo 600, e no fim confere. O valor nunca aparece no ecrã, nunca passa por um
+argumento de comando (logo não fica no histórico do shell nem no `ps`) e nunca é impresso pelo programa.
 
 **Porque um ficheiro por valor, e não um só com os quatro dentro:** o venue **RODA o par de tokens** e reescreve
 os ficheiros deles. Com tudo num ficheiro só, a rotação passava por cima do `client_secret` da aplicação.
