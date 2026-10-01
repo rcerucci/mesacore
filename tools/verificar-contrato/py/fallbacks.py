@@ -23,9 +23,12 @@ razao que a prosa do `plugin.ts`.
 COBERTURA DECLARADA, do lado Python: o padrao do `or` exige que o literal FECHE a expressao (`x = a or "b"`,
 `y = (b or [])`), porque foi assim que ele deixou de dar o primeiro falso positivo —
 `isinstance(url, str) or ":" not in url` (`brokers/ctrader/ficha.py`, medido a 01/10/2026) e' uma CONDICAO, nao
-um valor por omissao. O que fica por cobrir, dito: `if a or "literal":` (um literal como operando de um `if`,
-que e' outro defeito — um teste que e' sempre verdadeiro — e nao uma substituicao de valor em falta). Preferiu-se
-o falso negativo declarado ao falso positivo, porque um portao que grita com codigo certo deixa de ser lido.
+um valor por omissao. O que fica por cobrir, dito: (a) `if a or "literal":` (um literal como operando de um `if`,
+que e' outro defeito — um teste que e' sempre verdadeiro); e (b) um `get(k, "literal")` cujo ARGUMENTO tenha
+parenteses encaixados — o padrao `[^()]*` nao atravessa `algo(x)`, e foi assim que um
+`MODELO_DE_POSICAO.get(str(conta.get("tipo_de_conta")), "exchange")` (em `brokers/ctrader/sonda.py`) escapou a'
+catraca e so' foi encontrado a olho, depois de a catraca ter reprovado os dois vizinhos. Preferiu-se o falso
+negativo declarado ao falso positivo, porque um portao que grita com codigo certo deixa de ser lido.
 
 Uso:  uv run python tools/verificar-contrato/py/fallbacks.py [--listar|--actualizar-baseline|--exigir-zero]
       --listar              imprime cada sitio (ficheiro:linha + o codigo, sem comentarios)

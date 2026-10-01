@@ -125,7 +125,16 @@ def montar_manifesto(
 
     Recebe os numeros ja' em texto decimal (o contrato quer decimais textuais, nao binarios flutuantes).
     """
-    modelo = MODELO_DE_POSICAO.get(str(conta.get("tipo_de_conta")), "exchange")
+    # O MODELO DE POSICAO NAO SE INVENTA. `accountType` e' do venue (HEDGED/NETTED) e o mapa e' fechado: um
+    # valor que nao esteja nele RECUSA, em vez de virar um modelo por omissao. (Havia aqui um `.get(..., "exchange")`
+    # — um fallback que dizia a' mesa que o venue era de tipo `exchange` quando nao se sabia o que ele era.)
+    tipo_do_venue = str(conta.get("tipo_de_conta"))
+    if tipo_do_venue not in MODELO_DE_POSICAO:
+        raise ValueError(
+            f"o venue declarou `accountType` = {tipo_do_venue!r}, que nao esta' no mapa conhecido "
+            f"({', '.join(MODELO_DE_POSICAO)}): sem modelo de posicao nao ha' manifesto — e nao se adivinha um"
+        )
+    modelo = MODELO_DE_POSICAO[tipo_do_venue]
 
     # A ALAVANCAGEM NAO SE INVENTA. O venue declara-a na conta (`leverageInCents`, com o helper da biblioteca a
     # traduzi-la); sem ela, a sonda RECUSA — o contrato exige uma alavancagem maxima positiva por instrumento, e
@@ -166,7 +175,7 @@ def montar_manifesto(
         "versao": versao_do_contrato,
         "instrumentos": instrumentos,
         "sabe_ajustar_alavancagem": False,  # nao ha' verbo de ajuste neste venue (RN-CT16)
-        "modos_de_margem": MODOS_DE_MARGEM.get(modelo, ["cruzado"]),
+        "modos_de_margem": MODOS_DE_MARGEM[modelo],  # o mapa e' fechado nos dois sentidos: `modelo` veio dele
         "minimo_de_valor_por_ordem": _decimal(piso_global),
         "modelo_de_posicao": modelo,
         "tipos_de_ordem": tipos_de_ordem,
@@ -318,6 +327,9 @@ def _medir_profundidade(transporte: Tr.Transporte, account_id: int, ident: int, 
             evento = chegadas.get(timeout=restante)
         except queue.Empty:
             continue
-        lados = getattr(evento, "new_quotes", None) or []
-        if lados:
-            return len(lados)
+        lados = getattr(evento, "new_quotes", None)
+        if not lados:
+            # Um retrato sem cotacoes novas nao diz quantos niveis o livro tem: espera-se pelo proximo, em vez de
+            # se contar o que nao veio. (Aqui havia um `... or []`, que transformava «nao veio» em «zero niveis».)
+            continue
+        return len(lados)
