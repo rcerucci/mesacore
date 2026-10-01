@@ -109,3 +109,58 @@ e **recusa** — com motivo nomeado — quando:
 São **9 casos**, todos offline, todos a passar (`credencial: 9 casos · 9 ok · 0 divergentes`), e entram na
 bancada do conector. A varredura do repositório faz-se **em memória, ficheiro a ficheiro** — o valor nunca
 entra numa linha de comando (nem no `ps`, nem no histórico).
+
+## O cTrader: quatro ficheiros, o MESMO sítio, e o nome é da APLICAÇÃO
+
+O conector cTrader tem **quatro** valores (`client_id`, `client_secret`, `access_token`, `refresh_token`) e cada
+um vive no **seu** ficheiro. O sítio é o mesmo de sempre — `~/.config/mesacore/credenciais/` — e o que muda é o
+nome: `ctrader_mesa_<campo>.key`. O nome da pasta é o da conta na Hyperliquid por uma razão, e aqui é o da
+aplicação por outra (abaixo).
+
+```bash
+# 1. a pasta (0700) — a MESMA de sempre; o `install -d` nao se repete por venue
+install -d -m 700 ~/.config/mesacore/credenciais
+
+# 2. um ficheiro por valor, escrito SEM passar pela linha de comando
+for campo in client_id client_secret access_token refresh_token; do
+  install -m 600 /dev/null ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
+  read -rs -p "ctrader_mesa_$campo: " V && printf '%s' "$V" > ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
+  unset V
+  chmod 600 ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
+
+  # 3. conferir que so o dono le (tem de dizer 600 em todos)
+  stat -c '%a %n' ~/.config/mesacore/credenciais/ctrader_mesa_$campo.key
+done
+```
+
+**Porque um ficheiro por valor, e não um só com os quatro dentro:** o venue **RODA o par de tokens** e reescreve
+os ficheiros deles. Com tudo num ficheiro só, a rotação passava por cima do `client_secret` da aplicação.
+
+**Porque `ctrader_mesa_*` e não o nome da conta:** os tokens deste venue são do **utilizador (cTID)**, não da
+conta — depois do `ApplicationAuth` (`client_id` + `client_secret`), a lista de contas **vem do token**
+(`ProtoOAGetAccountListByAccessTokenReq`), e a conta escolhe-se pelo `ctidTraderAccountId` **na ficha do
+conector**. Um conjunto de credenciais serve contas de demonstração **e** contas reais; trocar de conta é trocar
+um número declarado, não um ficheiro. Na Hyperliquid é o contrário — a chave é de **uma** conta, e é por isso que
+lá o ficheiro se chama `hl-teste-plugin.key` (o nome da conta).
+
+**Sobre o cifrado**: o que esta página diz acima (o ficheiro `0600` fora de pasta sincronizada *ou* cifrado) é
+decisão declarada do dono **na passagem a produção**, e vale igual aqui. Hoje, medido: o ficheiro da Hyperliquid
+tem 66 bytes, uma linha, `0x` + 64 hexadecimais, e **não tem cifra nenhuma** — o carregador lê o valor cru.
+
+E no `brokers/ctrader/<nome>.conector.json`:
+
+```json
+"credencial": {
+  "referencia": "ctrader_mesa",
+  "arquivos": {
+    "client_id":      "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_client_id.key",
+    "client_secret":  "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_client_secret.key",
+    "access_token":   "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_access_token.key",
+    "refresh_token":  "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_refresh_token.key"
+  }
+}
+```
+
+As recusas do carregador são as **mesmas nove** da tabela acima — a mesma regra, quatro ficheiros em vez de um, e
+o motivo nomeia **qual** dos quatro falhou (ex.: ``[client_secret] o ficheiro da credencial é legível por grupo
+ou por outros (modo 644)``).
