@@ -411,4 +411,46 @@ barra, só o registo diferente): **com semente** → `nada · entrada_ja_feita_n
 
 **O que fica por fazer, dito:** (a) a prova da semente não está no portão — a bancada prova a função e a regra, e
 o ensaio de hoje correu sobre uma operação real da observação; uma bancada hermética (operação de fixture, dois
-processos) é o degrau seguinte; (b) `ao_desligar` continua promessa sem cumpridor (nota no conferidor de fichas).
+processos) é o degrau seguinte; (b) ~~`ao_desligar` continua promessa sem cumpridor~~ — **cumprido na nota
+seguinte** (a retirada passou a fechar a posição, e com bancada própria no conferidor de fichas ainda por fazer).
+
+---
+
+## Nota datada — 30/09/2026, 23:1x (-03) — o primeiro bug achado EM CORRIDA: pares lidos e não decidíveis; e a retirada que fecha
+
+*(Escrita por quem trabalha nesta árvore — sessão `20260930_183913_07925d`, profile `appbuilder`.)*
+
+A corrida de risco (testnet, `enviar: true`, 2 pares) mostrou em minutos o que nenhuma bancada offline mostrava.
+
+**1. O bug — um par lido e não decidível é um par que não existe.** O conector entrega UMA leitura por par e por
+ciclo, e o operador escrevia a operação a cada entrega levando só a leitura do par que falou (os outros entravam
+`falhas: {leitura: true}`, RN-D7). Como o conector lê os pares por **ordem alfabética**, o último a escrever era
+sempre o mesmo. Medido: o BTC foi lido com números em 5 voltas seguidas e a mesa viu-o **4 em 4 ciclos** como
+`sem_leitura` — e `sem_leitura` impede abrir e fechar. Metade do sistema lia e calculava para nada.
+
+Corrigido: o operador guarda as leituras do ciclo de leitura em curso (`leiturasDaVolta`, válidas por `tickMs`) e
+a operação leva as de TODOS os pares activos. A RN-D7 fica no que ela quer dizer — o ausente é ausente, e não é o
+retrato que já lá estava: passado um ciclo inteiro sem um par falar, ele entra sem leitura. Medido depois do
+reinício: `BTC normal · SOL normal` em todos os ciclos, e a operação com leitura nos dois pares.
+
+**2. A retirada fecha — e o interruptor continua a mandar.** Decisão do dono: retirar um par e fechar a posição
+dele são o MESMO acto. O operador detecta a retirada e, enquanto a posição não estiver plana, o par **fica na
+operação** com a proposta `caixa` (o fecho a mercado da casa — um dos quatro lados do contrato, RN-T4), o mandato
+governa-o e o carteiro continua autorizado a levar a boleta; só quando ele estiver plano é que o par sai. Sem
+`ao_desligar` declarado vale a regra do dono; `"manter"` é a declaração EXPLÍCITA de deixar a posição viva (e o log
+diz que ficou); um valor que não se entende **recusa** — o que está em jogo é uma posição viva. E `enviar: false`
+continua a significar «nada sai»: quando o interruptor cruza com uma retirada que manda fechar, o fecho **não sai**
+e o carteiro di-lo, nomeando a retirada.
+
+**Achado no caminho, e era uma armadilha:** um par retirado continua a ser lido pelo conector (a conta continua a
+listá-lo), e essas voltas contavam como «inúteis» — três delas e o operador escrevia `prazo` e **terminava a
+corrida**. Agora só é inútil um instrumento que a conta não conhece.
+
+**Medido ao vivo** (testnet, conta de teste, `enviar: true`): `retirado_a_fechar · BTC` → `retirada_cumprida · BTC ·
+"sem posicao viva: o par sai da operacao"`; operação e config passam a `['SOL']`; registo `em_vigor ->
+fora_do_mandato · BTC`. No sentido inverso (religar): `fora_do_mandato -> em_vigor · BTC`, com os dois pares
+decidíveis. A corrida ficou viva em todos os passos (1 operador · 1 mesa · 1 conector).
+
+**O que fica por provar, dito:** o fecho de uma retirada **com posição viva** não foi exercitado (não houve
+posição: o `sigma` só entra no flip) — o caminho é o mesmo código, com a posição presente e a boleta `caixa` a
+sair. E a lógica do operador continua sem bancada no portão: o que a prova é a corrida.

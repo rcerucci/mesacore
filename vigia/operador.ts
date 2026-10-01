@@ -286,6 +286,63 @@ const puxadasEm = new Map<string, number>();
  */
 let mandatoEscrito: Record<string, unknown> | null = null;
 
+/**
+ * AS LEITURAS DA VOLTA EM CURSO, por par — e é isto que faz a mesa poder decidir sobre QUALQUER par.
+ *
+ * O conector entrega UMA leitura por par e por ciclo (`--leitura-a-cada`), e o operador escreve a operação a cada
+ * entrega. A operação levava a leitura do par que falou nessa volta e `falhas: { leitura: true }` nos outros —
+ * e como o conector lê os pares por ordem alfabética, o ÚLTIMO a escrever era sempre o mesmo. Medido na corrida de
+ * 30/09/2026 (2 pares, H1): o BTC foi lido com números em 5 voltas seguidas e a mesa viu-o **4 em 4 ciclos**
+ * como `sem_leitura` — logo nunca podia decidir sobre ele. Um par lido e não decidível é um par que não existe.
+ *
+ * A leitura de um par vale enquanto for do CICLO DE LEITURA EM CURSO (`tickMs`): passado um ciclo inteiro sem
+ * ele falar, o par não tem leitura NESTA volta e a operação di-lo. É o que a RN-D7 quer dizer com «nunca a
+ * anterior» — o ausente é ausente, e não é o retrato que já lá estava.
+ */
+const leiturasDaVolta = new Map<string, { leitura: Record<string, unknown>; recebida_ms: number; respondeu: boolean }>();
+const VALIDADE_DA_LEITURA_MS = tickMs;
+
+/**
+ * AS RETIRADAS, par a par: um par que estava ligado e deixou de estar, e o que a ficha dele manda fazer à posição.
+ *
+ * Decisão do dono (30/09/2026): **retirar um par FECHA a posição dele** — a retirada e o fecho são o mesmo acto, e
+ * um par retirado com posição viva seria uma posição sem ninguém a governá-la. Enquanto o fecho não estiver
+ * cumprido o par FICA NA OPERAÇÃO (com a proposta `caixa`, que é o fecho a mercado da casa) e o carteiro continua
+ * autorizado a levá-lo; só quando ele estiver plano é que o par sai — e sai com linha no log.
+ *
+ * Sem `ao_desligar` declarado na ficha, vale a regra do dono (fechar). `ao_desligar: "manter"` é uma declaração
+ * EXPLÍCITA de deixar a posição viva, e então o par sai e o log diz que a posição ficou — não se cala.
+ */
+const retiradas = new Map<string, { desde_ms: number; fechar: boolean; motivo: string }>();
+let ligadasNaVoltaAnterior: string[] = [];
+
+/** Detecta as retiradas desta volta e alimenta `retiradas`. Um par que desapareça do disco também é uma retirada,
+ *  e essa FECHA: a regra do dono não pode depender de a ficha ainda existir para ser lida — desaparecer a ficha
+ *  de um par com posição viva é o caso em que a posição mais precisa de ser fechada. */
+function registarRetiradas(ligadasAgora: string[]): void {
+  const todas = lerFichasDaConta(nomeDaConta);
+  for (const nome of ligadasNaVoltaAnterior) {
+    if (ligadasAgora.includes(nome) || retiradas.has(nome)) continue;
+    const ficha = todas.find((f) => String(f.cabecalho.instrumento) === nome);
+    const declarado: unknown = ficha?.cabecalho.ao_desligar;
+    if (declarado !== undefined && declarado !== "fechar" && declarado !== "manter") {
+      throw new Error(
+        `a ficha de ${nome} declara \`ao_desligar: ${JSON.stringify(declarado)}\`: os valores sao "fechar" ou ` +
+          "\"manter\" — um valor que nao se entende nao se adivinha, porque o que esta' em jogo e' uma posicao viva",
+      );
+    }
+    const fechar = declarado !== "manter";
+    const motivo = ficha === undefined
+      ? "a ficha desapareceu do disco com o par ligado: fecha-se pela regra do dono"
+      : declarado === "manter"
+        ? "a ficha diz `ao_desligar: manter`: o par sai e a posicao fica"
+        : "retirado a quente: a posicao fecha com a retirada (regra do dono)";
+    retiradas.set(nome, { desde_ms: Date.now(), fechar, motivo });
+    dizer({ etapa: "operador", instrumento: nome, veredicto: fechar ? "retirado_a_fechar" : "retirado_a_manter", porque: motivo });
+  }
+  ligadasNaVoltaAnterior = ligadasAgora;
+}
+
 function caminhoDasVelas(ficha: Ficha): string | null {
   if (pastaDoMercado === null) return null;
   return join(pastaDoMercado, `velas-${String(ficha.cabecalho.instrumento)}-${String(ficha.cabecalho.relogio)}.jsonl`);
@@ -415,6 +472,27 @@ function correrSetup(leitura: unknown, ficha: Ficha, manifesto: ManifestoDoSetup
 // A OPERAÇÃO — escrita ATÓMICA: temporário + rename. Uma leitura a meio de uma escrita daria à mesa um mundo
 // que não existiu, e a mesa decide sobre esta leitura.
 
+/** A leitura do venue na FORMA COMPACTA que o ciclo lê: o venue chama-lhe `estado` e o contrato do ciclo
+ *  chama-lhe `estado_do_mercado` — foi isto que fez o ciclo recusar a primeira operação escrita
+ *  (`mercado/m-1: campo_obrigatorio_ausente`). Converte-se num sítio só, e não se «arranja» o contrato para
+ *  acomodar o nome do venue. */
+function leituraCompacta(doVenue: Record<string, unknown>): Record<string, unknown> {
+  const leitura: Record<string, unknown> = {
+    instrumento: doVenue.instrumento,
+    tempo_do_venue_ms: doVenue.tempo_do_venue_ms,
+    idade_do_dado_ms: doVenue.idade_do_dado_ms,
+    estado_do_mercado: doVenue.estado,
+    equity: doVenue.equity,
+  };
+  // AS ORDENS VIVAS (contrato 1.9.0): vao com a leitura, sem serem tocadas — o conector ja' as validou contra o
+  // contrato antes de as emitir, e a mesa precisa delas para saber o que esta' pendurado.
+  leitura.ordens_abertas = doVenue.ordens_abertas;
+  for (const campo of ["bid", "ask", "ultimo", "posicao"] as const) {
+    if (doVenue[campo] !== undefined) leitura[campo] = doVenue[campo];
+  }
+  return leitura;
+}
+
 function escreverOperacao(conteudo: unknown): void {
   const dir = dirname(para);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
@@ -489,17 +567,23 @@ async function main(): Promise<void> {
       }
       const referencia = String(referenciaBruta);
       if (referencia === "" || envios.has(referencia)) continue; // sem referencia nao ha ordem; e nao se repete
-      // A FICHA DE AGORA, não a do arranque: um par desligado a meio da corrida deixa de autorizar envio, e a
-      // boleta dele fica no registo com a razão dita.
-      const ficha = fichasLigadasAgora().find((f) => String(f.cabecalho.instrumento) === instrumento);
+      // A FICHA DE AGORA, relida — e a da CONTA (nao so' as ligadas): um par retirado continua a precisar de
+      // levar o FECHO da posicao, e a ficha dele e' que diz o que a retirada manda.
+      const ficha = lerFichasDaConta(nomeDaConta).find((f) => String(f.cabecalho.instrumento) === instrumento);
+      const emRetiradaAFechar = retiradas.get(instrumento)?.fechar === true;
+      // O INTERRUPTOR MANDA, e o fecho de uma retirada NAO e' excepcao a ele: a ficha diz `ao_desligar: fechar`
+      // (o fecho faz parte da retirada) mas `enviar: false` continua a significar "nada sai". Quando as duas
+      // coisas se cruzam, o fecho nao sai e o carteiro DI-LO — uma posicao viva em maos tem de se ler no log.
       const autorizado = ficha !== undefined && ficha.cabecalho.enviar === true;
       const marca = Number(boleta.marca_de_posse);
       envios.set(referencia, { marca, referencia, instrumento, recusado: !autorizado });
       if (!autorizado) {
         dizer({ etapa: "carteiro", instrumento, referencia, enviei: false,
                 porque: ficha === undefined
-                  ? `o par ${instrumento} nao esta' ligado: a boleta fica no registo`
-                  : `a ficha de ${instrumento} diz \`enviar: ${JSON.stringify(ficha.cabecalho.enviar)}\`: a boleta fica no registo` });
+                  ? `a ficha de ${instrumento} nao existe nesta conta: a boleta fica no registo`
+                  : emRetiradaAFechar
+                    ? `o par foi RETIRADO e a ficha manda fechar a posicao (\`ao_desligar: fechar\`), mas diz \`enviar: ${JSON.stringify(ficha.cabecalho.enviar)}\`: o fecho NAO saiu e a posicao fica em maos`
+                    : `a ficha de ${instrumento} diz \`enviar: ${JSON.stringify(ficha.cabecalho.enviar)}\`: a boleta fica no registo` });
         continue;
       }
       const linha = JSON.stringify({ contrato: versaoVigente(), tipo: "boleta", id: referencia, carga: boleta });
@@ -593,9 +677,33 @@ async function main(): Promise<void> {
       // Reler custa um `readdir` por leitura e poupa um reinicio — e é a mesma lista que vai na operação E na
       // config da mesa, que era o que faltava para o par ligado a quente não fazer a mesa recusar.
       const agoraLigadas = fichasLigadasAgora();
+      // AS FICHAS DA CONTA, RELIDAS AGORA — as mesmas que a operação e a config vão usar, e que incluem as fichas
+      // de pares RETIRADOS (precisas enquanto a posição deles não estiver fechada).
+      const fichasDaConta = lerFichasDaConta(nomeDaConta);
+      // AS RETIRADAS DESTA VOLTA (antes de tudo o resto): quem estava ligado e deixou de estar entra em
+      // `retiradas`, e o que a ficha dele manda fazer à posição fica decidido aqui, uma vez.
+      registarRetiradas(agoraLigadas.map((f) => String(f.cabecalho.instrumento)));
       const ficha = agoraLigadas.find((f) => String(f.cabecalho.instrumento) === instrumento);
       if (ficha === undefined) {
-        // Par que o conector leu e a conta nao tem ligado: nao serve. E se isto se repetir, os pares ligados
+        // UM PAR DA CONTA QUE NAO ESTA' LIGADO NESTA VOLTA (retirado, ou a fechar): a leitura dele nao e' "inutil"
+        // — e' a leitura de um par que esta' a ser retirado, e quem a trata e' o bloco das retiradas. Contar isto
+        // como inutil MATAVA A CORRIDA: tres voltas de um par retirado e o operador escrevia `prazo` e terminava.
+        const conhecidoDaConta = fichasDaConta.some((f) => String(f.cabecalho.instrumento) === instrumento);
+        if (conhecidoDaConta) {
+          // A LEITURA GUARDA-SE, mesmo sem o par estar ligado: e' ela que diz ao bloco da retirada se a posicao
+          // ja' esta' plana. Sem isto, um par retirado ficava preso para sempre — na operacao, sem leitura e sem
+          // fecho, porque o bloco da retirada nunca sabia se havia posicao. (`respondeu: false` porque o setup
+          // deste par NAO foi perguntado nesta volta: e' a verdade, e nao um valor por omissao.)
+          leiturasDaVolta.set(instrumento, {
+            leitura: leituraCompacta(msg.carga as Record<string, unknown>),
+            recebida_ms: Date.now(),
+            respondeu: false,
+          });
+          dizer({ etapa: "operador", instrumento, veredicto: "par_nao_ligado",
+                  porque: "o par esta' na conta mas nao esta' ligado: quem trata da leitura dele e' a retirada" });
+          continue;
+        }
+        // Par que o conector leu e a conta nao tem: nao serve. E se isto se repetir, os pares ligados
         // que ninguem le' ficam a espera de nada — o prazo corta isso.
         inuteis += 1;
         if (inuteis >= LEITURAS_INUTEIS) {
@@ -632,24 +740,7 @@ async function main(): Promise<void> {
       if (voltas >= voltasPedidas) return terminar();
       voltas += 1;
 
-      // A LEITURA VAI NA FORMA COMPACTA, que é a que o ciclo lê: o venue chama-lhe `estado` e o contrato do
-      // ciclo chama-lhe `estado_do_mercado` — foi isto que fez o ciclo recusar a primeira operação escrita
-      // (`mercado/m-1: campo_obrigatorio_ausente`). Converte-se AQUI, num sítio só, e não se "arranja" o
-      // contrato para acomodar o nome do venue.
-      const doVenue = msg.carga as Record<string, unknown>;
-      const leitura: Record<string, unknown> = {
-        instrumento: doVenue.instrumento,
-        tempo_do_venue_ms: doVenue.tempo_do_venue_ms,
-        idade_do_dado_ms: doVenue.idade_do_dado_ms,
-        estado_do_mercado: doVenue.estado,
-        equity: doVenue.equity,
-      };
-      // AS ORDENS VIVAS (contrato 1.9.0): vao com a leitura, sem serem tocadas — o conector ja' as validou
-      // contra o contrato antes de as emitir, e a mesa precisa delas para saber o que esta' pendurado.
-      leitura.ordens_abertas = doVenue.ordens_abertas;
-      for (const campo of ["bid", "ask", "ultimo", "posicao"] as const) {
-        if (doVenue[campo] !== undefined) leitura[campo] = doVenue[campo];
-      }
+      const leitura = leituraCompacta(msg.carga as Record<string, unknown>);
 
       const manifestoDaFicha = manifestoDe(ficha);
       // AS VELAS DESTE PAR, GARANTIDAS AGORA. Sem velas o setup não propõe (e diz por quê) — mas um par ligado
@@ -674,6 +765,9 @@ async function main(): Promise<void> {
           recebida_ms: Date.now(),
         });
       }
+      // A LEITURA DESTA VOLTA ENTRA NO MAPA DO CICLO. É isto que faz os OUTROS pares serem decidíveis: sem ela, a
+      // operação saía com a leitura de um par e o silêncio nos restantes (ver a nota do `leiturasDaVolta`).
+      leiturasDaVolta.set(instrumento, { leitura, recebida_ms: Date.now(), respondeu });
 
       // A OPERAÇÃO LEVA TODAS AS FICHAS LIGADAS, e não só a que falou nesta volta: a mesa decide, por ciclo,
       // sobre o que está na operação — e um par ligado que desaparecesse do ficheiro era um par que a mesa
@@ -682,8 +776,14 @@ async function main(): Promise<void> {
       for (const f of agoraLigadas) {
         const nome = String(f.cabecalho.instrumento);
         const eOGueFalou = nome === instrumento;
+        // A LEITURA DESTE PAR: a que acabou de chegar (se foi ele a falar), ou a do MESMO ciclo de leitura (se
+        // falou primeiro — o conector entrega uma por par e por ciclo). Fora do ciclo não há leitura, e a operação
+        // di-lo; o que não se faz é servir um retrato antigo como se fosse de agora.
+        const guardada = leiturasDaVolta.get(nome);
+        const fresca =
+          guardada !== undefined && Date.now() - guardada.recebida_ms <= VALIDADE_DA_LEITURA_MS ? guardada : null;
         instrumentos[nome] = {
-          ...(eOGueFalou ? { leitura } : {}),
+          ...(fresca !== null ? { leitura: fresca.leitura } : {}),
           // AS FALHAS: ou o conector disse que nao houve nenhuma ausencia (mapa sem entrada = leitura completa,
           // e o operador nao a inventa), ou vao as que ele declarou. Sem leitura, sem falhas.
           // AS FALHAS, na forma do contrato: a leitura que existe nao falhou; o setup respondeu SE RESPONDEU
@@ -695,7 +795,7 @@ async function main(): Promise<void> {
           // aqui como `setup_respondeu: false`, o que poe o instrumento em `congelada` (nao abre, NAO FECHA,
           // e avisa o dono). Medido na observacao de 30/09/2026: 11 voltas seguidas `congelada` com o setup a
           // funcionar exactamente como devia. Uma posicao viva ficava sem defesa por causa de uma traducao.
-          falhas: eOGueFalou ? { leitura: false, setup_respondeu: respondeu } : { leitura: true },
+          falhas: fresca !== null ? { leitura: false, setup_respondeu: fresca.respondeu } : { leitura: true },
           divergente: eOGueFalou ? false : false,
           // AS MARCAS DE POSSE QUE A MESA CONHECE (RN-T16.1, D-008): do mapa marca -> ficha, que se constroi
           // do que NOS enviamos (a boleta + a resolucao). Sem marca conhecida a posicao le-se como ALHEIA, e
@@ -726,6 +826,74 @@ async function main(): Promise<void> {
           ...(eOGueFalou && erro !== null ? { erro_do_setup: erro } : {}),
         };
       }
+
+      // ------------------------------------------------------------------------------------------------
+      // OS PARES EM RETIRADA QUE AINDA TÊM POSIÇÃO FICAM NA OPERAÇÃO — com o fecho a mercado proposto.
+      //
+      // Decisão do dono (30/09/2026): a retirada de um par e o fecho da posição dele são o MESMO acto. Um par que
+      // saísse da operação com posição viva ficava sem ninguém a governá-la. Enquanto o fecho não estiver cumprido o
+      // par continua a ser reportado (com `caixa`), o mandato continua a governá-lo (a config inclui-o) e o carteiro
+      // continua autorizado a levar a boleta. `caixa` é um dos quatro lados do contrato (RN-T4) e é o fecho a
+      // mercado da casa — o mesmo que o encerramento usa.
+      for (const [nome, r] of [...retiradas]) {
+        if (agoraLigadas.some((f) => String(f.cabecalho.instrumento) === nome)) continue; // ainda ligado: nao e' retirada
+        const guardada = leiturasDaVolta.get(nome);
+        const fresca =
+          guardada !== undefined && Date.now() - guardada.recebida_ms <= VALIDADE_DA_LEITURA_MS ? guardada : null;
+        const posicao = fresca === null ? undefined : (fresca.leitura as Record<string, unknown>).posicao;
+        if (!r.fechar) {
+          dizer({ etapa: "operador", instrumento: nome, veredicto: "retirado_com_posicao_em_maos", porque: r.motivo });
+          retiradas.delete(nome);
+          continue;
+        }
+        if (fresca !== null && (posicao === undefined || posicao === null)) {
+          dizer({ etapa: "operador", instrumento: nome, veredicto: "retirada_cumprida",
+                  porque: "sem posicao viva: o par sai da operacao" });
+          retiradas.delete(nome);
+          continue;
+        }
+        const fichaDaRetirada = fichasDaConta.find((f) => String(f.cabecalho.instrumento) === nome);
+        if (fichaDaRetirada === undefined) {
+          dizer({ etapa: "operador", instrumento: nome, veredicto: "retirada_sem_ficha",
+                  porque: "a ficha desapareceu: sem ela o par nao tem mandato (RN-A1) e a operacao nao o pode reportar — a posicao fica por fechar" });
+          continue;
+        }
+        const passo = MS_DO_RELOGIO[String(fichaDaRetirada.cabecalho.relogio)];
+        const instanteDoVenue = fresca === null ? null : Number((fresca.leitura as Record<string, unknown>).tempo_do_venue_ms);
+        const barra = passo === undefined || instanteDoVenue === null || !Number.isFinite(instanteDoVenue)
+          ? undefined
+          : Math.floor(instanteDoVenue / passo) * passo;
+        instrumentos[nome] = {
+          ...(fresca !== null ? { leitura: fresca.leitura } : {}),
+          falhas: fresca !== null ? { leitura: false } : { leitura: true },
+          divergente: false,
+          marcas_nossas_conhecidas: marcasConhecidasDaConta(nome),
+          relogio: String(fichaDaRetirada.cabecalho.relogio),
+          ficha: `${fichaDaRetirada.setup}_v${String(manifestoDe(fichaDaRetirada).versao).split(".")[0]}`,
+          template: resolverTemplate(manifestoDe(fichaDaRetirada), fichaDaRetirada),
+          parametros: fichaDaRetirada.constantes,
+          risco: {
+            saldo_pct: fichaDaRetirada.cabecalho.saldo_pct,
+            alavancagem: fichaDaRetirada.cabecalho.alavancagem,
+            bandas: fichaDaRetirada.cabecalho.bandas,
+            prazo_de_resposta_ms: fichaDaRetirada.cabecalho.prazo_de_resposta_ms,
+          },
+          ...(barra === undefined
+            ? {}
+            : {
+                proposta: {
+                  setup: { nome: fichaDaRetirada.setup, versao: manifestoDe(fichaDaRetirada).versao },
+                  lado: "caixa",
+                  barra_ms: barra,
+                },
+              }),
+        };
+        dizer({ etapa: "operador", instrumento: nome, veredicto: "retirada_a_fechar",
+                porque: barra === undefined
+                  ? "sem leitura (ou sem instante do venue) nesta volta: o fecho nao se pode compor — a conta tem de continuar a ler o par (`conta.instrumentos`)"
+                  : "posicao viva: o par fica na operacao com o fecho a mercado proposto (`caixa`)" });
+      }
+
       // A CONFIG DA MESA, gerada das fichas (o `--config` do core ainda le a ficha num objecto so', D-014).
       // E' uma VISTA: os valores vem das fichas, e nenhum e' inventado aqui.
       //
@@ -733,7 +901,10 @@ async function main(): Promise<void> {
       // governa faz a mesa RECUSAR a operação inteira e morrer (`instrumento sem mandato do dono: BTC`), medido
       // a 30/09/2026. Operação e config saem sempre do mesmo conjunto, ou não sai nenhuma.
       const fichasParaAMesa: Record<string, unknown> = {};
-      for (const f of agoraLigadas) {
+      // AS LIGADAS **E** AS EM RETIRADA QUE AINDA FECHAM: o mandato tem de governar tudo o que a operação
+      // reporta — e a operação reporta os pares em retirada até a posição deles estar fechada (senão a mesa
+      // recusava a operação inteira, que é o modo de falha que já se pagou uma vez).
+      for (const f of [...agoraLigadas, ...fichasDaConta.filter((f) => retiradas.has(String(f.cabecalho.instrumento)))]) {
         fichasParaAMesa[String(f.cabecalho.instrumento)] = {
           saldo_pct: f.cabecalho.saldo_pct,
           alavancagem: f.cabecalho.alavancagem,

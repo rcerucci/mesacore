@@ -59,9 +59,17 @@ def padrao_do_instrumento():
 
 # Chaves que NINGUÉM lê mas que estão à espera de decisão do dono: são reportadas, não reprovadas — ficar
 # escondidas era pior (o dono acreditaria num comportamento que não existe).
-A_ESPERA_DE_DECISAO = {
-    "ao_desligar": "documentada no `fichas/README.md` como decisão do dono («par desligado com posição viva ⇒ "
-                   "propõe `caixa`») e NENHUM código a lê: a ficha com `run:false` nunca é corrida",
+#
+# HOJE ESTÁ VAZIO, e é bom sinal: a última que aqui vivia (`ao_desligar`) passou a ser lida pelo operador (que
+# fecha a posição de um par retirado a quente) e desceu para `OPCIONAIS_LIDAS`, com os valores conferidos.
+A_ESPERA_DE_DECISAO = {}
+
+# CHAVES OPCIONAIS QUE ALGUÉM LÊ, e o conjunto de valores que aceitam. Ausente NÃO é erro (vale a regra do dono:
+# retirar um par fecha a posição dele). Um valor fora do conjunto é FALHA, e não nota: o operador RECUSA um
+# `ao_desligar` que não entende, porque o que está em jogo é uma posição viva — e uma ficha que promete o que o
+# sistema recusa é a pior das duas.
+OPCIONAIS_LIDAS = {
+    "ao_desligar": (str, ("fechar", "manter")),
 }
 
 
@@ -133,6 +141,14 @@ def conferir(caminho, pasta_esperada):
         if chave in LIDAS:
             continue
         if chave.startswith("_"):
+            continue
+        if chave in OPCIONAIS_LIDAS:
+            tipo_esperado, valores = OPCIONAIS_LIDAS[chave]
+            if not isinstance(cab[chave], tipo_esperado) or cab[chave] not in valores:
+                falhas.append(
+                    f"{caminho}: `{chave}` tem de ser um de {valores} (veio {cab[chave]!r}) — o operador RECUSA um "
+                    "valor que nao entende, porque o que esta' em jogo e' uma posicao viva"
+                )
             continue
         if chave in A_ESPERA_DE_DECISAO:
             notas.append(f"{caminho}: `{chave}` — ninguem a le; {A_ESPERA_DE_DECISAO[chave]}")

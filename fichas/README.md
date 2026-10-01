@@ -108,14 +108,22 @@ Estas quatro eram cópias do que a conta já diz — e uma cópia pode **mentir*
 ficha continua a dizer a antiga. Pior: nas fichas de produção o `endereco` é o **texto** `0x<ENDERECO DA CONTA>`,
 um lugar vazio à espera de ser preenchido por alguém que nunca vai ser lido.
 
-> **NOTA DATADA — 30/09/2026: `ao_desligar` promete comportamento que ninguém cumpre.** A nota antiga deste
-> ficheiro dizia «`ao_desligar` — `fechar`: par desligado com posição viva ⇒ o setup propõe `caixa`». Medido:
-> **nenhum código lê `ao_desligar`** (o único `caixa` do produto é o da liquidação no encerramento,
-> `core/servidor.ts`), e uma ficha com `run: false` **nunca é corrida** — o operador só carrega as ligadas
-> (`todas.filter(f => f.cabecalho.run === true)`). Ou seja: hoje, desligar um par deixa a posição viva **aberta,
-> sem quem a feche**. Está por decidir: implementar o fecho ao desligar, ou retirar a chave e a promessa.
-> *(O texto antigo, mantido por baixo — o registo é auditável: «`ao_desligar` — `fechar` (decisão do dono): par
-> desligado com posição viva ⇒ o setup propõe `caixa`.»)*
+> **NOTA DATADA — 30/09/2026, 23:2x: `ao_desligar` passou a ter cumpridor.** A nota anterior deste ficheiro dizia
+> que **nenhum código lê `ao_desligar`** — e era verdade: desligar um par deixava a posição viva aberta, sem quem a
+> fechasse. **Deixou de ser verdade na mesma noite**: o operador detecta a retirada de um par a quente e, enquanto a
+> posição dele não estiver plana, o par **fica na operação** com a proposta `caixa` (o fecho a mercado, um dos
+> quatro lados do contrato), o mandato governa-o e o carteiro continua autorizado a levar a boleta; só quando está
+> plano é que o par sai — com linha no log em cada passo (`retirado_a_fechar`, `retirada_cumprida`,
+> `retirado_com_posicao_em_maos`). Os valores são dois, e um valor que não se entende **recusa-se** (o que está em
+> jogo é uma posição viva):
+>
+> * `"fechar"` — a retirada fecha a posição (e, sem declaração nenhuma, é esta a regra do dono);
+> * `"manter"` — a posição fica, declaradamente, e o log di-lo.
+>
+> O `enviar: false` continua a mandar: com o interruptor fechado o fecho **não sai** e o carteiro nomeia a retirada
+> no aviso, em vez de deixar uma posição viva em mãos sem se saber.
+> *(O texto antigo, mantido por baixo — o registo é auditável: «`ao_desligar` — `fechar`: par desligado com posição
+> viva ⇒ o setup propõe `caixa`.»)*
 
 ## O que está aqui
 
