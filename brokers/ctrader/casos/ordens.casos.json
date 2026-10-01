@@ -1,0 +1,316 @@
+{
+  "nota": "Casos da TRADUCAO DE ORDENS e do FECHO POR POSICAO do conector cTrader (FR-055 a FR-059, FR-061, FR-065, FR-066; RN-CT20 a RN-CT34). A boleta, o manifesto, a unidade do simbolo e os dois numeros que so' o conector tem (saldo e preco) entram como DADO — por isso isto corre offline, sem rede e sem credencial. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que a traducao AFIRMA e os motivos que ela NOMEIA. Os casos adversarios valem tanto como os felizes: um conector que so' sabe dizer sim prova a fiacao, nao o comportamento. DOIS AVISOS, porque sao o comportamento e nao um esquecimento: (1) a boleta NEUTRA traz sempre `desvio_maximo`, e este venue so' tem desvio em MARKET_RANGE/STOP_LIMIT — logo `mercado`, `limite` e `stop` sao RECUSADOS, e o tipo NUNCA se troca para acomodar o campo (FR-059); (2) a resolucao pre-envio so' fica completa quando o venue ja' deu os numeros dele (`numeros_do_venue`) — o que ele nao da' fica AUSENTE, e o contrato recusa-a com `campo_obrigatorio_ausente`, que e' o estado honesto (data-model §2).",
+  "conta_de_teste": "demo-ctrader-1",
+  "manifesto_base": {
+    "conector": {"nome": "ctrader", "versao": "0.1.0"},
+    "versao": "1.9.0",
+    "instrumentos": [
+      {
+        "simbolo": "EURUSD",
+        "minimo": "10",
+        "passo": "0.1",
+        "tick": "0.00001",
+        "alavancagem_maxima": "30"
+      }
+    ],
+    "sabe_ajustar_alavancagem": false,
+    "modos_de_margem": ["cruzado"],
+    "minimo_de_valor_por_ordem": "1",
+    "modelo_de_posicao": "netting",
+    "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite", "mercado_por_faixa"],
+    "parcial_suportada": ["tudo_ou_nada", "o_que_der"],
+    "desvio_maximo": "1",
+    "reduce_only_suportado": false,
+    "stop_anexo": true,
+    "profundidade_de_livro": 5,
+    "funding": true,
+    "relogio_de_fecho_de_barra": "meia_noite_utc",
+    "idempotencia": false,
+    "marca_de_posse": "clientOrderId",
+    "marca_liga_ordem_a_posicao": true,
+    "estado_do_mercado": true,
+    "ligacao_por_protocolo": true,
+    "releitura_de_preco_ao_enviar": true,
+    "devolve_a_resolucao": true
+  },
+  "simbolo_base": {
+    "symbol_id": 42,
+    "minimo": "10",
+    "maximo": "100000",
+    "passo": "0.1",
+    "digitos": 5,
+    "posicao_do_pip": 3,
+    "distancia_minima_do_stop": "2000",
+    "distancia_minima_do_alvo": "2000",
+    "unidade_das_distancias": "relativo_1_100000",
+    "modo_de_negociacao": "ENABLED"
+  },
+  "boleta_base": {
+    "instrumento": "EURUSD",
+    "lado": "buy",
+    "tipo": "mercado_por_faixa",
+    "saldo_pct": "10",
+    "alavancagem": "1",
+    "parcial": "o_que_der",
+    "desvio_maximo": "0.5",
+    "prazo_da_passiva_ms": 0,
+    "destino_do_resto": "agressivo",
+    "reduce_only": false,
+    "referencia_do_cliente": "ciclo-1/linha-1",
+    "marca_de_posse": 7
+  },
+  "pedido_base": {"saldo": "1000", "preco": "1.25"},
+  "casos": [
+    {
+      "caso": "ordens/mercado-por-faixa-aceite-com-o-volume-e-o-desvio-na-unidade-do-venue",
+      "esperadoOk": true,
+      "conferir": {
+        "orderType": "MARKET_RANGE",
+        "tradeSide": "BUY",
+        "volume": 8000,
+        "timeInForce": "IOC",
+        "slippageInPoints": 625,
+        "baseSlippagePrice": 125000,
+        "clientOrderId": "7-ciclo-1/linha-1",
+        "resolucao": {"quantidade": "80", "nocional": "100", "preco_de_liquidacao": "0"}
+      }
+    },
+    {
+      "caso": "ordens/mercado-por-faixa-com-os-numeros-do-venue-a-resolucao-fica-completa",
+      "esperadoOk": true,
+      "boleta": {"alavancagem": "2"},
+      "pedido": {
+        "numeros_do_venue": {"margem_empenhada": "50", "alavancagem_efectiva": "2", "preco_de_liquidacao": "0.625"}
+      },
+      "conferir": {
+        "volume": 16000,
+        "resolucao": {
+          "quantidade": "160",
+          "nocional": "200",
+          "margem_empenhada": "50",
+          "alavancagem_efectiva": "2",
+          "preco_de_liquidacao": "0.625"
+        }
+      }
+    },
+    {
+      "caso": "ordens/stop-limite-aceite-e-o-stop-e-o-alvo-saem-relativos-com-sinal",
+      "esperadoOk": true,
+      "boleta": {"tipo": "stop_limite", "stop_pct": "2", "tp_pct": "3"},
+      "pedido": {"preco_stop": "1.20", "preco_limite": "1.21"},
+      "conferir": {
+        "orderType": "STOP_LIMIT",
+        "volume": 8000,
+        "stopPrice": 120000,
+        "limitPrice": 121000,
+        "relativeStopLoss": 2500,
+        "relativeTakeProfit": 3750
+      }
+    },
+    {
+      "caso": "ordens/VENDA-o-stop-e-o-alvo-levam-o-sinal-do-lado-negativo",
+      "esperadoOk": true,
+      "boleta": {"tipo": "stop_limite", "lado": "sell", "stop_pct": "2", "tp_pct": "3"},
+      "pedido": {"preco_stop": "1.30", "preco_limite": "1.29"},
+      "conferir": {"tradeSide": "SELL", "relativeStopLoss": -2500, "relativeTakeProfit": -3750}
+    },
+    {
+      "caso": "ordens/volume-fora-do-passo-do-simbolo-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
+      "pedido": {"preco": "3.2"}
+    },
+    {
+      "caso": "ordens/volume-que-nao-cai-na-grelha-de-0-01-do-venue-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
+      "pedido": {"preco": "1.28"}
+    },
+    {
+      "caso": "ordens/volume-abaixo-do-minimo-do-simbolo-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
+      "boleta": {"saldo_pct": "1"}
+    },
+    {
+      "caso": "ordens/volume-acima-do-maximo-do-simbolo-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_da_banda",
+      "simbolo": {"maximo": "10"}
+    },
+    {
+      "caso": "ordens/stop-abaixo-da-distancia-minima-do-simbolo-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
+      "boleta": {"stop_pct": "1"}
+    },
+    {
+      "caso": "ordens/stop-com-a-unidade-da-distancia-nao-declarada-recusa-em-vez-de-assumir",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"stop_pct": "2"},
+      "simbolo": {"unidade_das_distancias": null}
+    },
+    {
+      "caso": "ordens/tipo-de-ordem-fora-do-manifesto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"tipo": "stop"},
+      "manifesto": {"tipos_de_ordem": ["mercado", "limite", "mercado_por_faixa"]}
+    },
+    {
+      "caso": "ordens/desvio-pedido-em-MARKET-recusa-e-o-tipo-nao-se-troca",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"tipo": "mercado"}
+    },
+    {
+      "caso": "ordens/desvio-pedido-em-LIMIT-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"tipo": "limite"}
+    },
+    {
+      "caso": "ordens/reduce-only-pedido-recusa-o-venue-nao-o-tem",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"reduce_only": true}
+    },
+    {
+      "caso": "ordens/marca-de-posse-maior-que-50-caracteres-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "pedido": {"marca_do_cliente": "marca-de-posse-com-mais-de-cinquenta-caracteres-0123456789"}
+    },
+    {
+      "caso": "ordens/parcial-fora-do-manifesto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"parcial": "tudo_ou_nada"},
+      "manifesto": {"parcial_suportada": ["o_que_der"]}
+    },
+    {
+      "caso": "ordens/par-de-parcial-e-destino-do-resto-sem-TIF-conhecido-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"destino_do_resto": "cancelar"}
+    },
+    {
+      "caso": "ordens/lado-fora-de-buy-e-sell-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "boleta": {"lado": "caixa"}
+    },
+    {
+      "caso": "ordens/instrumento-fora-do-manifesto-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "instrumento_desconhecido_no_manifesto",
+      "boleta": {"instrumento": "GBPUSD"}
+    },
+    {
+      "caso": "ordens/saldo-ausente-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "sem": ["pedido.saldo"]
+    },
+    {
+      "caso": "ordens/preco-como-numero-de-virgula-flutuante-recusa-por-tipo",
+      "esperadoOk": false,
+      "motivo_esperado": "tipo_invalido",
+      "pedido": {"preco": 1.25}
+    }
+  ],
+  "nota_dos_casos_de_fecho": "O fecho fecha POR POSICAO (`positionId`) e NUNCA por lado contrario; sem posicao nao sai ordem nenhuma (`nada` com motivo); e os dois modos de «fechar sim, abrir nao» — o direito da CONTA (`accessRights = CLOSE_ONLY`) e o modo do SIMBOLO (`tradingMode = CLOSE_ONLY_MODE`) — recusam a ABERTURA e deixam o FECHO passar.",
+  "checagens_de_fecho": [
+    {
+      "caso": "fecho/sem-posicao-no-instrumento-e-nada-sem-ordem",
+      "pedido": {
+        "conta": "demo-ctrader-1",
+        "instrumento": "EURUSD",
+        "symbol_id": 42,
+        "direitos_da_conta": "FULL_ACCESS",
+        "modo_do_simbolo": "ENABLED",
+        "posicoes": []
+      },
+      "esperado": {"acao": "nada", "motivo": "sem_posicao_para_fechar", "tem_ordem": false}
+    },
+    {
+      "caso": "fecho/posicao-viva-fecha-por-positionId-com-o-lado-oposto",
+      "pedido": {
+        "conta": "demo-ctrader-1",
+        "instrumento": "EURUSD",
+        "symbol_id": 42,
+        "direitos_da_conta": "FULL_ACCESS",
+        "modo_do_simbolo": "ENABLED",
+        "posicoes": [{"posicao": 555, "symbol_id": 42, "lado": "BUY", "volume": 8000}]
+      },
+      "esperado": {"acao": "fechar", "positionId": 555, "tradeSide": "SELL", "volume": 8000, "tem_ordem": true}
+    },
+    {
+      "caso": "fecho/posicao-de-VENDA-fecha-com-lado-BUY",
+      "pedido": {
+        "conta": "demo-ctrader-1",
+        "instrumento": "EURUSD",
+        "symbol_id": 42,
+        "direitos_da_conta": "FULL_ACCESS",
+        "modo_do_simbolo": "ENABLED",
+        "posicoes": [{"posicao": 556, "symbol_id": 42, "lado": "SELL", "volume": 1000}]
+      },
+      "esperado": {"acao": "fechar", "positionId": 556, "tradeSide": "BUY", "volume": 1000, "tem_ordem": true}
+    },
+    {
+      "caso": "fecho/conta-CLOSE_ONLY-recusa-a-abertura-e-o-fecho-continua-a-passar",
+      "pedido": {
+        "conta": "demo-ctrader-1",
+        "instrumento": "EURUSD",
+        "symbol_id": 42,
+        "direitos_da_conta": "CLOSE_ONLY",
+        "modo_do_simbolo": "ENABLED",
+        "posicoes": [{"posicao": 557, "symbol_id": 42, "lado": "BUY", "volume": 8000}]
+      },
+      "esperado_abertura": {"acao": "recusar", "motivo": "capacidade_nao_declarada"},
+      "esperado": {"acao": "fechar", "positionId": 557, "tradeSide": "SELL", "volume": 8000, "tem_ordem": true}
+    },
+    {
+      "caso": "fecho/simbolo-CLOSE_ONLY_MODE-recusa-a-abertura-e-o-fecho-continua-a-passar",
+      "pedido": {
+        "conta": "demo-ctrader-1",
+        "instrumento": "EURUSD",
+        "symbol_id": 42,
+        "direitos_da_conta": "FULL_ACCESS",
+        "modo_do_simbolo": "CLOSE_ONLY_MODE",
+        "posicoes": [{"posicao": 558, "symbol_id": 42, "lado": "BUY", "volume": 8000}]
+      },
+      "esperado_abertura": {"acao": "recusar", "motivo": "capacidade_nao_declarada"},
+      "esperado": {"acao": "fechar", "positionId": 558, "tradeSide": "SELL", "volume": 8000, "tem_ordem": true}
+    },
+    {
+      "caso": "fecho/duas-posicoes-no-mesmo-instrumento-recusa-em-vez-de-escolher-uma",
+      "pedido": {
+        "conta": "demo-ctrader-1",
+        "instrumento": "EURUSD",
+        "symbol_id": 42,
+        "direitos_da_conta": "FULL_ACCESS",
+        "modo_do_simbolo": "ENABLED",
+        "posicoes": [
+          {"posicao": 559, "symbol_id": 42, "lado": "BUY", "volume": 8000},
+          {"posicao": 560, "symbol_id": 42, "lado": "SELL", "volume": 8000}
+        ]
+      },
+      "esperado": {"acao": "recusar", "motivo": "duas_posicoes_no_mesmo_instrumento", "tem_ordem": false}
+    },
+    {
+      "caso": "fecho/modo-de-negociacao-que-nao-se-le-recusa-a-abertura",
+      "pedido": {
+        "conta": "demo-ctrader-1",
+        "instrumento": "EURUSD",
+        "symbol_id": 42,
+        "direitos_da_conta": "FULL_ACCESS",
+        "modo_do_simbolo": "SUSPENDED",
+        "posicoes": []
+      },
+      "esperado_abertura": {"acao": "recusar", "motivo": "capacidade_nao_declarada"},
+      "esperado": {"acao": "nada", "motivo": "sem_posicao_para_fechar", "tem_ordem": false}
+    }
+  ]
+}

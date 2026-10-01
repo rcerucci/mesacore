@@ -1,0 +1,306 @@
+{
+  "nota": "Os casos do DESFECHO do conector cTrader (RN-CT37 a RN-CT42; FR-063, FR-064, FR-067). O evento do venue entra como DADO — o mesmo dicionario que o transporte entrega — e a resolucao entra tambem como DADO (ela foi escrita antes de enviar, ou saiu depois com os numeros do venue; os casos nao a calculam aqui). Por isso isto corre offline, sem rede e sem chave. O que se confere nao e 'devolveu ok': e que a classificacao e' a certa, que a PALAVRA do venue (executionType/orderStatus/dealStatus/errorCode) ficou INTACTA em resposta_do_venue, que os numeros LIDOS (preco, volume executado, comissao) e o positionId nao foram recalculados, e que um tipo FORA do repertorio NAO vira 'aceite'. O silencio (caso 4) e' o que a casa mais protege: nem falha nem sucesso. E ha' tres provocacoes ao CONTRATO (checagens_do_contrato), para provar que um 'recusado' SEM motivo e um 'aceite' SEM resolucao nao passam — e' por isso que o desfecho.py confere o que monta antes de o devolver.",
+  "fonte": "brokers/ctrader/desfecho.py + contracts/desfecho.schema.json + docs/maquina-de-estados-conector-ctrader.md",
+  "resolucao_base": {
+    "quantidade": "10",
+    "nocional": "10850",
+    "margem_empenhada": "108.5",
+    "alavancagem_efectiva": "100",
+    "preco_de_liquidacao": "0"
+  },
+  "evento_base": {
+    "executionType": "ORDER_FILLED",
+    "orderStatus": "FILLED",
+    "dealStatus": "FILLED",
+    "order": {
+      "orderId": 501,
+      "clientOrderId": "mesa-3232-000030",
+      "positionId": 9001,
+      "symbolId": 41,
+      "tradeSide": "BUY",
+      "volume": 1000,
+      "executedVolume": 1000,
+      "executionPrice": 108500
+    },
+    "position": {
+      "positionId": 9001,
+      "usedMargin": 10850,
+      "marginRate": 100
+    },
+    "deal": {
+      "dealId": 7001,
+      "positionId": 9001,
+      "orderId": 501,
+      "dealStatus": "FILLED",
+      "executionPrice": 108500,
+      "filledVolume": 1000,
+      "commission": -35,
+      "marginRate": 100,
+      "executionTimestamp": 1790628000456
+    }
+  },
+  "casos": [
+    {
+      "caso": "desfecho/preenchimento-total-traz-o-positionId-e-os-numeros-do-venue",
+      "classificacao_esperada": "aceite",
+      "conferir": {
+        "resposta_do_venue.executionType": "ORDER_FILLED",
+        "resposta_do_venue.order.clientOrderId": "mesa-3232-000030",
+        "resposta_do_venue.position.positionId": 9001,
+        "resposta_do_venue.deal.positionId": 9001,
+        "resposta_do_venue.deal.executionPrice": 108500,
+        "resposta_do_venue.deal.filledVolume": 1000,
+        "resposta_do_venue.deal.commission": -35
+      },
+      "nota": "FR-064: o desfecho traz o positionId (a ligacao ordem->posicao) e os numeros LIDOS — nenhum recalculado por nos. Preco, volume e comissao saem CARACTER A CARACTER como o venue os deu (108500, 1000, -35): e' a prova de que nao se converteu unidade nenhuma aqui."
+    },
+    {
+      "caso": "desfecho/parcial-nao-e-desconhecido",
+      "evento": {
+        "executionType": "ORDER_PARTIAL_FILL",
+        "orderStatus": "ACCEPTED",
+        "dealStatus": "PARTIALLY_FILLED",
+        "order": {
+          "orderId": 501,
+          "clientOrderId": "mesa-3232-000030",
+          "positionId": 9002,
+          "symbolId": 41,
+          "tradeSide": "BUY",
+          "volume": 1000,
+          "executedVolume": 600,
+          "executionPrice": 108500
+        },
+        "position": {
+          "positionId": 9002,
+          "usedMargin": 6510,
+          "marginRate": 100
+        },
+        "deal": {
+          "dealId": 7002,
+          "positionId": 9002,
+          "orderId": 501,
+          "dealStatus": "PARTIALLY_FILLED",
+          "executionPrice": 108500,
+          "filledVolume": 600,
+          "commission": -21,
+          "marginRate": 100
+        }
+      },
+      "classificacao_esperada": "parcial",
+      "conferir": {
+        "resposta_do_venue.dealStatus": "PARTIALLY_FILLED",
+        "resposta_do_venue.deal.filledVolume": 600,
+        "resposta_do_venue.position.positionId": 9002
+      },
+      "nota": "RN-CT39/FR-063: preenchimento parcial e' `parcial` — ha' posicao e sabe-se exactamente qual. Nao e' desconhecido: sabe-se o que ficou, e o resto segue a politica declarada na boleta. O volume executado e' o do venue (600), nunca arredondado."
+    },
+    {
+      "caso": "desfecho/recusa-traz-o-errorCode-do-venue-intacto",
+      "evento": {
+        "executionType": "ORDER_REJECTED",
+        "orderStatus": "REJECTED",
+        "dealStatus": "REJECTED",
+        "errorCode": "TRADING_BAD_VOLUME",
+        "order": {
+          "orderId": 502,
+          "clientOrderId": "mesa-3232-000031",
+          "symbolId": 41,
+          "tradeSide": "BUY",
+          "volume": 7
+        },
+        "position": null,
+        "deal": null
+      },
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "desfecho_nao_reconhecido",
+      "conferir": {
+        "resposta_do_venue.errorCode": "TRADING_BAD_VOLUME",
+        "resposta_do_venue.executionType": "ORDER_REJECTED"
+      },
+      "nota": "RN-CT42: a palavra do venue (o errorCode) vai ao desfecho SEM TRADUCAO — `TRADING_BAD_VOLUME` entra caracter a caracter. O `motivo` e' do conjunto FECHADO do contrato (o venue recusou e a razao dele nao tem nome no nosso vocabulario), e e' por isso que uma recusa NUNCA leva o texto do venue a fazer de motivo. Nao ha' resolucao: o contrato nao a exige numa recusa, e a recusa aconteceu antes de haver o que resolver."
+    },
+    {
+      "caso": "desfecho/silencio-alem-do-prazo-e-desconhecido",
+      "via": "silencio",
+      "prazo_declarado_ms": 5000,
+      "classificacao_esperada": "desconhecido",
+      "motivo_esperado": null,
+      "conferir": {
+        "resposta_do_venue.sem_resposta": true,
+        "resposta_do_venue.prazo_declarado_ms": 5000
+      },
+      "nota": "FR-067: uma ordem sem resposta dentro do prazo declarado fica `desconhecido` — nem falha nem sucesso. Promove-la a `aceite` mandaria uma segunda ordem sobre uma posicao que talvez exista; rebaixa-la a `recusado` deixaria uma posicao orfa'. Nao leva motivo (so' a recusa o exige) e leva a resolucao, porque ela existiu: foi escrita antes de enviar. A verdade deste estado so' sai por reconciliacao."
+    },
+    {
+      "caso": "desfecho/swap-e-acontecimento-de-conta-e-nao-desfecho",
+      "evento": {
+        "executionType": "SWAP",
+        "position": {
+          "positionId": 9001,
+          "swap": -42
+        }
+      },
+      "acontecimento_de_conta_esperado": true,
+      "nota": "RN-CT38: `SWAP` NAO e' ordem. A funcao `e_acontecimento_de_conta` separa-o, e quem pedir um desfecho de ordem a este evento recebe a recusa nomeada `AcontecimentoDeConta` — tratar o swap como desfecho inventava uma ordem que nao existe. O dinheiro que mexeu na conta fica no registo proprio (`acontecimento_de_conta`), sem classificacao."
+    },
+    {
+      "caso": "desfecho/deposito-e-acontecimento-de-conta-e-nao-desfecho",
+      "evento": {
+        "executionType": "DEPOSIT_WITHDRAW",
+        "deal": {
+          "dealId": 7100,
+          "executionPrice": 0,
+          "filledVolume": 0,
+          "commission": 0
+        }
+      },
+      "acontecimento_de_conta_esperado": true,
+      "nota": "RN-CT38: o segundo dos tres. Deposito e levantamento mexem no SALDO, nao abrem nem fecham posicao — e o mesmo para `BONUS_DEPOSIT_WITHDRAW`. Os tres vao pelo mesmo caminho: registo de conta, nunca desfecho de ordem."
+    },
+    {
+      "caso": "desfecho/executionType-fora-do-repertorio-recusa-e-nao-vira-aceite",
+      "evento": {
+        "executionType": "ORDER_SETTLED",
+        "orderStatus": "FILLED",
+        "position": null,
+        "deal": null
+      },
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "conferir": {
+        "resposta_do_venue.executionType": "ORDER_SETTLED"
+      },
+      "nota": "RN-CT39: o repertorio de execucao e' conhecido e FECHADO. Um tipo que nao esteja la' e' RECUSA NOMEADA — e o defeito caro seria o contrario: um tipo que nao se le' a virar `aceite` por optimismo. A palavra que veio fica em resposta_do_venue, para quem reconciliar saber o que o venue disse."
+    },
+    {
+      "caso": "desfecho/orderStatus-fora-do-repertorio-recusa",
+      "evento": {
+        "executionType": "ORDER_FILLED",
+        "orderStatus": "PENDING_EXECUTION",
+        "position": null,
+        "deal": null
+      },
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "conferir": {
+        "resposta_do_venue.orderStatus": "PENDING_EXECUTION"
+      },
+      "nota": "O `orderStatus` tambem e' um conjunto FECHADO: ACCEPTED/FILLED/REJECTED/EXPIRED/CANCELLED. Um estado de ordem que nao se conhece nao se assume — recusa nomeada, com a palavra preservada."
+    },
+    {
+      "caso": "desfecho/dealStatus-em-erro-recusa",
+      "evento": {
+        "executionType": "ORDER_FILLED",
+        "dealStatus": "ERROR",
+        "position": null,
+        "deal": null
+      },
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "desfecho_nao_reconhecido",
+      "conferir": {
+        "resposta_do_venue.dealStatus": "ERROR"
+      },
+      "nota": "O veneno deste venue — o tipo de execucao diz `ORDER_FILLED` e o NEGOCIO diz `ERROR`: o venue e' quem sabe o que se passou, e a palavra dele manda sobre a leitura optimista do tipo. Uma mesa que ficasse com o `aceite` acreditava numa posicao que o venue disse nao ter feito."
+    },
+    {
+      "caso": "desfecho/ordem-cancelada-recusa",
+      "evento": {
+        "executionType": "ORDER_CANCELLED",
+        "orderStatus": "CANCELLED",
+        "position": null,
+        "deal": null
+      },
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "desfecho_nao_reconhecido",
+      "nota": "Maquina de estados: ORDER_CANCELLED/ORDER_EXPIRED fecham a ordem sem posicao. Nao e' desconhecido (sabe-se que nao aconteceu) nem aceite (nao ha posicao)."
+    },
+    {
+      "caso": "desfecho/order-accepted-em-repouso-e-aceite",
+      "evento": {
+        "executionType": "ORDER_ACCEPTED",
+        "orderStatus": "ACCEPTED",
+        "dealStatus": null,
+        "position": null,
+        "deal": null
+      },
+      "classificacao_esperada": "aceite",
+      "conferir": {
+        "resposta_do_venue.orderStatus": "ACCEPTED"
+      },
+      "nota": "Maquina de estados (linha do ORDER_ACCEPTED): a ordem aceite e ainda em repouso da' desfecho `aceite` — ela existe, e o preenchimento chega por evento proprio. Um `deal` nulo NAO entra em resposta_do_venue: ausente fica ausente (D4), e nao vira objecto vazio nem zero."
+    },
+    {
+      "caso": "desfecho/sem-executionType-recusa-e-nao-adivinha",
+      "sem": [
+        "executionType",
+        "orderStatus",
+        "dealStatus"
+      ],
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "Sem o tipo de execucao nao ha' classificacao NENHUMA a dar. O caminho explicito e' este: testar e recusar — nunca um `.get(..., 'ORDER_FILLED')` a tapar o que nao veio."
+    },
+    {
+      "caso": "desfecho/erro-do-venue-sem-tipo-novo-manda",
+      "evento": {
+        "executionType": "ORDER_ACCEPTED",
+        "orderStatus": "ACCEPTED",
+        "errorCode": "TRADING_NOT_ALLOWED",
+        "position": null,
+        "deal": null,
+        "dealStatus": null
+      },
+      "classificacao_esperada": "recusado",
+      "motivo_esperado": "desfecho_nao_reconhecido",
+      "conferir": {
+        "resposta_do_venue.errorCode": "TRADING_NOT_ALLOWED"
+      },
+      "nota": "O erro do venue MANDA sobre o tipo: `ORDER_ACCEPTED` com `errorCode` e' recusa. O contrario deixaria a mesa a operar com uma ordem que o venue ja' recusou."
+    }
+  ],
+  "checagens_do_contrato": [
+    {
+      "caso": "contrato/recusado-sem-motivo-nao-passa",
+      "carga": {
+        "classificacao": "recusado",
+        "resposta_do_venue": {
+          "executionType": "ORDER_REJECTED"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "A prova de que se leu o esquema: o contrato tem DUAS condicoes if/then, e uma delas diz que `recusado` EXIGE `motivo`. Uma recusa sem motivo nao e' um desfecho — e por isso o desfecho.py confere o que monta antes de o devolver."
+    },
+    {
+      "caso": "contrato/aceite-sem-resolucao-nao-passa",
+      "carga": {
+        "classificacao": "aceite",
+        "resposta_do_venue": {
+          "executionType": "ORDER_FILLED"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "A SEGUNDA condicao: fora da recusa, a `resolucao` e' OBRIGATORIA. E' isto que da' sentido ao `desfecho_do_evento(evento, resolucao)`: um aceite/parcial/desconhecido sem resolucao nao passa, e nao se inventa uma resolucao aqui para o fazer passar."
+    },
+    {
+      "caso": "contrato/classificacao-fora-das-quatro-nao-passa",
+      "carga": {
+        "classificacao": "provavelmente_entrou",
+        "resolucao": {
+          "quantidade": "10",
+          "nocional": "10850",
+          "margem_empenhada": "108.5",
+          "alavancagem_efectiva": "100",
+          "preco_de_liquidacao": "0"
+        },
+        "resposta_do_venue": {
+          "executionType": "ORDER_FILLED"
+        }
+      },
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "nota": "Quatro classificacoes existem (RN-C2). Um quinto valor nao vira um quinto estado: o conjunto e' fechado."
+    }
+  ]
+}

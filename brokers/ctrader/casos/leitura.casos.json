@@ -1,0 +1,397 @@
+{
+  "nota": "Casos da LEITURA DO MERCADO do conector cTrader (`brokers/ctrader/leitura.py`), em DADO — sem rede, sem chave e sem venue. Cada caso traz `nome`, `dado` (o que a parte PURA `montar_leitura` recebe) e `esperado` (a carga do `mercado` que ela tem de produzir, ou a recusa nomeada). O `dado` esta' na forma que o `transporte.py` JA' devolve: cada grandeza da conta vem como um `Resultado` — `{ok, valor, motivo, porque}` — e a cotacao/o livro vem nos INTEIROS RELATIVOS do venue (`/100000`), como o `ProtoOASpotEvent` os da'. Os NUMEROS destes casos sao um DUBLE DECLARADO: o conector esta' em demonstracao e a conta ainda nao foi sondada, por isso os valores foram escritos na FORMA e nas UNIDADES que o data-model (§0) declara — precos `/100000`, volumes `/100`, dinheiro `/10^moneyDigits` — e nao sao uma medicao do venue; quem os transformar em numeros de producao tem de os substituir pelo que a sonda medir. O `esperado` das leituras e' conferido contra o CONTRATO (`mercado.schema.json`) pela bancada: uma leitura que o contrato recusasse nao passa por aqui. As recusas trazem `ok: false` e o `motivo` NOMEADO — e duas delas (`duas_posicoes_no_mesmo_instrumento`, `expoente_dos_valores_ausente`) nao caberiam no conjunto fechado dos motivos de MENSAGEM do contrato, porque nao sao mensagens: sao recusas desta ponta, ditas com o seu proprio nome, como o `sonda.py` ja' faz (`falha_ao_ler_as_velas`).",
+  "mensagem": "mercado",
+  "conector": "ctrader",
+  "casos": [
+    {
+      "nome": "leitura/normal-com-posicao-ordem-viva-e-livro",
+      "nota": "O caminho feliz, com TUDO: bid/ask/ultimo, livro, uma posicao com marca, uma ordem viva, e o equity DERIVADO (saldo 100000 + nao-realizado 5000 = 105000, com expoente 2 -> \"1050\"). O preco 108541 e' o inteiro relativo do venue: /100000 = 1.08541. O volume 5 e' em 0,01 de unidade: /100 = 0.05. O hard 10/100 = 0.1 e' o que FALTA executar (volume - executedVolume), como §6 o descreve.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000120,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "ultimo": 108542,
+        "livro": {
+          "lados": [
+            {"preco": 108541, "tamanho": 1200000},
+            {"preco": 108540, "tamanho": 800000}
+          ],
+          "profundidade": 2
+        },
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED", "digitos": 5, "posicao_do_pip": 3}},
+        "posicoes": {
+          "ok": true,
+          "valor": [
+            {
+              "posicao": 101,
+              "symbol_id": 1,
+              "lado": "BUY",
+              "volume": 5,
+              "preco_de_entrada": 108400,
+              "estado": "OPEN",
+              "aberta_ms": 1758000000000,
+              "expoente": 2,
+              "marca": "1694498816"
+            }
+          ]
+        },
+        "ordens": {
+          "ok": true,
+          "valor": [
+            {
+              "ordem": 900001,
+              "symbol_id": 1,
+              "lado": "SELL",
+              "tipo": "LIMIT",
+              "estado": "ACCEPTED",
+              "volume": 10,
+              "volume_executado": 0,
+              "limite": 109000,
+              "stop": null,
+              "preco_de_execucao": null,
+              "marca_do_cliente": "1694498817"
+            }
+          ]
+        },
+        "nao_realizado": {"ok": true, "valor": [{"posicao": 101, "bruto": 5000, "liquido": 5000}]}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 120,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ultimo": "1.08542",
+          "livro": {
+            "lados": [
+              {"preco": "1.08541", "tamanho": "12000"},
+              {"preco": "1.0854", "tamanho": "8000"}
+            ],
+            "profundidade": 2
+          },
+          "ordens_abertas": [
+            {
+              "instrumento": "EURUSD",
+              "ordem": "900001",
+              "lado": "sell",
+              "preco": "1.09",
+              "unidades": "0.1",
+              "marca_de_posse": 1694498817
+            }
+          ],
+          "posicao": {"lado": "buy", "unidades": "0.05", "preco_medio": "1.084", "marca_de_posse": 1694498816},
+          "equity": "1050"
+        }
+      }
+    },
+    {
+      "nome": "leitura/sem-posicao-e-sem-ordens-a-lista-vazia-diz-perguntei",
+      "nota": "A conta PLANA. `posicao` fica AUSENTE (nunca um objecto vazio, nunca `null`), e `ordens_abertas: []` diz «perguntei, e nao ha' nenhuma» — que e' outra coisa de nao ter perguntado. O `ultimo` tambem fica ausente (nao foi dado), e o equity sai do saldo, sem parcela nenhuma a somar.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000300,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 250000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 300,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ordens_abertas": [],
+          "equity": "2500"
+        }
+      }
+    },
+    {
+      "nome": "leitura/hedged-com-duas-posicoes-no-mesmo-instrumento-recusa",
+      "nota": "ACHAADO 3 do data-model: o manifesto declara `hedging`, e o venue permite DUAS posicoes no mesmo simbolo — mas `mercado.posicao` e' UM objecto so'. A leitura NAO escolhe uma: RECUSA com motivo nomeado. Os numeros das posicoes nao chegam a ser lidos, e e' de proposito: o defeito que se evita e' escolher por conta propria.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000100,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {
+          "ok": true,
+          "valor": [
+            {"posicao": 101, "symbol_id": 1, "lado": "BUY", "volume": 5, "preco_de_entrada": 108400, "estado": "OPEN", "expoente": 2},
+            {"posicao": 102, "symbol_id": 1, "lado": "SELL", "volume": 3, "preco_de_entrada": 109000, "estado": "OPEN", "expoente": 2}
+          ]
+        },
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": [{"posicao": 101, "bruto": 100, "liquido": 100}, {"posicao": 102, "bruto": -100, "liquido": -100}]}
+      },
+      "esperado": {
+        "ok": false,
+        "motivo": "duas_posicoes_no_mesmo_instrumento",
+        "porque": "a conta tem 2 posicoes no instrumento de id 1 (posicoes 101, 102): o contrato so' tem UMA `posicao` por leitura, e escolher uma seria adivinhar qual — a leitura RECUSA em vez de escolher (o alargamento do contrato esta' nomeado e adiado)"
+      }
+    },
+    {
+      "nome": "leitura/leitura-das-ordens-falhou-nao-se-produz-leitura",
+      "nota": "A REGRA DURA (d): `ordens_abertas` e' obrigatoria, e uma lista vazia inventada faria a mesa achar a conta limpa quando ela nao esta'. Se a LEITURA das ordens falhar, nao se produz leitura NENHUMA — nem uma leitura da conta sem as ordens. O motivo e' o do transporte (falha nomeada), e o `porque` diz a consequencia.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000100,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": false, "motivo": "falha_ao_ler_as_ordens", "porque": "a biblioteca nao respondeu ao pedido das ordens pendentes"},
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": false,
+        "motivo": "falha_ao_ler_as_ordens",
+        "porque": "a leitura das ordens vivas nao se fez (a biblioteca nao respondeu ao pedido das ordens pendentes): sem ela nao se sabe o que esta' pendurado, e uma lista vazia inventada faria a mesa achar a conta limpa — nao se produz leitura"
+      }
+    },
+    {
+      "nome": "leitura/ordem-viva-sem-preco-nao-se-salta-em-silencio",
+      "nota": "Uma ordem viva que o venue publicou SEM nenhum preco (`limitPrice`/`stopPrice`/`executionPrice` todos ausentes). O contrato exige o `preco` de cada ordem, e o que o venue nao deu nao se inventa — mas tambem NAO se salta a ordem: saltar uma ordem que se sabe existir faria a mesa achar a conta limpa. RECUSA.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000100,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {
+          "ok": true,
+          "valor": [
+            {
+              "ordem": 900002,
+              "symbol_id": 1,
+              "lado": "BUY",
+              "tipo": "MARKET",
+              "estado": "ACCEPTED",
+              "volume": 4,
+              "volume_executado": 0,
+              "limite": null,
+              "stop": null,
+              "preco_de_execucao": null
+            }
+          ]
+        },
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": false,
+        "motivo": "formato_invalido",
+        "porque": "a ordem viva 900002 nao trouxe preco nenhum (`limitPrice`/`stopPrice`/`executionPrice`): o contrato exige o preco de cada ordem viva, e o que o venue nao deu nao se inventa"
+      }
+    },
+    {
+      "nome": "leitura/bid-sem-ask-o-venue-manda-os-dois-separados",
+      "nota": "A REGRA (e): o venue manda `bid` e `ask` em acontecimentos SEPARADOS, e um dos dois pode nao ter chegado. Publica-se o que veio — aqui so' o bid, e o `ask` falta pela AUSENCIA DA CHAVE (nao por um zero, que seria um preco que ninguem publicou).",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 1000000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 0,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ordens_abertas": [],
+          "equity": "10000"
+        }
+      }
+    },
+    {
+      "nome": "leitura/equity-derivado-e-a-soma-do-nao-realizado",
+      "nota": "A CONTA DO EQUITY, a' vista: o venue NAO publica o total, publica as PARCELAS. Aqui o saldo e' 1000000 e o nao-realizado traz DUAS parcelas — uma a ganhar (1234) e uma a PERDER (-234) — e o resultado e' 1000000 + 1234 - 234 = 1001000, com expoente 2 -> \"10010\". Uma parcela NEGATIVA nao se descarta: e' precisamente quando a conta perde que o numero tem de estar certo.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 1000000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {
+          "ok": true,
+          "valor": [
+            {"posicao": 1, "bruto": 1234, "liquido": 1234},
+            {"posicao": 2, "bruto": -234, "liquido": -234}
+          ]
+        }
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 0,
+          "estado": "aberto",
+          "ordens_abertas": [],
+          "equity": "10010"
+        }
+      }
+    },
+    {
+      "nome": "leitura/expoente-dos-valores-ausente-recusa",
+      "nota": "O `moneyDigits` nao veio na conta (o modelo da biblioteca nao o traz — achado medido) e nao ha' POSICAO nenhuma de onde o ler. Sem expoente, o saldo e o nao-realizado (inteiros escalados do venue) nao se convertem: RECUSA, em vez de publicar um equity de magnitude inventada.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": false,
+        "motivo": "expoente_dos_valores_ausente",
+        "porque": "nem a conta nem nenhuma posicao declararam o `moneyDigits`: sem ele o saldo e o nao-realizado (inteiros escalados do venue) nao se convertem, e um equity inventado seria um numero nosso a passar por numero do venue"
+      }
+    },
+    {
+      "nome": "leitura/expoente-do-venue-publicado-na-posicao-e-usado",
+      "nota": "A CONTA nao traz `moneyDigits`, mas a POSICAO traz (`Position.money_digits` — e' o mesmo numero do venue, noutro sitio). A leitura usa-o: saldo 100000 + 5000 = 105000, expoente 2 -> \"1050\". A conversao nao e' um numero inventado: e' a leitura do numero do venue onde ele o publica.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": null}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {
+          "ok": true,
+          "valor": [
+            {"posicao": 101, "symbol_id": 1, "lado": "BUY", "volume": 5, "preco_de_entrada": 108400, "estado": "OPEN", "expoente": 2}
+          ]
+        },
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": [{"posicao": 101, "bruto": 5000, "liquido": 5000}]}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 0,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ordens_abertas": [],
+          "posicao": {"lado": "buy", "unidades": "0.05", "preco_medio": "1.084"},
+          "equity": "1050"
+        }
+      }
+    },
+    {
+      "nome": "leitura/simbolo-em-close-only-e-fechado-para-abrir",
+      "nota": "Tabela §5: `CLOSE_ONLY_MODE` e' o «fechado para ABRIR, aberto para fechar» do simbolo. A leitura de estado so' sabe dizer aberto/fechado, e di-lo: `fechado`. Um texto que o mapa nao conheca RECUSARIA (`valor_fora_do_conjunto`) — nao se adivinha o estado. Saldo 100000 com expoente 2 e sem posicao: equity \"1000\".",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "CLOSE_ONLY_MODE"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 0,
+          "estado": "fechado",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ordens_abertas": [],
+          "equity": "1000"
+        }
+      }
+    },
+    {
+      "nome": "leitura/marca-do-venue-que-nao-cabe-na-forma-vai-sem-marca",
+      "nota": "A marca que a mesa compoe e' um inteiro de 31 bits (RN-B10). O venue guarda-a num TEXTO (`label`/`clientOrderId`), e um texto que seja esse inteiro LE-SE (o caso normal, marca 1694498816). Aqui o texto e' alheio a essa forma, e a marca fica AUSENTE — nunca truncada nem arredondada. Uma posicao sem marca e' tratada pela mesa como ALHEIA (relata e nao gere), que e' o lado seguro do erro.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {
+          "ok": true,
+          "valor": [
+            {"posicao": 101, "symbol_id": 1, "lado": "SELL", "volume": 5, "preco_de_entrada": 108400, "estado": "OPEN", "expoente": 2, "marca": "outro-dedo-42"}
+          ]
+        },
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": [{"posicao": 101, "bruto": 5000, "liquido": 5000}]}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 0,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ordens_abertas": [],
+          "posicao": {"lado": "sell", "unidades": "0.05", "preco_medio": "1.084"},
+          "equity": "1050"
+        }
+      }
+    }
+  ]
+}
