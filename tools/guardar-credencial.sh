@@ -36,10 +36,13 @@ forma() {
   local campo="$1" valor="$2" n=${#2}
   case "$campo" in
     client_id)
-      if [[ "$valor" =~ ^[0-9]+_[A-Za-z0-9]+$ ]] && (( n >= 10 && n <= 40 )); then
+      # O Client ID do portal tem a forma `<numero>_<codigo>` e ~19 caracteres (medido na imagem do dono:
+      # `42285_segERrNeSnqWV` — 19). A banda fecha nos 25: um valor de 56 caracteres nao e' um Client ID, e' uma
+      # seleccao de rato que apanhou texto a' volta.
+      if [[ "$valor" =~ ^[0-9]+_[A-Za-z0-9]+$ ]] && (( n >= 15 && n <= 25 )); then
         echo "parece um Client ID (numero + underscore + codigo)"
       else
-        echo "NAO parece um Client ID (esperado: numero, underscore, e um codigo — e nao texto de comando)"
+        echo "NAO parece um Client ID (esperado: numero, underscore, e um codigo — ~19 caracteres, e nao texto de comando)"
       fi
       ;;
     *)
@@ -97,6 +100,17 @@ gravar() {
 
   printf '  recebi %d caracteres, a comecar por «%s»\n' "${#valor}" "${valor:0:4}"
   printf '  %s\n' "$(forma "$campo" "$valor")"
+
+  # FORMA ERRADA NAO SE GRAVA. Um valor que nao tem a forma do campo e' pior do que nenhum: o conector vai
+  # recusa-lo mais tarde, e ate' la' acha-se que esta' feito. Medido a 01/10/2026: o dono colou 56 caracteres
+  # onde o Client ID tem 19 (a seleccao do rato apanhou o texto a' volta), e o programa gravou-o na mesma.
+  # Quem quiser mesmo gravar um valor de forma estranha diz `--forcar` e assume-o.
+  if [[ "$(forma "$campo" "$valor")" != parece* && "${2:-}" != "--forcar" ]]; then
+    echo "  NAO gravei: a forma nao bate com o campo. Confere no portal (usa o botao de COPIAR do campo, e nao" >&2
+    echo "  a seleccao do rato) e repete. Se for mesmo assim: bash $0 gravar $campo --forcar" >&2
+    exit 1
+  fi
+
   printf '  gravar em %s? (s/n) ' "$f"
   IFS= read -r resposta
   if [[ "$resposta" != "s" ]]; then
@@ -115,6 +129,6 @@ gravar() {
 
 case "${1:-}" in
   conferir) conferir ;;
-  gravar) gravar "${2:-}" ;;
+  gravar) gravar "${2:-}" "${3:-}" ;;
   *) uso ;;
 esac
