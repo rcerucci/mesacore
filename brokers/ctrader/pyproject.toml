@@ -1,0 +1,19 @@
+[project]
+name = "mesacore-broker-ctrader"
+version = "0.1.0"
+description = "O conector cTrader: fala o contrato neutro da mesa de um lado, e a Open API do cTrader do outro."
+requires-python = ">=3.12"
+dependencies = [
+    # O enquadramento e a validacao do envelope sao os MESMOS do resto da casa: leem a mesma versao, o mesmo
+    # vocabulario e os mesmos casos. Reimplementar isto aqui seria ter duas verdades sobre o contrato.
+    "jsonschema>=4.26",
+    # A CAMADA DE PROTOCOLO deste venue, FIXADA EM VERSAO (D2). Nao se segue o ramo principal: 0.11.0 e' pre-1.0,
+    # de autor unico e sem revisao por terceiros — o parecer datado esta em docs/AVALIACAO-BIBLIOTECA-CTRADER.md.
+    # O que ela da': transporte (TCP/TLS, protobuf), sessao, heartbeat, reconexao com restauro de subscricoes,
+    # OAuth com refresh, e a sonda de simbolos. O que ela NAO da', e continua nosso: a costura, as portas do
+    # arranque, o manifesto, as duas metades da boleta, a resolucao, a marca de posse, o desfecho e a recusa.
+    "ctrader-api-client==0.11.0",
+]
+
+[tool.uv]
+package = false

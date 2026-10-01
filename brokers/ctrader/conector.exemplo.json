@@ -1,0 +1,25 @@
+{
+  "_como_usar": [
+    "Copie para brokers/ctrader/<nome>.conector.json e edite o que estiver null.",
+    "O ambiente e os enderecos NAO sao segredo: vivem aqui.",
+    "O que NAO vive aqui: nenhum valor de credencial. Aqui vive so o NOME dela (credencial.referencia) e ONDE esta (credencial.valor_em).",
+    "Os TRES valores deste venue (client_id, client_secret, access_token, refresh_token) vivem JUNTOS num ficheiro FORA do repositorio, em JSON: {\"client_id\":\"...\",\"client_secret\":\"...\",\"access_token\":\"...\",\"refresh_token\":\"...\",\"ctid_trader_account_id\":123456}",
+    "Duas formas aceites: \"env:NOME_DA_VARIAVEL\" ou \"ficheiro:/caminho/fora/do/repo.json\" (modo 600).",
+    "O carregador RECUSA se o ficheiro for legivel por outros, ou se algum dos valores aparecer num ficheiro versionado.",
+    "O venue REESCREVE este ficheiro quando roda o par de tokens: quem o aponta para leitura-e-escrita e' o dono, e o conector so' o le'."
+  ],
+  "conector": "ctrader-demo",
+  "contrato": "1.9.0",
+  "venue": "ctrader",
+  "ambiente": "demonstracao",
+  "url_da_api": "demo.ctraderapi.com:5035",
+  "conta": "ctrader-demo-do-dono",
+  "instrumentos": [
+    "EUR/USD"
+  ],
+  "credencial": {
+    "referencia": "ctrader_demo",
+    "valor_em": "ficheiro:~/.config/mesacore/credenciais/ctrader_demo.json",
+    "_nota": "a REFERENCIA viaja na mensagem e no manifesto; os VALORES ficam fora do repositorio, do ledger e do log (RN-E14, RN-C20)"
+  }
+}

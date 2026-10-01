@@ -45,6 +45,12 @@ config/contas/
 !.example.*
 !*.exemplo.json
 !*example*
+# Excepcao por SUFIXO DE CODIGO: um MODULO chamado `credencial` e' o carregador da credencial, nao a credencial.
+# Medido a 01/10/2026: `brokers/ctrader/credencial.py` (o modulo que resolve a referencia e recusa o valor) foi
+# apanhado por este `*credencia*` e ficou FORA de um commit inteiro, sem uma palavra — o commit saiu com 8
+# ficheiros e o modulo nao estava la'. Um `credencial.json` continua a nao entrar: a excepcao e' so' para codigo.
+!credencial.py
+!credencial.ts
 
 # A REDE NAO PODE ENGOLIR CODIGO (medido: um `git add -A` distraido saltava estes tres em silencio, e a
 # bancada offline — `tools/verificar-conector/provas-offline.sh` — corre-os e ficaria sem eles no

@@ -1,0 +1,19 @@
+# O que NAO se versiona neste conector:
+#
+# O manifesto e' do RUNTIME (le-se do venue a cada arranque; o que fica em ficheiro e' o retrato de um
+# instante, e um retrato versionado mente no dia seguinte).
+manifesto-do-runtime.json
+*.manifesto.json
+
+# O ambiente Python do plugin (biblioteca de protocolo fixada em versao).
+.venv/
+__pycache__/
+*.pyc
+
+# O resultado da bateria de conformidade: fica no disco, por versao, e nao entra no historico.
+conformidade/
+
+# Nenhum ficheiro de tokens, nunca: nem por engano. O dono guarda-os FORA do repositorio.
+*credencial*.json
+*tokens*.json
+*.key
