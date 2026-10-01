@@ -1,6 +1,7 @@
 {
   "_como_usar": [
     "Copie para brokers/ctrader/<nome>.conector.json e edite o que estiver null.",
+    "O `conector` e' o NOME do plugin: minusculas, digitos e underscore (regra do contrato, `^[a-z][a-z0-9_]{1,31}$`) — hifen nao entra. `ctrader_mesa` e' o nome desta aplicacao.",
     "O ambiente e os enderecos NAO sao segredo: vivem aqui.",
     "O que NAO vive aqui: nenhum valor de credencial. Aqui vive so o NOME dela (credencial.referencia) e ONDE esta cada valor (credencial.arquivos).",
     "Os QUATRO valores deste venue vivem em QUATRO ficheiros `.key`, um por valor, FORA do repositorio e em modo 600 — o venue reescreve DOIS deles quando roda o par de tokens, e por isso nao se juntam todos num ficheiro so'.",
@@ -9,7 +10,7 @@
     "O carregador RECUSA se algum tiver modo diferente de 600, se faltar algum, ou se algum valor aparecer num ficheiro versionado.",
     "O `ctid_trader_account_id` NAO e' segredo: e' a identidade da conta, e e' contra ela que o conector compara o que o venue devolve. Trocar de conta (demo <-> real) e' trocar este numero."
   ],
-  "conector": "ctrader-mesa",
+  "conector": "ctrader_mesa",
   "contrato": "1.9.0",
   "venue": "ctrader",
   "ambiente": "demonstracao",

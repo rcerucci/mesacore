@@ -253,6 +253,16 @@ class Transporte:
             return _falhou("falha_ao_subscrever_spots", f"{type(erro).__name__}: {erro}")
         return Resultado(ok=True, valor=f"{len(ids)} simbolo(s) subscritos para spots")
 
+    def subscrever_profundidade(self, account_id: int, ids: list[int]) -> Resultado:
+        """A profundidade do livro. O venue NAO declara quantos niveis da' — da'-os, e a sonda conta-os."""
+        if self._grafo is None:
+            return _falhou("sem_ligacao", "o transporte nao esta' aberto")
+        try:
+            self._laco.rodar(self._grafo.market_data.subscribe_depth(account_id, ids))
+        except Exception as erro:
+            return _falhou("falha_ao_subscrever_profundidade", f"{type(erro).__name__}: {erro}")
+        return Resultado(ok=True, valor=f"{len(ids)} simbolo(s) subscritos para profundidade")
+
     # ---- o que a leitura e o desfecho pedem ----------------------------------------------------------------
     def posicoes(self, account_id: int) -> Resultado:
         if self._grafo is None:
@@ -318,6 +328,9 @@ def _conta_por_dentro(conta: Any) -> dict[str, Any]:
         "saldo": conta.balance,
         "expoente_dos_valores": None,  # 'ausente no modelo da biblioteca' — nao se adivinha
         "alavancagem_em_centesimos": conta.leverage_in_cents,
+        # A alavancagem JA' TRADUZIDA, pelo helper da propria biblioteca (`Account.get_leverage`) — a unidade e'
+        # uma armadilha do venue (`leverageInCents`), e quem a desfaz e' quem a escreveu.
+        "alavancagem": float(conta.get_leverage()),
         "alavancagem_maxima": conta.max_leverage,
         "tipo_de_conta": conta.account_type,
         "direitos": conta.access_rights,

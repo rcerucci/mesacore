@@ -122,8 +122,15 @@ def ler_ficha(caminho: Path) -> Ficha | Recusa:
         )
 
     conector = dados["conector"]
-    if not isinstance(conector, str) or conector.strip() == "":
-        return recusa("campo_obrigatorio_ausente", "`conector` tem de ser o NOME do conector (nao vazio)")
+    # A REGRA E' DO CONTRATO, e nao nossa: `nome_de_plugin` (`_defs/forma.schema.json`) exige
+    # `^[a-z][a-z0-9_]{1,31}$` — minusculas com underscore, SEM HIFEN. O nome da ficha atravessa o manifesto
+    # (`conector.nome`) e um nome invalido so' seria apanhado la', com um erro pior de ler.
+    if not isinstance(conector, str) or not re.match(r"^[a-z][a-z0-9_]{1,31}$", conector):
+        return recusa(
+            "formato_invalido",
+            f"`conector` = {conector!r} tem de seguir a regra do contrato (`^[a-z][a-z0-9_]{{1,31}}$`): "
+            "minusculas, digitos e underscore — hifen nao entra. Use, por exemplo, `ctrader_mesa`",
+        )
 
     ambiente = dados["ambiente"]
     if ambiente not in AMBIENTES:
