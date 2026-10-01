@@ -28,7 +28,6 @@ nenhuma (nem no `ps`, nem no historico).
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import subprocess
@@ -37,8 +36,11 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent.parent
 
-#: As quatro chaves que o ficheiro de tokens deste venue tem de trazer, e a identidade da conta.
-CAMPOS_DO_FICHEIRO = ("client_id", "client_secret", "access_token", "refresh_token", "ctid_trader_account_id")
+#: Os QUATRO valores deste venue, cada um no seu ficheiro `.key` — como manda a casa (o conector 1 guarda a
+#: chave num `.key`; aqui sao quatro). E um ficheiro por valor, e nao um ficheiro com quatro dentro, por uma
+#: razao dura: o venue RODA o par de tokens e reescreve os ficheiros deles — com tudo num ficheiro so', a rotacao
+#: mexia no segredo da aplicacao.
+CAMPOS_DA_CREDENCIAL = ("client_id", "client_secret", "access_token", "refresh_token")
 CAMPOS_SECRETOS = ("client_secret", "access_token", "refresh_token")
 
 REFERENCIA_VALIDA = re.compile(r"^(env|ficheiro):.+$")
@@ -68,13 +70,16 @@ class Recusa:
 
 @dataclass(frozen=True)
 class Trio:
-    """Os valores da credencial, ja resolvidos. Nunca se imprime: so' se usa para autenticar."""
+    """Os quatro valores da credencial, ja' resolvidos. Nunca se imprime: so' se usa para autenticar.
+
+    O ID da conta NAO vive aqui: ele nao e' um segredo, e a ficha da conta e' que o declara (e' contra ele que a
+    porta da identidade compara o que o venue devolve).
+    """
 
     client_id: str
     client_secret: str
     access_token: str
     refresh_token: str
-    ctid_trader_account_id: int
     de: str
 
 
@@ -150,71 +155,71 @@ def carregar_texto(referencia: object, valor_em: object, raiz: Path = RAIZ) -> F
     return Feito(ok=True, valor=texto, de=de, protegido=protegido)
 
 
-def carregar_trio(referencia: object, valor_em: object, raiz: Path = RAIZ) -> Trio | Recusa:
-    """Resolve a referencia E confere que o ficheiro traz os quatro valores mais o id da conta."""
-    texto = carregar_texto(referencia, valor_em, raiz)
-    if isinstance(texto, Recusa):
-        return texto
+def carregar_trio(referencia: object, arquivos: object, raiz: Path = RAIZ) -> Trio | Recusa:
+    """Resolve as QUATRO referencias — uma por valor — e confere cada uma.
 
-    try:
-        dados = json.loads(texto.valor)
-    except json.JSONDecodeError as erro:
-        return recusa("formato_invalido", f"o ficheiro da credencial {texto.de} nao e' JSON: {erro.msg}")
-    if not isinstance(dados, dict):
-        return recusa("formato_invalido", f"o ficheiro da credencial {texto.de} tem de ser um objecto JSON")
-
-    for campo in CAMPOS_DO_FICHEIRO:
-        if campo not in dados:
-            return recusa(
-                "campo_obrigatorio_ausente",
-                f"o ficheiro da credencial {texto.de} nao traz `{campo}`: sem ele nao ha autenticacao possivel",
-            )
-        if dados[campo] is None:
-            return recusa("valor_nulo_nao_permitido", f"`{campo}` veio a null em {texto.de}: ausencia nao se escreve com null (D4)")
-
-    for campo in CAMPOS_DO_FICHEIRO:
-        if campo == "ctid_trader_account_id":
-            continue
-        if not isinstance(dados[campo], str) or dados[campo].strip() == "":
-            return recusa("formato_invalido", f"`{campo}` tem de ser texto nao vazio em {texto.de}")
-
-    # O PISO, antes da varredura: um valor curto demais nao e' um segredo, e varre-lo daria um diagnostico falso.
-    for campo in CAMPOS_SECRETOS:
-        comprimento = len(dados[campo].strip())
-        if comprimento < CARACTERES_MINIMOS_DO_SEGREDO:
-            return recusa(
-                "valor_fora_da_banda",
-                f"`{campo}` tem {comprimento} caracteres e exige-se pelo menos {CARACTERES_MINIMOS_DO_SEGREDO}: "
-                "o venue emite tokens longos, e um valor assim e' lugar-marcado ou copia truncada — e um segredo "
-                "truncado nao autentica nada",
-            )
-
-    identidade = dados["ctid_trader_account_id"]
-    if isinstance(identidade, bool) or not isinstance(identidade, int) or identidade <= 0:
+    Cada valor vem do seu proprio sitio, e cada um e' conferido por si: a referencia resolve, o ficheiro existe,
+    o modo e' 600, o valor nao veio vazio, e (nos tres segredos) o valor nao aparece em nenhum ficheiro
+    versionado. A recusa diz SEMPRE qual dos quatro falhou — um erro de copia num deles tem de ser visivel sem
+    se adivinhar.
+    """
+    if not isinstance(arquivos, dict):
         return recusa(
             "formato_invalido",
-            f"`ctid_trader_account_id` tem de ser um inteiro positivo em {texto.de}, e veio {identidade!r}: "
-            "o id da conta e' a identidade do venue, e nao se adivinha",
+            "`credencial.arquivos` tem de ser um objecto com uma referencia por valor "
+            f"({', '.join(CAMPOS_DA_CREDENCIAL)})",
         )
 
-    # Os SEGREDOS nao podem estar num ficheiro versionado. O `client_id` e o id da conta sao publicos: o que se
-    # varre sao os tres valores que autenticam.
-    for campo in CAMPOS_SECRETOS:
-        onde = esta_no_repositorio(dados[campo], raiz)
-        if onde is not None:
+    for campo in arquivos:
+        if campo.startswith("_"):
+            continue
+        if campo not in CAMPOS_DA_CREDENCIAL:
             return recusa(
-                "valor_fora_da_banda",
-                f"o VALOR de `{campo}` aparece no ficheiro versionado {onde}: a chave esta escrita no repositorio "
-                "(RN-E14) — troque-a no venue e apague-a do historico antes de continuar",
+                "campo_desconhecido",
+                f"`credencial.arquivos` traz `{campo}`, que este conector nao le': a ficha diz a REFERENCIA e "
+                "ONDE ela vive, e nunca o valor (FR-023)",
+            )
+    for campo in CAMPOS_DA_CREDENCIAL:
+        if campo not in arquivos:
+            return recusa(
+                "campo_obrigatorio_ausente",
+                f"`credencial.arquivos` nao traz `{campo}`: sem esse valor nao ha autenticacao possivel",
             )
 
+    valores: dict[str, str] = {}
+    de: list[str] = []
+    for campo in CAMPOS_DA_CREDENCIAL:
+        lido = carregar_texto(referencia, arquivos[campo], raiz)
+        if isinstance(lido, Recusa):
+            return Recusa(ok=False, motivo=lido.motivo, porque=f"[{campo}] {lido.porque}")
+
+        if campo in CAMPOS_SECRETOS:
+            # O PISO, antes da varredura: um valor curto demais nao e' um segredo, e varre-lo daria um
+            # diagnostico falso (um valor de um caractere aparece em qualquer ficheiro do repositorio).
+            if len(lido.valor) < CARACTERES_MINIMOS_DO_SEGREDO:
+                return recusa(
+                    "valor_fora_da_banda",
+                    f"[{campo}] tem {len(lido.valor)} caracteres e exige-se pelo menos "
+                    f"{CARACTERES_MINIMOS_DO_SEGREDO}: o venue emite tokens longos, e um valor assim e' "
+                    "lugar-marcado ou copia truncada — e um segredo truncado nao autentica nada",
+                )
+            onde = esta_no_repositorio(lido.valor, raiz)
+            if onde is not None:
+                return recusa(
+                    "valor_fora_da_banda",
+                    f"[{campo}] o VALOR aparece no ficheiro versionado {onde}: a chave esta escrita no repositorio "
+                    "(RN-E14) — troque-a no venue e apague-a do historico antes de continuar",
+                )
+
+        valores[campo] = lido.valor
+        de.append(f"{campo}:{lido.de}")
+
     return Trio(
-        client_id=dados["client_id"],
-        client_secret=dados["client_secret"],
-        access_token=dados["access_token"],
-        refresh_token=dados["refresh_token"],
-        ctid_trader_account_id=identidade,
-        de=texto.de,
+        client_id=valores["client_id"],
+        client_secret=valores["client_secret"],
+        access_token=valores["access_token"],
+        refresh_token=valores["refresh_token"],
+        de=", ".join(de),
     )
 
 

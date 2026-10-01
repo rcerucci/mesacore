@@ -124,10 +124,12 @@ conector. O neutro não cresce para os acomodar (SC-015).
 | `equity` | **`ProtoOATrader.balance` + Σ `ProtoOAPositionUnrealizedPnL.gross_unrealized_pn_l`** | **[D]** (§7 achado 1) |
 | `funding` | `swapLong`/`swapShort`/`chargeSwapAtWeekends` | [V] |
 
-Ficha/conta: `conta` (nome), `ctidTraderAccountId` (**referência**, nunca valor), e as **três** referências de
-credencial (client secret, access token, refresh token) — todas apontam para ficheiro **fora do repositório**
-(FR-023/FR-050). `moneyDigits` **não** é chave: é lido da conta a cada leitura (é um número do venue, e o venue
-pode mudá-lo).
+Ficha/conta: `conta` (nome), `ctid_trader_account_id` (**identidade**, não segredo: é contra ele que a porta da
+identidade compara o que o venue devolve) e as **quatro** referências de credencial (`client_id`,
+`client_secret`, `access_token`, `refresh_token`) — um ficheiro `.key` por valor, **fora do repositório**, modo
+600 (FR-023/FR-050). O venue reescreve **dois** deles (os tokens) quando roda o par: por isso não se juntam num
+ficheiro só. `moneyDigits` **não** é chave: é lido da conta a cada leitura (é um número do venue, e o venue pode
+mudá-lo).
 
 ## 7. Achados (o que o contrato já tem, e o que este venue obriga a decidir)
 

@@ -30,8 +30,11 @@ Regras que este conector cumpre (e que se verificam por comando):
 - importa `contracts`, **NUNCA** o `core` (RN-E1);
 - nao decide nada: nao escolhe lado, tamanho, preco nem momento (RN-C5, RN-C15);
 - nada se ajusta em silencio: o que nao cabe e' **recusado com motivo** (RN-C3);
-- a credencial entra por **referencia** e o valor vive **fora** do repositorio (RN-C20, RN-E14) — aqui sao TRES
-  valores (client secret, access token, refresh token) e o venue REESCREVE o ficheiro quando roda o par.
+- a credencial entra por **referencia** e o valor vive **fora** do repositorio (RN-C20, RN-E14) — aqui sao QUATRO
+  valores (client_id, client_secret, access_token, refresh_token), **um ficheiro `.key` por valor** e em modo
+  600, porque o venue **reescreve dois deles** quando roda o par de tokens (com tudo num ficheiro so', a rotacao
+  mexia no segredo da aplicacao). O `ctid_trader_account_id` nao e' segredo: e' a identidade da conta, declarada
+  na ficha, e e' contra ela que o conector compara o que o venue devolve.
 
 ## O que este venue obrigou a decidir (e que fica declarado)
 

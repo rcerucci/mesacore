@@ -146,7 +146,9 @@ def arrancar(caminho_da_ficha: Path) -> Arranque:
     )
 
     # ---- porta 5: a chave ---------------------------------------------------------------------------------
-    credencial = Cr.carregar_trio(ficha.credencial_referencia, ficha.credencial_valor_em)
+    # QUATRO valores, um por ficheiro `.key` (o venue reescreve dois deles quando roda o par). O id da conta vem
+    # da FICHA (nao e' segredo) e e' contra ele que a porta 8 compara o que o venue devolver.
+    credencial = Cr.carregar_trio(ficha.credencial_referencia, ficha.credencial_arquivos)
     if isinstance(credencial, Cr.Recusa):
         return _falhou(portas, "chave", credencial.motivo, credencial.porque)
     portas.append(
@@ -154,8 +156,9 @@ def arrancar(caminho_da_ficha: Path) -> Arranque:
             porta="chave",
             veredicto="passou",
             porque=(
-                f"a credencial `{ficha.credencial_referencia}` resolve de {credencial.de} e traz os quatro valores "
-                f"e o id da conta {credencial.ctid_trader_account_id} (nenhum valor entra no registo: FR-023)"
+                f"a credencial `{ficha.credencial_referencia}` traz os quatro valores, um por ficheiro "
+                f"({credencial.de}), e a ficha declara a conta {ficha.conta} "
+                f"({ficha.ctid_trader_account_id}) — nenhum valor entra no registo (FR-023)"
             ),
         )
     )

@@ -25,8 +25,20 @@ from pathlib import Path
 AMBIENTES = ("demonstracao", "real")
 
 #: Campos da ficha que este conector LE'. Tudo o que nao esteja aqui e' recusado (D5: objectos fechados).
-CAMPOS_LIDOS = ("conector", "contrato", "venue", "ambiente", "url_da_api", "conta", "instrumentos", "credencial")
-CAMPOS_LIDOS_DA_CREDENCIAL = ("referencia", "valor_em")
+#: `ctid_trader_account_id` NAO e' segredo: e' a identidade da conta no venue, e a ficha declara-a porque e'
+#: contra ela que a porta da identidade compara o que o venue devolve (FR-049).
+CAMPOS_LIDOS = (
+    "conector",
+    "contrato",
+    "venue",
+    "ambiente",
+    "url_da_api",
+    "conta",
+    "ctid_trader_account_id",
+    "instrumentos",
+    "credencial",
+)
+CAMPOS_LIDOS_DA_CREDENCIAL = ("referencia", "arquivos")
 
 
 @dataclass(frozen=True)
@@ -37,9 +49,10 @@ class Ficha:
     ambiente: str
     url_da_api: str
     conta: str
+    ctid_trader_account_id: int
     instrumentos: tuple[str, ...]
     credencial_referencia: str
-    credencial_valor_em: str
+    credencial_arquivos: dict[str, str]
     origem: str
 
 
@@ -145,6 +158,15 @@ def ler_ficha(caminho: Path) -> Ficha | Recusa:
     if not isinstance(conta, str) or conta.strip() == "":
         return recusa("campo_obrigatorio_ausente", "`conta` tem de ser o NOME nao vazio da conta")
 
+    identidade = dados["ctid_trader_account_id"]
+    if isinstance(identidade, bool) or not isinstance(identidade, int) or identidade <= 0:
+        return recusa(
+            "formato_invalido",
+            f"`ctid_trader_account_id` tem de ser um inteiro positivo, e veio {identidade!r}: e' a identidade da "
+            "conta no venue, e e' contra ele que a porta da identidade compara o que o venue devolve (FR-049) — "
+            "nao se adivinha",
+        )
+
     instrumentos = dados["instrumentos"]
     if not isinstance(instrumentos, list) or not instrumentos:
         return recusa(
@@ -160,7 +182,11 @@ def ler_ficha(caminho: Path) -> Ficha | Recusa:
 
     credencial = dados["credencial"]
     if not isinstance(credencial, dict):
-        return recusa("formato_invalido", "`credencial` tem de ser um objecto com `referencia` e `valor_em`")
+        return recusa(
+            "formato_invalido",
+            "`credencial` tem de ser um objecto com `referencia` (o NOME da credencial) e `arquivos` (ONDE cada "
+            "valor vive)",
+        )
     for chave in credencial:
         if chave.startswith("_"):
             continue
@@ -174,6 +200,24 @@ def ler_ficha(caminho: Path) -> Ficha | Recusa:
         if campo not in credencial:
             return recusa("campo_obrigatorio_ausente", f"`credencial` nao traz `{campo}`")
 
+    arquivos = credencial["arquivos"]
+    if not isinstance(arquivos, dict) or not arquivos:
+        return recusa(
+            "formato_invalido",
+            "`credencial.arquivos` tem de ser um objecto com uma referencia por valor — um ficheiro `.key` por "
+            "valor, como manda a casa (o venue reescreve DOIS deles quando roda o par de tokens, e com tudo num "
+            "ficheiro so' a rotacao mexia no segredo da aplicacao)",
+        )
+    for campo, referencia in arquivos.items():
+        if campo.startswith("_"):
+            continue
+        if not isinstance(referencia, str) or referencia.strip() == "":
+            return recusa(
+                "formato_invalido",
+                f"`credencial.arquivos.{campo}` tem de ser uma REFERENCIA nao vazia (`env:NOME` ou "
+                "`ficheiro:CAMINHO`) — o valor nunca se escreve aqui",
+            )
+
     return Ficha(
         conector=conector.strip(),
         contrato=contrato,
@@ -181,8 +225,9 @@ def ler_ficha(caminho: Path) -> Ficha | Recusa:
         ambiente=ambiente,
         url_da_api=url,
         conta=conta.strip(),
+        ctid_trader_account_id=identidade,
         instrumentos=tuple(instrumentos),
         credencial_referencia=str(credencial["referencia"]),
-        credencial_valor_em=str(credencial["valor_em"]),
+        credencial_arquivos={c: str(v) for c, v in arquivos.items() if not c.startswith("_")},
         origem=str(caminho),
     )

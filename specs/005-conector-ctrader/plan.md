@@ -114,8 +114,10 @@ sem reescrever resultados anteriores (FR-073).
 
 Duas honestidades que este venue obriga:
 
-1. **Credencial** — três valores (client secret, access token, refresh token), todos **referências** a ficheiro
-   fora do repositório; a rotação reescreve-o, o conector relê-o, nenhum valor aparece em registo (FR-050).
+1. **Credencial** — quatro valores (client_id, client_secret, access_token, refresh_token), todos **referências**
+   a ficheiros `.key` fora do repositório (modo 600, um por valor — o venue reescreve dois deles ao rodar o par,
+   e com tudo num ficheiro só a rotação mexia no segredo da aplicação). O conector relê-os; nenhum valor aparece
+   em registo (FR-050). O `ctid_trader_account_id` não é segredo: é a identidade da conta, declarada na ficha.
 2. **Equity** — a conta **não publica** equity (o campo existe só no registo de operações de saldo). A leitura
    publica-o como **derivado** (saldo + resultado não realizado) e **di-lo**; a fórmula fica declarada no
    `data-model.md` e confirmada em demonstração **antes** de o campo servir para dimensionar.
