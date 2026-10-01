@@ -37,6 +37,13 @@ import { readFileSync, renameSync, writeFileSync, mkdirSync, existsSync, readdir
 import { join, dirname } from "node:path";
 import { validar, versaoVigente } from "../contracts/esqueleto/framing.ts";
 import { cloidDoPreenchimento } from "../brokers/hyperliquid/cloid.ts";
+import {
+  enviosJaRegistados,
+  jaSaiu,
+  reconstruirMapaDeMarcas,
+  type EnvioRegistado,
+  type ReconstrucaoDoMapa,
+} from "./arranque.ts";
 
 const RAIZ = join(import.meta.dir, "..");
 const argv = process.argv.slice(2);
@@ -110,6 +117,14 @@ interface Ficha {
  */
 function caminhoDasMarcas(): string {
   return join(dirname(para), `marcas-${nomeDaConta}.jsonl`);
+}
+/**
+ * O FICHEIRO DOS DESFECHOS desta conta — ao lado da operacao, como o mapa e o registo. E' aqui que o operador
+ * grava o que o venue respondeu a' ordem que ele levou, e e' AQUI que o arranque le' o que ja' saiu (o desfecho
+ * e' a prova de envio) e o que reconstroi o mapa de marcas.
+ */
+function caminhoDoFicheiroDosDesfechos(): string {
+  return join(dirname(para), `desfechos-${nomeDaConta}.jsonl`);
 }
 function lerMarcas(): { cloid: string; marca: number; referencia: string; instrumento: string; quando: string }[] {
   const caminho = caminhoDasMarcas();
@@ -520,6 +535,42 @@ function gravarPortas(): void {
 
 async function main(): Promise<void> {
   const casos = join(RAIZ, "brokers", "hyperliquid", "casos", "processo.casos.json");
+
+  // ---- O ARRANQUE: o que os desfechos ja' gravados dizem ao processo que agora nasce -------------------
+  //
+  // Duas leituras do MESMO ficheiro (`desfechos-<conta>.jsonl`), antes de o conector arrancar, porque as duas
+  // respondem a perguntas que o processo perdeu ao morrer:
+  //
+  //   (a) O QUE JA' SAIU. O registo le'-se desde o inicio (`posicaoNoRegisto = 0`, mais abaixo) e o carteiro
+  //       levava todas as boletas que encontrasse — incluindo a abertura ja' preenchida. A prova de envio e' o
+  //       DESFECHO GRAVADO (o registo nao guarda nenhum campo que o diga): semeia-se com ele o mapa `envios`,
+  //       que e' o que `levarBoletas` consulta antes de entregar a boleta ao conector.
+  //   (b) O MAPA QUE FALTA. O mapa so' ganhava linhas em runtime: depois de um reinicio ficava vazio, e a
+  //       posicao ABERTA lia-se SEM marca — alheia, relatada e nao gerida. Reconstroi-se dos desfechos
+  //       confirmados, com a MESMA funcao do runtime (`cloidDoPreenchimento`), e o ficheiro fica no lugar
+  //       ANTES de o conector arrancar (e' ele que o le', pelo `MARCAS_DA_CONTA`).
+  //
+  // Um desfecho que nao se le' RECUSA o arranque inteiro (`morrer`): arrancar com um buraco no registo das
+  // ordens e' reenviar o que nao devia, ou ler como alheia uma posicao que e' nossa.
+  const caminhoDosDesfechos = caminhoDoFicheiroDosDesfechos();
+  let jaEnviados: Map<string, EnvioRegistado>;
+  let reconstrucao: ReconstrucaoDoMapa;
+  try {
+    jaEnviados = enviosJaRegistados(caminhoDosDesfechos);
+    reconstrucao = reconstruirMapaDeMarcas(caminhoDosDesfechos, caminhoDasMarcas());
+  } catch (e) {
+    morrer(`o arranque nao se pode fazer a partir dos desfechos: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  dizer({
+    etapa: "operador", arranque: "desfechos_relembrados",
+    desfechos_lidos: reconstrucao.desfechos_lidos,
+    referencias_ja_enviadas: [...jaEnviados.keys()],
+    marcas_reconstruidas: reconstrucao.marcas_reconstruidas,
+    marcas_ja_no_mapa: reconstrucao.marcas_ja_no_mapa,
+    desfechos_que_nao_confirmam: reconstrucao.desfechos_que_nao_confirmam,
+    mapa: caminhoDasMarcas(),
+  });
+
   // O CAMINHO DO MAPA DE MARCAS VAI NO AMBIENTE DO CONECTOR — sem isto o mapa escreve-se e ninguem o le'.
   //
   // A leitura de mercado (`leitura-do-mercado.ts`, `mapaDeMarcas()`) le' o caminho de `MARCAS_DA_CONTA`, e o
@@ -543,10 +594,13 @@ async function main(): Promise<void> {
   // e' este processo, que ja' tem o `stdin` dele. E so' a leva se a FICHA daquele par o autorizar: o cabecalho
   // traz `enviar: true|false`, e nada sai por omissao — sem essa autorizacao a boleta fica no registo e
   // REGISTA-SE por que' nao saiu. Nao ha caminho em que uma ordem saia sem o dono a ter escrito numa ficha.
-  const envios = new Map<string, { marca: number; referencia: string; instrumento: string; recusado: boolean }>();
+  const envios = new Map<string, EnvioRegistado>();
+  // A MEMORIA DO ARRANQUE ENTRA AQUI, ANTES DE O CARTEIRO CORRER: as referencias que os desfechos provam que
+  // ja' sairam ficam no mesmo mapa que o carteiro consulta. E' o que faz o reenvio da boleta ja' preenchida
+  // parar (ver `vigia/arranque.ts`) — sem isto, o registo era relido desde o inicio e a ordem saia outra vez.
+  for (const [referencia, envio] of jaEnviados) envios.set(referencia, envio);
   let posicaoNoRegisto = 0;
   const caminhoDoRegisto = join(dirname(para), "registo.jsonl");
-  const caminhoDosDesfechos = join(dirname(para), `desfechos-${nomeDaConta}.jsonl`);
 
   function levarBoletas(): void {
     if (!existsSync(caminhoDoRegisto)) return;
@@ -573,7 +627,16 @@ async function main(): Promise<void> {
         continue;
       }
       const referencia = String(referenciaBruta);
-      if (referencia === "" || envios.has(referencia)) continue; // sem referencia nao ha ordem; e nao se repete
+      if (referencia === "") continue; // sem referencia nao ha ordem a levar
+      // JA' SAIU? A boleta que tem DESFECHO GRAVADO nao se reenvia: o desfecho e' a prova de que ela chegou ao
+      // venue (o registo nao guarda nenhum campo que o diga, e inventa-lo seria a mesa a escrever o que so' o
+      // carteiro sabe). Isto fecha o reenvio de arranque: o registo e' relido desde o inicio, e sem esta
+      // paragem a abertura ja' preenchida saia OUTRA VEZ — uma ordem a mais, no venue, na conta do dono.
+      if (jaSaiu(referencia, envios)) {
+        dizer({ etapa: "carteiro", instrumento, referencia, enviei: false,
+                porque: "esta boleta ja' tem desfecho gravado: o arranque releu o registo e NAO a reenvia" });
+        continue;
+      }
       // A FICHA DE AGORA, relida — e a da CONTA (nao so' as ligadas): um par retirado continua a precisar de
       // levar o FECHO da posicao, e a ficha dele e' que diz o que a retirada manda.
       const ficha = lerFichasDaConta(nomeDaConta).find((f) => String(f.cabecalho.instrumento) === instrumento);
