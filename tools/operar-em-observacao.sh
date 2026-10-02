@@ -34,8 +34,12 @@ OP="$DIR/operacao.json"
 echo "[$(date -Iseconds)] a arrancar: conta=$CONTA par=${PAR:-todos os ligados} dir=$DIR"
 
 # the operator: writes the operation every turn; the connector streams the readings.
+# A VOLTA E' DE 1 s (padrao do proprio operador desde 02/10/2026, e o que o dono pediu): com 60 s, uma proposta
+# do ETH a 1 m era vista pela mesa quase um minuto depois do fecho da barra, e 2 propostas perderam-se por
+# `proposta_de_barra_antiga`. O que NAO herda este numero e' a leitura do VENUE (`--leitura-a-cada`, 10 s por
+# omissao): foi medido que ler no ritmo da volta da' `429 Too Many Requests` (253 em menos de dois minutos).
 ( cd "$RAIZ" && exec bun run vigia/operador.ts --conta "$CONTA" ${PAR:+--par "$PAR"} \
-    --para "$OP" --tick 60000 --voltas 100000 \
+    --para "$OP" --tick 1000 --voltas 100000 \
     --mercado "$DIR/mercado" --dias 21 ) >> "$DIR/operador.log" 2>&1 &
 OPERADOR_PID=$!
 

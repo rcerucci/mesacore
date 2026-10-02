@@ -181,11 +181,32 @@ for (const caso of bateria.casos_us6) {
 
 // Estrutural: nao existe "cancelar" no conjunto de accoes - uma ordem viva desconhecida adopta-se e
 // reconcilia-se, nunca se cancela por iniciativa da mesa (FR-021).
+//
+// A LISTA NAO SE ESCREVE AQUI. Ate' a 1.10.0 esta prova era um regex com a lista literal, e teve de ser editada a
+// mao quando a lista mudou — que e' exactamente o que a declaracao evita. Desde a 1.10.0 a lista vive no
+// `vocabulario.json` (`acoes_da_mesa`), que e' onde o proprio ficheiro diz que os runners a leem; aqui confere-se
+// nas DUAS direccoes: o codigo tem de exprimir a lista declarada (nem de menos, nem de mais), e nenhuma das duas
+// pode ter um `cancelar`.
 const fonteDecisao = readFileSync(join(RAIZ_DO_REPO, "core", "ciclo", "decisao.ts"), "utf8");
+const acoesDeclaradas: string[] = JSON.parse(
+  readFileSync(join(RAIZ_DO_REPO, "contracts", "vocabulario.json"), "utf8"),
+).acoes_da_mesa;
+const noCodigo = (fonteDecisao.match(/export type Acao = ([^;]+);/)?.[1] ?? "")
+  .split("|")
+  .map((s) => s.trim().replace(/"/g, ""))
+  .filter((s) => s.length > 0);
+// A procura do `cancelar` e' DENTRO da lista das accoes — e nao no ficheiro: o `Template` deste mesmo ficheiro tem
+// `destino_do_resto: \"agressivo\" | \"cancelar\"`, que e' um valor legitimo (o que fazer com o que nao executou) e
+// nao uma accao da mesa. Procurar no ficheiro inteiro daria uma falha falsa.
 exigir(
-  /export type Acao = "abrir" \| "fechar" \| "adoptar" \| "nada";/.test(fonteDecisao),
+  noCodigo.length > 0 && !noCodigo.includes("cancelar") && !acoesDeclaradas.includes("cancelar"),
   "US6/estrutural: o conjunto de accoes nao tem 'cancelar' - a mesa nao cancela o que nao reconhece",
   ["o conjunto de accoes ganhou um 'cancelar': ha agora um caminho para mexer no que a mesa nao reconhece"],
+);
+exigir(
+  noCodigo.length === acoesDeclaradas.length && noCodigo.every((a, i) => a === acoesDeclaradas[i]),
+  "US6/estrutural: o tipo `Acao` do codigo e' a lista declarada no vocabulario (`acoes_da_mesa`)",
+  [`codigo=[${noCodigo.join(", ")}] vocabulario=[${acoesDeclaradas.join(", ")}]`],
 );
 
 // ---------------------------------------------------------------- US7
