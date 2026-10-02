@@ -33,6 +33,16 @@ conector `credencial.referencia` + `credencial.valor_em`) — nunca o valor (RN-
 logs: é o defeito que estas duas linhas existem para impedir (e o `.gitignore` tem agora a rede `*.key`,
 `*credencia*`, `*wallet*`, com os exemplos isentos).
 
+> **A CONFIG DAS CONTAS PASSOU A SER VERSIONADA — decisão do dono, 02/10/2026.** Era ao contrário: o
+> `.gitignore` ignorava `config/contas/` («é ESTADO e não se versiona») e o ficheiro da conta estava rastreado
+> **ao mesmo tempo** — uma contradição que o `git status` mostrava todos os dias e que ninguém resolvia sem
+> decidir de quem era a decisão. O dono decidiu pelo **versionamento**, e é este parágrafo — a regra da
+> referência, nunca o valor — que o torna seguro: `config/contas/<conta>.json` guarda o **nome** da credencial
+> e o **caminho** onde o valor mora, e o valor continua **fora** do repositório (`*.key`, fora de pasta
+> sincronizada, modo 600). Duas defesas que ficam de pé: a rede do `.gitignore` (para um `git add -A`
+> distraído) e a recusa do carregador quando um **valor** aparece num ficheiro versionado
+> (`credencial/valor-que-esta-no-repositorio-recusa`, na tabela abaixo).
+
 ### E fora do repositório? Aí o ficheiro é texto simples — e há duas defesas
 
 **1. A chave que o conector carrega deve ser uma *API wallet* (agent wallet), não a carteira principal.**

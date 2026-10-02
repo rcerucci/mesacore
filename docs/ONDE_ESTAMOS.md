@@ -15,6 +15,22 @@ medido em **02/10/2026 (noite), 17:37 (-03)** · contrato vigente **1.11.0** · 
 > É uma contradição entre o `.gitignore` e o índice, e eu **não** a resolvo sozinho: tirá-lo do índice (`git rm
 > --cached`) é uma remoção do repositório, e decidir se a config das contas é versionada é do dono. O que é do
 > repo — as fichas do σ (BTC, SOL e a nova do ETH) e este documento — está commitado.
+>
+> **RESOLVIDO — 02/10/2026 (noite, 2ª parte), por decisão do dono: a via é a (b) — a config das contas passa a ser
+> VERSIONADA.** O parágrafo acima fica como retrato da contradição (e da razão por que ela não era minha para
+> resolver); o que mudou: a linha `config/contas/` **saiu** do `.gitignore`, com nota datada, e a config da conta
+> (com os três pares: SOL, BTC, ETH) passou a ser **conteúdo versionado e conferido** — a árvore fica **limpa**
+> (`git status --short` sem uma linha), e o `git log --oneline origin/master..HEAD` vazio.
+>
+> Porque é que isto é seguro, e o que o sustenta: a config da conta guarda a **REFERÊNCIA** da credencial
+> (`conta.credencial`) e o **CAMINHO** onde o valor mora (`conexao.credencial.valor_em`) — **nunca o valor**.
+> Medido antes de decidir, sem imprimir valores nenhuns: nenhum campo do ficheiro é segredo; o que mudou face ao
+> `HEAD` foi só `conta.instrumentos` (`["SOL"]` → `["SOL","BTC","ETH"]`); o caminho da chave
+> (`~/.config/mesacore/credenciais/...`) já estava publicado neste repositório (`config/README.md`, que é
+> versionado). E a rede continua montada: o `.gitignore` mantém `*.chave`/`*.key`/`*credencia*`, e o carregador
+> **recusa** um valor que apareça num ficheiro versionado (`credencial/valor-que-esta-no-repositorio-recusa`).
+> Nota de honestidade sobre o alcance: versionar **não** reescreve a história — o ficheiro já lá estava nos
+> commits anteriores; o que a decisão muda é o que o repositório diz que deve estar lá.
 
 ## 0. O que mudou por último (02/10/2026) — a aquisição de mercado sai do caminho da decisão
 
@@ -57,7 +73,7 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 | O conector Hyperliquid: lê o venue, traduz, recusa, lê o histórico | `brokers/hyperliquid/` | **Não tem tela** — é peça de máquina, provada por comandos |
 | A mesa e o vigia (o ciclo, a boleta, o ledger, a operação) | `core/`, `vigia/` | **Não tem tela** |
 | A superfície web | `web/` | **Não existe**: o diretório tem só o `README.md` com as regras que ela deve cumprir |
-| A conta de teste no venue | `config/contas/hl-teste-plugin.json` (fora do git) | Sim, no broker |
+| A conta de teste no venue | `config/contas/hl-teste-plugin.json` (versionada desde 02/10/2026, por decisão do dono) | Sim, no broker |
 
 **Nada disto se abre no telefone.** Não há uma tela construída. O que existe é máquina e prova.
 
@@ -574,6 +590,10 @@ e estava fora.
 - **A contradição do `config/contas/hl-teste-plugin.json` continua a NÃO ser minha** (o `.gitignore` diz que
   `config/contas/` não se versiona; o ficheiro está rastreado): a árvore fica com esse **um** ficheiro sujo, como
   estava. Não a resolvi.
+  > **RESOLVIDA no mesmo dia, na 2ª parte da noite, por decisão do dono (a via (b): versionar).** A linha
+  > `config/contas/` saiu do `.gitignore`, com nota datada; a config da conta passou a conteúdo versionado e a
+  > árvore fica **limpa**. O «não a resolvi» acima era a leitura certa **naquele momento** (a decisão é do dono),
+  > e fica como registo de que ela foi pedida em vez de tomada.
 - **O sistema em observação não foi tocado** (mesa, operador, conector e feed continuam como estavam): nenhuma
   ordem saiu, e o gatilho segue no lugar.
 - **Os documentos duráveis ficaram com as notas datadas** onde diziam o contrário do que passou a valer: a

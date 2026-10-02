@@ -25,7 +25,9 @@
    "depois": "resumo_diario"
   },
   "instrumentos": [
-   "SOL"
+   "SOL",
+   "BTC",
+   "ETH"
   ]
  },
  "conexao": {

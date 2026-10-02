@@ -31,9 +31,15 @@ brokers/*/conformidade/
 # A trava da bateria: estado de execucao, nunca forma.
 .provar.lock
 
-# A configuracao das contas do dono e ESTADO (enderecos, politica, referencias de credencial): vive em
-# config/contas/ e nao se versiona. O que se versiona e a FORMA — o README e os exemplos.
-config/contas/
+# A configuracao das contas do dono: DECISAO DO DONO, 02/10/2026 — passa a ser VERSIONADA.
+# Era `config/contas/` ignorado, com esta nota a dizer que a config e' ESTADO e nao se versiona — e o
+# `config/contas/hl-teste-plugin.json` ja' estava RASTREADO ao mesmo tempo (contradicao medida, e o `git status`
+# mostrou-o alterado durante dias). O dono decidiu pelo versionamento: a FORMA e o ESTADO vivem juntos, e o que
+# torna isso seguro e' a regra que ja' valia — a config da conta guarda a REFERENCIA da credencial e o CAMINHO
+# onde o valor mora (`conta.credencial` / `conexao.credencial.valor_em`), NUNCA o valor. O carregador recusa um
+# valor que apareca num ficheiro versionado (`credencial/valor-que-esta-no-repositorio-recusa`), e a rede dos
+# segredos abaixo continua a apanhar um `git add -A` distraido.
+# NOTA: continua a NAO se versionar nada com o valor da chave — o ficheiro `*.key` fica fora do repositorio.
 
 # Nada com cara de segredo entra por engano. O valor da credencial nao tem casa no repositorio
 # (RN-E14/RN-C20): o que se versiona e o EXEMPLO, como no outro projeto, onde so o
