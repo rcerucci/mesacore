@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **02/10/2026 (noite), 16:59 (-03)** · contrato vigente **1.11.0** · árvore com **um** ficheiro sujo declarado (ver a nota)
+medido em **02/10/2026 (noite), 17:37 (-03)** · contrato vigente **1.11.0** · portão **38 de 38** · árvore com **um** ficheiro sujo declarado (ver a nota)
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
@@ -38,6 +38,13 @@ inventá-los seria fingir uma medida que não foi feita.
 
 **O que ainda não está feito:** o feed **não tem bancada própria** (as provas acima são de execução ao vivo, não
 do portão), e o **orçamento de pedidos ao venue** continua **por medir** em produção.
+
+> **NOTA DATADA — 02/10/2026 (noite, 2ª parte).** A primeira metade desta frase deixou de ser verdade e fica
+> corrigida onde a raiz foi fechada: **o feed TEM bancada** e ela entrou no portão (`37 → 38`). O que ela mede é o
+> **núcleo puro** (extraído para `feed-barras.ts`, um módulo SEM efeitos ao carregar — o `feed.ts` liga-se ao venue
+> no arranque, e quem o importasse abria uma ligação a sério); a **ligação ao venue** continua a ser prova de
+> execução ao vivo, e isso está dito no cabeçalho da bancada. O **orçamento de pedidos** continua por medir — essa
+> metade segue válida. O detalhe todo está na secção desta vaga, no fim do documento.
 
 Este é o documento que se abre primeiro. Cada número aqui foi medido nesta hora — o comando vem ao lado — e o
 que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo substitui um número.
@@ -572,4 +579,67 @@ e estava fora.
 - **Os documentos duráveis ficaram com as notas datadas** onde diziam o contrário do que passou a valer: a
   RN-M4.12 (`docs/regra-de-negocio.md`) e a linha do `conta.risco_maximo_por_ordem_pct`
   (`docs/inventario-de-chaves.md` §8), que declarava a chave «sai da mesa».
+
+## 02/10/2026 (noite, 2ª parte) — o feed de mercado tem bancada, e ela está no portão (37 → 38)
+
+**O que faltava, e o que o fecho mudou.** O `brokers/hyperliquid/feed.ts` é o processo que serve o mercado a
+**todos** os setups, e a única prova que existia dele era **execução ao vivo** — o próprio §0 deste documento o
+dizia por escrito. Agora há bancada, e ela corre no `provar.sh`:
+
+```
+bash tools/verificar-maquina/provar.sh          → 38 de 38 (era 37)
+bun run brokers/hyperliquid/casos/correr-feed.ts → feed: 11 provas · 11 ok · 0 divergentes
+bash brokers/hyperliquid/casos/prova-negativa-do-feed.sh → PROVA NEGATIVA: 6 de 6 nomes de caso conferidos
+```
+
+**O NÚCLEO PURO saiu do `feed.ts` para o `feed-barras.ts`, e por uma razão medida:** o `feed.ts` **liga-se ao venue
+ao carregar** (cria o `SubscriptionClient` e chama o `main()` no fim do módulo) — quem o importasse para o medir
+abria uma ligação a sério. Um ajudante partilhado vive em módulo **sem efeitos ao carregar** (a mesma regra que
+põe a fusão das fichas em `fundir.ts` e não em `arranque.ts`). O que ficou no `feed.ts` é o que precisa do venue:
+as subscrições, o relógio do processo e o canal de diagnóstico.
+
+**As cinco regras que a bancada mede, cada uma com o seu controle** (e o que fica por provar, dito):
+
+| # | A regra | O controle |
+|---|---|---|
+| 1 | A barra em curso **agregada do `bbo`** leva `agregada_do_bbo: true` e o `v`/`n` ficam a **ZERO** (o livro não os diz: não se inventam) | uma barra **do venue** não é zerada por nós (a marca é do que é NOSSO); e num relógio que não se alinha por divisão do dia (`1d`) **não se agrega nada** (fail-closed) |
+| 2 | A barra **do venue com o mesmo `t`** SUBSTITUI a agregada — e a marca `agregada_do_bbo` **desaparece** com ela | `t` maior **acrescenta**; `t` menor é **ignorado** (andar para trás no histórico seria inventar) |
+| 3 | O **stream não tem memória**: o buraco é **NOMEADO** (`buraco_no_historico`, com quantas faltam) e a lista cresce **um só** (a barra que chegou) | duas barras seguidas **não avisam** de buraco nenhum — sem este par, o aviso podia sair sempre |
+| 4 | O ficheiro escreve-se **ATÓMICO** (ficheiro novo + `rename`) e o **histórico fica intacto** — o **inode MUDA** entre duas escritas (reescrever no sítio mantinha-o) e as linhas antigas ficam byte a byte iguais | uma **linha partida** no ficheiro não se adivinha: perde-se ela, e as boas ficam |
+| 5 | A **primeira barra de um par NOVO** não se deita fora (lista vazia = a barra do venue é o dado) | depois dela, a ordem continua a mandar: um `t` menor é ignorado (a lista vazia não virou «acrescenta tudo») |
+
+**A regra 5 não estava escrita por ninguém: foi a bancada que a mediu.** Ao montar o controle da regra 1, a
+bancada apanhou o `encaixarVela` a **sair sem guardar nada** com o histórico vazio — a primeira barra de um par
+novo **perdia-se em silêncio**, e o ficheiro ficava vazio até à barra seguinte (até **um período inteiro**, num
+relógio de 1h/4h, e sem uma linha a dizê-lo). Corrigido na raiz, com o caso que o prova. É o mesmo padrão de
+sempre: um dado do venue que se deita fora sem nome é pior do que uma recusa.
+
+**A PROVA NEGATIVA, e porque ela existe fora do portão.** Uma bancada que nunca reprovou não mediu nada, e a única
+maneira de saber se esta mede o produto é **estragar o produto de propósito** e ver o vermelho **com o nome do caso
+dentro**. `brokers/hyperliquid/casos/prova-negativa-do-feed.sh` injecta seis defeitos (um a um), exige o nome do
+caso no vermelho, repõe da cópia e confere o **`sha256`** — nunca «já não se queixa». Medido: **6 de 6** nomeados,
+incluindo o da atomicidade, que o **inode** apanhou. Corre-se à mão (é lento: injecta, corre, repõe, seis vezes) e
+não é passo do portão — o portão mede a bancada.
+
+**O que a bancada NÃO prova, e por isso fica dito no cabeçalho dela:** a **ligação ao venue** (o
+`SubscriptionClient`, o `candle` e o `bbo` a sério). Isso continua a ser prova de execução ao vivo. A casa prefere
+a prova declarada mais fraca a uma prova que finge ser do portão.
+
+**O `feed.ts` continua a arrancar** com o núcleo extraído (medido, numa corrida de rascunho que não toca na
+observação): `{"etapa":"feed","arranque":"ligado",...,"ambiente":"teste","fonte_do_ambiente":"ausente: o ambiente
+de TESTE, por decisao de quem nao o declarou","precos":false}`.
+
+**A RAZÃO que faltava no D-015**, agora escrita no `DEFEITOS.md` (a distância mínima de liquidação ficou fora do
+ciclo, e a vaga seguinte não deve reabrir a pergunta): o **preço de liquidação é um FACTO DO VENUE** — o
+`liquidationPx` que ele devolve na posição — e a mesa **não o lê**; quem o lê é o **conector**, na leitura da
+posição, e é por ali que ele chega à resolução (onde a conferência 3 o compara com o piso). Aproximá-lo por
+`100/alavancagem` seria uma **aproximação não declarada a decidir risco real** (um piso de risco comparado com uma
+aproximação ou recusa o que a corretora não liquidaria, ou **deixa passar** o que ela liquida). E a casa já tem
+esse cálculo num sítio só e **declarado** — `precoDeLiquidacaoProjectado`, para a resolução que sai antes do
+envio, onde o **venue manda** quando publica o número.
+
+**Os números vigentes (varridos, não deixados a envelhecer):** o `README.md` dizia «35 de 35» (verdade quando foi
+escrito) → **38 de 38**, com a data; o cabeçalho deste documento passa a **38** e à hora desta medição. As secções
+**datadas** deste retrato (o §2 mede «29/09, 19:39–21:2x») ficam com os números que tinham — são a auditoria
+daquele momento, e um número datado que se reescreve deixa de servir para auditar nada.
 

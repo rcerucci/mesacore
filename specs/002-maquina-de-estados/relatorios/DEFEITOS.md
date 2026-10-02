@@ -764,13 +764,30 @@ lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *
 > o tecto. Sem uma linha lá, a chave era declarada na conta e **nunca chegava a quem a lê** (o travão ficava no
 > papel). Passa a entrar quando a conta o declara; ausente, a chave não entra e a mesa di-lo no registo.
 >
-> **A DISTÂNCIA MÍNIMA DE LIQUIDAÇÃO (RN-M4.13) NÃO ENTRA NESTA VAGA — decisão do dono, tomada aqui.** O desenho
-> dizia «usa o campo `distancia_minima_liquidacao_pct` … opcional na mesma medida», mas a boleta **não leva
-> preço nem quantidade**: contra que grandeza a distância se compara **não estava fixado**. Perguntado, o dono
-> decidiu: **nesta vaga só o tecto da conta entra no ciclo**; o campo fica declarado, e o seu único leitor
-> continua a ser a conferência da resolução (`core/ciclo/banda.ts`, comparação 3) — onde há preço de liquidação
-> e marca para a calcular. Inventar uma comparação de limite sobre uma aproximação que ninguém mediu seria o
-> defeito seguinte.
+> **A DISTÂNCIA MÍNIMA DE LIQUIDAÇÃO (RN-M4.13) NÃO ENTRA NESTA VAGA — decisão do dono, tomada aqui, e esta é a
+> RAZÃO por escrito (para a próxima sessão não reabrir a pergunta).** O desenho dizia «usa o campo
+> `distancia_minima_liquidacao_pct` … opcional na mesma medida», mas a boleta **não leva preço nem quantidade**:
+> contra que grandeza a distância se compara **não estava fixado**. A decisão: **nesta vaga só o tecto da conta
+> entra no ciclo**; o campo fica declarado, e o seu único leitor continua a ser a conferência da resolução
+> (`core/ciclo/banda.ts`, comparação 3). O PORQUÊ, que é o que evita a reabertura:
+>
+> * o **preço de liquidação é um FACTO DO VENUE** — o `liquidationPx` que ele devolve na posição. A mesa **não o
+>   lê**: quem o lê é o CONECTOR, na leitura da posição (`brokers/hyperliquid/leitura.ts`: «|marca − liquidationPx| /
+>   marca, [C] NOSSA» sobre dois números do venue, e `preco_de_liquidacao` como **[V], nunca recalculado**), e é
+>   por ali que ele chega à resolução — onde a conferência 3 o compara. No CICLO não há posição lida nem preço de
+>   liquidação: só o mandato, a leitura e a proposta;
+> * **aproximá-lo seria uma aproximação não declarada a decidir risco real.** `100/alavancagem` (ou o equivalente
+>   `preco × (1 − 1/alavancagem)`) ignora a margem, o preço de entrada e o que a corretora realmente usa — e uma
+>   distância mínima é um PISO de risco: comparada contra uma aproximação, ou recusa uma posição que a corretora
+>   nunca liquidaria ali, ou **deixa passar** uma que ela liquida. Não saber não é caber (a regra da casa);
+> * **e a casa já tem este cálculo, num sítio só e DECLARADO**: `precoDeLiquidacaoProjectado`
+>   (`brokers/hyperliquid/conector.ts`), para a resolução que sai **antes** do envio, escrita como [C] sobre um
+>   número do venue **[V]** — e **o venue manda quando o publica** (posição lida depois do envio: o cálculo não é
+>   usado). Aí a projecção é legítima porque está NOMEADA e porque o dono do número (o venue) pode sobrepor-se
+>   a ela. No ciclo, sem venue, nenhuma dessas duas coisas existe.
+>
+> Enquanto não se decidir de onde vem o preço de liquidação no momento da decisão, o travão da distância fica no
+> sítio onde ele TEM o número — e escrever aqui esta razão é o que impede a vaga seguinte de o inventar.
 >
 > **Casos (6 novos na bancada do ciclo, com os dois controles):** `d015-risco-por-ordem-acima-do-tecto-recusa`
 > (exposição 10% contra um tecto de 2% → `nada` com o motivo) com o **par de controle**
