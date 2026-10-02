@@ -1,6 +1,29 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **29/09/2026, 22:10 (-03)** · `HEAD 08d13d3` · árvore **limpa** · contrato vigente **1.7.0**
+medido em **02/10/2026, 16:15 (-03)** · `HEAD fa68042` · árvore **limpa** · contrato vigente **1.10.0**
+
+## 0. O que mudou por último (02/10/2026) — a aquisição de mercado sai do caminho da decisão
+
+O operador puxava as velas **dentro do laço que decide** (`await garantirVelas` antes de pedir a proposta ao
+setup): 1,2-1,5 s de bloqueio por puxão, um processo `bun` **novo** por puxão (80 MB de pico) e um pedido ao
+venue por par. Quando o ritmo da volta subiu para 1 s, o venue respondeu **253× `429 Too Many Requests`** em menos
+de dois minutos.
+
+Medido no venue: ele **empurra** — `bbo` (melhor bid/ask) a **~0,5 s**, `candle` no fecho de cada barra,
+`allMids` a 5 s. Por stream **não há pedidos**, e uma ligação serve 3 ou 20 pares.
+
+**O que existe agora:** `brokers/hyperliquid/feed.ts` — um processo por venue, lançado pelo operador ao lado do
+conector, que escreve **os mesmos ficheiros que os consumidores já liam** (`velas-<PAR>-<RELOGO>.jsonl` e um
+`precos-vivos.json`). Por isso **nada mais mudou**: o setup, a sobreposição/painel, o contrato e a mesa não
+sabem que ele existe. A barra **em curso** é **agregada do `bbo`** e vai declarada (`agregada_do_bbo: true`); o
+venue, quando manda a barra do mesmo período, **substitui-a**. O `v`/`n` ficam a zero — o livro não os diz, e
+inventá-los seria fingir uma medida que não foi feita.
+
+**Medido ao vivo** (corrida de risco, 3 pares): ficheiros com **0,6-19 s** de idade, `precos-vivos.json` a
+**0,6 s**, **0 puxões** ao venue, e o custo do processo em **~7 MB em regime** (contra 80 MB de pico *por puxão*).
+
+**O que ainda não está feito:** o feed **não tem bancada própria** (as provas acima são de execução ao vivo, não
+do portão), e o **orçamento de pedidos ao venue** continua **por medir** em produção.
 
 Este é o documento que se abre primeiro. Cada número aqui foi medido nesta hora — o comando vem ao lado — e o
 que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo substitui um número.
