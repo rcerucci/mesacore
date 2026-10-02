@@ -746,6 +746,31 @@ necessidade nenhuma.
 casos com controlo na bancada do ciclo (o caso de ~400× o equity tem de ser recusado; o mesmo mandato dentro do
 tecto tem de abrir), e a prova no portão.
 
+**O ENCAIXE, medido a 02/10/2026 — para o código entrar sem uma única descoberta nova:**
+
+1. **Metade do campo já existe.** O tipo `Mandato` (`core/ciclo/decisao.ts:21`) **já declara**
+   `distancia_minima_liquidacao_pct?: string` — opcional, que é exactamente o estatuto que o dono decidiu
+   (declarada trava; ausente é livre). **Ninguém o lê.** Do lado da exposição não há campo nenhum: a
+   comparação é contra o tecto da CONTA.
+2. **A comparação reutiliza o comparador da banda.** `cabeNaBanda(valor, {maximo})` (`core/ciclo/banda.ts:156`)
+   já compara em decimais escalados **e já devolve `dentro` quando a banda não está declarada** — «ausente =
+   não há limite a aplicar», que é o princípio do dono. Não se escreve comparador novo.
+3. **A config está em mão onde a entrada do ciclo nasce.** `core/ciclo/relogio.ts:191` já faz
+   `const mandato = (config.fichas as Record<string, Mandato>)[instrumento]!` e `:240` chama o
+   `decidirInstrumento`. O tecto lê-se do mesmo `config`, à maneira do `margem_total_maxima_pct` (que o
+   `arranque.ts:278` lê como `config.margem_total_maxima_pct`, embutido do `conta.*` pela configuração) — e
+   passa na `EntradaDoInstrumento` (`core/ciclo/ciclo.ts:20`), que é **interna ao processo da mesa** e por isso
+   **não** cruza fronteira nenhuma.
+4. **A conta real NÃO declara o tecto.** Medido em `config/contas/hl-teste-plugin.json`:
+   `risco_maximo_por_ordem_pct` **AUSENTE**. Consequência imediata e prevista pela decisão do dono: nesta
+   corrida o travão **não actua** — e isso tem de ficar **dito** (é o mesmo estatuto da distância de liquidação:
+   a ausência é uma decisão de quem não declarou, não um valor por omissão). Quem quiser o travão declara-o na
+   conta; quem não o declarar está a dizer, com a ausência, que aceita a exposição.
+5. **O formato dos casos** (`core/ciclo/ciclo.casos.json`, 41 casos): `{nome, leitura:{instrumento,
+   idade_do_dado_ms, estado_do_mercado, equity, ordens_abertas}, proposta:{lado,...}, ficha:"3232", ciclo,
+   decisao_esperada:{acao, motivo, condicao, avisa, boleta}, historico}`. O controlo negativo é o par: o mesmo
+   mandato **dentro** do tecto tem de continuar a abrir (`acao: "abrir"`), senão o travão estaria a travar tudo.
+
 ---
 
 ## D-016 — a leitura ao vivo nao traz a posicao (e sem ela o setup do Pine nao abre)  *(RETRATADO, 30/09/2026)*
