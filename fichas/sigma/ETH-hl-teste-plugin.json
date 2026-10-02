@@ -2,16 +2,16 @@
  "_o_que_e_isto": "A ficha de UM par NUMA conta: <PAR>-<CONTA>.json, dentro da pasta do setup. O nome e' para o olho — quem manda e' o cabecalho, e a CONTA do cabecalho tem de ser a mesma do nome ou o operador recusa (senao um ficheiro renomeado passava a mentir).",
  "cabecalho": {
   "conta": "hl-teste-plugin",
-  "instrumento": "BTC",
+  "instrumento": "ETH",
   "setup": "sigma",
-  "relogio": "1h",
+  "relogio": "1m",
   "run": true,
   "ao_desligar": "fechar",
-  "saldo_pct": "10",
+  "saldo_pct": "1.1",
   "alavancagem": "1",
   "bandas": {
    "saldo_pct": {
-    "minimo": "0.5",
+    "minimo": "1",
     "maximo": "20"
    },
    "alavancagem": {
@@ -41,5 +41,5 @@
   "zz_atr": "2.0",
   "atr_len": 14
  },
- "_nota": "Desligado (run:false): a conta de teste le' SOL, e o que o dono quer a rodar e' o SOL."
+ "_nota": "PAR DE TESTE ACELERADO (dono, 02/10/2026): o mesmo setup sigma com o relogio da ficha em 1m — medido no motor, 1m da' ~88 viragens/dia contra 0.9/dia em 1h. Par NOVO (ETH) e nao um dos que ja' correm, porque o mandato da mesa e' indexado por INSTRUMENTO e duas fichas do mesmo par na mesma conta colidem em silencio. saldo_pct 1.1 e banda a partir de 1: o tamanho sai de saldo_pct x equity, e o minimo do venue e' 10 de valor por ordem (com equity ~995, 0.5% daria ~4.97 e o conector recusaria por RN-C9). ARMADO: enviar true."
 }

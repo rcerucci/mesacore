@@ -1,6 +1,20 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **02/10/2026, 16:15 (-03)** · `HEAD fa68042` · árvore **limpa** · contrato vigente **1.10.0**
+medido em **02/10/2026, 17:05 (-03)** · contrato vigente **1.10.0** · árvore com **um** ficheiro sujo declarado (ver a nota)
+
+> **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
+> escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
+> documento tem de garantir é a **data** da medição e o **contrato vigente**, que são o que muda o sentido dos
+> números. (O mesmo erro esteve no `tools/operar-em-observacao.sh`, que carimbava a versão do contrato à mão
+> e foi corrigido a 30/09/2026: a versão lê-se do `contracts/versao.json`, nunca se escreve.)
+
+> **A árvore, medida agora.** `git status --short` mostra **um** ficheiro sujo:
+> `config/contas/hl-teste-plugin.json`, que guarda os três pares da conta (SOL, BTC, ETH). Ele **não entra no
+> repo** — o `.gitignore` diz, com todas as letras, que `config/contas/` «é ESTADO e não se versiona» — mas o
+> ficheiro **está rastreado** (`git ls-files` mostra-o), e por isso o git continua a mostrá-lo como alterado.
+> É uma contradição entre o `.gitignore` e o índice, e eu **não** a resolvo sozinho: tirá-lo do índice (`git rm
+> --cached`) é uma remoção do repositório, e decidir se a config das contas é versionada é do dono. O que é do
+> repo — as fichas do σ (BTC, SOL e a nova do ETH) e este documento — está commitado.
 
 ## 0. O que mudou por último (02/10/2026) — a aquisição de mercado sai do caminho da decisão
 

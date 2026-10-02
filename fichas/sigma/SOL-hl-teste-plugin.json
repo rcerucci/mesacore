@@ -28,7 +28,7 @@
    }
   },
   "prazo_de_resposta_ms": 5000,
-  "enviar": false
+  "enviar": true
  },
  "constantes": {
   "ma_len": 24,
