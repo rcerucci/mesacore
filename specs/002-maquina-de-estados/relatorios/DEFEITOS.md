@@ -662,6 +662,18 @@ lado é oposto ao da nossa posição — nomeia-a `reduzir` (reduce_only, tamanh
 que aumentaria além da posição; ou (b) o vocabulário ganha o que lhe falta — um tamanho neutro na boleta
 (percentagem da POSIÇÃO, não do saldo), que é o que permite dizer «reduz metade» sem tocar no mandato.
 
+**Desenho FECHADO (02/10/2026).** Vale a via **(b)** — e a razão é de desenho, não de gosto: o `saldo_pct`
+continua a ser a régua da **abertura** (é do dono, e é o que a contenda soma), enquanto a **redução** mede-se
+contra o que existe — a posição. Com um tamanho relativo à posição, a mesa diz «reduz metade» **sem tocar no
+mandato**. A outra metade deste problema já foi fechada pelo **`reverse`** (contrato 1.10.0): o lado oposto à
+posição é **uma** decisão com verbo próprio, e não dois passos no tempo da mesa — que foi o que deixou o ETH
+plano 46 minutos a 02/10/2026.
+
+**O que falta:** o campo na boleta (emenda **1.11.0**, pelo procedimento do `reverter` — campo obrigatório, D4),
+o `reduce_only` com o tamanho parcial na porta do `brokers/hyperliquid/ordens.ts` (hoje ela só sabe fechar tudo),
+e os casos com controlo. Nenhum setup do repositório emite redução parcial (o σ emite `caixa` ou um lado), logo
+**a emenda precede qualquer uso** — não há caminho em que isto saia sem estar declarado.
+
 ## D-014 — a ficha é lida como UM objecto, e a espec dizia DOIS arquivos  *(RESOLVIDO POR DECISÃO, 30/09/2026)*
 
 **Declarado em 30/09/2026.** Medido: `core/servidor.ts` (via `core/ciclo/relogio.ts`, `conferirMandatos`) lê a
@@ -708,6 +720,31 @@ mesa e uma posição enorme é o **tamanho** — `saldo_pct × alavancagem`, que
 **Consequência prática, declarada:** na conta real, `saldo_pct` baixo (10%) e `alavancagem` 1 são o travão
 inteiro. Não há segundo. Enquanto RN-M4.12 não estiver implementada, isto tem de ser dito ao dono em cada
 abertura em conta real — não uma vez.
+
+**Desenho FECHADO (02/10/2026) — e o que falta é código, não decisão.** A espec tinha **duas redacções** desta
+regra e elas contradiziam-se: uma exige «perda implícita = **distância do stop** × exposição», e o setup é
+**virada de mão pura, sem stop nenhum** — era inimplementável, não era preferência. O dono decidiu: vale a
+redacção que **não** usa stop — o mandato limita **exposição (nocional)**, e a **distância mínima até à
+liquidação** é travão **opcional da config de risco da ordem** (RN-M4.13: declarada, trava; **ausente é livre**,
+porque a ausência é uma decisão de quem não a declarou — e fica **dita**, não presumida).
+
+E o travão é uma **comparação pura** — sem preço, sem equity, sem quantidade. Isto não é um atalho: é o que a
+arquitectura dita. A boleta **não leva quantidade** (leva `saldo_pct` e `alavancagem`; quem sabe o volume é o
+conector, RN-B5), logo a exposição nocional da ordem é **`saldo_pct × alavancagem`, em % do saldo** — e o tecto
+`conta.risco_maximo_por_ordem_pct` está **na mesma unidade**. A equity cancela nos dois lados. Medido: com
+`saldo_pct=10` e `alavancagem=1` a ordem pede **10% do saldo** contra um tecto de **2%** → **não abre**. É a
+mesma ordem mal dimensionada que encheu ~10 000 USDC contra ~992 de equity, a 29/09.
+
+**Onde entra, e por onde o tecto chega.** No `core/ciclo/ciclo.ts`, junto das outras recusas (antes do ponto 5,
+que monta a boleta), com um motivo novo em **`core/estados/motivos.json`** — que é o conjunto **interno** dos
+motivos da mesa (`cruzam_a_fronteira: false`, «nasce e morre dentro de um ciclo») e portanto **não exige emenda
+ao `vocabulario.json`**. O tecto é grandeza **da conta**, e chega ao ciclo pela **config que a mesa já lê**
+(`--config`); **não** pela operação, que cruzaria a fronteira e obrigaria a mexer no `operacao.schema.json` sem
+necessidade nenhuma.
+
+**O que falta:** o motivo, o travão no ciclo (abrir **e** `reverse`, que aumentam exposição na mesma ordem), os
+casos com controlo na bancada do ciclo (o caso de ~400× o equity tem de ser recusado; o mesmo mandato dentro do
+tecto tem de abrir), e a prova no portão.
 
 ---
 
