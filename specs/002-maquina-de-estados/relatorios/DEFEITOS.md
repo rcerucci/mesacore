@@ -698,7 +698,8 @@ e os casos com controlo. Nenhum setup do repositório emite redução parcial (o
 > **Casos com controlo:** 6 na bancada das ordens do `hyperliquid` (a fracção pedida → `0.005` de `0.01`; o
 > **par de controle** com `posicao_pct: 1` a sair exactamente como saía antes — quantidade vinda do `saldo_pct`,
 > posição viva não lida; e as quatro recusas) e 2 no `ctrader`. As ordens do conector entraram **no portão**
-> (estavam só a correr à mão): `bash tools/verificar-maquina/provar.sh` → **36 de 36**.
+> (estavam só a correr à mão): `bash tools/verificar-maquina/provar.sh` → **36 de 36** — e depois **37 de 37**,
+> com a porta do contrato dentro (o mesmo dia, a segunda metade da lição; ver o fecho do D-015).
 >
 > **Medido:** `ordens: 50 casos · 50 ok · 0 divergentes` (`bun brokers/hyperliquid/casos/correr-ordens.ts`) ·
 > `ctrader: 63 casos · 63 ok · 0 divergentes` (`uv run python casos/correr.py`) · contrato **136 casos** nos
@@ -787,7 +788,7 @@ lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *
 > **Medido:** `bun run core/ciclo/provar.ts` → **118 verificações · 0 divergentes** (eram 110; **47 de ciclo**,
 > eram 41) · `bash tools/preparar-contas/provas.sh` → **13 provas · 0 falhas** (a 13ª é nova: o tecto declarado
 > em TEXTO aprova, e um número sem aspas RECUSA com o nome da chave) · `bash tools/verificar-maquina/provar.sh`
-> → **36 de 36**.
+> → **37 de 37** (a porta do contrato entrou no mesmo dia: ver abaixo).
 >
 > **A contradição dos documentos duráveis, corrigida com data.** A tabela da emenda de 28 set
 > (`docs/inventario-de-chaves.md` §8) dizia que o `conta.risco_maximo_por_ordem_pct` **sai da mesa** («o limite
@@ -795,6 +796,32 @@ lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *
 > retiradas**. O desenho do D-015 decidiu o contrário — o travão é da MESA e o tecto é grandeza da CONTA — e é
 > essa a decisão que vale: a chave volta ao conferidor como **opcional** (ausente é legítimo) e com
 > `decimal_textual` (o limite não se escreve como número), e a linha do inventário fica com nota datada.
+>
+> **E UMA SEGUNDA CLASSE DO MESMO DEFEITO, apanhada no caminho e fechada aqui: o valor por omissão escrito como
+> TERNÁRIO.** A linha que levava o ambiente à conta — `configDaConta.conexao?.ambiente === "producao" ? "producao"
+> : "teste"` (`vigia/operador.ts`) — é a `?? "teste"` do princípio, escrita de outra maneira: uma conta que não
+> declarasse o ambiente virava testnet **sem ninguém o decidir**, no sítio que decide a que venue se fala (livro
+> da testnet contra velas da produção dá um `mid` contra um preço que não é o do venue onde se opera). Passa a
+> ser o que o `mercado.ts` já fazia com a ficha: **a conta que não declara o ambiente NÃO ARRANCA** (morre com o
+> valor que veio), e **o registo diz de onde o ambiente veio** (`arranque: "ambiente_declarado"`, com o caminho
+> da conta) — o valor sozinho não diz se veio da conta ou de uma omissão nossa.
+>
+> **A CLASSE, decidida por medição (e a catraca dos fallbacks fica a saber-se).** A catraca procura `??`/`||`
+> (e, em Python, `or`/`get(k, literal)`) — um ternário com literal por omissão passava por baixo dela. Medido
+> sobre o produto inteiro, para decidir se a catraca passa a vê-los: **114** ternários com um literal na ponta
+> falsa, dos quais **23** mencionam sequer a ausência (`?.`/`undefined`/`null`) — e a amostra desses 23 é o
+> idioma legítimo da casa (`...(x !== undefined ? { campo } : {})`, o objecto que só entra quando há valor). Um
+> padrão que reprovasse esses 23 obrigaria a escrever de outra forma código certo — e um portão que grita com
+> código certo deixa de ser lido (a mesma razão por que o `or` do Python ficou restrito). **Decisão: o ternário
+> não entra na catraca, mas passa a ser CONTADO e LISTÁVEL em cada corrida** (`--ternarios`): o buraco é um
+> número que desce (114), não uma frase. E a medição vai ao lado da decisão, no cabeçalho do próprio conferidor.
+> Medido também o `?? null`/`?? undefined` (58 sítios): não é buraco — um `x ?? null` **nomeia** a ausência em vez
+> de a substituir por um valor, que é o que a regra pede.
+>
+> **A PORTA DO CONTRATO ENTROU NO PORTÃO (35 → 36 → 37).** Era ela que comparava o vocabulário fechado nas duas
+> direcções e os dois motores caso a caso, e só corria à mão — foi por isso que a deriva do espelho dos motivos
+> atravessou uma entrega inteira. Um conferidor que só corre à mão encontra o defeito uma vaga depois de ele
+> entrar; dentro do portão, encontra-o no dia. `bash tools/verificar-maquina/provar.sh` → **37 de 37**.
 
 **Declarado em 30/09/2026.** A espec, RN-M4.12: *"O mandato declara também o **risco máximo por ordem**, em
 percentagem do saldo (ex.: 2%). Antes de enviar, a mesa calcula a perda implícita — distância do stop ×

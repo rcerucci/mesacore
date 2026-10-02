@@ -120,9 +120,29 @@ const configDaConta = ((): Record<string, any> => {
     return morrer(`a conta ${nomeDaConta} nao se le^ (${caminhoDaCredencial}): ${(e as Error).message}`);
   }
 })();
-// O AMBIENTE da conta manda nas velas tambem: ler o livro da testnet e as barras da producao da' um `mid`
-// contra um preco que nao e' o do venue onde se opera — centimos, mas centimos contam quando a banda e' 0.25 ATR.
-const ambienteDaConta: "teste" | "producao" = configDaConta.conexao?.ambiente === "producao" ? "producao" : "teste";
+// O AMBIENTE da conta NOMEIA-SE — nao ha' «teste por omissao». E' a MESMA classe que o `mercado.ts` fechou: o
+// ambiente decide A QUE VENUE se fala, e ler o livro da testnet contra as velas da producao da' um `mid` contra
+// um preco que nao e' o do venue onde se opera (centimos — mas centimos contam quando a banda e' 0.25 ATR). Uma
+// conta que nao o declara, ou que o declara com uma gralha, NAO ARRANCA: nao se adivinha por omissao, e a
+// ausencia tem nome (o valor veio, e veio fora do conjunto).
+const ambienteDeclarado: unknown = configDaConta.conexao?.ambiente;
+if (ambienteDeclarado !== "teste" && ambienteDeclarado !== "producao") {
+  morrer(
+    `a conta ${nomeDaConta} nao declara o ambiente (\`conexao.ambiente\`): veio ${JSON.stringify(ambienteDeclarado)} ` +
+      "— o ambiente viaja em TEXTO e e' um de teste|producao, porque e' ele que decide a que venue se fala. " +
+      "Um valor por omissao aqui nao e' comodidade: e' uma decisao tomada por quem nao a declarou",
+  );
+}
+const ambienteDaConta: "teste" | "producao" = ambienteDeclarado;
+// DE ONDE VEIO O AMBIENTE: o registo tem de poder responder a essa pergunta. O valor sozinho nao diz se veio da
+// conta ou de uma omissao nossa — e uma corrida que se leia depois tem de o saber sem ler codigo (SC-011).
+dizer({
+  etapa: "operador",
+  arranque: "ambiente_declarado",
+  conta: nomeDaConta,
+  ambiente: ambienteDaConta,
+  ambiente_de: `conta ${nomeDaConta} (conexao.ambiente — ${caminhoDaCredencial})`,
+});
 // O TECTO DE RISCO POR ORDEM, como a conta o declarou. Ausente = `undefined` = a chave NAO entra na vista (e o
 // travão nao actua) — e a mesa di-lo no registo. Nao se inventa tecto nenhum aqui, pela mesma razao por que nao
 // se inventa uma ficha: quem nao o declara esta' a dizer que aceita a exposicao.

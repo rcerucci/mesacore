@@ -30,10 +30,30 @@ parenteses encaixados — o padrao `[^()]*` nao atravessa `algo(x)`, e foi assim
 catraca e so' foi encontrado a olho, depois de a catraca ter reprovado os dois vizinhos. Preferiu-se o falso
 negativo declarado ao falso positivo, porque um portao que grita com codigo certo deixa de ser lido.
 
-Uso:  uv run python tools/verificar-contrato/py/fallbacks.py [--listar|--actualizar-baseline|--exigir-zero]
+COBERTURA DECLARADA, do lado TypeScript — o TERCEIRO padrao, o ternario. Um `cond ? x : "literal"` e' o mesmo
+defeito escrito de outra maneira, e o `??`/`||` nao o ve^: foi por ali que passou o AMBIENTE da conta
+(`configDaConta.conexao?.ambiente === "producao" ? "producao" : "teste"`, em `vigia/operador.ts`) — uma ausencia
+que virava o ambiente de TESTE sem ninguem o decidir, no sitio que decide a que venue se fala. MEDIDO para
+decidir se a catraca o passa a ver (02/10/2026), sobre o produto inteiro: **114** ternarios com um literal na
+ponta FALSA, dos quais **23** mencionam sequer a ausencia (`?.`, `undefined`, `null`) — e a amostra desses 23 e'
+o idioma legitimo da casa (`...(x !== undefined ? { campo } : {})`, o objecto que so' entra quando ha' valor),
+mais o proprio defecto do ambiente (corrigido: a conta que nao declara o ambiente NAO ARRANCA, e o registo diz de
+onde ele veio). Um padrao que reprovasse estes 23 obrigaria a escrever de outra forma codigo certo, e um portao
+assim deixa de ser lido — pela mesma razao que o `or` do Python ficou restrito. DECISAO: o ternario NAO entra na
+catraca (nao soma aos `total`), mas e' CONTADO e LISTAVEL em cada corrida (`--ternarios`), para o buraco ser um
+NUMERO que desce e nao uma frase. Um ternario NOVO com literal por omissao e' defeito por revisao: quem o
+escrever le^ aqui que a catraca nao o apanha.
+
+(Nota do que ESTE padrao tambem nao ve^: o `?? null` e o `?? undefined` — `null` nao esta' na lista de literais.
+Medido a 02/10/2026: **58** sitios no produto, e a leitura e' outra — um `x ?? null` NAO substitui a ausencia por
+um valor: NOMEIA-a (`null` = «nao veio»), que e' exactamente o que a regra pede. Fica dito para que nao se
+confunda o idioma da casa com o defeito que a catraca procura.)
+
+Uso:  uv run python tools/verificar-contrato/py/fallbacks.py [--listar|--actualizar-baseline|--exigir-zero|--ternarios]
       --listar              imprime cada sitio (ficheiro:linha + o codigo, sem comentarios)
       --actualizar-baseline  regrava a linha de base com o que existe agora
       --exigir-zero          REPROVA se existir um unico sitio (e' o modo do fim: zero e' zero)
+      --ternarios            lista os ternarios com literal por omissao (o buraco DECLARADO; nao reprova)
 """
 import collections, json, os, re, sys
 
@@ -43,6 +63,12 @@ BASELINE = os.path.join(RAIZ, "tools", "verificar-contrato", "fallbacks-baseline
 
 LITERAL = r'(?:"[^"]*"|\'[^\']*\'|\[[^\]]*\]|\{[^}]*\}|-?\d+(?:\.\d+)?|true|false)'
 PADROES = [re.compile(r"\?\?\s*" + LITERAL), re.compile(r"\|\|\s*" + LITERAL)]
+
+# O TERCEIRO padrao — o TERNARIO com um literal na ponta falsa. E' o mesmo defeito escrito de outra maneira, e
+# o `??`/`||` nao o ve^ (o cabecalho traz a medicao e a decisao de o NAO pôr na catraca). Fica contado e
+# listavel: o buraco e' um NUMERO que desce, e nao uma frase. O `?` seguido de espaco exclui o encadeamento
+# opcional (`?.`) e o `??`; o literal tem de FECHAR a ponta (nao continuar num nome).
+TERNARIO = re.compile(r"\?\s[^:;]*?:\s*" + LITERAL + r"(?![A-Za-z0-9_.])")
 
 # O lado PYTHON do produto. O conector cTrader e' o primeiro plugin em Python, e o `??`/`||` nao existem nesta
 # lingua: o mesmo defeito escreve-se `x or "literal"` ou `d.get("k", "literal")`. Sem estes dois padroes, um
@@ -166,9 +192,12 @@ def sem_comentarios(linhas, python=False):
     return saida
 
 
-def contar():
-    por_ficheiro = collections.Counter()
-    sitios = []
+def _percorrer():
+    """As linhas de CODIGO (sem comentarios) de todo o produto: `(rel, linha, codigo, eh_python)`.
+
+    Uma so' travessia para os dois contadores — a catraca e o buraco declarado le^em exactamente os mesmos
+    ficheiros, senao o buraco declarado media outra coisa que nao o produto.
+    """
     for alvo in ALVOS:
         for raiz, _, ficheiros in os.walk(os.path.join(RAIZ, alvo)):
             if any(d in raiz for d in DIRECT_DE_DEPENDENCIAS):
@@ -181,17 +210,39 @@ def contar():
                 if IGNORAR.search(rel):
                     continue
                 linhas = open(caminho, encoding="utf-8", errors="replace").read().split("\n")
-                padroes = PADROES + (PADROES_PY if f.endswith(".py") else [])
                 for i, codigo in enumerate(sem_comentarios(linhas, python=f.endswith(".py")), 1):
-                    if any(p.search(codigo) for p in padroes):
-                        por_ficheiro[rel] += 1
-                        sitios.append(f"{rel}:{i}  {codigo.strip()[:110]}")
+                    yield rel, i, codigo, f.endswith(".py")
+
+
+def contar():
+    por_ficheiro = collections.Counter()
+    sitios = []
+    for rel, i, codigo, eh_python in _percorrer():
+        padroes = PADROES + (PADROES_PY if eh_python else [])
+        if any(p.search(codigo) for p in padroes):
+            por_ficheiro[rel] += 1
+            sitios.append(f"{rel}:{i}  {codigo.strip()[:110]}")
     return por_ficheiro, sitios
+
+
+def contar_ternarios():
+    """O buraco DECLARADO (ver o cabecalho): ternarios com um literal por omissao. Nao reprova — conta."""
+    return [f"{rel}:{i}  {codigo.strip()[:110]}" for rel, i, codigo, _ in _percorrer() if TERNARIO.search(codigo)]
 
 
 por_ficheiro, sitios = contar()
 total = sum(por_ficheiro.values())
 print(f"fallbacks no produto: {total} sitios em {len(por_ficheiro)} ficheiros")
+
+# O buraco declarado, medido em CADA corrida: um numero que desce (e que sobe quando alguem escreve um ternario
+# com valor por omissao). Nao soma aos `total` — nao reprova — mas nao deixa de ser visivel.
+ternarios = contar_ternarios()
+print(f"ternarios com valor por omissao (buraco DECLARADO, nao reprova): {len(ternarios)} sitios")
+
+if "--ternarios" in sys.argv:
+    for sitio in ternarios:
+        print(sitio)
+    sys.exit(0)
 
 if "--listar" in sys.argv:
     # A LISTA, e nao so' o numero. Sem isto, limpar fallbacks e' as cegas: o conferidor diz que faltam 167 e

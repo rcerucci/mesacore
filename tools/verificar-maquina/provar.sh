@@ -110,6 +110,12 @@ if [ "$RAPIDO" -eq 0 ]; then
   declarar "encerramento (--encerramento)" bash tools/verificar-maquina/vigia.sh --encerramento
   declarar "verbos (--verbos, T044)"       bash tools/verificar-maquina/vigia.sh --verbos
   declarar "contrato neutro (recorte 001)" bash tools/verificar-contrato/ponta-a-ponta.sh
+  # A PORTA DO CONTRATO: o vocabulario e' um CONJUNTO FECHADO nas DUAS direcoes (o que o produto emite e o que o
+  # `vocabulario.json` declara) e a paridade dos dois motores caso a caso. Esteve FORA do portao — e foi ela que
+  # apanhou a deriva do espelho dos motivos (`_defs/forma.schema.json`: dois nomes em falta desde a emenda 1.10.0,
+  # atravessaram uma entrega inteira). Um conferidor que so' corre a' mao encontra o defeito uma vaga depois de ele
+  # entrar; entrando aqui, encontram-no no dia.
+  declarar "porta do contrato (2 motores)" bun tools/verificar-conector/porta-do-contrato.ts
   declarar "frescura do contrato"          bash tools/verificar-contrato/frescura.sh
   declarar "frescura (prova negativa, T057)" bash tools/verificar-contrato/frescura.sh --prova-negativa
   declarar "fallbacks (ZERO exigido)"          bash -c "cd contracts && uv run python ../tools/verificar-contrato/py/fallbacks.py --exigir-zero"

@@ -529,10 +529,12 @@ motores · `porta-do-contrato.ts` → **0 falhas** (**22 motivos** fechados nas 
 erros em 6 directórios** · `fallbacks` → **0 sítios em 0 ficheiros** · `bash tools/preparar-contas/provas.sh` →
 **13 provas · 0 falhas** (a 13ª é nova).
 
-**As ordens do conector entraram no PORTÃO** (`provar.sh`: **35 → 36**). A tradução de ordens decide a quantidade
+**As ordens do conector entraram no PORTÃO** (`provar.sh`: **35 → 36**) — **e a porta do contrato também**
+(**36 → 37**). A tradução de ordens decide a quantidade
 que vai para o mercado e é o único sítio onde uma redução parcial se vira em número — e só corria à mão. Um
 caminho que mexe em dinheiro fora do portão é um caminho que pode regredir sem ninguém dar por isso (a lição de
-29/09, paga com o envio).
+29/09, paga com o envio). A porta do contrato é o outro lado da mesma lição: ela É a rede do vocabulário fechado,
+e estava fora.
 
 **Duas decisões que não são minhas, e ficam ditas:**
 
@@ -549,13 +551,24 @@ caminho que mexe em dinheiro fora do portão é um caminho que pode regredir sem
 
 **O que fica declarado (e não fechado):**
 
-- **A `porta-do-contrato.ts` está FORA do portão** — e foi ela que apanhou a deriva que ninguém via: o espelho do
-  vocabulário (`_defs/forma.schema.json#/$defs/motivo`) **faltava-lhe os dois motivos da emenda 1.10.0**
-  (`reversao_com_reduce_only`, `reversao_sem_posicao_a_reverter`). Fechado aqui (com os quatro da 1.11.0), mas o
-  conferidor continua fora da porta única: um contrato que muda sem ele é um contrato que muda sem rede.
+- **A `porta-do-contrato.ts` estava FORA do portão — e entrou (36 → 37).** Foi ela que apanhou a deriva que
+  ninguém via: o espelho do vocabulário (`_defs/forma.schema.json#/$defs/motivo`) **faltava-lhe os dois motivos da
+  emenda 1.10.0** (`reversao_com_reduce_only`, `reversao_sem_posicao_a_reverter`). Fechado aqui (com os quatro da
+  1.11.0) **e conferido no dia a partir de agora**: um conferidor que só corre à mão encontra o defeito uma vaga
+  depois de ele entrar.
+- **A CLASSE do defeito que passou por baixo da catraca, decidida por medição.** O ambiente da conta vinha de um
+  ternário com valor por omissão (`... ? "producao" : "teste"`), que a catraca dos fallbacks (que procura
+  `??`/`||`) não vê. Corrigido no sítio (a conta que não declara o ambiente **não arranca**, e o registo diz de
+  onde ele veio), e a classe medida: **114** ternários com literal por omissão no produto, **23** deles a
+  mencionar sequer a ausência — e a amostra desses 23 é o idioma legítimo da casa, logo um padrão que os
+  reprovasse matava o portão à fome de falsos positivos. Fica **declarado e contado** (`--ternarios`): o buraco é
+  um número que desce, não uma frase.
 - **A contradição do `config/contas/hl-teste-plugin.json` continua a NÃO ser minha** (o `.gitignore` diz que
   `config/contas/` não se versiona; o ficheiro está rastreado): a árvore fica com esse **um** ficheiro sujo, como
   estava. Não a resolvi.
 - **O sistema em observação não foi tocado** (mesa, operador, conector e feed continuam como estavam): nenhuma
   ordem saiu, e o gatilho segue no lugar.
+- **Os documentos duráveis ficaram com as notas datadas** onde diziam o contrário do que passou a valer: a
+  RN-M4.12 (`docs/regra-de-negocio.md`) e a linha do `conta.risco_maximo_por_ordem_pct`
+  (`docs/inventario-de-chaves.md` §8), que declarava a chave «sai da mesa».
 
