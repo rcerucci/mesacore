@@ -27,7 +27,11 @@ export interface Mandato {
    * bandas de `saldo_pct`/`alavancagem`; estas duas - `stop_pct` e `tp_pct` - sao conferidas no CICLO, onde
    * o valor do setup aparece (D-008). Ausente = o dono nao declarou banda, e nao ha' limite a aplicar.
    */
-  bandas?: Record<string, { minimo?: string; maximo?: string }>;
+  bandas?: Record<string, { minimo?: string; maximo?: string } | string>;
+  /** RN-T16. false = posicao aberta a mao nao se gere. Ausente nao e' false. */
+  tolera_posicao_manual?: boolean;
+  /** RN-S11. "" = sem limite, declarado. Ausente nao e' vazio. */
+  tempo_maximo_em_posicao?: string;
 }
 
 export interface Template {
@@ -77,7 +81,7 @@ let layoutDaMarca: { bits_ciclo: number; ficha_minima: number; ficha_maxima: num
 function lerLayoutDaMarca() {
   if (!layoutDaMarca) {
     layoutDaMarca = JSON.parse(
-      readFileSync(join(RAIZ_DO_REPO, "contracts", "vocabulario.json"), "utf8"),
+      readFileSync(join(RAIZ_DO_REPO, "contracts/vocabulario.json"), "utf8"),
     ).marca_de_posse_layout;
   }
   return layoutDaMarca!;
