@@ -102,6 +102,19 @@ A tela segue os dois: o `vivo.json` repinta os números (a cada 2 s) e o `painel
 60 s). O que o vivo **não** traz (as velas e a série) é preservado do retrato que já está desenhado — e a fita
 mostra **as duas idades**, porque o «agora» fresco com um gráfico velho seria uma meia-verdade.
 
+### O gráfico não é redesenhado — é actualizado
+
+Redesenhar o gráfico a cada 2 s seria caro de verdade (centenas de velas por par) e não é preciso: o ciclo vivo
+mexe **só na última barra** (`series.update`, o caminho leve do `lightweight-charts`) e na **linha do preço**.
+
+- a **linha do preço** segue o `ultimo` da LEITURA — fresca a cada segundo no motor (medido: 0-235 ms de idade).
+  É ela que dá a sensação de vivo sem inventar barra nenhuma: o que se desenha é um número do venue, lido agora;
+- a **barra em curso** muda quando a VELA muda, e quem a puxa é o operador: medido, o ficheiro do ETH-1m tinha 81 s
+  e o do BTC-1h 1173 s. Um puxão custa ~1,3 s (processo + pedido), e é por isso que ele não é feito a cada segundo
+  — o tecto é do operador, e está dito aqui para não se procurar o defeito na tela;
+- duas guardas antes do `update`: o tempo da barra não pode ser **anterior** ao que está desenhado (o
+  `lightweight-charts` recusa) nem de outro **instrumento** (desenharia uma barra solta no fim).
+
 `--sem-serie` também serve para pedir um retrato à mão sem pagar o custo da série:
 
 ```bash

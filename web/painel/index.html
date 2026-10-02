@@ -553,6 +553,11 @@ let selecionado = null;
 let grafico = null;
 const series = {};      // as séries do gráfico, por nome
 let marcas = null;      // o gestor de marcadores (v5: createSeriesMarkers)
+// O CICLO VIVO ACTUALIZA A ÚLTIMA BARRA, e precisa de duas guardas para não estragar o gráfico: `ultimoTempoNoGrafico`
+// diz se PODE (um `update` com tempo ANTERIOR rebenta, e com tempo muito posterior — outro instrumento — desenharia
+// uma barra solta no fim); `linhaDoPreco` é a linha do último preço, criada uma vez e depois só deslocada.
+let ultimoTempoNoGrafico = null;
+let linhaDoPreco = null;
 
 /* ============================ A FITA ==================================== */
 function desenharFita() {
@@ -996,9 +1001,12 @@ function desenharGrafico() {
   ajustarAlturaDosPainéis();
 
   // --- as velas: o que o venue publicou ---
-  series.vela.setData((i.velas ?? []).map((v) => ({
+  const barras = (i.velas ?? []).map((v) => ({
     time: Math.floor(v.t / 1000), open: Number(v.o), high: Number(v.h), low: Number(v.l), close: Number(v.c),
-  })));
+  }));
+  series.vela.setData(barras);
+  // O TEMPO DA ÚLTIMA BARRA DESENHADA — é ele que autoriza (ou não) o `update` do ciclo vivo. Ver `carregarVivo`.
+  ultimoTempoNoGrafico = barras.length > 0 ? barras[barras.length - 1].time : null;
 
   // --- a série do setup: o que o indicador viu, barra a barra ---
   const s = i.serie_do_setup ?? [];
@@ -1723,6 +1731,44 @@ async function carregarVivo() {
   if (vivo.retrato) dados.agora = vivo.retrato;
   if (vivo.faltas) dados.faltas = vivo.faltas;
   if (vivo.configuracao) dados.configuracao = vivo.configuracao;
+  // O GRÁFICO TAMBÉM RESPIRA — e sem se redesenhar. O que se actualiza é a ÚLTIMA barra (a que está em curso) e a
+  // linha do preço: é o caminho leve do `lightweight-charts` (`update`, não `setData`), que não repinta 500 velas
+  // para mexer numa. O dono notou que o gráfico era «a principal área que dá a impressão de fotografia» — e o
+  // remédio não é redesenhá-lo mais vezes (isso pesaria, e ele tem razão: são centenas de velas por par), é mexer
+  // só na barra que ainda está a formar-se.
+  //
+  // Toca apenas no instrumento SELECCIONADO (há um gráfico em ecrã, e só um) e só quando o tempo da barra em curso
+  // não é anterior ao que está desenhado — as duas guardas estão declaradas onde nascem (`ultimoTempoNoGrafico`).
+  // A BARRA EM CURSO só pode mexer-se quando a VELA mexer — e quem a puxa é o operador, no ritmo dele (medido:
+  // 81 s para o ETH-1m, 1173 s para o BTC-1h). O preço vivo, esse, está na LEITURA, fresca a cada segundo.
+  //
+  // A LINHA DO PREÇO segue o ÚLTIMO PREÇO LIDO (o `ultimo` da leitura) e não o fecho da vela: é ele que dá a
+  // sensação de vivo sem inventar barra nenhuma — o que se desenha é um número do venue, lido agora. A barra em
+  // curso leva `update` quando chega uma vela nova (é a mesma ordem de grandeza do puxão do operador).
+  const comGrafico = instrumentoAtual();
+  const ultimo = (comGrafico?.leitura ?? {}).ultimo ?? null;
+  if (series.vela && ultimo !== null) {
+    const preco = Number(ultimo);
+    if (Number.isFinite(preco)) {
+      if (linhaDoPreco === null) {
+        linhaDoPreco = series.vela.createPriceLine({
+          price: preco, color: cor("--tinta-fraca"), lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "último",
+        });
+      } else {
+        linhaDoPreco.applyOptions({ price: preco });
+      }
+    }
+  }
+  const vela = comGrafico?.vela_em_curso ?? null;
+  if (series.vela && vela !== null) {
+    const barra = {
+      time: Math.floor(vela.t / 1000), open: Number(vela.o), high: Number(vela.h), low: Number(vela.l), close: Number(vela.c),
+    };
+    if (ultimoTempoNoGrafico === null || barra.time >= ultimoTempoNoGrafico) {
+      series.vela.update(barra);
+      ultimoTempoNoGrafico = barra.time;
+    }
+  }
   // Os três desenhos do «agora» — e as mesmas duas guardas do `carregar`, porque o desenho reescreve o HTML e os
   // botões novos nasceriam mortos (é o mesmo motivo que está dito lá em cima).
   desenharFita();

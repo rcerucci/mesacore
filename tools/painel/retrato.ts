@@ -18,7 +18,7 @@
 // Uso:
 //   bun run tools/painel/retrato.ts [--corrida <dir>] [--para <ficheiro.json>] [--conta <nome>]
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, openSync, fstatSync, readSync, closeSync } from "node:fs";
 import { join, dirname, isAbsolute } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -168,6 +168,36 @@ async function pedirSobreposicao(
     return { serie: d.serie ?? null, em_curso: d.em_curso ?? null, janela: d.janela ?? null, porque: null };
   } catch (e) {
     return { serie: null, em_curso: null, janela: null, porque: `a sobreposicao de ${manifesto.nome} nao devolveu JSON legivel (${e instanceof Error ? e.message : String(e)})` };
+  }
+}
+
+/**
+ * A ULTIMA VELA — e só ela. É o que faz o gráfico respirar no ciclo leve.
+ *
+ * O ficheiro das velas tem centenas de KB (o ETH-1m passa das 5000 barras) e o modo leve não os pode pagar: lê-se
+ * o RABO do ficheiro (8 KB) e fica-se com a última linha. Medido: 0,07 ms por leitura, contra 661 KB lidos
+ * inteiros. É o suficiente para a barra EM CURSO — a tela já tem as outras desenhadas e só precisa de actualizar a
+ * última (`series.update` é o caminho leve do lightweight-charts: não repinta 500 velas para mexer numa).
+ */
+function ultimaVela(instrumento: string, relogio: string, pasta: string): any | null {
+  const caminho = join(pasta, `velas-${instrumento}-${relogio}.jsonl`);
+  if (!existsSync(caminho)) return null;
+  const fd = openSync(caminho, "r");
+  try {
+    const tamanho = fstatSync(fd).size;
+    const inicio = Math.max(0, tamanho - 8192);
+    const buf = Buffer.alloc(tamanho - inicio);
+    readSync(fd, buf, 0, buf.length, inicio);
+    const linhas = buf.toString("utf8").split("\n").filter((l) => l.trim().length > 0);
+    const ultima = linhas[linhas.length - 1];
+    if (ultima === undefined) return null;
+    try {
+      return JSON.parse(ultima);
+    } catch {
+      return null;
+    }
+  } finally {
+    closeSync(fd);
   }
 }
 
@@ -359,8 +389,11 @@ for (const nome of nomesDosInstrumentos) {
     // o que o motor viu.
     // AS SERIES SO' EXISTEM NO RETRATO COMPLETO (ver `SEM_SERIE`): em modo leve a tela JA' tem a serie
     // desenhada, e repetir 1,7 MB a cada dois segundos para a deitar fora seria o contrario de leve.
+    // NO MODO LEVE VAI A BARRA EM CURSO (uma vela, lida do rabo do ficheiro): sem ela o gráfico ficava com a cara
+    // de uma fotografia entre retratos. No retrato completo não se repete — a última vela já lá está, dentro de
+    // `velas`.
     ...(SEM_SERIE
-      ? {}
+      ? { vela_em_curso: relogio !== null ? ultimaVela(nome, relogio, pastaDoMercado) : null }
       : {
           velas: cruzamento.velas,
           serie_do_setup: cruzamento.serie,
