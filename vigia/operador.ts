@@ -65,7 +65,23 @@ const soOPar = arg("--par") ?? null; // opcional: sem ele, percorre TODAS as fic
 // OS NUMEROS POR OMISSAO DO OPERADOR, com nome. Eram `arg("--tick") ?? "60000"` (e companhia): o valor por
 // omissao de uma opcao de linha de comando e' uma declaracao do instrumento, e uma declaracao escrita como
 // literal solto no meio do argumento nao se le nem se muda - passa a ter nome, e o nome diz o que e'.
-const TICK_POR_OMISSAO_MS = 60_000;
+/**
+ * A VOLTA PADRAO — 1 segundo. Era 60 000.
+ *
+ * O que a volta governa: a LEITURA do venue e a entrega da proposta a' mesa. Nao governa a barra do setup (o
+ * setup e' funcao da barra FECHADA, e quem a define e' o relogio da ficha) nem a decisao (a mesa tem o relogio
+ * dela). Com 60 s, uma proposta que chega no inicio da barra seguinte era vista pela mesa quase um minuto
+ * depois — e o preco de entrada ja' nao era o mesmo (medido a 02/10/2026, ETH a 1 m: 2 propostas perdidas por
+ * `proposta_de_barra_antiga`).
+ *
+ * O QUE NAO HERDA ESTE NUMERO: a VALIDADE da leitura (ver `VALIDADE_DA_LEITURA_MS`). Amarrar as duas foi o que
+ * fez um atraso de rede de 1 s virar `sem_leitura` — e nesse estado a mesa nao abre E nao fecha.
+ *
+ * O CUSTO, medido: uma volta corre o setup uma vez por par ligado, e uma chamada ao setup custa 0,08 s a frio
+ * (3 execucoes). Com 3 pares sao ~0,24 s de cada 1 s. O setup NAO corre 60x por barra por nada: e' a mesma
+ * resposta enquanto a barra nao muda.
+ */
+const TICK_POR_OMISSAO_MS = 1_000;
 const VOLTAS_POR_OMISSAO = 1;
 const DIAS_DE_HISTORICO_POR_OMISSAO = 30;
 const tickMs = arg("--tick") === undefined ? TICK_POR_OMISSAO_MS : Number(arg("--tick"));
@@ -315,7 +331,18 @@ let mandatoEscrito: Record<string, unknown> | null = null;
  * anterior» — o ausente é ausente, e não é o retrato que já lá estava.
  */
 const leiturasDaVolta = new Map<string, { leitura: Record<string, unknown>; recebida_ms: number; respondeu: boolean }>();
-const VALIDADE_DA_LEITURA_MS = tickMs;
+/**
+ * QUANTO TEMPO UMA LEITURA CONTINUA A VALER — com numero PROPRIO.
+ *
+ * Era `= tickMs`, e amarrar a validade ao ritmo da volta parece economico e e' o contrario: baixar o ritmo (para
+ * a proposta chegar depressa) encurtava a tolerancia a um atraso do venue. Com `tick = 1 s`, uma leitura valia
+ * UM segundo, e um pedido que demorasse mais do que isso punha o par em `sem_leitura` — estado em que a mesa
+ * NAO ABRE e NAO FECHA (RN-D7). Baixar o ritmo nao pode ser baixar a defesa.
+ *
+ * O numero e' folgado de proposito: o venue entrega leitura a cada volta, e 10 s toleram dez voltas perdidas
+ * antes de a operacao declarar que aquele par nao foi lido.
+ */
+const VALIDADE_DA_LEITURA_MS = 10_000;
 
 /**
  * AS RETIRADAS, par a par: um par que estava ligado e deixou de estar, e o que a ficha dele manda fazer à posição.
@@ -670,7 +697,11 @@ async function main(): Promise<void> {
   // O PRAZO (D-017): uma leitura que nao vem nao pode deixar a operacao por escrever para sempre. Ao fim de
   // `LEITURAS_INUTEIS` leituras que nao servem nenhum par ligado, escreve-se a operacao com o que existe — os
   // pares sem leitura entram SEM `leitura` (sem_leitura, RN-D7), que e' a verdade, em vez de silencio.
-  const LEITURAS_INUTEIS = 3;
+  //
+  // O NUMERO LE'-SE DO PRAZO, e nao e' um 3 solto: era `3`, o que valia 3 MINUTOS com a volta em 60 s e passou a
+  // valer 3 SEGUNDOS com a volta em 1 s — a operacao escrita sem leitura a cada soluço. O prazo e' o tempo de
+  // validade, medido em voltas, e nunca menos de 3 (uma leitura perdida sozinha nao apaga o ciclo inteiro).
+  const LEITURAS_INUTEIS = Math.max(3, Math.ceil(VALIDADE_DA_LEITURA_MS / tickMs));
   let inuteis = 0;
 
   const terminar = () => {

@@ -139,7 +139,7 @@ aceite. O comportamento dele é o **oráculo de aceite**: medido, não opinado.
 | `specs/002-maquina-de-estados/` | a spec da máquina — 7 histórias, 44 FR, 12 SC. Relatórios em `relatorios/` |
 | `docs/` | a regra de negócio (136), a máquina de estados, o inventário de chaves |
 
-**Uma porta para provar tudo:** `bash tools/verificar-maquina/provar.sh` (**34 de 34**, medido 02/10/2026 — o
+**Uma porta para provar tudo:** `bash tools/verificar-maquina/provar.sh` (**35 de 35**, medido 02/10/2026 — o
 "15 de 15" que aqui estava era do recorte 002 e tinha ficado para trás; o número verdadeiro lê-se sempre na
 última linha da própria porta).
 

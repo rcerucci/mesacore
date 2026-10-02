@@ -25,7 +25,7 @@
 // config nomeia) e a porta `manifesto` (o manifesto que ele publica e que a mesa confere). As outras cinco sao
 // do mandato, da contenda, das chaves, da versao e da sessao — pecas que o conector nao le de proposito.
 
-import { construirManifesto, type Resultado as ResultadoDoManifesto, type Sonda } from "./manifesto.ts";
+import { construirManifesto, manifestoParaInstrumento, type Resultado as ResultadoDoManifesto, type Sonda } from "./manifesto.ts";
 import {
   compararDecimais,
   construirSonda,
@@ -206,7 +206,15 @@ export type EstadoDoProcesso = {
   manifesto: Record<string, unknown>;
   /** A mensagem do manifesto ja no envelope do contrato (validada antes de sair daqui). */
   linha_do_manifesto: string;
-  sonda: SondaMedida;
+  /**
+   * A SONDA que produziu o manifesto — ja' JUNTADA com a bateria de conformidade.
+   *
+   * Era a `medida` (o resultado cru das leituras, antes de a bateria declarar o que o venue nao publica).
+   * Guardar a juntada e' o que permite RECONSTRUIR o manifesto sem rede nenhuma (o caso do instrumento que
+   * entra por uma ficha ligada a' quente): a partir da medida crua, `construirManifesto` recusaria os campos
+   * que so' a bateria declara — e a reconstrucao caia sempre no manifesto do arranque.
+   */
+  sonda: Sonda;
   /** Onde a credencial foi buscar o VALOR — o valor nunca entra aqui (FR-023). */
   credencial: { de: string; protegido: string } | null;
   estado_da_ligacao: "ligada" | "desconhecido";
@@ -702,7 +710,7 @@ export async function arrancar(entrada: Entrada, opcoes: { sem_chave?: boolean }
       ficha,
       manifesto: m.manifesto,
       linha_do_manifesto: linha,
-      sonda: medida,
+      sonda: juntada.sonda,
       credencial,
       estado_da_ligacao: estadoDaExchange,
       carteiras: { nomes: carteiras.nomes, nao_lidas: carteiras.nao_lidas, nota: carteiras.nota },
@@ -1138,17 +1146,27 @@ export async function atender(
 
   // 3. A TRADUCAO (o conector nao altera a boleta: converte, e recusa o que nao cabe). O manifesto entra
   // como esta: a traducao le o nome que o CONTRATO publica (`minimo_de_valor_por_ordem`), sem ponte.
+  //
+  // O MANIFESTO ACOMPANHA AS FICHAS: `manifestoParaInstrumento` devolve o do arranque, ou um reconstruido da
+  // sonda guardada quando o instrumento desta boleta entrou por uma ficha ligada a' quente (funcao pura, sem
+  // rede). Sem isto, a ordem desse par era RECUSADA com `instrumento_desconhecido_no_manifesto` — medido a
+  // 02/10/2026 com o ETH.
+  const manifestoEmVigor = manifestoParaInstrumento(
+    estado.sonda,
+    estado.manifesto,
+    String(b.instrumento),
+  ) as unknown as ManifestoDoVenue;
   const accao = traduzirOrdem({
     conta: estado.ficha.conta,
     boleta: b as unknown as Boleta,
-    manifesto: estado.manifesto as unknown as ManifestoDoVenue,
+    manifesto: manifestoEmVigor,
     saldo,
     preco: marca,
   });
   if (!accao.ok) {
     return recusa(id, accao.motivo, `${accao.porque} — e nao se arredonda para caber (RN-C9)`, {}, []);
   }
-  const unidade = unidadeDo(estado.manifesto, accao.accao.instrumento);
+  const unidade = unidadeDo(manifestoEmVigor as Parameters<typeof unidadeDo>[0], accao.accao.instrumento);
   // O TICK DO INSTRUMENTO, DO MANIFESTO — nunca um. Era `unidade?.tick ?? "1"`, e o `"1"` era uma unidade
   // INVENTADA: a resolucao que sai antes do envio (a que a mesa confere contra a banda, D-001) seria calculada
   // sobre uma unidade que o venue nao declarou. Se o instrumento nao esta no manifesto, quem recusa e' o

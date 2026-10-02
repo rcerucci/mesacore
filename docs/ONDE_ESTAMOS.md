@@ -384,3 +384,41 @@ classificado. O que tem valor é **texto**, e guarda-se aqui para não se perder
 | Remoção dos comentários «porquê» em `ciclo.ts`, `plugin.ts`, `arranque.ts` e `registro.ts` | perda, não ganho — o registo de decisões é o que o repositório tem de mais caro. Descartável |
 
 Com isto, **o ramo não tem mais nada**: nada lá dentro falta ao produto depois de o registo acima existir.
+
+## 02/10/2026 (tarde) — «controle total pelas fichas»: o par ligado a quente passa a poder ORDENAR
+
+O dono pediu: *«controle total do sistema somente controlando qualquer ficha de setup, sem necessidade de
+alterar à mão qualquer outro arquivo»*. Medi: faltavam dois elos — e o teste do ETH (ficha nova, relógio `1m`,
+em testnet) mostrou-os a acontecer ao vivo.
+
+**O que o hot-plug já fazia, e o que faltava:**
+
+| Elo | Antes de hoje | Agora |
+|---|---|---|
+| Leitura do par | fichas relidas a cada volta | ✅ (era o único elo fechado) |
+| Setup, proposta, mandato, mesa decidir | ficha | ✅ |
+| Velas (relógio da ficha) | puxadas por ficha | ✅ |
+| **Unidades do manifesto** (o que a tradução confere antes de enviar) | pedidas no **arranque** → a ordem do ETH foi **recusada** com `instrumento_desconhecido_no_manifesto` (nada saiu: a recusa é nomeada e não envia) | ✅ `manifestoParaInstrumento`: reconstruído da sonda guardada (o universo já lá está) — função **pura**, sem rede e sem reiniciar o conector |
+| **Lista de pares da conta** | `conta.instrumentos` **obrigatória** na config | ✅ derivada das fichas (`run: true`), e a config **acrescenta**; sem config e sem fichas → **recusa** (o default `["BTC"]` escrito à mão é que foi o defeito antigo, não a derivação) |
+
+**Bancada nova, dentro da porta:** `tools/verificar-conector/manifesto-acompanha-as-fichas.ts` — 8 verificações,
+com o **CONTROLO** que prova o defeito (a mesma boleta do ETH contra o manifesto do arranque é **recusada**). O
+caso nunca esteve em bancada nenhuma porque só aparece com a mão **aberta** — as provas do hot-plug corriam com
+`enviar: false`, e o defeito vive exactamente no passo que só existe a enviar.
+
+**Os relógios do operador deixaram de ser um só:**
+
+- **volta: 1 s** (era 60 s) — a proposta chega à mesa quase de imediato; com 60 s, **2 propostas do ETH a 1 m
+  perderam-se** por `proposta_de_barra_antiga`;
+- **validade da leitura: 10 s, com número PRÓPRIO** (era `= tickMs`): amarrada ao ritmo, um `tick` de 1 s fazia
+  uma leitura valer 1 s, e um atraso do venue punha o par em `sem_leitura` — estado em que a mesa **não abre e
+  não fecha** (RN-D7). Baixar o ritmo não pode ser baixar a defesa;
+- **`LEITURAS_INUTEIS`** passa a ler-se do prazo (e nunca menos de 3), em vez do `3` solto que valia 3 minutos
+  com a volta em 60 s e passaria a valer 3 segundos;
+- **carteiro: 5 s** (já era).
+
+**Custo medido:** uma chamada ao setup custa **0,08 s** a frio (3 execuções); com 3 pares, ~0,24 s de cada 1 s.
+**Fica por fazer, de propósito:** correr o setup **só quando a barra do relógio muda** (a mesma resposta 60×) —
+mexe no caminho que decide ordens, e faz-se com o teste a correr para medir o efeito.
+
+Portão: **35 de 35** (era 34 — entrou a bancada do manifesto).

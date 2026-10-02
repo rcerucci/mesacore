@@ -251,16 +251,36 @@ function resolverFicha(casos: Casos, nome: string): FichaLida {
         referencia: c?.conta?.credencial,
         valor_em: c?.conexao?.credencial?.valor_em,
       },
-      // A LISTA DE PARES VEM DA FICHA, e de mais nenhum sitio. Estava a ler-se `c.instrumentos` no TOPO do
-      // ficheiro (onde nunca existe: a lista mora em `conta.instrumentos`) e a cair num `["BTC"]` escrito a mao —
-      // e foi isso que fez a conta que diz SOL operar BTC durante uma noite inteira, sem uma linha a dizê-lo.
-      // Um campo em falta NOMEIA-SE; nao se substitui por um valor por omissao (foi o que o dono apanhou).
+      // A LISTA DE PARES VEM DAS FICHAS — e a configuracao da conta, quando a declara, ACRESCENTA.
+      //
+      // O pedido do dono, textual: «tem que ser automatico a inclusao de instrumento. se tivesse uma ficha de
+      // eth, o plugin ao rodar iria pedir para o conector e ele nao precisa de reinicio ou alteracao alguma».
+      // Era `conta.instrumentos` obrigatorio — e uma ficha ligada a quente ficava sem unidade no manifesto e a
+      // ordem era RECUSADA (medido a 02/10/2026, com o ETH: `instrumento_desconhecido_no_manifesto`).
+      //
+      // O que NAO se perde: o par em falta continua a NOMEAR-SE. Era `c.instrumentos` no TOPO do ficheiro
+      // (onde nunca existe) a cair num `["BTC"]` escrito a mao — e foi isso que fez a conta que diz SOL operar
+      // BTC durante uma noite inteira. Agora quem recusa e' a lista VAZIA: sem configuracao e sem fichas
+      // ligadas nao ha par nenhum a ler, e isso nao se inventa.
       instrumentos: (() => {
-        const lista = c?.conta?.instrumentos ?? c?.instrumentos;
-        if (!Array.isArray(lista) || lista.length === 0) {
+        const daConfig = c?.conta?.instrumentos ?? c?.instrumentos;
+        const declarados = Array.isArray(daConfig)
+          ? daConfig.filter((s): s is string => typeof s === "string" && s !== "")
+          : [];
+        // A REFERENCIA DA CONTA E' O NOME DELA (`config/contas/<conta>.json` e a pasta das fichas). Ausente NAO
+        // se substitui por nada: sem ela nao se deriva ficha nenhuma, e quem exige a credencial e' a porta da
+        // chave — que a nomeia. (Aqui nao ha valor por omissao: a catraca de fallbacks e' zero no produto.)
+        const referenciaDaConta = c?.conta?.credencial;
+        const dasFichas =
+          typeof referenciaDaConta === "string" && referenciaDaConta !== ""
+            ? instrumentosDasFichasLigadas(referenciaDaConta)
+            : [];
+        const lista = [...new Set([...declarados, ...dasFichas])].sort();
+        if (lista.length === 0) {
           morrer(
-            `a configuracao da conta nao declara os instrumentos (conta.instrumentos): sem pares nomeados o ` +
-              "conector leria o que o venue quisesse, e um par por omissao e' uma decisao que ninguem tomou",
+            "nem a configuracao da conta nem as fichas nomeiam um par: `conta.instrumentos` esta' ausente ou " +
+              "vazio e nenhuma ficha desta conta esta' com `run: true`. Sem pares nomeados o conector leria o " +
+              "que o venue quisesse, e um par por omissao e' uma decisao que ninguem tomou",
           );
         }
         return lista;
@@ -508,6 +528,46 @@ function portaDoDuble(dados: any): Porta {
       },
     },
   };
+}
+
+/**
+ * OS INSTRUMENTOS DAS FICHAS LIGADAS DESTA CONTA.
+ *
+ * A lista de pares NAO se escreve num segundo sitio: `fichas/<setup>/<PAR>-<conta>.json` com `run: true`.
+ * Acrescentar um par passa a ser escrever uma ficha; `conta.instrumentos` continua a valer e ACRESCENTA (e' o
+ * minimo que o dono declarou). O que NAO se faz e' derivar do nada: sem configuracao E sem fichas, quem chama
+ * recusa — um par por omissao e' uma decisao que ninguem tomou.
+ *
+ * A ficha e' desta conta quando `cabecalho.conta` — o NOME da conta, o mesmo da credencial e da pasta das
+ * fichas — e' a que se esta' a servir. O ENDERECO do venue nao serve para isto: medido a 30/09/2026, a
+ * comparacao era feita com o endereco (`0xF871…`) e nenhuma ficha batia, ou seja «a lista e' relida das
+ * fichas a cada volta» era prosa.
+ */
+function instrumentosDasFichasLigadas(conta: string): string[] {
+  const encontrados = new Set<string>();
+  const raizDasFichas = join(dirname(new URL(import.meta.url).pathname), "..", "..", "fichas");
+  try {
+    for (const pasta of readdirSync(raizDasFichas)) {
+      const caminhoDaPasta = join(raizDasFichas, pasta);
+      if (!statSync(caminhoDaPasta).isDirectory()) continue;
+      for (const ficheiro of readdirSync(caminhoDaPasta)) {
+        if (!ficheiro.endsWith(".json")) continue;
+        try {
+          const f = JSON.parse(readFileSync(join(caminhoDaPasta, ficheiro), "utf8"));
+          const c = f?.cabecalho;
+          if (c === undefined) continue;
+          if (c.conta !== conta) continue; // ficha de outra conta: nao e' desta
+          if (c.run !== true) continue; // desligada: nao se le'
+          if (typeof c.instrumento === "string" && c.instrumento !== "") encontrados.add(c.instrumento);
+        } catch {
+          // ficha ilegivel: nao se adivinha. Fica de fora, e o ficheiro mau aparece na lista que nao cresce.
+        }
+      }
+    }
+  } catch {
+    // sem pasta de fichas: nao ha nada a acrescentar (quem chama decide o que uma lista vazia significa)
+  }
+  return [...encontrados].sort();
 }
 
 /**
@@ -1228,36 +1288,17 @@ async function main(): Promise<void> {
    * dela tres coisas e so' tres: `conta` (para saber se e' desta), `instrumento` e `run`.
    */
   const instrumentosVivos = (): string[] => {
-    const daFicha = new Set<string>();
-    const raizDasFichas = join(dirname(new URL(import.meta.url).pathname), "..", "..", "fichas");
-    try {
-      for (const pasta of readdirSync(raizDasFichas)) {
-        const caminhoDaPasta = join(raizDasFichas, pasta);
-        if (!statSync(caminhoDaPasta).isDirectory()) continue;
-        for (const ficheiro of readdirSync(caminhoDaPasta)) {
-          if (!ficheiro.endsWith(".json")) continue;
-          try {
-            const f = JSON.parse(readFileSync(join(caminhoDaPasta, ficheiro), "utf8"));
-            const c = f?.cabecalho;
-            if (c === undefined) continue;
-            // A CONTA DA FICHA E' O NOME DELA, NÃO O ENDEREÇO DA CONTA. Era `c.conta !== ficha.conta`, e
-            // `ficha.conta` é o ENDEREÇO (`0xF87138…`, que é o que o venue conhece): a comparação nunca batia,
-            // TODAS as fichas eram saltadas, e a lista de pares a ler ficava a do mandato lido no arranque — ou
-            // seja, «a lista é RELIDA das fichas a cada volta» era prosa: nenhuma ficha chegava a acrescentar
-            // nada. Medido a 30/09/2026 (`tools/observar-multipar.sh`): ligar a ficha do BTC a quente não lhe
-            // deu leitura nenhuma, e a razão era esta linha. O nome da conta é o da credencial — o mesmo do
-            // ficheiro `config/contas/<conta>.json` e da pasta das fichas.
-            if (c.conta !== ficha.credencial?.referencia) continue;   // ficha de outra conta: nao e' desta
-            if (c.run !== true) continue;               // desligada: nao se le'
-            if (typeof c.instrumento === "string" && c.instrumento !== "") daFicha.add(c.instrumento);
-          } catch {
-            // ficha ilegivel: nao se adivinha. Fica de fora, e o ficheiro mau aparece na lista que nao cresce.
-          }
-        }
-      }
-    } catch {
-      // sem pasta de fichas: vale a lista da conta (o comportamento antigo), e nao se inventa nada
-    }
+    // A leitura das fichas vive numa funcao so' (`instrumentosDasFichasLigadas`), a MESMA que a ficha do
+    // conector usa para montar a lista de pares: uma regra, um sitio. Repetir o laco aqui foi como as duas
+    // versoes se separaram uma vez (a comparacao com o ENDERECO em vez do nome da conta).
+    // A referencia da conta (o NOME dela) — ausente nao se substitui: sem ela nao se acrescenta ficha nenhuma,
+    // e a lista da conta continua a valer por si (a porta da chave recusa a ficha sem credencial, e nomeia-a).
+    const referenciaDaConta = ficha.credencial?.referencia;
+    const daFicha = new Set(
+      typeof referenciaDaConta === "string" && referenciaDaConta !== ""
+        ? instrumentosDasFichasLigadas(referenciaDaConta)
+        : [],
+    );
     // A lista da CONTA e' o minimo (nunca se deixa de ler o que o dono declarou no mandato), e as fichas
     // acrescentam. Uniao, ordenada — e nenhum instrumento desaparece por causa de uma ficha desligada que
     // tambem esteja no mandato.

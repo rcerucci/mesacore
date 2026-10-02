@@ -73,6 +73,10 @@ declarar "marcas sobrevivem ao reinicio" bash tools/verificar-maquina/reiniciar.
 declarar "porta da mesa (T014-T016)"      bun run tools/verificar-maquina/servidor.ts
 declarar "preparar contas (script + questionario)" bash tools/preparar-contas/provas.sh
 declarar "conector hyperliquid (offline, US1)" bash tools/verificar-conector/provas-offline.sh
+# O MANIFESTO ACOMPANHA AS FICHAS: uma ficha ligada a' QUENTE tem de poder ORDENAR, e nao so' ser lida e
+# proposta. Era aqui que a ordem era recusada (`instrumento_desconhecido_no_manifesto`, medido a 02/10/2026
+# com o ETH) — e o caso ficou fora de todas as bancadas porque so' aparece com a mao ABERTA.
+declarar "manifesto acompanha as fichas (quente)" bun run tools/verificar-conector/manifesto-acompanha-as-fichas.ts
 # O CAMINHO DO ENVIO faltava na porta unica: as 38 provas da porta de processo do conector (tradutor, precos,
 # assinatura, as 8 portas do arranque) so corriam quando alguem se lembrava de as chamar. Um caminho que mexe
 # em dinheiro fora do portao e um caminho que pode regredir sem ninguem dar por isso (medido 29/09/2026).

@@ -297,3 +297,32 @@ export function construirManifesto(sonda: Sonda): Resultado {
   };
   return { ok: true, manifesto };
 }
+
+/**
+ * O MANIFESTO QUE SERVE ESTA BOLETA.
+ *
+ * As unidades publicadas sao as dos instrumentos PEDIDOS no arranque. Uma ficha ligada a' QUENTE entra na
+ * LEITURA (a lista e' relida a cada volta) e a mesa manda a boleta — mas o instrumento nao estava nas unidades,
+ * e a traducao RECUSAVA com `instrumento_desconhecido_no_manifesto` (medido a 02/10/2026, com o ETH: proposta
+ * aceite pela mesa e ordem recusada — nada saiu).
+ *
+ * Como a sonda ja' tem o UNIVERSO do venue, reconstruir o manifesto com o instrumento desta boleta e' funcao
+ * PURA: sem rede, sem reinicio, e sem tocar na mensagem que o arranque publicou (as unidades do arranque ficam
+ * como estao — o que muda e' o que SERVE esta boleta).
+ *
+ * Devolve o manifesto do arranque quando o instrumento ja' esta' la' — e tambem quando a reconstrucao nao e'
+ * possivel (instrumento que nao existe no universo, ou sonda a que falte um campo que a bateria declarava).
+ * Nesses casos quem recusa e' a traducao, e recusa a NOMEAR — nao se inventa unidade nenhuma.
+ */
+export function manifestoParaInstrumento(
+  sonda: Sonda,
+  manifestoDoArranque: Record<string, unknown>,
+  instrumento: string,
+): Record<string, unknown> {
+  const unidades = (manifestoDoArranque as { instrumentos?: { simbolo?: unknown }[] }).instrumentos;
+  if (Array.isArray(unidades) && unidades.some((u) => u?.simbolo === instrumento)) return manifestoDoArranque;
+  const pedidos = sonda.instrumentos_pedidos;
+  if (!Array.isArray(pedidos) || pedidos.includes(instrumento)) return manifestoDoArranque;
+  const reconstruido = construirManifesto({ ...sonda, instrumentos_pedidos: [...pedidos, instrumento] });
+  return reconstruido.ok ? reconstruido.manifesto : manifestoDoArranque;
+}
