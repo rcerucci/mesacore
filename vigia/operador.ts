@@ -85,6 +85,25 @@ const TICK_POR_OMISSAO_MS = 1_000;
 const VOLTAS_POR_OMISSAO = 1;
 const DIAS_DE_HISTORICO_POR_OMISSAO = 30;
 const tickMs = arg("--tick") === undefined ? TICK_POR_OMISSAO_MS : Number(arg("--tick"));
+/**
+ * DE QUANTO EM QUANDO SE LE' O VENUE — e este numero NAO e' o ritmo da volta.
+ *
+ * Medido a 02/10/2026, com a volta em 1 s e 3 pares: o conector faz QUATRO leituras por par por volta (livro,
+ * estado, ordens e execucoes) e o venue respondeu **429 Too Many Requests** — 253 respostas em menos de dois
+ * minutos. Com a leitura a falhar, o par entra em `sem_leitura`, e nesse estado a mesa NAO ABRE e NAO FECHA:
+ * um ritmo depressa demais tira a defesa a' posicao, que e' o contrario do que se queria com a volta curta.
+ *
+ * O que a volta faz (avaliar e entregar a proposta a' mesa) pode ser rapido; o que BATE NO VENUE e' que tem de
+ * ser espacado. Sao dois numeros, com donos diferentes — e este e' o do venue.
+ *
+ * MEDIDO, os dois lados: com a leitura NO RITMO DA VOLTA (1 s) foram **253 respostas 429 em menos de dois
+ * minutos**, e a seguir o VENUE AINDA NOS LIMITOU no arranque seguinte (a porta `sonda_e_manifesto` recusou por
+ * um campo que a sonda nao conseguiu medir — 3 minutos de silencio resolveram). Com a leitura a 10 s: **0
+ * respostas 429**, os tres pares lidos, as duas posicoes vivas reconhecidas como nossas. 5 s correu com 1
+ * resposta 429 (provavelmente herdada da penalizacao) — 10 s e' o valor com medida limpa.
+ */
+const LEITURA_A_CADA_POR_OMISSAO_MS = 10_000;
+const leituraACadaMs = arg("--leitura-a-cada") === undefined ? LEITURA_A_CADA_POR_OMISSAO_MS : Number(arg("--leitura-a-cada"));
 const voltasPedidas = arg("--voltas") === undefined ? VOLTAS_POR_OMISSAO : Number(arg("--voltas"));
 const pastaDoMercado = arg("--mercado") ?? null;
 const diasDeHistorico = arg("--dias") === undefined ? DIAS_DE_HISTORICO_POR_OMISSAO : Number(arg("--dias"));
@@ -606,7 +625,7 @@ async function main(): Promise<void> {
   // posicao chegava a mesa SEM marca, e uma posicao sem marca e' alheia. O caminho e' O MESMO ficheiro que
   // este processo escreve (`caminhoDasMarcas()`): nao se inventa formato nenhum, liga-se o que ja' existia.
   const conector = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
-    "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(tickMs)],
+    "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(leituraACadaMs)],
     { cwd: RAIZ, env: { ...process.env, MARCAS_DA_CONTA: caminhoDasMarcas() } });
   // O `stderr` DO CONECTOR É DRENADO — e isto é uma correcção, não um enfeite. Era um `pipe` que ninguém lia:
   // (a) os diagnósticos dele (as portas, as leituras recusadas) eram INVISÍVEIS no registo do operador — e foi

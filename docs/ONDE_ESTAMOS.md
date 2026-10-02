@@ -406,18 +406,26 @@ com o **CONTROLO** que prova o defeito (a mesma boleta do ETH contra o manifesto
 caso nunca esteve em bancada nenhuma porque só aparece com a mão **aberta** — as provas do hot-plug corriam com
 `enviar: false`, e o defeito vive exactamente no passo que só existe a enviar.
 
-**Os relógios do operador deixaram de ser um só:**
+**Os relógios do operador são DOIS, e o primeiro teste provou-o à nossa custa:**
 
 - **volta: 1 s** (era 60 s) — a proposta chega à mesa quase de imediato; com 60 s, **2 propostas do ETH a 1 m
   perderam-se** por `proposta_de_barra_antiga`;
+- **leitura do venue: 10 s, valor PRÓPRIO** (`--leitura-a-cada`): o conector faz **quatro** leituras por par por
+  volta (livro, estado, ordens, execuções) e, com a leitura no ritmo da volta, o venue respondeu **253 ×
+  `429 Too Many Requests` em menos de dois minutos** (medido). Com a leitura a falhar, o par entra em
+  `sem_leitura` — onde a mesa **não abre e não fecha** —, e a seguir o venue **ainda nos limitou no arranque
+  seguinte** (a porta `sonda_e_manifesto` recusou por um campo que a sonda não conseguiu medir; 3 min de
+  silêncio resolveram). Com a leitura a **10 s**: 0 respostas 429, os três pares lidos, e as duas posições vivas
+  reconhecidas como nossas. **A volta curta não pode encurtar o ritmo com que se bate à porta do venue** — são
+  dois números, com donos diferentes;
 - **validade da leitura: 10 s, com número PRÓPRIO** (era `= tickMs`): amarrada ao ritmo, um `tick` de 1 s fazia
-  uma leitura valer 1 s, e um atraso do venue punha o par em `sem_leitura` — estado em que a mesa **não abre e
-  não fecha** (RN-D7). Baixar o ritmo não pode ser baixar a defesa;
+  uma leitura valer 1 s, e um atraso do venue punha o par em `sem_leitura` (RN-D7). Baixar o ritmo não pode ser
+  baixar a defesa;
 - **`LEITURAS_INUTEIS`** passa a ler-se do prazo (e nunca menos de 3), em vez do `3` solto que valia 3 minutos
   com a volta em 60 s e passaria a valer 3 segundos;
 - **carteiro: 5 s** (já era).
 
-**Custo medido:** uma chamada ao setup custa **0,08 s** a frio (3 execuções); com 3 pares, ~0,24 s de cada 1 s.
+**Custo do setup, medido:** uma chamada custa **0,08 s** a frio (3 execuções); com 3 pares, ~0,24 s de cada 1 s.
 **Fica por fazer, de propósito:** correr o setup **só quando a barra do relógio muda** (a mesma resposta 60×) —
 mexe no caminho que decide ordens, e faz-se com o teste a correr para medir o efeito.
 
