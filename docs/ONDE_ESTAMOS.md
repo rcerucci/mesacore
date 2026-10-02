@@ -368,3 +368,19 @@ mapa de marcas já recusavam (`vigia/arranque.ts`). A incoerência é o que a co
   mataria em silêncio uma ordem que ainda pode chegar.
 
 Portão, com esta vaga gravada: **34 de 34** (era 33 — entrou a bancada do registo do vigia).
+
+### O que mais havia no ramo, e porque se pode descartar
+
+Varridos os **8 ficheiros** do ramo (nenhum ficheiro novo, nenhum apagado — todos modificações), o resto está
+classificado. O que tem valor é **texto**, e guarda-se aqui para não se perder com o ramo:
+
+| O que | Veredicto |
+|---|---|
+| Motivo `posicao_manual_tolerada_nao_gerida` (RN-T16): «Tolerar não é adoptar. A posição relata-se e não se gere.» | **guardado aqui** para o dia em que a RN-T16 fechar. **Não entra no livro agora**: um motivo sem produtor é ruído num conjunto fechado (a própria casa já o decidiu — `proposta_sem_a_barra` saiu por isso) |
+| Motivo `tempo_maximo_sem_instante_de_abertura` (RN-S11): «Vazio é sem limite. Um prazo preenchido não se ignora, e não se fecha por um relógio que a leitura não trouxe.» | idem |
+| Motivo `ciclo_rebentou`: «Uma excepção que se apanha e se segue decide a bem do silêncio. A volta fica registada e, a seguir, a mesa para.» | **discordância de desenho, e não trabalho**: `core/servidor.ts` apanha a excepção do ciclo e **continua de propósito** («parar o relogio deixaria a posicao sem defesa por causa de um erro de codigo»). O agente propôs a política oposta e **não escreveu a alteração**. É decisão sua, com os dois argumentos à frente |
+| `bandas?: Record<string, {minimo?,maximo?} \| string>` (`core/ciclo/decisao.ts`) | alargamento de tipo **sem caso que o justifique** — medido: **0 ocorrências** de `bandas` como string em todo o repositório. Descartável |
+| `join(RAIZ, "contracts/vocabulario.json")` (`decisao.ts`) | cosmético — o mesmo caminho noutra forma. Descartável |
+| Remoção dos comentários «porquê» em `ciclo.ts`, `plugin.ts`, `arranque.ts` e `registro.ts` | perda, não ganho — o registo de decisões é o que o repositório tem de mais caro. Descartável |
+
+Com isto, **o ramo não tem mais nada**: nada lá dentro falta ao produto depois de o registo acima existir.
