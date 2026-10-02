@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 type Achado = { chave: string; motivo: string; porque: string };
 type Campo = {
   chave: string;                 // caminho dentro do ficheiro ("conta.identificador")
-  tipo: "texto" | "decimal" | "inteiro" | "lista" | "enum" | "objeto";
+  tipo: "texto" | "decimal" | "decimal_textual" | "inteiro" | "lista" | "enum" | "objeto";
   obrigatorio?: boolean;         // ausente = achado
   opcional?: boolean;            // pode faltar, mas se vier tem de ser valido
   conjunto?: string[];           // para enum
@@ -23,8 +23,11 @@ type Campo = {
 };
 
 // O esqueleto e do CORE (config/README.md + docs/inventario-de-chaves.md sao a fonte).
-// As quatro chaves retiradas pela emenda do dono (28 set) NAO estao aqui de proposito:
-// idade_maxima_do_dado_ms, invalidos_seguidos_para_inibir, risco_maximo_por_ordem_pct, ordem_de_atendimento[].
+// As TRES chaves retiradas pela emenda do dono (28 set) NAO estao aqui de proposito:
+// idade_maxima_do_dado_ms, invalidos_seguidos_para_inibir, ordem_de_atendimento[].
+// O `risco_maximo_por_ordem_pct` SAIU desta lista a 02/10/2026: o D-015 fechou que o travão de risco por ordem
+// e' da MESA e que o tecto e' grandeza da CONTA — quem o declara quer que ele morda, e quem nao o declara esta'
+// a dizer que aceita a exposicao (ausencia legitima, e por isso a chave e' OPCIONAL).
 const CAMPOS: Campo[] = [
   { chave: "conta.corretora", tipo: "texto", obrigatorio: true },
   { chave: "conta.identificador", tipo: "texto", obrigatorio: true, nota: "o que distingue duas contas do mesmo venue" },
@@ -35,6 +38,11 @@ const CAMPOS: Campo[] = [
   { chave: "conta.perda_maxima_pct", tipo: "decimal", obrigatorio: true, banda: [0, 100] },
   { chave: "conta.perda_maxima_janela", tipo: "enum", obrigatorio: true, conjunto: ["corrida_da_mesa", "dia_de_calendario"] },
   { chave: "conta.margem_total_maxima_pct", tipo: "decimal", obrigatorio: true, banda: [0, 100] },
+  // O TECTO DE RISCO POR ORDEM (RN-M4.12, D-015). `decimal_textual`, e nao `decimal`: os outros decimais
+  // deste ficheiro toleram um numero de JSON (convertem-no), mas o limite que vai comparar-se com a exposicao
+  // da ordem viaja em TEXTO (D4) — um numero de virgula flutuante num limite de risco e' o defeito seguinte,
+  // e o ciclo GRITA com ele em vez de o ler. Aqui apanha-se mais cedo, com o nome da chave.
+  { chave: "conta.risco_maximo_por_ordem_pct", tipo: "decimal_textual", opcional: true, banda: [0, 100], nota: "sem ela nao ha' travão por ordem — a ausencia e' uma decisao do dono, e fica dita no registo" },
   { chave: "conta.contencao", tipo: "enum", obrigatorio: true, conjunto: ["recusar", "espera"] },
   { chave: "conta.arranque_apos_cb", tipo: "enum", obrigatorio: true, conjunto: ["exige_decisao"] },
   { chave: "conta.eventos_que_avisam", tipo: "lista", obrigatorio: true, minimo: 1 },
@@ -117,6 +125,14 @@ function julgar(campo: Campo, obj: any, achados: Achado[]): void {
       if (typeof t !== "string" || !DECIMAL.test(t)) { achados.push({ chave: campo.chave, motivo: "formato_invalido", porque: "decimal textual, sem expoente e sem null" }); break; }
       const n = Number(t);
       if (campo.banda && (n < campo.banda[0] || n > campo.banda[1])) achados.push({ chave: campo.chave, motivo: "valor_fora_da_banda", porque: `tem de estar entre ${campo.banda[0]} e ${campo.banda[1]}, e veio ${t} ` });
+      break;
+    }
+    case "decimal_textual": {
+      // SEM tolerancia ao numero de JSON: o limite viaja em texto (D4) e um `2.5` escrito sem aspas nao se
+      // converte — recusa-se com o nome da chave, em vez de o deixar entrar para o ciclo a gritar.
+      if (typeof valor !== "string" || !DECIMAL.test(valor)) { achados.push({ chave: campo.chave, motivo: "formato_invalido", porque: "decimal TEXTUAL entre aspas, sem expoente e sem null (D4)" }); break; }
+      const n = Number(valor);
+      if (campo.banda && (n < campo.banda[0] || n > campo.banda[1])) achados.push({ chave: campo.chave, motivo: "valor_fora_da_banda", porque: `tem de estar entre ${campo.banda[0]} e ${campo.banda[1]}, e veio ${valor}` });
       break;
     }
     case "inteiro": {

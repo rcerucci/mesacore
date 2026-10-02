@@ -73,6 +73,8 @@ const BOLETA_REAL: Record<string, unknown> = {
   prazo_da_passiva_ms: 3000,
   destino_do_resto: "agressivo",
   reduce_only: false,
+  reverter: false,
+  posicao_pct: "1",
   referencia_do_cliente: REFERENCIA,
   marca_de_posse: MARCA,
 };

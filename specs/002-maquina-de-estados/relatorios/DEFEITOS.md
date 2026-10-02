@@ -674,6 +674,42 @@ o `reduce_only` com o tamanho parcial na porta do `brokers/hyperliquid/ordens.ts
 e os casos com controlo. Nenhum setup do repositório emite redução parcial (o σ emite `caixa` ou um lado), logo
 **a emenda precede qualquer uso** — não há caminho em que isto saia sem estar declarado.
 
+> **FECHADO — 02/10/2026 (o que faltava, e o que sobra do defeito).** O caminho (b) está escrito no contrato e
+> medido nas duas pontas:
+>
+> **O campo** — `boleta.posicao_pct` (decimal textual, **OBRIGATÓRIO**): `1` é a posição INTEIRA, e é o valor de
+> uma ordem que **não** é uma redução parcial («não é parcial» é um valor DECLARADO, como o `reverter: false`;
+> a ausência diria «não foi declarado», D4). Abaixo de `1` é uma **redução parcial** — essa fracção do que está
+> aberto («reduz metade» = `0.5`) —, e exige `reduce_only: true`: quem reduz nunca inverte. O contrato vai a
+> **1.11.0** (`contracts/versao.json`, com a emenda inteira escrita lá), o gerador correu (**12 schemas → 15 TS
+> + 15 Python**) e as duas provas negativas estão nos casos do contrato
+> (`boleta/sem-o-tamanho-relativo-a-posicao` → `campo_obrigatorio_ausente`;
+> `boleta/tamanho-relativo-a-posicao-em-virgula-flutuante` → `tipo_invalido`).
+>
+> **A porta do conector passou a saber o PARCIAL.** Medido em `brokers/hyperliquid/ordens.ts`: a quantidade da
+> fracção é `posicao_pct × posicao_viva` (a posição é lida do VENUE e entra na tradução como o `saldo` e o
+> `preco` — a mesa não calcula unidades, RN-B0), ajustada ao passo **por baixo** (reduz menos, nunca mais do que
+> foi pedido), com o mínimo do instrumento e o mínimo de valor por ordem conferidos sobre a quantidade que sai.
+> Duas recusas novas, nomeadas: `reducao_parcial_sem_reduce_only` (contradição declarada) e
+> `reducao_parcial_sem_posicao_viva` (uma fracção de nada não é uma ordem) — e `posicao_pct` acima de `1`
+> RECUSA por `valor_fora_da_banda`. O `ctrader` confere a MESMA declaração e recusa a fraccao por
+> `capacidade_nao_declarada` (não tem `reduce_only`, RN-CT34): nada de meias reduções disfarçadas.
+>
+> **Casos com controlo:** 6 na bancada das ordens do `hyperliquid` (a fracção pedida → `0.005` de `0.01`; o
+> **par de controle** com `posicao_pct: 1` a sair exactamente como saía antes — quantidade vinda do `saldo_pct`,
+> posição viva não lida; e as quatro recusas) e 2 no `ctrader`. As ordens do conector entraram **no portão**
+> (estavam só a correr à mão): `bash tools/verificar-maquina/provar.sh` → **36 de 36**.
+>
+> **Medido:** `ordens: 50 casos · 50 ok · 0 divergentes` (`bun brokers/hyperliquid/casos/correr-ordens.ts`) ·
+> `ctrader: 63 casos · 63 ok · 0 divergentes` (`uv run python casos/correr.py`) · contrato **136 casos** nos
+> dois motores e a `porta-do-contrato.ts` → **0 falhas** · bancada do ciclo **118 verificações · 0 divergentes**.
+>
+> **O que continua aberto, e fica dito:** nenhum setup do repositório emite redução parcial — a mesa declara
+> SEMPRE `posicao_pct: "1"` (`core/ciclo/ciclo.ts`, com o sítio nomeado onde o tamanho entraria). O campo existe
+> para o dia em que um setup peça «reduz metade», e nesse dia não há contrato novo a fazer: já está declarado.
+> E o `_defs/forma.schema.json#/$defs/motivo` (o espelho do vocabulário) **faltava-lhe dois motivos desde a
+> 1.10.0** — medido pela `porta-do-contrato.ts`, que estava fora do portão; ficou fechado aqui, com os quatro.
+
 ## D-014 — a ficha é lida como UM objecto, e a espec dizia DOIS arquivos  *(RESOLVIDO POR DECISÃO, 30/09/2026)*
 
 **Declarado em 30/09/2026.** Medido: `core/servidor.ts` (via `core/ciclo/relogio.ts`, `conferirMandatos`) lê a
@@ -702,6 +738,63 @@ lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *
 ---
 
 ## D-015 — a RN-M4.12 não existe no código: o travão de risco por ordem não está lá
+
+> **FECHADO — 02/10/2026.** O travão existe, é uma comparação **PURA**, e está medido. O que o fecha:
+>
+> **O motivo novo** — `risco_por_ordem_excedido` — entrou no **livro da mesa** (`core/estados/motivos.json`)
+> com `cruzam_a_fronteira: false`: nasce e morre dentro de um ciclo, logo **não exige emenda ao
+> `vocabulario.json`** (o conjunto fechado do contrato só governa o que **cruza** a fronteira). O livro vai de
+> 55 para **56** motivos (26 cruzam, **30** ficam), e o conferidor da fronteira confere as duas contagens.
+>
+> **Onde entrou, e por onde o tecto chega.** No `core/ciclo/ciclo.ts`, imediatamente antes do ponto 5 (que monta
+> a boleta), para **`abrir` E `reverse`** — os dois AUMENTAM exposição na mesma ordem. A comparação é
+> `cabeNaBanda(exposicao, { maximo: tecto })` com a exposição montada por `produtoDeDecimais`
+> (`core/ciclo/banda.ts`), na **mesma aritmética exacta** das bandas (inteiros escalados). O tecto lê-se da
+> **config que a mesa já lê** (`conta.risco_maximo_por_ordem_pct`).
+>
+> **A CONTA QUE NÃO O DECLARA NÃO TEM TRAVÃO — e isso DIZ-SE.** O veredicto viaja na decisão
+> (`risco_por_ordem.conferido: false`, `tecto: null`) e o **registo** escreve-o na linha do ciclo («risco por
+> ordem sem tecto declarado na conta»). A ausência é uma decisão de quem não declarou, nunca um valor por
+> omissão — e um tecto declarado e **ilegível** (`2%`, um número de vírgula flutuante) **GRITA**: um limite
+> escrito que não morde é pior do que um limite ausente, e não saber não é caber.
+>
+> **O tecto passou a CHEGAR à mesa.** Medido: a vista que o operador escreve para a mesa
+> (`vigia/operador.ts`, `escreverConfig`) levava `eventos_que_avisam`, `arranque_apos_cb` e `fichas` — e **não**
+> o tecto. Sem uma linha lá, a chave era declarada na conta e **nunca chegava a quem a lê** (o travão ficava no
+> papel). Passa a entrar quando a conta o declara; ausente, a chave não entra e a mesa di-lo no registo.
+>
+> **A DISTÂNCIA MÍNIMA DE LIQUIDAÇÃO (RN-M4.13) NÃO ENTRA NESTA VAGA — decisão do dono, tomada aqui.** O desenho
+> dizia «usa o campo `distancia_minima_liquidacao_pct` … opcional na mesma medida», mas a boleta **não leva
+> preço nem quantidade**: contra que grandeza a distância se compara **não estava fixado**. Perguntado, o dono
+> decidiu: **nesta vaga só o tecto da conta entra no ciclo**; o campo fica declarado, e o seu único leitor
+> continua a ser a conferência da resolução (`core/ciclo/banda.ts`, comparação 3) — onde há preço de liquidação
+> e marca para a calcular. Inventar uma comparação de limite sobre uma aproximação que ninguém mediu seria o
+> defeito seguinte.
+>
+> **Casos (6 novos na bancada do ciclo, com os dois controles):** `d015-risco-por-ordem-acima-do-tecto-recusa`
+> (exposição 10% contra um tecto de 2% → `nada` com o motivo) com o **par de controle**
+> `d015-o-par-de-controle-dentro-do-tecto-abre`; `d015-o-tecto-na-borda-e-dentro-e-abre` (o valor IGUAL ao
+> tecto cabe); `d015-sem-tecto-na-conta-nao-ha-travao-e-abre` (a MESMA ordem de 10% que o primeiro recusa abre
+> numa conta sem tecto); e o par da **virada** (`d015-virada-acima-do-tecto-recusa` +
+> `d015-virada-dentro-do-tecto-vira-numa-so-decisao`).
+>
+> **Na bancada do travão (8 verificações, dentro do `core/ciclo/provar.ts`):** a comparação é CARGA e não
+> enfeite — `1.0000000000000000001` × 1 **passa** o tecto `1` (a vírgula flutuante diria «cabe»), e `0.1` × `3`
+> dá exactamente `0.3` (a vírgula flutuante daria `0.30000000000000004`, que recusaria contra um tecto `0.3`); a
+> borda é inclusiva; e os **três GRITOS** (tecto ilegível, tecto em número, exposição ilegível) são medidos, não
+> afirmados.
+>
+> **Medido:** `bun run core/ciclo/provar.ts` → **118 verificações · 0 divergentes** (eram 110; **47 de ciclo**,
+> eram 41) · `bash tools/preparar-contas/provas.sh` → **13 provas · 0 falhas** (a 13ª é nova: o tecto declarado
+> em TEXTO aprova, e um número sem aspas RECUSA com o nome da chave) · `bash tools/verificar-maquina/provar.sh`
+> → **36 de 36**.
+>
+> **A contradição dos documentos duráveis, corrigida com data.** A tabela da emenda de 28 set
+> (`docs/inventario-de-chaves.md` §8) dizia que o `conta.risco_maximo_por_ordem_pct` **sai da mesa** («o limite
+> da conta é da corretora»), e o `tools/verificar-config/conferir-config.ts` listava-o entre as **quatro chaves
+> retiradas**. O desenho do D-015 decidiu o contrário — o travão é da MESA e o tecto é grandeza da CONTA — e é
+> essa a decisão que vale: a chave volta ao conferidor como **opcional** (ausente é legítimo) e com
+> `decimal_textual` (o limite não se escreve como número), e a linha do inventário fica com nota datada.
 
 **Declarado em 30/09/2026.** A espec, RN-M4.12: *"O mandato declara também o **risco máximo por ordem**, em
 percentagem do saldo (ex.: 2%). Antes de enviar, a mesa calcula a perda implícita — distância do stop ×

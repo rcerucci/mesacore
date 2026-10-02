@@ -856,6 +856,14 @@ que vale é o parágrafo abaixo de cada uma.
 - **RN-M4.12 (risco por ordem)** — o limite por ordem **não** é número da mesa. O mandato limita
   **exposição (nocional)** e **distância mínima até à liquidação**; a alavancagem é **facto do
   instrumento**, declarada pelo conector; o limite da conta é da corretora.
+  > **NOTA DATADA — 02/10/2026.** O *travão* desta regra passou a existir, e a última frase é corrigida pela
+  > decisão do dono no **D-015**: o limite por ordem **é aplicado pela MESA**, com o tecto que a **CONTA**
+  > declara (`conta.risco_maximo_por_ordem_pct`), comparado com a exposição da ordem (`saldo_pct × alavancagem`,
+  > em % do saldo — a equity cancela nos dois lados, porque a boleta não leva quantidade). Declarado, morde;
+  > **ausente, a ordem é livre** — e a ausência fica dita no registo. A **distância mínima de liquidação**
+  > continua a ser travão opcional, e nesta vaga o seu único leitor é a conferência da resolução
+  > (`core/ciclo/banda.ts`): a mesa decidiu não a inventar sem preço de liquidação. Prova: `core/ciclo/provar.ts`
+  > (47 casos de ciclo) e o fecho do D-015.
 - **RN-B11 (nova) — o preço que serve de régua** — o preço enviado à corretora como referência do desvio é
   **relido no momento do envio**, pelo conector. Régua velha desloca a janela do desvio: o desvio medido a
   partir de uma régua velha pode **autorizar** um preenchimento longe do mercado — não protege nada.

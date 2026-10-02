@@ -35,7 +35,7 @@
       "desvio_maximo": "0.5",
       "prazo_da_passiva_ms": 3000,
       "destino_do_resto": "agressivo",
-      "reduce_only": false, "reverter": false,
+      "reduce_only": false, "reverter": false, "posicao_pct": "1",
       "referencia_do_cliente": "hl-0001",
       "marca_de_posse": 1694498816
     }
@@ -61,7 +61,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -106,7 +106,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -151,7 +151,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -196,7 +196,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -235,7 +235,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -272,7 +272,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -311,7 +311,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -356,7 +356,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -402,7 +402,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -448,7 +448,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -493,7 +493,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -538,7 +538,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -584,7 +584,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }
@@ -612,7 +612,7 @@
           "desvio_maximo": "0.5",
           "prazo_da_passiva_ms": 3000,
           "destino_do_resto": "agressivo",
-          "reduce_only": false, "reverter": false,
+          "reduce_only": false, "reverter": false, "posicao_pct": "1",
           "referencia_do_cliente": "hl-0001",
           "marca_de_posse": 1694498816
         }

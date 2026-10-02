@@ -76,6 +76,10 @@ class BoletaUniversal(BaseModel):
         ...,
         description="A VIRADA (aditivo na 1.10.0): `true` diz ao conector para FECHAR a posicao viva e ABRIR a do lado declarado em `lado`, com o tamanho do mandato. Obrigatorio porque a ausencia nao e' um valor: `false` diz «nao e' reversao» e a ausencia diria «nao foi declarado» (D4). Contradicao impossivel: `reverter: true` com `reduce_only: true` RECUSA (`reversao_com_reduce_only`) — «reduz, nunca inverte» e «inverte» nao cabem na mesma ordem.",
     )
+    posicao_pct: forma_schema.DecimalPositivo = Field(
+        ...,
+        description="O TAMANHO RELATIVO A' POSICAO VIVA (nao ao saldo) — a REDUCAO PARCIAL (aditivo na 1.11.0). `1` e' a posicao INTEIRA, e e' o valor de uma ordem que NAO e' uma reducao parcial: «nao e' parcial» e' um valor DECLARADO (como o `reverter: false`), e a ausencia diria «nao foi declarado» (D4) — por isso o campo e' OBRIGATORIO. Abaixo de `1`, a ordem fecha essa fraccao do que esta' aberto («reduz metade» = `0.5`), exige `reduce_only: true` (quem reduz nunca inverte), e quem a converte em quantidade e' o CONECTOR, que le' a posicao viva do venue (RN-B0: a boleta nao leva quantidade). Nenhum setup do repositorio emite reducao parcial: o campo entra no vocabulario ANTES do primeiro uso.",
+    )
     referencia_do_cliente: forma_schema.Correlacao = Field(
         ...,
         description='Idempotencia: reenviar com a MESMA referencia nao pode criar segunda ordem (RN-C4).',

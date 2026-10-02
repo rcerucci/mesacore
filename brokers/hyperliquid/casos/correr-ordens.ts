@@ -72,6 +72,9 @@ function pedidoDoCaso(c: any): Pedido {
   // Sem ela, quem recusa e' a traducao (`reversao_sem_posicao_a_reverter`), que e' o caso 2 daqui.
   if (c.posicao_a_reverter !== undefined) pedido.posicao_a_reverter = c.posicao_a_reverter;
   if (c.lado_da_posicao !== undefined) pedido.lado_da_posicao = c.lado_da_posicao;
+  // A REDUCAO PARCIAL (1.11.0): a MESMA posicao viva, pelo mesmo motivo — e' dela que sai a quantidade da
+  // fraccao pedida em `boleta.posicao_pct`. Sem ela, a recusa e' `reducao_parcial_sem_posicao_viva`.
+  if (c.posicao_viva !== undefined) pedido.posicao_viva = c.posicao_viva;
   for (const caminho of itens(c.sem, "sem") as string[]) apagar(pedido, caminho);
   return pedido as Pedido;
 }

@@ -161,6 +161,16 @@
       "accao": "recusar_e_registar",
       "provadamente_nao_feito": true,
       "porque": "Recusa de validade: a virada foi pedida sem posicao viva do lado oposto — a mensagem nunca saiu assim, e o defeito esta' do nosso lado."
+    },
+    "reducao_parcial_sem_reduce_only": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a boleta pede uma reducao parcial (`posicao_pct` abaixo de 1) sem `reduce_only: true` — as duas declaracoes diriam coisas opostas, e a mensagem nunca saiu assim."
+    },
+    "reducao_parcial_sem_posicao_viva": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a reducao parcial foi pedida sem a posicao viva, que e' do VENUE — a quantidade nao se inventa por nos (RN-B0), e a mensagem nunca saiu assim."
     }
   }
 }

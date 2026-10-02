@@ -41,6 +41,10 @@
       "origem": "mesa",
       "regra": "RN-B10: composta pela mesa (ficha x ciclo); o layout esta declarado em vocabulario.json"
     },
+    "boleta.posicao_pct": {
+      "origem": "mesa",
+      "regra": "RN-B0, D-013 (1.11.0): a mesa declara a fraccao da POSICAO VIVA; hoje vale SEMPRE 1 («nao e' parcial»), e o valor vem do mandato/da accao da mesa — nunca do dono nem do setup"
+    },
     "proposta.relogio.proxima_consulta_ms": {
       "origem": "setup",
       "chave": "fichas/<i>.setup.relogio.proxima_consulta_ms",

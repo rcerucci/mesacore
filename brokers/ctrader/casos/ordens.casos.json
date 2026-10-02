@@ -3,7 +3,7 @@
   "conta_de_teste": "demo-ctrader-1",
   "manifesto_base": {
     "conector": {"nome": "ctrader", "versao": "0.1.0"},
-    "versao": "1.10.0",
+    "versao": "1.11.0",
     "instrumentos": [
       {
         "simbolo": "EURUSD",
@@ -55,7 +55,7 @@
     "desvio_maximo": "0.5",
     "prazo_da_passiva_ms": 0,
     "destino_do_resto": "agressivo",
-    "reduce_only": false, "reverter": false,
+    "reduce_only": false, "reverter": false, "posicao_pct": "1",
     "referencia_do_cliente": "ciclo-1/linha-1",
     "marca_de_posse": 7
   },
@@ -174,7 +174,7 @@
       "caso": "ordens/reduce-only-pedido-recusa-o-venue-nao-o-tem",
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
-      "boleta": {"reduce_only": true, "reverter": false}
+      "boleta": {"reduce_only": true, "reverter": false, "posicao_pct": "1"}
     },
     {
       "caso": "ordens/marca-de-posse-maior-que-50-caracteres-recusa",
@@ -218,6 +218,20 @@
       "esperadoOk": false,
       "motivo_esperado": "tipo_invalido",
       "pedido": {"preco": 1.25}
+    },
+    {
+      "caso": "ordens/reducao-parcial-sem-reduce-only-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "reducao_parcial_sem_reduce_only",
+      "boleta": {"reduce_only": false, "posicao_pct": "0.5"},
+      "nota": "1.11.0 (D-013): a declaracao e' conferida nos DOIS conectores — uma fraccao da posicao e' uma reducao, e quem reduz nunca inverte. Aqui a recusa e' da DECLARACAO, e nao da capacidade do venue."
+    },
+    {
+      "caso": "ordens/reducao-parcial-este-venue-nao-a-sabe-fazer-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {"reduce_only": true, "posicao_pct": "0.5"},
+      "nota": "O ctrader nao tem `reduce_only` (RN-CT34) e a reducao parcial assenta nele: RECUSA nomeada, e nao uma abertura disfarcada de reducao (FR-007). O manifesto declara `reduce_only_suportado: false`."
     }
   ],
   "nota_dos_casos_de_fecho": "O fecho fecha POR POSICAO (`positionId`) e NUNCA por lado contrario; sem posicao nao sai ordem nenhuma (`nada` com motivo); e os dois modos de «fechar sim, abrir nao» — o direito da CONTA (`accessRights = CLOSE_ONLY`) e o modo do SIMBOLO (`tradingMode = CLOSE_ONLY_MODE`) — recusam a ABERTURA e deixam o FECHO passar.",

@@ -81,6 +81,12 @@ export type Boleta = {
   reduce_only: boolean;
   /** A VIRADA (1.10.0): `true` faz esta traducao somar a posicao viva a' quantidade nova (ver a porta 8). */
   reverter: boolean;
+  /**
+   * O TAMANHO RELATIVO A' POSICAO VIVA (1.11.0, D-013), OBRIGATORIO no contrato (D4): `1` = a posicao inteira
+   * (= nao e' uma reducao parcial); abaixo de `1` = essa fraccao do que esta' aberto. Quem a converte em
+   * quantidade e' esta traducao, com a posicao viva que o VENUE publica.
+   */
+  posicao_pct: string;
   referencia_do_cliente: string;
   marca_de_posse: number;
 };
@@ -102,6 +108,12 @@ export type Pedido = {
   posicao_a_reverter?: string;
   /** O LADO da posicao viva — para a virada recusar quando nao ha nada a virar (a posicao ja' esta' do lado). */
   lado_da_posicao?: string;
+  /**
+   * A POSICAO VIVA, em unidades neutras, LIDA do venue — a mesma que `posicao_a_reverter` (a virada le'-a para
+   * saber o que fechar; a REDUCAO PARCIAL le'-a para saber de quanto e' a fraccao). Como o `saldo` e o `preco`,
+   * e' DADO entregue a esta traducao: a mesa nao a calcula (RN-B0) e nao a manda na boleta.
+   */
+  posicao_viva?: string;
 };
 
 /** A accao que o venue aceita, ja traduzida. NAO leva a referencia de cliente crua — leva o `cloid`. */
@@ -206,6 +218,23 @@ function algarismosSignificativos(s: string): number {
 }
 
 /**
+ * A COMPARACAO EXACTA de dois decimais textuais NAO NEGATIVOS, sem virgula flutuante.
+ *
+ * Existe para a reducao parcial (1.11.0): «`posicao_pct` esta' abaixo de `1`?» e' uma pergunta de LIMITE, e um
+ * limite comparado em `Number()` e' o defeito seguinte — `0.1 + 0.2 > 0.3` ja' decidiu quem ficava de fora na
+ * fila da contenda (T066) e aqui decide quanto da posicao se fecha. As escalas alinham-se multiplicando, que e'
+ * exacto em inteiros.
+ */
+function compararDecimais(a: string, b: string): number {
+  const escalaA = decimais(a);
+  const escalaB = decimais(b);
+  const escala = Math.max(escalaA, escalaB);
+  const x = escalado(a) * pow10(escala - escalaA);
+  const y = escalado(b) * pow10(escala - escalaB);
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/**
  * O preco cabe na regra do venue? So o preco INTEIRO escapa aos 5 algarismos significativos (o venue aceita
  * inteiros sempre); as casas decimais sao as do `tick`, para qualquer preco.
  */
@@ -302,6 +331,38 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
       "reversao_com_reduce_only",
       "a boleta pede `reverter: true` e `reduce_only: true` na mesma ordem: «inverte» e «reduz, nunca inverte» " +
         "nao cabem juntas, e nao se resolve por precedencia",
+    );
+  }
+
+  // O TAMANHO RELATIVO A' POSICAO VIVA (1.11.0, D-013). Obrigatorio (D4: «nao e' parcial» e' `1`, um valor
+  // DECLARADO — a ausencia diria «nao foi declarado»), e com as DUAS declaracoes da reducao parcial conferidas
+  // AQUI, antes de existir qualquer quantidade:
+  //
+  //   * acima de `1` RECUSA (`valor_fora_da_banda`): uma ordem nao reduz mais do que a posicao que existe;
+  //   * abaixo de `1` e' uma REDUCAO PARCIAL, e exige `reduce_only: true` (`reducao_parcial_sem_reduce_only`):
+  //     as duas declaracoes diriam coisas opostas sobre a mesma ordem, e nao se resolve por precedencia. (A
+  //     VIRADA nunca chega aqui: `reverter: true` com `reduce_only: true` ja' recusou acima, logo uma virada com
+  //     `posicao_pct` abaixo de `1` cai nesta mesma regra — uma virada nao e' uma reducao parcial.)
+  const posicaoPctR = exigirTexto(b.posicao_pct, "boleta.posicao_pct");
+  if (!posicaoPctR.ok) return posicaoPctR;
+  const posicao_pct = posicaoPctR.valor;
+  if (!PADRAO_DECIMAL_POSITIVO.test(posicao_pct)) {
+    return recusa("formato_invalido", `posicao_pct tem de ser decimal textual estritamente positivo, e veio ${JSON.stringify(posicao_pct)}`);
+  }
+  const comparacaoComInteiro = compararDecimais(posicao_pct, "1");
+  if (comparacaoComInteiro > 0) {
+    return recusa(
+      "valor_fora_da_banda",
+      `posicao_pct vem ${posicao_pct}: acima de 1 uma ordem reduziria mais do que a posicao que existe, e a ` +
+        "quantidade vem da posicao — recusa, em vez de a cortar por conta propria",
+    );
+  }
+  const reducaoParcial = comparacaoComInteiro < 0;
+  if (reducaoParcial && reduce_only !== true) {
+    return recusa(
+      "reducao_parcial_sem_reduce_only",
+      `a boleta pede uma reducao PARCIAL (posicao_pct ${posicao_pct}) e nao declara reduce_only: uma fraccao da ` +
+        "posicao e' uma reducao, e quem reduz nunca inverte — as duas declaracoes teriam de dizer a mesma coisa",
     );
   }
 
@@ -565,6 +626,49 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
     const escalaSoma = Math.max(casasPasso, casasPosicao);
     quantidade = k * pow10(escalaSoma - casasPasso) + escalado(posicaoR.valor) * pow10(escalaSoma - casasPosicao);
     casasDaQuantidade = escalaSoma;
+  } else if (reducaoParcial) {
+    // ---- porta 8-bis: A REDUCAO PARCIAL (1.11.0) -------------------------------------------------------------
+    //
+    // A boleta diz a FRACCAO (`posicao_pct` abaixo de `1`) e a POSICAO VIVA vem do VENUE — a mesa nao a calcula
+    // e nao a manda (RN-B0), como no `saldo` e no `preco`. Sem ela nao ha' de quanto calcular a fraccao: uma
+    // fraccao de nada nao e' uma ordem, e inventar uma quantidade seria decidir o tamanho do lado de ca'.
+    const posicaoR = exigirTexto(pedido.posicao_viva, "posicao_viva");
+    if (!posicaoR.ok) {
+      return recusa(
+        "reducao_parcial_sem_posicao_viva",
+        `a boleta pede uma reducao PARCIAL (posicao_pct ${posicao_pct}) e a posicao viva nao entrou na traducao: ` +
+          "a posicao e' do VENUE, e uma fraccao de nada nao e' uma ordem",
+      );
+    }
+    if (!PADRAO_DECIMAL_POSITIVO.test(posicaoR.valor)) {
+      return recusa(
+        "reducao_parcial_sem_posicao_viva",
+        `a posicao viva veio ${JSON.stringify(posicaoR.valor)}: sem uma posicao POSITIVA nao ha' fraccao que se calcule`,
+      );
+    }
+    // quantidade = posicao_pct x posicao_viva, ajustada ao passo POR BAIXO — como toda a quantidade deste
+    // ficheiro: ajustar por baixo REDUZ MENOS do que foi pedido (nunca aumenta o risco do dono; e uma reducao
+    // maior do que a pedida seria a mesa a fechar mais do que o dono autorizou).
+    const expoente = decimais(posicao_pct) + decimais(posicaoR.valor) - casasPasso;
+    const bruto = escalado(posicao_pct) * escalado(posicaoR.valor);
+    const kParcial = expoente >= 0 ? bruto / pow10(expoente) : bruto * pow10(-expoente);
+    if (kParcial === 0n) {
+      return recusa(
+        "minimo_do_instrumento_acima_da_banda",
+        `a fraccao pedida (posicao_pct ${posicao_pct} de ${posicaoR.valor}) e' menor que o passo do instrumento ` +
+          `(${passo}): ajustar para baixo daria zero — recusa, nao se manda uma ordem que nao existe`,
+      );
+    }
+    const minimoParcial = unidade.minimo;
+    if (kParcial * pow10(decimais(minimoParcial)) < escalado(minimoParcial) * pow10(casasPasso)) {
+      return recusa(
+        "minimo_do_instrumento_acima_da_banda",
+        `a fraccao pedida (posicao_pct ${posicao_pct} de ${posicaoR.valor}) fica abaixo do minimo do instrumento ` +
+          `(${minimoParcial}): recusa, em vez de arredondar a reducao para cima (fecharia mais do que foi pedido)`,
+      );
+    }
+    quantidade = kParcial;
+    casasDaQuantidade = casasPasso;
   }
 
   // O nocional e' o da ordem QUE SE MANDA: quantidade x o preco que vai para o venue (no `mercado` isso e'

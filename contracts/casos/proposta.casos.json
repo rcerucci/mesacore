@@ -6,7 +6,7 @@
    "nome": "proposta/buy",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-1",
     "carga": {
@@ -25,7 +25,7 @@
    "nome": "proposta/sell",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-2",
     "carga": {
@@ -44,7 +44,7 @@
    "nome": "proposta/hold",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-3",
     "carga": {
@@ -63,7 +63,7 @@
    "nome": "proposta/caixa",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-4",
     "carga": {
@@ -82,7 +82,7 @@
    "nome": "proposta/com-relogio-adiantado",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-5",
     "carga": {
@@ -104,7 +104,7 @@
    "nome": "proposta/invalido-limpar",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-6",
     "carga": {
@@ -123,7 +123,7 @@
    "nome": "proposta/invalido-sem-lado",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-7",
     "carga": {
@@ -141,7 +141,7 @@
    "nome": "proposta/invalido-lado-como-numero",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-8",
     "carga": {
@@ -160,7 +160,7 @@
    "nome": "proposta/sem-assinatura-do-setup",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-9",
     "carga": {
@@ -175,7 +175,7 @@
    "nome": "proposta/nome-de-setup-fora-do-padrao",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-10",
     "carga": {
@@ -194,7 +194,7 @@
    "nome": "proposta/campo-de-estrategia-no-envelope",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-11",
     "carga": {
@@ -214,7 +214,7 @@
    "nome": "proposta/sem-a-barra-do-sinal",
    "mensagem": "proposta",
    "entrada": {
-    "contrato": "1.10.0",
+    "contrato": "1.11.0",
     "tipo": "proposta",
     "id": "p-sem-barra",
     "carga": {

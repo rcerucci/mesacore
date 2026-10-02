@@ -108,19 +108,25 @@ const voltasPedidas = arg("--voltas") === undefined ? VOLTAS_POR_OMISSAO : Numbe
 const pastaDoMercado = arg("--mercado") ?? null;
 const diasDeHistorico = arg("--dias") === undefined ? DIAS_DE_HISTORICO_POR_OMISSAO : Number(arg("--dias"));
 const caminhoDaCredencial = join(RAIZ, "config", "contas", `${nomeDaConta}.json`);
-// O AMBIENTE da conta manda nas velas tambem: ler o livro da testnet e as barras da producao da' um `mid`
-// contra um preco que nao e' o do venue onde se opera — centimos, mas centimos contam quando a banda e' 0.25 ATR.
-const ambienteDaConta = ((): "teste" | "producao" => {
-  try {
-    const c = JSON.parse(readFileSync(caminhoDaCredencial, "utf8"));
-    return c?.conexao?.ambiente === "producao" ? "producao" : "teste";
-  } catch {
-    return "teste";
-  }
-})();
 if (!existsSync(caminhoDaCredencial)) {
   morrer(`nao existe a credencial da conta ${nomeDaConta} (${caminhoDaCredencial}): a ficha diz o NOME da conta, o ficheiro da conta guarda a chave — e a chave nao mora nas fichas`);
 }
+// A CONTA le^--se UMA vez (e' um ficheiro so'): dela vem o AMBIENTE, que manda nas velas, e o TECTO DE RISCO POR
+// ORDEM (RN-M4.12, D-015) — que e' grandeza DA CONTA e tem de chegar a' mesa pela config que ela ja' le^.
+const configDaConta = ((): Record<string, any> => {
+  try {
+    return JSON.parse(readFileSync(caminhoDaCredencial, "utf8")) as Record<string, any>;
+  } catch (e) {
+    return morrer(`a conta ${nomeDaConta} nao se le^ (${caminhoDaCredencial}): ${(e as Error).message}`);
+  }
+})();
+// O AMBIENTE da conta manda nas velas tambem: ler o livro da testnet e as barras da producao da' um `mid`
+// contra um preco que nao e' o do venue onde se opera — centimos, mas centimos contam quando a banda e' 0.25 ATR.
+const ambienteDaConta: "teste" | "producao" = configDaConta.conexao?.ambiente === "producao" ? "producao" : "teste";
+// O TECTO DE RISCO POR ORDEM, como a conta o declarou. Ausente = `undefined` = a chave NAO entra na vista (e o
+// travão nao actua) — e a mesa di-lo no registo. Nao se inventa tecto nenhum aqui, pela mesma razao por que nao
+// se inventa uma ficha: quem nao o declara esta' a dizer que aceita a exposicao.
+const riscoMaximoPorOrdemDaConta: unknown = configDaConta.conta?.risco_maximo_por_ordem_pct;
 
 // ---------------------------------------------------------------------------------------------------------
 // AS FICHAS DA CONTA — quem manda é o `run` da ficha, e cada uma traz o seu relógio.
@@ -1101,14 +1107,19 @@ async function main(): Promise<void> {
       // par a quente. Escreve-se por isso em três tempos: (1) a UNIÃO do mandato anterior com o novo, (2) a
       // operação, (3) o mandato final. Nenhuma leitura intermédia tem um par na operação que a config não governe.
       const escreverConfig = (fichas: Record<string, unknown>): void => {
-        writeFileSync(`${para}.config.json`, JSON.stringify({
+        const vista: Record<string, unknown> = {
           _nota: "vista das fichas para a mesa (D-014: o core ainda le a ficha num objecto so'). Nao editar a mao.",
           // A LISTA DO DONO, no TOPO (FR-042): sem ela a mesa rebenta o ciclo, e faz bem - avisar por omissao
           // era a mesa a escolher pelo dono.
           eventos_que_avisam: ["cb", "encerramento", "desconhecido", "recusa", "divergencia", "falha_de_leitura", "contenda"],
           arranque_apos_cb: "exige_decisao",
           fichas,
-        }, null, 1) + "\n");
+        };
+        // O TECTO DE RISCO POR ORDEM (RN-M4.12, D-015) entra na vista pelo mesmo caminho das duas chaves acima:
+        // e' grandeza da CONTA, e o travão do ciclo le^--o da config. Sem ele na vista a chave era declarada e
+        // nunca chegava a' mesa — uma chave que ninguem le^ e' lixo, e o travão ficava so' no papel.
+        if (riscoMaximoPorOrdemDaConta !== undefined) vista.risco_maximo_por_ordem_pct = riscoMaximoPorOrdemDaConta;
+        writeFileSync(`${para}.config.json`, JSON.stringify(vista, null, 1) + "\n");
       };
       // (1) O MANDATO QUE COBRE TUDO: o novo, mais o anterior — um par que SAI fica coberto até a operação deixar
       // de o reportar, e um par que ENTRA já está coberto quando a operação o reportar.

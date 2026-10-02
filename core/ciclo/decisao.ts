@@ -14,9 +14,29 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import { RAIZ_DO_REPO } from "../livro-de-motivos.ts";
+import type { VeredictoDaBanda } from "./banda.ts";
 import type { NomeDeCondicao } from "./condicoes.ts";
 
 export type Acao = "abrir" | "fechar" | "reverse" | "adoptar" | "nada";
+
+/**
+ * O TRAVAO DE RISCO POR ORDEM (RN-M4.12, D-015) — o que a comparacao com o tecto da conta FEZ, e o que ela nao
+ * pode fazer.
+ *
+ * Vive aqui, e nao no `ciclo.ts`, porque e' da DECISAO: quem le a decisao tem de poder dizer se o travão foi
+ * conferido, contra que tecto, e com que exposicao — um «abriu» sem isto nao distingue «cabia» de «nao havia
+ * tecto declarado».
+ */
+export interface VeredictoDoRiscoPorOrdem {
+  /** A exposicao da ordem em % do saldo (`saldo_pct` x `alavancagem`) — a MESMA unidade do tecto. */
+  exposicao: string;
+  /** O tecto que a CONTA declarou, ou `null` quando ela nao o declarou (nao ha' travão, e isso diz-se). */
+  tecto: string | null;
+  /** `true` so' quando havia tecto, e a comparacao se fez. Nunca se le' `false` como «cabia». */
+  conferido: boolean;
+  veredicto: VeredictoDaBanda;
+  porque: string;
+}
 
 export interface Mandato {
   /** % do saldo - valor do DONO (RN-A1, RN-M4.3). */
@@ -51,6 +71,13 @@ export interface PedidoDeBoleta {
   reduce_only: boolean;
   /** A VIRADA (1.10.0): `true` so' com a accao `reverse` — fecha a posicao viva e abre a do lado. */
   reverter: boolean;
+  /**
+   * O TAMANHO RELATIVO A' POSICAO VIVA (1.11.0, D-013): `1` = a posicao inteira (= nao e' uma reducao parcial);
+   * abaixo de `1` = essa fraccao, e quem a converte em quantidade e' o CONECTOR, que le' a posicao do venue.
+   * Obrigatorio no contrato pela D4: «nao e' parcial» e' um valor declarado, e a ausencia diria «nao foi
+   * declarado».
+   */
+  posicao_pct: string;
   ficha: string;
   ciclo: number;
 }
@@ -73,6 +100,14 @@ export interface Decisao {
    * vezes, e um alarme que se repete deixa de ser um alarme.
    */
   desconhecido: { motivo: string; instante_ms: number } | null;
+  /**
+   * O TRAVAO DE RISCO POR ORDEM (RN-M4.12, D-015) desta decisao, quando ela seria `abrir` ou `reverse`.
+   *
+   * Existe para a DIFERENCA ser legivel: `conferido: false` diz que a CONTA nao declarou tecto nenhum (a ordem
+   * abriu porque nao havia limite a aplicar — uma decisao de quem nao o declarou), enquanto `conferido: true`
+   * diz que houve comparacao e ela passou. Sem este campo, as duas coisas liam-se da mesma maneira no registo.
+   */
+  risco_por_ordem?: VeredictoDoRiscoPorOrdem | null;
 }
 
 let layoutDaMarca: { bits_ciclo: number; ficha_minima: number; ficha_maxima: number; ciclo_maximo: number } | null =
@@ -122,6 +157,7 @@ export function montarBoleta(pedido: PedidoDeBoleta): any {
     destino_do_resto: template.destino_do_resto,
     reduce_only: pedido.reduce_only,
     reverter: pedido.reverter,
+    posicao_pct: pedido.posicao_pct,
     referencia_do_cliente: referenciaDoCliente(pedido.ficha, pedido.ciclo),
     marca_de_posse: marcaDePosse(Number(pedido.ficha), pedido.ciclo),
   };

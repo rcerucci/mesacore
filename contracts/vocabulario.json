@@ -1,5 +1,5 @@
 {
-  "contrato": "1.10.0",
+  "contrato": "1.11.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",
@@ -185,6 +185,14 @@
       "descricao": "A boleta pede a virada (`reverter: true`) e nao ha posicao viva, do lado oposto, que se possa fechar.",
       "quando": "A posicao viva vem do VENUE, e e' ela que diz o que fechar. Sem ela, mandar so' o lado novo seria uma entrada a mais com o registo a dizer `reverse`, e a virada ficaria pela metade — recusa na traducao, antes de qualquer envio."
     },
+    "reducao_parcial_sem_reduce_only": {
+      "descricao": "A boleta pede uma reducao PARCIAL (`posicao_pct` abaixo de `1`) sem `reduce_only: true`.",
+      "quando": "Contradicao declarada (a mesma familia do `reversao_com_reduce_only`): uma ordem que fecha uma fraccao da posicao E' uma reducao, e quem reduz nunca inverte. As duas declaracoes teriam de dizer a mesma coisa, e nao se resolve por precedencia."
+    },
+    "reducao_parcial_sem_posicao_viva": {
+      "descricao": "A boleta pede uma reducao parcial (`posicao_pct` abaixo de `1`) e a POSICAO VIVA nao entrou na traducao.",
+      "quando": "A posicao viva vem do VENUE, e e' ela que diz quanto existe: uma fraccao de nada nao e' uma ordem. Recusa na traducao, antes de qualquer envio — em vez de mandar uma quantidade inventada por nos (RN-B0)."
+    },
     "valor_fora_da_banda": {
       "descricao": "O valor excede o limite que o dono declarou para aquele item.",
       "quando": "Conferencia contra o config da ficha. A mesa recusa; nao limita nem corta."
@@ -231,6 +239,8 @@
     "valor_fora_do_conjunto",
     "reversao_com_reduce_only",
     "reversao_sem_posicao_a_reverter",
+    "reducao_parcial_sem_reduce_only",
+    "reducao_parcial_sem_posicao_viva",
     "valor_abaixo_do_minimo_do_venue",
     "instrumento_deslistado_no_venue"
   ]

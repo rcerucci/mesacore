@@ -331,6 +331,12 @@
    "quando": "a decisao seria abrir e a proposta nao e' da barra que acabou de fechar no relogio da ficha (barra diferente, ausente ou ilegivel)",
    "regra": "contrato 1.8.0, RN-S1",
    "porque": "A proposta guardada continua na operacao depois de a barra passar: sem esta recusa, a mesa abriria outra vez sobre um sinal ja' executado. Com ela, uma entrada e' uma entrada — e o registo diz porque' nao houve segunda."
+  },
+  "risco_por_ordem_excedido": {
+   "cruzam_a_fronteira": false,
+   "quando": "a decisao seria abrir ou reverse e a exposicao da ordem (`saldo_pct` x `alavancagem`, em % do saldo) passa o tecto que a CONTA declarou (`conta.risco_maximo_por_ordem_pct`)",
+   "regra": "RN-M4.12, D-015",
+   "porque": "E' o travão que nenhuma ordem atravessa: a exposicao da ordem e' comparada com o tecto do dono ANTES de a boleta existir, e a comparacao e' pura (a boleta nao leva quantidade, logo a equity cancela nos dois lados). Vale para `abrir` e para `reverse` — os dois AUMENTAM exposicao numa so' ordem; reduzir/fechar nao passa por aqui, porque reduzir risco e' sempre permitido. A conta que NAO declara o tecto nao tem travão nenhum, e isso e' uma decisao de quem nao declarou (nao um valor por omissao): a ausencia diz-se no registo, nunca se inventa um tecto."
   }
  },
  "ordem_de_leitura": [
@@ -339,6 +345,6 @@
  "fronteira": {
   "de_onde_vem": "`cruzam_a_fronteira` e o ambito da conferencia das duas direcoes (recorte 003, T017): `true` = este motivo pode sair numa resposta ao vigia; `false` = nasce e morre dentro de um ciclo. Os nomes marcados `true` tem de existir no conjunto fechado `conjuntos_do_vigia` de contracts/vocabulario.json, e o inverso tambem: o conjunto nao pode ter nome que o livro nao conheca (a excecao e' o que estiver declarado como vindo da PORTA - hoje so `versao_do_contrato_divergente`, porque quem recusa e' o CONTRATO e a porta relata-o tal e qual). ATE 29/09/2026 havia duas excecoes: `posicao_desconhecida` saiu da lista ao fechar o D-006 - quem o produz passou a ser uma linha da TABELA, e um nome que a tabela produz e' motivo do livro.",
   "cruzam": 26,
-  "nao_cruzam": 29
+  "nao_cruzam": 30
  }
 }

@@ -248,5 +248,21 @@ else
   falhou "ficheiro mudou=$( [ "$H_ANTES" = "$H_DEPOIS" ] && echo nao || echo sim ); listou=$(printf '%s' "$SAIDA_M" | grep -c 'Contas configuradas:')"
 fi
 
+# 13. O TECTO DE RISCO POR ORDEM NA CONTA (RN-M4.12, D-015). A chave saiu da lista das retiradas pela emenda de
+#     28 set (ver conferir-config.ts): quem a declara quer que ela morda, e a AUSENCIA e' legitima — nao ha'
+#     travão, e nao um zero. Mede-se a FORMA: texto entre aspas aprova; um numero de virgula flutuante RECUSA.
+prova "13. o tecto de risco por ordem: texto aprova, numero sem aspas RECUSA"
+APROVADO="$CASA/conta-com-tecto.json"
+ILEGIVEL="$CASA/conta-com-tecto-ilegivel.json"
+jq '.conta.risco_maximo_por_ordem_pct = "2"' "$CFG/conta-de-prova.json" > "$APROVADO"
+jq '.conta.risco_maximo_por_ordem_pct = 2.5' "$CFG/conta-de-prova.json" > "$ILEGIVEL"
+S13_T=$(bun "$RAIZ/tools/verificar-config/conferir-config.ts" "$APROVADO" 2>&1)
+S13_N=$(bun "$RAIZ/tools/verificar-config/conferir-config.ts" "$ILEGIVEL" 2>&1)
+if printf '%s' "$S13_T" | grep -q "conferidor: aprovado" && printf '%s' "$S13_N" | grep -q "RECUSA  conta.risco_maximo_por_ordem_pct"; then
+  ok "«2» aprova · 2.5 sem aspas RECUSA com o nome da chave"
+else
+  falhou "$(printf '%s' "$S13_N" | grep -m1 risco_maximo_por_ordem || printf '%s' "$S13_N" | tail -2)"
+fi
+
 printf '\npreparar-contas: %s falha(s)\n' "$FALHAS"
 [ "$FALHAS" -eq 0 ] || exit 1

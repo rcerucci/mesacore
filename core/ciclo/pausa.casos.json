@@ -116,7 +116,8 @@
     "avisa": false,
     "boleta": {
      "lado": "sell",
-     "reduce_only": true, "reverter": false
+     "reduce_only": true, "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "historico": "US6 cenario 2: pausar nao e nao fazer nada"

@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **02/10/2026, 17:05 (-03)** · contrato vigente **1.10.0** · árvore com **um** ficheiro sujo declarado (ver a nota)
+medido em **02/10/2026 (noite), 16:59 (-03)** · contrato vigente **1.11.0** · árvore com **um** ficheiro sujo declarado (ver a nota)
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
@@ -509,5 +509,53 @@ ETH: era de todos os pares com relógio igual ao da mesa.
 
 O conector declarou `"veredicto":"aceite","preenchido":"0.008","origem_dos_numeros":"posicao_lida_depois_do_envio"`.
 **A virada que hoje fechou e não abriu passou a fechar e abrir numa só ordem** — e o registo diz `reverse`, em vez de
-esconder a inversão atrás de um `fechar`. O ETH, que ficou plano durante 46 minutos com o defeito, virou na primeira
-barra em que o setup propôs depois do reinício.
+esconder a inversão atrás de um `fechar`. O ETH, que ficou plano durante 46 minutos com o defeito, virou na
+primeira barra em que o setup propôs depois do reinício.
+
+## 02/10/2026 (noite) — as duas pendências do core fecharam: o travão de risco por ordem e a redução parcial
+
+**Contrato 1.10.0 → 1.11.0** (a emenda inteira está em `contracts/versao.json`). As duas tarefas que o retrato
+anterior deixou declaradas, fechadas com números:
+
+| # | O que | Estado | A prova |
+|---|---|---|---|
+| 1 | **O travão de risco por ordem** (RN-M4.12, **D-015**): a exposição da ordem (`saldo_pct` × `alavancagem`, em % do saldo) contra o tecto que a **CONTA** declara (`conta.risco_maximo_por_ordem_pct`) | ✅ | `core/ciclo/ciclo.ts` antes do ponto 5, para `abrir` **e** `reverse`, com o comparador exacto das bandas (`cabeNaBanda`) sobre o produto `produtoDeDecimais`; motivo novo `risco_por_ordem_excedido` no **livro** (`cruzam_a_fronteira: false` — sem emenda ao vocabulário); **6 casos** novos com os dois controles; bancada do travão com **8 verificações** (a vírgula flutuante diria «cabe» nos dois casos dos 19 algarismos) |
+| 2 | **A redução parcial** (D-013, via (b)): a boleta ganha `posicao_pct` — o tamanho relativo à **POSIÇÃO VIVA**, obrigatório (D4) | ✅ | contrato **1.11.0** (12 schemas → 15 TS + 15 Python); a porta do `hyperliquid` calcula `posicao_pct × posicao_viva` (a posição vem do venue), ajusta ao passo **por baixo** e recusa com dois nomes novos; o `ctrader` confere a mesma declaração e recusa a fração; **6 casos** no `hyperliquid` (com o par de controle em `posicao_pct: 1`) e **2** no `ctrader` |
+
+**Medido nesta vaga:** `bun run core/ciclo/provar.ts` → **118 verificações · 0 divergentes** (**47 de ciclo**,
+eram 41) · `bun brokers/hyperliquid/casos/correr-ordens.ts` → **50 casos · 50 ok · 0 divergentes** · o `ctrader`
+(`uv run python casos/correr.py`) → **63 casos · 63 ok · 0 divergentes** · o contrato → **136 casos** nos dois
+motores · `porta-do-contrato.ts` → **0 falhas** (**22 motivos** fechados nas duas direções) · `tipos.sh` → **0
+erros em 6 directórios** · `fallbacks` → **0 sítios em 0 ficheiros** · `bash tools/preparar-contas/provas.sh` →
+**13 provas · 0 falhas** (a 13ª é nova).
+
+**As ordens do conector entraram no PORTÃO** (`provar.sh`: **35 → 36**). A tradução de ordens decide a quantidade
+que vai para o mercado e é o único sítio onde uma redução parcial se vira em número — e só corria à mão. Um
+caminho que mexe em dinheiro fora do portão é um caminho que pode regredir sem ninguém dar por isso (a lição de
+29/09, paga com o envio).
+
+**Duas decisões que não são minhas, e ficam ditas:**
+
+- **A distância mínima de liquidação NÃO entra nesta vaga.** O desenho dizia «usa o campo
+  `distancia_minima_liquidacao_pct` … opcional na mesma medida», mas a boleta não leva preço nem quantidade —
+  **contra que grandeza a distância se compara não estava fixado**. Perguntado, o dono decidiu que **nesta vaga
+  só o tecto da conta entra no ciclo**; o campo fica declarado e o seu único leitor continua a ser a conferência
+  da resolução (`core/ciclo/banda.ts`), onde há preço de liquidação e marca. Inventar a comparação seria pior do
+  que não a ter.
+- **O tecto passou a CHEGAR à mesa.** Medido: a vista que o operador escreve (`vigia/operador.ts`,
+  `escreverConfig`) levava `eventos_que_avisam`, `arranque_apos_cb` e `fichas` — e **não** o tecto. Sem uma linha
+  lá, a chave era declarada na conta e **nunca chegava a quem a lê**. Passa a entrar quando a conta o declara;
+  ausente, a chave não entra, e a mesa **di-lo no registo** («risco por ordem sem tecto declarado na conta»).
+
+**O que fica declarado (e não fechado):**
+
+- **A `porta-do-contrato.ts` está FORA do portão** — e foi ela que apanhou a deriva que ninguém via: o espelho do
+  vocabulário (`_defs/forma.schema.json#/$defs/motivo`) **faltava-lhe os dois motivos da emenda 1.10.0**
+  (`reversao_com_reduce_only`, `reversao_sem_posicao_a_reverter`). Fechado aqui (com os quatro da 1.11.0), mas o
+  conferidor continua fora da porta única: um contrato que muda sem ele é um contrato que muda sem rede.
+- **A contradição do `config/contas/hl-teste-plugin.json` continua a NÃO ser minha** (o `.gitignore` diz que
+  `config/contas/` não se versiona; o ficheiro está rastreado): a árvore fica com esse **um** ficheiro sujo, como
+  estava. Não a resolvi.
+- **O sistema em observação não foi tocado** (mesa, operador, conector e feed continuam como estavam): nenhuma
+  ordem saiu, e o gatilho segue no lugar.
+

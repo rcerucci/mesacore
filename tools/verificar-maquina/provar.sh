@@ -81,6 +81,11 @@ declarar "manifesto acompanha as fichas (quente)" bun run tools/verificar-conect
 # assinatura, as 8 portas do arranque) so corriam quando alguem se lembrava de as chamar. Um caminho que mexe
 # em dinheiro fora do portao e um caminho que pode regredir sem ninguem dar por isso (medido 29/09/2026).
 declarar "envio do conector (38 casos)"   bun run brokers/hyperliquid/processo.ts --bancada
+# A TRADUCAO DE ORDENS entra no portao pela MESMA razao que o envio: e' ela que decide a quantidade que vai
+# para o mercado, e e' o UNICO sitio onde uma reducao parcial se vira em numero (emenda 1.11.0). Corria so' a'
+# mao (`casos/correr-ordens.ts`), fora de todas as bancadas — e um caminho que mexe em dinheiro fora do portao e'
+# um caminho que pode regredir sem ninguem dar por isso (a licao de 29/09/2026, paga com o envio).
+declarar "ordens do conector (50 casos)"  bun brokers/hyperliquid/casos/correr-ordens.ts
 # O UNICO SETUP do repositorio e' o `sigma`: os moldes de exemplo (`cruzamento_de_media`, TS e Python) foram
 # retirados a pedido do dono (30/09/2026), e a bancada que os corria foi com eles. O que fica em pe' para o
 # setup e' o que interessa: a traducao do indicador e a regra da entrada (as duas bancadas abaixo).

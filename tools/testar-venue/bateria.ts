@@ -695,6 +695,8 @@ async function p10_campos_ignorados(manifesto: any, lido: any): Promise<void> {
     prazo_da_passiva_ms: 3000,
     destino_do_resto: "agressivo",
     reduce_only: false,
+    reverter: false,
+    posicao_pct: "1",
     referencia_do_cliente: `mesa-${3232 + CICLO_BASE}-000950`,
     marca_de_posse: 3232 + CICLO_BASE,
   };
@@ -779,6 +781,8 @@ async function p12_vocabulario(manifesto: any, lido: any): Promise<void> {
     prazo_da_passiva_ms: 3000,
     destino_do_resto: "agressivo",
     reduce_only: false,
+    reverter: false,
+    posicao_pct: "1",
     referencia_do_cliente: `mesa-${3232 + CICLO_BASE}-000920`,
     marca_de_posse: 3232 + CICLO_BASE,
   };

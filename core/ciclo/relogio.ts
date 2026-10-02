@@ -292,13 +292,22 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
     // a segunda entrada na mesma barra que este travo existe para impedir.
     if (decisao.acao === "abrir" || decisao.acao === "reverse") barraDaUltimaEntrada.set(instrumento, barraAtual);
 
+    // O TRAVAO DE RISCO POR ORDEM DIZ-SE (RN-M4.12, D-015). Quando a CONTA nao declara o tecto, a ordem segue
+    // porque NAO HAVIA LIMITE A APLICAR — e isso e' uma decisao de quem nao o declarou, nunca um valor por
+    // omissao. Sem esta frase, um dia sem travão lia-se igual a um dia com travão conferido.
+    const notaDoRisco =
+      decisao.risco_por_ordem !== undefined &&
+      decisao.risco_por_ordem !== null &&
+      !decisao.risco_por_ordem.conferido
+        ? `, risco por ordem sem tecto declarado na conta (exposicao ${decisao.risco_por_ordem.exposicao}% do saldo)`
+        : "";
 
     registarCiclo(
       instante_ms,
       instrumento,
       decisao.acao,
       decisao.motivo,
-      `ciclo ${ciclo}, condicao ${decisao.condicao}${decisao.boleta ? ", com boleta" : ""}`,
+      `ciclo ${ciclo}, condicao ${decisao.condicao}${decisao.boleta ? ", com boleta" : ""}${notaDoRisco}`,
       fontes.caminhoDoRegisto,
       // A BOLETA VAI DENTRO DA LINHA DA DECISAO: ela e' o detalhe daquela decisao, nao um acontecimento
       // separado. E' daqui que a mao (mesa -> conector) a vai tirar quando fechar.

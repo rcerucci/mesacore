@@ -78,7 +78,7 @@
      "prazo_da_passiva_ms": 3000,
      "destino_do_resto": "cancelar",
      "reduce_only": false,
-     "reverter": false,
+     "reverter": false, "posicao_pct": "1",
      "referencia_do_cliente": "mesa-3232-000000",
      "marca_de_posse": 1694498816,
      "stop_pct": "0.3",
@@ -206,7 +206,8 @@
     "boleta": {
      "lado": "sell",
      "reduce_only": true,
-     "reverter": false
+     "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "historico": "RN-B5 - reduce_only e da mesa, na saida: fechar nunca inverte",
@@ -271,7 +272,8 @@
     "avisa": true,
     "boleta": {
      "reduce_only": true,
-     "reverter": false
+     "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "historico": "SC-003 - reduzir risco nunca espera por dado fresco",
@@ -406,7 +408,8 @@
     "avisa": true,
     "boleta": {
      "reduce_only": true,
-     "reverter": false
+     "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "historico": "FR-018 - o setup mudo impede abrir e cancelar, mas a defesa NAO depende do setup",
@@ -745,7 +748,8 @@
     "boleta": {
      "lado": "sell",
      "reduce_only": true,
-     "reverter": false
+     "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "ligacao": "ligada",
@@ -906,7 +910,8 @@
     "boleta": {
      "lado": "sell",
      "reduce_only": true,
-     "reverter": false
+     "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "historico": "D-001 - travar o FECHO por causa da divergencia seria defender-se do lado errado: reduzir risco e sempre permitido, mesmo sem leitura e mesmo sem ligacao (RN-M9).",
@@ -950,7 +955,7 @@
     "boleta": {
      "lado": "buy",
      "reduce_only": false,
-     "reverter": false,
+     "reverter": false, "posicao_pct": "1",
      "referencia_do_cliente": "mesa-3232-000042"
     }
    },
@@ -1289,7 +1294,8 @@
     "boleta": {
      "lado": "sell",
      "reduce_only": true,
-     "reverter": false
+     "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "historico": "D-008: o MESMO stop fora da banda que trava a abertura (0.3 contra um maximo de 0.1) nao trava o fecho. E' o outro lado da regra: um setup mal declarado nao pode prender uma posicao aberta - reduzir risco e' sempre permitido.",
@@ -1372,7 +1378,8 @@
     "boleta": {
      "lado": "sell",
      "reduce_only": false,
-     "reverter": true
+     "reverter": true,
+     "posicao_pct": "1"
     }
    },
    "historico": "1.10.0 (02/10/2026), e o D-013 fechado: o lado OPOSTO a' nossa posicao e' uma VIRADA — e e' UMA decisao. Ate' aqui era `fechar` em `reduce_only` e a abertura do lado novo era um SEGUNDO passo, que so' chegava se a mesa voltasse a decidir DENTRO da mesma barra. Medido ao vivo (ETH a 1 m, conta de teste): a mesa fechou a' 16:08:35 (aceite, marca 2289) e a barra seguinte ja' nao autorizava a entrada (o setup so' entra na barra do flip) — o par ficou PLANO ate' a viragem seguinte, com metade das pernas fora do mercado. Agora sai `reverse` com `reverter: true`, e quem faz as duas pernas no MESMO acto e' o conector, que tem o venue (onde ha' netting cabe numa so' ordem — P15, 29/09/2026).",
@@ -1412,7 +1419,8 @@
     "boleta": {
      "lado": "buy",
      "reduce_only": false,
-     "reverter": false
+     "reverter": false,
+     "posicao_pct": "1"
     }
    },
    "historico": "Par de controle do D-013: o MESMO lado da nossa posicao e' um AUMENTO, e sai com reduce_only=false — se os dois lados fechassem, a correccao teria ido longe de mais.",
@@ -1452,7 +1460,8 @@
     "boleta": {
      "lado": "buy",
      "reduce_only": false,
-     "reverter": true
+     "reverter": true,
+     "posicao_pct": "1"
     }
    },
    "historico": "1.10.0 (02/10/2026), e o D-013 fechado: o lado OPOSTO a' nossa posicao e' uma VIRADA — e e' UMA decisao. Ate' aqui era `fechar` em `reduce_only` e a abertura do lado novo era um SEGUNDO passo, que so' chegava se a mesa voltasse a decidir DENTRO da mesma barra. Medido ao vivo (ETH a 1 m, conta de teste): a mesa fechou a' 16:08:35 (aceite, marca 2289) e a barra seguinte ja' nao autorizava a entrada (o setup so' entra na barra do flip) — o par ficou PLANO ate' a viragem seguinte, com metade das pernas fora do mercado. Agora sai `reverse` com `reverter: true`, e quem faz as duas pernas no MESMO acto e' o conector, que tem o venue (onde ha' netting cabe numa so' ordem — P15, 29/09/2026).",
@@ -1517,6 +1526,326 @@
     "avisa": false
    },
    "historico": "autoria: contrato 1.8.0 (30/09/2026)",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false
+  },
+  {
+   "nome": "d015-risco-por-ordem-acima-do-tecto-recusa",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00",
+    "ordens_abertas": []
+   },
+   "proposta": {
+    "lado": "buy",
+    "barra_ms": 1730001600000
+   },
+   "mandato": {
+    "saldo_pct": "10",
+    "alavancagem": "1"
+   },
+   "config": {
+    "eventos_que_avisam": [
+     "desconhecido",
+     "recusa",
+     "divergencia",
+     "falha_de_leitura",
+     "congelamento",
+     "cb",
+     "encerramento",
+     "contenda",
+     "sem_ligacao"
+    ],
+    "risco_maximo_por_ordem_pct": "2"
+   },
+   "ciclo": 7,
+   "decisao_esperada": {
+    "acao": "nada",
+    "motivo": "risco_por_ordem_excedido",
+    "condicao": "normal",
+    "avisa": true
+   },
+   "barra_do_sinal_esperada": 1730001600000,
+   "historico": "D-015 / RN-M4.12: a exposicao da ordem e' `saldo_pct` x `alavancagem` = 10% do saldo, e o tecto que a CONTA declarou e' 2%. A boleta NAO chega a existir: a mesa recusa ANTES de a montar. E' a mesma ordem mal dimensionada que, a 29/09/2026, encheu ~10 000 USDC contra ~992 de equity na testnet — o venue nao trava por saldo.",
+   "ficha": "3232",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false
+  },
+  {
+   "nome": "d015-o-par-de-controle-dentro-do-tecto-abre",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00",
+    "ordens_abertas": []
+   },
+   "proposta": {
+    "lado": "buy",
+    "barra_ms": 1730001600000
+   },
+   "mandato": {
+    "saldo_pct": "1",
+    "alavancagem": "1"
+   },
+   "config": {
+    "eventos_que_avisam": [
+     "desconhecido",
+     "recusa",
+     "divergencia",
+     "falha_de_leitura",
+     "congelamento",
+     "cb",
+     "encerramento",
+     "contenda",
+     "sem_ligacao"
+    ],
+    "risco_maximo_por_ordem_pct": "2"
+   },
+   "ciclo": 8,
+   "decisao_esperada": {
+    "acao": "abrir",
+    "motivo": null,
+    "condicao": "normal",
+    "avisa": false,
+    "boleta": {
+     "instrumento": "EURUSD",
+     "lado": "buy",
+     "saldo_pct": "1",
+     "alavancagem": "1",
+     "reduce_only": false,
+     "reverter": false,
+     "posicao_pct": "1"
+    }
+   },
+   "barra_do_sinal_esperada": 1730001600000,
+   "historico": "Par de CONTROLE do D-015: o MESMO tecto (2%) e o MESMO mandato, com a exposicao em 1% — continua a abrir. Sem esta metade, «recusou» podia ser o travão a travar tudo.",
+   "ficha": "3232",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false
+  },
+  {
+   "nome": "d015-o-tecto-na-borda-e-dentro-e-abre",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00",
+    "ordens_abertas": []
+   },
+   "proposta": {
+    "lado": "buy",
+    "barra_ms": 1730001600000
+   },
+   "mandato": {
+    "saldo_pct": "2",
+    "alavancagem": "1"
+   },
+   "config": {
+    "eventos_que_avisam": [
+     "desconhecido",
+     "recusa",
+     "divergencia",
+     "falha_de_leitura",
+     "congelamento",
+     "cb",
+     "encerramento",
+     "contenda",
+     "sem_ligacao"
+    ],
+    "risco_maximo_por_ordem_pct": "2"
+   },
+   "ciclo": 9,
+   "decisao_esperada": {
+    "acao": "abrir",
+    "motivo": null,
+    "condicao": "normal",
+    "avisa": false,
+    "boleta": {
+     "lado": "buy",
+     "saldo_pct": "2",
+     "alavancagem": "1",
+     "reduce_only": false,
+     "reverter": false,
+     "posicao_pct": "1"
+    }
+   },
+   "barra_do_sinal_esperada": 1730001600000,
+   "historico": "A BORDA do tecto: exposicao 2% contra um tecto de 2%. O comparador das bandas e' inclusivo do lado do limite — o maximo CABE (a aritmetica e' a mesma das bandas do D-001/D-008, em inteiros escalados).",
+   "ficha": "3232",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false
+  },
+  {
+   "nome": "d015-sem-tecto-na-conta-nao-ha-travao-e-abre",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00",
+    "ordens_abertas": []
+   },
+   "proposta": {
+    "lado": "buy",
+    "barra_ms": 1730001600000
+   },
+   "mandato": {
+    "saldo_pct": "10",
+    "alavancagem": "1"
+   },
+   "config": {
+    "eventos_que_avisam": [
+     "desconhecido",
+     "recusa",
+     "divergencia",
+     "falha_de_leitura",
+     "congelamento",
+     "cb",
+     "encerramento",
+     "contenda",
+     "sem_ligacao"
+    ]
+   },
+   "ciclo": 10,
+   "decisao_esperada": {
+    "acao": "abrir",
+    "motivo": null,
+    "condicao": "normal",
+    "avisa": false,
+    "boleta": {
+     "lado": "buy",
+     "saldo_pct": "10",
+     "alavancagem": "1",
+     "reduce_only": false,
+     "reverter": false,
+     "posicao_pct": "1"
+    }
+   },
+   "barra_do_sinal_esperada": 1730001600000,
+   "historico": "A AUSENCIA nao vira tecto: a MESMA ordem de 10% que o caso 1 recusa abre aqui, porque esta conta NAO declarou `risco_maximo_por_ordem_pct` — e a ausencia e' uma decisao de quem nao declarou, nao um limite por omissao. O registo di-lo (`conferido: false`), e a conta real de teste esta' neste caso: medida a 02/10/2026, ela nao declara o tecto.",
+   "ficha": "3232",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false
+  },
+  {
+   "nome": "d015-virada-acima-do-tecto-recusa",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00",
+    "ordens_abertas": [],
+    "posicao": {
+     "lado": "buy",
+     "unidades": "1000",
+     "preco_medio": "1.0850",
+     "marca_de_posse": 1694498816
+    }
+   },
+   "proposta": {
+    "lado": "sell",
+    "barra_ms": 1730001600000
+   },
+   "mandato": {
+    "saldo_pct": "10",
+    "alavancagem": "1"
+   },
+   "config": {
+    "eventos_que_avisam": [
+     "desconhecido",
+     "recusa",
+     "divergencia",
+     "falha_de_leitura",
+     "congelamento",
+     "cb",
+     "encerramento",
+     "contenda",
+     "sem_ligacao"
+    ],
+    "risco_maximo_por_ordem_pct": "2"
+   },
+   "ciclo": 11,
+   "marcas_nossas_conhecidas": [
+    1694498816
+   ],
+   "decisao_esperada": {
+    "acao": "nada",
+    "motivo": "risco_por_ordem_excedido",
+    "condicao": "normal",
+    "avisa": true
+   },
+   "barra_do_sinal_esperada": 1730001600000,
+   "historico": "O TRAVAO VALE PARA A VIRADA: o `reverse` abre a perna nova (a exposicao entra na mesma ordem), logo 10% contra um tecto de 2% recusa tanto como uma abertura — e a virada NAO fica pela metade: nao sai boleta nenhuma.",
+   "ficha": "3232",
+   "ligacao": "ligada",
+   "falhas": {},
+   "divergente": false
+  },
+  {
+   "nome": "d015-virada-dentro-do-tecto-vira-numa-so-decisao",
+   "leitura": {
+    "instrumento": "EURUSD",
+    "idade_do_dado_ms": 300,
+    "estado_do_mercado": "aberto",
+    "equity": "1000.00",
+    "ordens_abertas": [],
+    "posicao": {
+     "lado": "buy",
+     "unidades": "1000",
+     "preco_medio": "1.0850",
+     "marca_de_posse": 1694498816
+    }
+   },
+   "proposta": {
+    "lado": "sell",
+    "barra_ms": 1730001600000
+   },
+   "mandato": {
+    "saldo_pct": "2",
+    "alavancagem": "1"
+   },
+   "config": {
+    "eventos_que_avisam": [
+     "desconhecido",
+     "recusa",
+     "divergencia",
+     "falha_de_leitura",
+     "congelamento",
+     "cb",
+     "encerramento",
+     "contenda",
+     "sem_ligacao"
+    ],
+    "risco_maximo_por_ordem_pct": "2"
+   },
+   "ciclo": 12,
+   "marcas_nossas_conhecidas": [
+    1694498816
+   ],
+   "decisao_esperada": {
+    "acao": "reverse",
+    "motivo": null,
+    "condicao": "normal",
+    "avisa": false,
+    "boleta": {
+     "lado": "sell",
+     "saldo_pct": "2",
+     "alavancagem": "1",
+     "reduce_only": false,
+     "reverter": true,
+     "posicao_pct": "1"
+    }
+   },
+   "barra_do_sinal_esperada": 1730001600000,
+   "historico": "Par de CONTROLE da virada (D-015 + D-013): a MESMA virada, com a exposicao dentro do tecto, continua a ser UMA decisao (`reverse`, `reverter: true`) — o travão nao partiu a virada em dois passos.",
+   "ficha": "3232",
    "ligacao": "ligada",
    "falhas": {},
    "divergente": false

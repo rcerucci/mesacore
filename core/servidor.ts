@@ -80,6 +80,11 @@ export const TRADUCAO: Record<string, string> = {
   // motivo do vigia que as outras recusas de validade, e o nome certo da recusa fica no `dizer` do conector.
   reversao_com_reduce_only: "comando_com_tipo_invalido",
   reversao_sem_posicao_a_reverter: "comando_com_tipo_invalido",
+  // A REDUCAO PARCIAL (1.11.0): as duas recusas sao da mesma familia das da reversao — a boleta nao passou a
+  // porta da traducao, e o defeito esta' do nosso lado (o tamanho relativo a' posicao sem o que ele exige). O
+  // nome certo da recusa fica no `dizer` do conector.
+  reducao_parcial_sem_reduce_only: "comando_com_tipo_invalido",
+  reducao_parcial_sem_posicao_viva: "comando_com_tipo_invalido",
   prazo_excedido: "comando_com_tipo_invalido",
   desfecho_nao_reconhecido: "comando_com_tipo_invalido",
 };

@@ -10,10 +10,10 @@
 // A mesa NAO envia nada (R5): devolve a decisao. Quem envia e o processo que liga o core ao conector.
 
 import type { ConfiguracaoDaConta } from "../config/configuracao.ts";
-import { cabeNaBanda, type ConferenciaDaBanda } from "./banda.ts";
+import { cabeNaBanda, produtoDeDecimais, type ConferenciaDaBanda } from "./banda.ts";
 import { situacaoDoInstrumento, type Falhas, type NomeDeCondicao } from "./condicoes.ts";
 export type { Falhas };
-import { montarBoleta, type Decisao, type Mandato, type Template } from "./decisao.ts";
+import { montarBoleta, type Decisao, type Mandato, type Template, type VeredictoDoRiscoPorOrdem } from "./decisao.ts";
 
 const LADOS = ["buy", "sell", "hold", "caixa"] as const;
 
@@ -109,6 +109,65 @@ function exigirDivergente(entrada: EntradaDoInstrumento, instrumento: string): b
   return entrada.divergente;
 }
 
+/**
+ * O TRAVAO DE RISCO POR ORDEM (RN-M4.12, D-015): a exposicao da ordem contra o tecto que a CONTA declarou.
+ *
+ * E' UMA COMPARACAO PURA — sem preco, sem equity, sem quantidade. Nao e' um atalho: e' o que a arquitectura
+ * dita. A boleta NAO leva quantidade (quem sabe o volume e' o conector, RN-B5): leva `saldo_pct` e
+ * `alavancagem`, logo a exposicao da ordem e' `saldo_pct` x `alavancagem`, em % do saldo — e o tecto
+ * (`conta.risco_maximo_por_ordem_pct`) esta' na MESMA unidade. A equity cancela nos dois lados.
+ *
+ * O COMPARADOR NAO SE ESCREVE AQUI: e' o `cabeNaBanda` das bandas (aritmetica exacta, inteiros escalados), que
+ * ja' devolve `dentro` quando a banda NAO esta' declarada — «ausente = nao ha' limite a aplicar», que e' o
+ * principio do dono. A CONTA QUE NAO DECLARA O TECTO NAO TEM TRAVAO, e isso e' uma decisao de quem nao
+ * declarou, nunca um valor por omissao.
+ *
+ * DOIS CASOS GRITAM em vez de seguir, e pela mesma razao (nao saber nao e' caber):
+ *   * a exposicao nao se le' (`saldo_pct`/`alavancagem` fora da forma do contrato) — sem ela nao ha' conta;
+ *   * o tecto FOI declarado e nao se le' (`2%`, um numero de virgula flutuante, uma cadeia vazia) — o
+ *     comparador das bandas diria «dentro» por nao o conseguir ler, e um limite escrito que nao morde e' pior
+ *     do que um limite ausente.
+ */
+export function conferirRiscoPorOrdem(entrada: {
+  mandato?: Mandato;
+  config?: ConfiguracaoDaConta;
+}): VeredictoDoRiscoPorOrdem {
+  const exposicao = produtoDeDecimais(entrada.mandato?.saldo_pct, entrada.mandato?.alavancagem);
+  if (exposicao === null) {
+    throw new Error(
+      "o travão de risco por ordem (RN-M4.12) nao conseguiu ler a exposicao do mandato (`saldo_pct` x " +
+        "`alavancagem`): sem saber quanto a ordem expoe nao ha' comparacao que valha — e nao saber nao e' caber",
+    );
+  }
+
+  // O TECTO E' GRANDEZA DA CONTA, e chega pela config que a mesa ja' le^ (nao pela operacao: isso obrigaria a
+  // mexer no `operacao.schema.json` sem necessidade nenhuma). O limite viaja em DECIMAL TEXTUAL (D4).
+  const tecto = entrada.config?.risco_maximo_por_ordem_pct;
+  if (tecto !== undefined && tecto !== null && typeof tecto !== "string") {
+    throw new Error(
+      `o tecto de risco por ordem da conta (\`conta.risco_maximo_por_ordem_pct\`) veio ${JSON.stringify(tecto)} ` +
+        `(${typeof tecto}): o limite viaja em decimal TEXTUAL (D4), e um limite que nao se le' nao vira «sem limite»`,
+    );
+  }
+  const declarado = typeof tecto === "string" ? tecto : null;
+
+  const veredicto = cabeNaBanda(exposicao, declarado === null ? undefined : { maximo: declarado });
+  if (declarado !== null && !veredicto.conferido) {
+    throw new Error(
+      `o tecto de risco por ordem da conta (${JSON.stringify(declarado)}) nao se le' como decimal do contrato: ` +
+        "um limite DECLARADO que nao se consegue ler nao vira «sem limite»",
+    );
+  }
+
+  return {
+    exposicao,
+    tecto: declarado,
+    conferido: veredicto.conferido,
+    veredicto: veredicto.veredicto,
+    porque: veredicto.porque,
+  };
+}
+
 export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   const { mercado, proposta } = entrada;
   // DE QUE INSTRUMENTO SE FALA. Era `String(mercado?.instrumento ?? "(sem nome)")` em dois sitios, e o nome
@@ -193,6 +252,12 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   let ladoDaBoleta: string;
   let reduce_only: boolean;
   let reverter: boolean;
+
+  // O TAMANHO RELATIVO A' POSICAO VIVA (contrato 1.11.0, D-013). A MESA NAO EMITE REDUCAO PARCIAL: nenhum setup
+  // do repositorio a propoe (o σ emite `caixa` ou um lado), e o campo entrou no vocabulario ANTES do primeiro
+  // uso. Hoje vale SEMPRE `1` — a posicao inteira, que e' como se diz «nao e' parcial» com um valor DECLARADO
+  // (e nunca com uma ausencia, D4). O dia em que um setup pedir «reduz metade» e' AQUI que o tamanho entra.
+  const posicao_pct = "1";
 
   if (lado === "caixa") {
     if (!nossa) {
@@ -370,12 +435,39 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     };
   }
 
+  // 4.7. O TRAVAO DE RISCO POR ORDEM (RN-M4.12, D-015) — a ULTIMA trava antes de a boleta existir.
+  //
+  // VALE PARA `abrir` E PARA `reverse`: os dois AUMENTAM exposicao na mesma ordem (a virada abre a perna nova
+  // depois de fechar a velha). `fechar`/`reduzir` NAO passa por aqui — reduzir risco e' sempre permitido, e
+  // travar o fecho seria a mesa a defender-se do lado errado.
+  //
+  // O TECTO E' DA CONTA. Quando ela NAO o declara nao ha' travão nenhum — e a ausencia e' uma DECISAO de quem
+  // nao declarou, nunca um valor por omissao: o veredicto fica dito (`conferido: false`) e o registo di-lo.
+  let riscoPorOrdem: VeredictoDoRiscoPorOrdem | null = null;
+  if (acao === "abrir" || acao === "reverse") {
+    const risco = conferirRiscoPorOrdem({ mandato: entrada.mandato, config: entrada.config });
+    if (risco.veredicto === "fora") {
+      return {
+        ...base,
+        acao: "nada",
+        motivo: "risco_por_ordem_excedido",
+        // O dono escreveu que quer ser avisado do que trava a mesa por CONFIGURACAO: uma ordem que ele proprio
+        // declarou nao caber no tecto dele tem de chegar ate' ele, senao o setup passa a parecer quebrado.
+        avisa: true,
+        boleta: null,
+        risco_por_ordem: risco,
+      };
+    }
+    riscoPorOrdem = risco;
+  }
+
   // 5. Passou tudo: monta-se a boleta (e ela e validada contra o contrato la dentro).
   return {
     ...base,
     acao,
     motivo: null,
     avisa: situacao.alarma,
+    risco_por_ordem: riscoPorOrdem,
     boleta: montarBoleta({
       instrumento: mercado.instrumento,
       lado: ladoDaBoleta,
@@ -383,6 +475,7 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
       template: entrada.template,
       reduce_only,
       reverter,
+      posicao_pct,
       ficha: entrada.ficha,
       ciclo: entrada.ciclo,
     }),

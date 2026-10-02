@@ -125,6 +125,26 @@ function texto(a: Dec): string {
   return negativo ? `-${corpo}` : corpo;
 }
 
+// ---------------------------------------------------------------- a exposicao da ORDEM (RN-M4.12, D-015)
+
+/**
+ * O PRODUTO EXACTO de dois decimais do contrato — o que a exposicao de uma ordem e'.
+ *
+ * PORQUE EXISTE. O travão de risco por ordem (RN-M4.12, D-015) compara a exposicao da ordem — `saldo_pct` x
+ * `alavancagem`, em % do saldo — com o tecto da conta. O produto tem de ser montado, e tem de ser montado na
+ * MESMA aritmetica do resto deste ficheiro: inteiros escalados, sem virgula flutuante (um limite de risco
+ * comparado em `Number()` e' o defeito seguinte).
+ *
+ * `null` quando algum dos dois nao se le' como decimal do contrato: quem chama NAO transforma isso em zero nem
+ * em «sem exposicao» — nao saber quanto a ordem expoe nao pode passar por caber (D4).
+ */
+export function produtoDeDecimais(a: unknown, b: unknown): string | null {
+  const x = ler(a);
+  const y = ler(b);
+  if (x === null || y === null) return null;
+  return texto({ n: x.n * y.n, escala: x.escala + y.escala });
+}
+
 // ---------------------------------------------------------------- o que o SETUP pede
 
 /**

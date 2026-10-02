@@ -1170,6 +1170,10 @@ export async function atender(
     // a traducao, que recusa `reversao_sem_posicao_a_reverter` se a boleta a pedir sem ela existir).
     posicao_a_reverter: posicaoViva?.unidades,
     lado_da_posicao: posicaoViva?.lado,
+    // A REDUCAO PARCIAL (1.11.0) le a MESMA posicao viva, pela mesma leitura: e' dela que sai a quantidade da
+    // fraccao pedida (`posicao_pct`). Ausente quando nao ha posicao — e quem recusa e' a traducao
+    // (`reducao_parcial_sem_posicao_viva`), antes de qualquer envio.
+    posicao_viva: posicaoViva?.unidades,
   });
   if (!accao.ok) {
     return recusa(id, accao.motivo, `${accao.porque} — e nao se arredonda para caber (RN-C9)`, {}, []);

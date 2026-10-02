@@ -645,6 +645,32 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
             ),
         )
 
+    # ---- porta 5-ter: o TAMANHO RELATIVO A' POSICAO (1.11.0, D-013) -------------------------------------------
+    # A boleta passa a declarar `posicao_pct` — OBRIGATORIO desde a 1.11.0 (D4: `1` diz «nao e' parcial», e a
+    # ausencia diria «nao foi declarado»). Este venue nao tem `reduce_only` (porta 5) e a reducao parcial
+    # assenta nele: uma fracao da posicao QUE E' uma reducao cai, mais abaixo, na recusa do `reduce_only` —
+    # nomeada, e nao uma abertura disfarcada. O que esta porta confere e' a DECLARACAO.
+    posicao_pct = _decimal_do_campo(boleta, "posicao_pct", "boleta.posicao_pct", positivo=True)
+    if isinstance(posicao_pct, Recusa):
+        return posicao_pct
+    if posicao_pct > Decimal(1):
+        return _recusa(
+            "valor_fora_da_banda",
+            (
+                f"posicao_pct vem {posicao_pct}: acima de 1 uma ordem reduziria mais do que a posicao que existe "
+                "— recusa, em vez de a cortar por conta propria"
+            ),
+        )
+    if posicao_pct < Decimal(1) and boleta.get("reduce_only") is not True:
+        return _recusa(
+            "reducao_parcial_sem_reduce_only",
+            (
+                f"a boleta pede uma reducao PARCIAL (posicao_pct {posicao_pct}) e nao declara reduce_only: uma "
+                "fraccao da posicao e' uma reducao, e quem reduz nunca inverte — as duas declaracoes teriam de "
+                "dizer a mesma coisa"
+            ),
+        )
+
     # ---- porta 5: o `reduce_only` NAO EXISTE neste venue (RN-CT34/FR-... ) ------------------------------------
     reduce_only = _campo(boleta, "reduce_only")
     if isinstance(reduce_only, Recusa):

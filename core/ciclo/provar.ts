@@ -14,7 +14,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { deveAvisar, type ConfiguracaoDaConta } from "../config/configuracao.ts";
 import { lerParaOCiclo } from "../leitura/fixtures.ts";
-import { decidirInstrumento } from "./ciclo.ts";
+import { decidirInstrumento, conferirRiscoPorOrdem } from "./ciclo.ts";
 import { conferirBanda, type ConferenciaDaBanda } from "./banda.ts";
 import { accaoPara, conferirAccoes, tabelaDeAccoes } from "./acoes.ts";
 import { conferirLivro, livroDeCondicoes, situacaoDoInstrumento } from "./condicoes.ts";
@@ -282,6 +282,71 @@ for (const caso of bateriaCiclo.casos) {
       ok: contexto.length === 0,
     }),
   );
+}
+
+// ---------------------------------------------------------------- o travão de risco por ordem (RN-M4.12, D-015)
+
+// A comparacao e' PURA (a boleta nao leva quantidade, logo a equity cancela), e e' CARGA, e nao enfeite: os
+// casos dos 19 algarismos sao o mesmo par do D-008 na aritmetica — um `Number()` de JavaScript arredonda
+// `1.0000000000000000001` para `1` e diria «cabe» num limite que o dono escreveu.
+console.log("\n=== travao de risco por ordem (RN-M4.12, D-015) ===\n");
+
+function riscoDe(saldo_pct: string, alavancagem: string, tecto?: unknown) {
+  return conferirRiscoPorOrdem({
+    mandato: { saldo_pct, alavancagem },
+    config: config(
+      tecto === undefined
+        ? { eventos_que_avisam: [] }
+        : { eventos_que_avisam: [], risco_maximo_por_ordem_pct: tecto },
+    ),
+  });
+}
+
+const riscoFora = riscoDe("10", "1", "2");
+exigir(
+  riscoFora.veredicto === "fora" && riscoFora.exposicao === "10" && riscoFora.tecto === "2" && riscoFora.conferido,
+  `a exposicao de 10% passa o tecto de 2% (exposicao ${riscoFora.exposicao} · tecto ${riscoFora.tecto} · ${riscoFora.veredicto})`,
+);
+
+const riscoSemTecto = riscoDe("10", "1");
+exigir(
+  riscoSemTecto.veredicto === "dentro" && !riscoSemTecto.conferido && riscoSemTecto.tecto === null,
+  `a conta que NAO declara o tecto nao tem travao, e a comparacao DIZ que nao se fez (${riscoSemTecto.porque})`,
+);
+
+const riscoNaBorda = riscoDe("2", "1", "2");
+exigir(riscoNaBorda.veredicto === "dentro" && riscoNaBorda.conferido, "o valor IGUAL ao tecto cabe: a borda e' DENTRO");
+
+const riscoDe19Algarismos = riscoDe("1.0000000000000000001", "1", "1");
+exigir(
+  riscoDe19Algarismos.veredicto === "fora",
+  "19 algarismos: `1.0000000000000000001` PASSA o tecto `1` (a virgula flutuante arredondava-o e diria «cabe»)",
+);
+const riscoExacto = riscoDe("0.1", "3", "0.3");
+exigir(
+  riscoExacto.veredicto === "dentro" && riscoExacto.exposicao === "0.3",
+  "`0.1` x `3` da' exactamente `0.3` (a virgula flutuante daria 0.30000000000000004, que recusaria contra um tecto `0.3`)",
+);
+
+// O QUE NAO SE LE' NAO VIRA «SEM LIMITE»: os tres casos GRITAM, e o grito e' medido (nao afirmado).
+const gritos: [string, { saldo_pct: string; alavancagem: string }, unknown][] = [
+  ["o tecto declarado ilegivel (`2%`)", { saldo_pct: "10", alavancagem: "1" }, "2%"],
+  ["o tecto declarado como numero de virgula flutuante", { saldo_pct: "10", alavancagem: "1" }, 2.5],
+  ["a exposicao ilegivel (`10%`)", { saldo_pct: "10%", alavancagem: "1" }, "2"],
+];
+for (const [rotulo, mandato, tecto] of gritos) {
+  let gritou = false;
+  let mensagem = "";
+  try {
+    conferirRiscoPorOrdem({
+      mandato,
+      config: config({ eventos_que_avisam: [], risco_maximo_por_ordem_pct: tecto }),
+    });
+  } catch (e) {
+    gritou = true;
+    mensagem = (e as Error).message.slice(0, 110);
+  }
+  exigir(gritou, `GRITA com ${rotulo} — um limite que nao se le' nao vira «sem limite»`, [mensagem]);
 }
 
 // ---------------------------------------------------------------- desfecho
