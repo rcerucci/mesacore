@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **02/10/2026 (noite), 17:37 (-03)** · contrato vigente **1.11.0** · portão **38 de 38** · árvore com **um** ficheiro sujo declarado (ver a nota)
+medido em **02/10/2026 (noite), 17:37 (-03)** · contrato vigente **1.11.0** · portão **38 de 38** · árvore **limpa** (a config das contas passou a versionada — ver a nota)
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
