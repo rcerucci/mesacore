@@ -1,11 +1,1 @@
-{
-  "nota": "Conjunto FECHADO dos motivos de recusa da MESA (R7 do specs/002). Nao se confunde com contracts/vocabulario.json: aquele e a lingua que cruza a fronteira entre processos e linguagens (validade de mensagem); este e a resposta a um COMANDO, que e interface interna. Nenhum destes motivos e escrito em codigo: o interprete le-os daqui. No dia em que o vigia for processo separado (RN-E8), estes motivos passam a cruzar a fronteira e terao de entrar no contrato - e uma mensagem nova volta ao recorte 001.",
-  "familia": "recusa_da_mesa",
-  "motivos": {
-    "unidade_de_comparacao_nao_declarada": {"cruzam_a_fronteira": true, "quando": "nova_sessao sem a unidade de comparacao completa", "regra": "RN-V10, FR-034, FR-039", "porque": "A sessao e a unidade de COMPARACAO."},
-    "ciclo_rebentou": {"cruzam_a_fronteira": false, "quando": "o ciclo de um instrumento lancou e a volta nao seguiu como se nada fosse", "regra": "II", "porque": "Uma excecao que se apanha e se segue decide a bem do silencio. A volta fica registada e, a seguir, a mesa para."},
-    "posicao_manual_tolerada_nao_gerida": {"cruzam_a_fronteira": false, "quando": "ha posicao no venue sem a nossa marca e a ficha diz tolera_posicao_manual true", "regra": "RN-T16", "porque": "Tolerar nao e' adoptar. A posicao relata-se e nao se gere."},
-    "tempo_maximo_sem_instante_de_abertura": {"cruzam_a_fronteira": false, "quando": "a ficha declara tempo_maximo_em_posicao e a posicao nossa nao traz o instante de abertura", "regra": "RN-S11", "porque": "Vazio e' sem limite. Um prazo preenchido nao se ignora, e nao se fecha por um relogio que a leitura nao trouxe."}
-  },
-  "fronteira": {"cruzam": 26, "nao_cruzam": 32}
-}
+d5a93373ac2eb836
