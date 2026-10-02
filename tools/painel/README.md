@@ -82,3 +82,28 @@ O mesmo que o plugin recebe em operação, para não haver duas maneiras de dize
 
 `INSTRUMENTO`, `RELOGIO`, `CONSTANTES` (JSON da ficha), `PASTA_DE_MERCADO`, `AGORA_MS` (o instante do venue,
 para a barra "a que decidiu" ser a mesma que a mesa viu).
+
+## Os dois relógios (e porque são dois)
+
+O painel tem **dois** ciclos, e não é por gosto: são duas coisas com ritmos próprios.
+
+| ciclo | ficheiro | por omissão | o que traz |
+|---|---|---|---|
+| **retrato** (completo) | `web/painel/painel.json` | 60 s (`--intervalo`) | tudo, **incluindo as velas e a série** do setup — é dele que sai o gráfico |
+| **vivo** | `web/painel/vivo.json` | 2 s (`--intervalo-vivo`) | o «agora»: leitura (preço, idade do dado), posição, proposta, última decisão, risco, faltas |
+
+**Medido** (02/10/2026, 3 voltas de cada): o retrato completo custa **0,43 s** e pesa **2,7 MB** (1,67 MB só de
+séries, porque pergunta a cada setup a sua série — um processo por par). O modo leve (`--sem-serie`) custa
+**0,11 s** e pesa **28 KB** (98× menos). A série muda **por barra**; a leitura e a decisão mudam **a cada
+segundo** no motor (o operador escreve a operação a 1 s) — e era isso que faltava: com os dois ciclos amarrados a
+60 s, o ecrã mostrava um retrato de até ~120 s de idade enquanto a mesa já tinha decidido outra coisa.
+
+A tela segue os dois: o `vivo.json` repinta os números (a cada 2 s) e o `painel.json` redesenha o gráfico (a cada
+60 s). O que o vivo **não** traz (as velas e a série) é preservado do retrato que já está desenhado — e a fita
+mostra **as duas idades**, porque o «agora» fresco com um gráfico velho seria uma meia-verdade.
+
+`--sem-serie` também serve para pedir um retrato à mão sem pagar o custo da série:
+
+```bash
+bun run tools/painel/retrato.ts --sem-serie --para web/painel/vivo.json --corrida <dir>
+```

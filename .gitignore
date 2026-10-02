@@ -78,3 +78,4 @@ setups/*/mercado/
 # decisao). Committa-lo punha numeros de ontem a parecer os de agora — quem o gera e' o `tools/painel/retrato.ts`
 # (e o `servir.sh`, que o renova a cada minuto). O que fica no repositorio e' o produtor e a tela.
 web/painel/painel.json
+web/painel/vivo.json

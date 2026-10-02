@@ -577,6 +577,7 @@ function desenharFita() {
       <div class="numero"><span class="rot">Ligação</span><span class="val mono">${escapar(mesa.ligacao ?? "—")}</span></div>
       <div class="numero"><span class="rot">Pares ligados / armados</span><span class="val mono">${ligados} / ${armados}</span></div>
       <div class="numero"><span class="rot">Retrato</span><span class="val mono">${hora(dados.retrato.gerado_em_ms)} <span class="fraco">(há ${desde(dados.retrato.gerado_em_ms)})</span></span></div>
+      ${dados.agora ? `<div class="numero"><span class="rot">Agora</span><span class="val mono">${desde(dados.agora.gerado_em_ms)}</span></div>` : ""}
       <button class="botao" id="recarregar">Recarregar</button>
       <a class="botao" id="botao-config" href="#configuracao">Configuração</a>
     </div>`;
@@ -1674,7 +1675,64 @@ function reencaixarEmBreve() {
 }
 
 carregar();
-setInterval(carregar, 60000); // o relógio do motor é a barra horária: 60 s basta, e o pedido é local
+setInterval(carregar, 60000); // o RELATÓRIO completo (com o gráfico): a série muda por BARRA
+
+// O «AGORA», a cada 2 s — é isto que dá a sensação de vivo.
+//
+// O fio leve (`vivo.json`, ver `--sem-serie` no `retrato.ts`) NÃO traz as velas nem a série: traz o que se move a
+// cada segundo no motor (a leitura com o preço e a idade do dado, a posição, a proposta, a última decisão, o
+// risco, as faltas) e pesa 28 KB em vez de 2,7 MB. Este ciclo repinta os NÚMEROS e deixa o gráfico em paz — quem
+// o redesenha é o relatório completo, no relógio dele (a série é do fecho da barra).
+//
+// O que o vivo não traz é PRESERVADO do retrato que já está desenhado: sem isto, o `desenharGrafico` seguinte
+// encontraria um instrumento sem série e o gráfico apareceria vazio.
+const INTERVALO_VIVO_MS = 2000;
+const CAMPOS_DA_SERIE = ["velas", "serie_do_setup", "janela", "em_curso", "sobreposicao_indisponivel", "faltas_do_cruzamento"];
+async function carregarVivo() {
+  if (!dados || !Array.isArray(dados.mesas) || dados.mesas.length === 0) return; // o completo ainda não chegou
+  let vivo;
+  try {
+    const r = await fetch(`vivo.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!r.ok) return; // sem vivo não se apaga nada: a tela fica com o que tem
+    vivo = await r.json();
+  } catch {
+    return;
+  }
+  for (const [mi, mesa] of (vivo.mesas ?? []).entries()) {
+    const minhaMesa = dados.mesas[mi];
+    if (!minhaMesa) continue;
+    const contas = minhaMesa.contas ?? [];
+    for (const [ci, conta] of (mesa.contas ?? []).entries()) {
+      const minhaConta = contas[ci];
+      if (!minhaConta) continue;
+      const velhos = minhaConta.instrumentos ?? [];
+      const instrumentos = (conta.instrumentos ?? []).map((inst, ii) => {
+        const velho = velhos[ii];
+        if (!velho) return inst;
+        const series = {};
+        for (const k of CAMPOS_DA_SERIE) if (k in velho) series[k] = velho[k];
+        return { ...inst, ...series };
+      });
+      Object.assign(minhaConta, conta, { instrumentos });
+    }
+    Object.assign(minhaMesa, mesa, { contas });
+  }
+  // O RETRATO DO VIVO NÃO SOBRESCREVE O DO COMPLETO: a fita mostra os dois, porque são duas coisas diferentes.
+  // O `retrato` de cima é o do fio COMPLETO (é dele que veio o gráfico que está no ecrã); o `agora` é este. Trocar
+  // um pelo outro faria a fita dizer «retrato há 2 s» com um gráfico de até um minuto atrás — uma meia-verdade.
+  if (vivo.retrato) dados.agora = vivo.retrato;
+  if (vivo.faltas) dados.faltas = vivo.faltas;
+  if (vivo.configuracao) dados.configuracao = vivo.configuracao;
+  // Os três desenhos do «agora» — e as mesmas duas guardas do `carregar`, porque o desenho reescreve o HTML e os
+  // botões novos nasceriam mortos (é o mesmo motivo que está dito lá em cima).
+  desenharFita();
+  desenharPares();
+  desenharODentro();
+  aplicarOsEstadosDeRecolher();
+  ligarOsBotoesDeRecolher();
+  reencaixarEmBreve(); // a idade do dado muda de largura ("há 1 s" → "há 2 min") e o topo pode partir uma linha
+}
+setInterval(carregarVivo, INTERVALO_VIVO_MS);
 </script>
 </body>
 </html>

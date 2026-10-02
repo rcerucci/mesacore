@@ -33,6 +33,15 @@ const argumento = (nome: string): string | undefined => {
 const DIR_DA_CORRIDA = argumento("--corrida") ?? `${process.env["HOME"]}/.hermes/profiles/appbuilder/cache/scratch/corrida-de-risco`;
 const CONTA = argumento("--conta") ?? null;
 const PARA = argumento("--para") ?? join(RAIZ, "web", "painel", "painel.json");
+/**
+ * O MODO LEVE: o retrato SEM a série (e sem as velas).
+ *
+ * A SÉRIE é o que PESA (o fio tem 2,7 MB, e 1,67 MB são só as séries) e o que CUSTA (o setup corre uma vez por
+ * par — medido: 0,43 s por retrato). E é também o que muda por BARRA, não a cada segundo. Com `--sem-serie` o
+ * retrato fica com o «agora» (leitura, posição, proposta, decisão, risco, faltas) e sai em unidades de KB — o que
+ * permite renová-lo a cada segundo sem arrastar o gráfico: quem o desenha é o retrato completo, no relógio dele.
+ */
+const SEM_SERIE = argv.includes("--sem-serie");
 
 /** O que nao se conseguiu ler vai dito, com o nome e o porque — a lista viaja no fio e a tela mostra-a. */
 const falhasDoRetrato: { o_que: string; porque: string }[] = [];
@@ -287,16 +296,19 @@ for (const nome of nomesDosInstrumentos) {
   const constantes = v.parametros ?? ficha?.constantes ?? {};
   const pastaDoMercado = existsSync(join(DIR_DA_CORRIDA, "mercado")) ? join(DIR_DA_CORRIDA, "mercado") : join(RAIZ, "tools", "verificar-setup", "barras");
 
-  const sobreposicao =
-    manifesto !== null && relogio !== null
+  const sobreposicao = SEM_SERIE
+    ? { serie: null, em_curso: null, janela: null, porque: null }
+    : manifesto !== null && relogio !== null
       ? await pedirSobreposicao(manifesto, nome, relogio, constantes, pastaDoMercado, leitura?.tempo_do_venue_ms ?? null)
-      : { serie: null, em_curso: null, porque: `nao ha ficha nem manifesto para ${nome}: nao se sabe que serie pedir` };
+      : { serie: null, em_curso: null, janela: null, porque: `nao ha ficha nem manifesto para ${nome}: nao se sabe que serie pedir` };
   if (sobreposicao.porque !== null) falta(`sobreposicao de ${nome}`, sobreposicao.porque);
 
   // AS VELAS (do venue) x A SERIE (do setup): duas pontas, cruzadas por tempo. Sem serie nao ha cruzamento, e
   // as velas ficam sozinhas — o grafico desenha o mercado e di-lo: "este setup nao publica serie".
-  const velas = relogio !== null ? lerVelas(nome, relogio, pastaDoMercado) : null;
-  if (velas === null && relogio !== null) falta(`velas de ${nome}-${relogio}`, `nao existe velas-${nome}-${relogio}.jsonl em ${pastaDoMercado}`);
+  // Em modo leve nenhuma das duas se le': a tela ja' as tem do retrato completo, e a falta nao se anuncia (nao
+  // falta nada — apenas nao se pediu nada).
+  const velas = SEM_SERIE || relogio === null ? null : lerVelas(nome, relogio, pastaDoMercado);
+  if (velas === null && relogio !== null && !SEM_SERIE) falta(`velas de ${nome}-${relogio}`, `nao existe velas-${nome}-${relogio}.jsonl em ${pastaDoMercado}`);
   const cruzamento =
     velas !== null && sobreposicao.serie !== null
       ? cruzar(velas, sobreposicao.serie, sobreposicao.janela)
@@ -345,12 +357,18 @@ for (const nome of nomesDosInstrumentos) {
     // O QUE SE DESENHA, em duas pontas separadas e ditadas: as VELAS (o mercado, do venue) e a SERIE (a leitura
     // do indicador, do setup). A tela desenha-as juntas e nunca as confunde: uma e' o que aconteceu, a outra e'
     // o que o motor viu.
-    velas: cruzamento.velas,
-    serie_do_setup: cruzamento.serie,
-    janela: cruzamento.janela,
-    em_curso: sobreposicao.em_curso,
-    sobreposicao_indisponivel: sobreposicao.porque,
-    faltas_do_cruzamento: cruzamento.faltas_do_cruzamento,
+    // AS SERIES SO' EXISTEM NO RETRATO COMPLETO (ver `SEM_SERIE`): em modo leve a tela JA' tem a serie
+    // desenhada, e repetir 1,7 MB a cada dois segundos para a deitar fora seria o contrario de leve.
+    ...(SEM_SERIE
+      ? {}
+      : {
+          velas: cruzamento.velas,
+          serie_do_setup: cruzamento.serie,
+          janela: cruzamento.janela,
+          em_curso: sobreposicao.em_curso,
+          sobreposicao_indisponivel: sobreposicao.porque,
+          faltas_do_cruzamento: cruzamento.faltas_do_cruzamento,
+        }),
     o_que_o_setup_disse: oQueOSetupDisse(nome),
     proposta: v.proposta ?? null,
     ultima_decisao: ultimoCiclo,

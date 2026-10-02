@@ -20,6 +20,8 @@ set -uo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PORTA="${PORTA:-8788}"
 INTERVALO="${INTERVALO:-60}"
+# O «AGORA» tem relogio proprio, e por isso e' outro numero. Ver o ciclo la' em baixo.
+INTERVALO_VIVO="${INTERVALO_VIVO:-2}"
 ENDERECO="${ENDERECO:-}"
 DIR_DA_CORRIDA="${DIR_DE_OBSERVACAO:-$HOME/.hermes/profiles/appbuilder/cache/scratch/corrida-de-risco}"
 
@@ -29,6 +31,7 @@ while [ $# -gt 0 ]; do
     --endereco) ENDERECO="$2"; shift 2 ;;
     --corrida) DIR_DA_CORRIDA="$2"; shift 2 ;;
     --intervalo) INTERVALO="$2"; shift 2 ;;
+    --intervalo-vivo) INTERVALO_VIVO="$2"; shift 2 ;;
     *) echo "argumento desconhecido: $1" >&2; exit 2 ;;
   esac
 done
@@ -43,7 +46,7 @@ if [ -z "$ENDERECO" ]; then
   exit 1
 fi
 
-echo "painel: retrato a cada ${INTERVALO}s · tela em http://${ENDERECO}:${PORTA}/index.html"
+echo "painel: retrato a cada ${INTERVALO}s · vivo a cada ${INTERVALO_VIVO}s · tela em http://${ENDERECO}:${PORTA}/index.html"
 echo "painel: corrida ${DIR_DA_CORRIDA}"
 
 # O CICLO DO RETRATO. Um primeiro retrato À MÃO, para a tela não abrir vazia se alguém chegar antes do minuto.
@@ -57,8 +60,29 @@ bun run "$RAIZ/tools/painel/retrato.ts" --corrida "$DIR_DA_CORRIDA" || echo "pai
   done
 ) &
 CICLO=$!
-# O ciclo morre com o servidor — nunca fica um `bun` órfão a ler ficheiros depois de a tela sair.
-trap 'kill "$CICLO" 2>/dev/null; wait "$CICLO" 2>/dev/null' EXIT INT TERM
+
+# O CICLO DO «AGORA» — e é este que dá a sensação de vivo, e é por isso que tem relógio próprio.
+#
+# MEDIDO: o retrato completo custa 0,43 s e pesa 2,7 MB (1,67 MB só de séries), porque pergunta a cada setup a sua
+# série — e a série muda por BARRA, não a cada segundo. O modo leve (`--sem-serie`) custa 0,11 s e pesa 28 KB (98×
+# menos) e traz o que se move a cada segundo no motor: a leitura (com o preço e a idade do dado), a posição, a
+# proposta, a última decisão, o risco e as faltas.
+#
+# São DOIS relógios porque são duas coisas: o gráfico ao minuto, o «agora» ao segundo. A tela segue os dois — o
+# `vivo.json` renova os números, o `painel.json` redesenha o gráfico.
+bun run "$RAIZ/tools/painel/retrato.ts" --sem-serie --para web/painel/vivo.json --corrida "$DIR_DA_CORRIDA" \
+  || echo "painel: o primeiro retrato vivo falhou (a tela mantem o que tem)"
+(
+  while true; do
+    sleep "$INTERVALO_VIVO"
+    bun run "$RAIZ/tools/painel/retrato.ts" --sem-serie --para web/painel/vivo.json --corrida "$DIR_DA_CORRIDA" >/dev/null 2>&1 \
+      || echo "painel: retrato vivo falhou nesta volta (o anterior fica na tela)"
+  done
+) &
+VIVO=$!
+
+# Os ciclos morrem com o servidor — nunca fica um `bun` órfão a ler ficheiros depois de a tela sair.
+trap 'kill "$CICLO" "$VIVO" 2>/dev/null; wait "$CICLO" "$VIVO" 2>/dev/null' EXIT INT TERM
 
 # O SERVIDOR — a tela E a porta de escrita, no mesmo processo (`Bun.serve`).
 #
