@@ -53,7 +53,36 @@ function dizer(o: Record<string, unknown>): void {
   process.stdout.write(JSON.stringify({ instante_ms: Date.now(), etapa: "feed", ...o }) + "\n");
 }
 
-type Vela = { t: number; T?: number; o: string; h: string; l: string; c: string; v?: string; n?: number; i?: string; s?: string };
+type Vela = {
+  t: number;
+  T?: number;
+  o: string;
+  h: string;
+  l: string;
+  c: string;
+  v?: string;
+  n?: number;
+  i?: string;
+  s?: string;
+  /** Marcado quando a barra foi AGREGADA por nós a partir do `bbo` (e não mandada pelo venue). */
+  agregada_do_bbo?: boolean;
+};
+
+/**
+ * Os passos que se alinham por simples divisão do dia — só estes se agregam (ver `agregarDoBbo`).
+ */
+const PASSO_EM_MS: Record<string, number> = {
+  "1m": 60_000,
+  "3m": 180_000,
+  "5m": 300_000,
+  "15m": 900_000,
+  "30m": 1_800_000,
+  "1h": 3_600_000,
+  "2h": 7_200_000,
+  "4h": 14_400_000,
+  "8h": 28_800_000,
+  "12h": 43_200_000,
+};
 
 /**
  * O relógio da ficha é um dos intervalos DO VENUE? A lista é a do `mercado.ts` (medida na fonte do SDK instalado) —
@@ -141,15 +170,63 @@ function escreverVelas(instrumento: string, relogio: string, e: Estado): void {
  *   * `t` maior             -> ACRESCENTA (a anterior fechou, e o que dela sabemos já está gravado);
  *   * `t` menor             -> ignora (o venue pode reenviar; andar para trás no histórico seria inventar).
  */
-function encaixarVela(e: Estado, v: Vela): void {
+function encaixarVela(e: Estado, v: Vela, chave: string, relogio: string): void {
   const ultima = e.velas[e.velas.length - 1];
-  if (ultima === undefined || v.t > ultima.t) {
+  if (ultima !== undefined && v.t > ultima.t) {
+    const passo = PASSO_EM_MS[relogio];
+    if (passo !== undefined && v.t - ultima.t > passo) {
+      // O STREAM NÃO TEM MEMÓRIA: o que passou enquanto ninguém ouvia, perdeu-se — e o feed NÃO o inventa.
+      // Nomeia-se o buraco; quem o preenche é o puxão do histórico (o venue tem a série), nunca uma suposição nossa.
+      dizer({ veredicto: "buraco_no_historico", par: chave, de: ultima.t, ate: v.t, faltam: Math.round((v.t - ultima.t) / passo) - 1 });
+    }
     e.velas.push(v);
-  } else if (v.t === ultima.t) {
+  } else if (ultima !== undefined && v.t === ultima.t) {
+    // A barra do venue substitui a nossa agregada: o que é do venue manda, e a agregação sai de cena sozinha.
     e.velas[e.velas.length - 1] = v;
   } else {
     return;
   }
+  e.porEscrever = true;
+}
+
+/** O preço limpo: o mid de dois `px` do venue, sem o lixo do ponto flutuante (`2664.1000000000004`). */
+function precoLimpo(x: number): string {
+  return String(Number(x.toFixed(10)));
+}
+
+/**
+ * A BARRA EM CURSO, AGREGADA DO `bbo` — a decisão (1) do dono, tomada a 02/10/2026.
+ *
+ * O canal `candle` manda a barra quando ela muda (medido: de minuto a minuto no 1m), mas entre mudanças o gráfico
+ * ficaria parado — e num mercado fino pode passar muito tempo sem um trade. O `bbo` empurra o melhor bid/ask a
+ * ~0,5 s: é dele que sai o preço vivo que faz a barra respirar.
+ *
+ * ISTO É AGREGADO POR NÓS, e vai declarado: a barra leva `agregada_do_bbo: true`, e o `o`/`h`/`l`/`c` são o
+ * primeiro e os extremos do MID (`(bid+ask)/2`) desde o início do período. O `v`/`n` (volume e trades) NÃO se
+ * inventam: ficam a zero, porque o livro não os diz — inventá-los seria fingir uma medida que não foi feita.
+ *
+ * Quando o venue manda a barra do mesmo período, ela SUBSTITUI a agregada (ver `encaixarVela`): o que é do venue
+ * manda, e a nossa agregação sai de cena sozinha.
+ *
+ * Não se agrega em relógios que não se alinhem por divisão do dia (`1d`, `3d`, `1w`, `1M`): a esses, a barra fica
+ * como o venue a mandou. Fail-closed: melhor parada do que errada.
+ */
+function agregarDoBbo(e: Estado, relogio: string, mid: number): void {
+  const passo = PASSO_EM_MS[relogio];
+  if (passo === undefined) return;
+  const inicio = Math.floor(Date.now() / passo) * passo;
+  const ultima = e.velas[e.velas.length - 1];
+  const p = precoLimpo(mid);
+  if (ultima === undefined || ultima.t < inicio) {
+    // A barra do período ainda não existe: cria-se, com o mid como abertura.
+    e.velas.push({ t: inicio, o: p, h: p, l: p, c: p, v: "0", n: 0, agregada_do_bbo: true });
+  } else if (ultima.t === inicio) {
+    ultima.h = precoLimpo(Math.max(Number(ultima.h), mid));
+    ultima.l = precoLimpo(Math.min(Number(ultima.l), mid));
+    ultima.c = p;
+    ultima.agregada_do_bbo = true;
+  }
+  // `ultima.t > inicio` não acontece (o venue não manda do futuro); se acontecesse, não se mexia.
   e.porEscrever = true;
 }
 
@@ -185,13 +262,21 @@ async function garantirSubscricoes(): Promise<void> {
     const e: Estado = { velas, escritoEm: 0, porEscrever: false };
     estado.set(chave, e);
     const candle = await cliente.candle({ coin: instrumento, interval: intervalo }, (d: unknown) => {
-      encaixarVela(e, d as Vela);
+      encaixarVela(e, d as Vela, chave, relogio);
     });
     let bbo: any | null = null;
     if (!SEM_PRECOS) {
       bbo = await cliente.bbo({ coin: instrumento }, (d: any) => {
         precos.set(instrumento, { quando_ms: Date.now(), bbo: d?.bbo });
         precosPorEscrever = true;
+        // O MID é o preço vivo: faz a barra em curso respirar (ver `agregarDoBbo`).
+        const bid = Number(d?.bbo?.[0]?.px);
+        const ask = Number(d?.bbo?.[1]?.px);
+        if (Number.isFinite(bid) && Number.isFinite(ask)) {
+          const mid = (bid + ask) / 2;
+          precos.set(instrumento, { quando_ms: Date.now(), bbo: d?.bbo, mid: Number(precoLimpo(mid)) });
+          agregarDoBbo(e, relogio, mid);
+        }
       });
     }
     subscrito.set(chave, { candle, bbo });
@@ -201,7 +286,7 @@ async function garantirSubscricoes(): Promise<void> {
 
 // ---------------------------------------------------------------- os preços vivos
 
-const precos = new Map<string, { quando_ms: number; bbo: unknown }>();
+const precos = new Map<string, { quando_ms: number; bbo: unknown; mid?: number }>();
 let precosPorEscrever = false;
 
 function escreverPrecos(): void {
