@@ -9,9 +9,10 @@
 //
 //     COMO SE SABE QUE FOI ENVIADA: pelo DESFECHO GRAVADO — e nao por um campo novo inventado no registo
 //     (nada la' o diz, e um campo desses obrigaria a mesa a escreve-lo). Uma boleta cuja referencia tem linha
-//     em `desfechos-<conta>.jsonl` ja' chegou ao venue e NAO se reenvia; uma boleta SEM desfecho reenvia-se —
-//     foi enviada e o venue nao respondeu, e e' exactamente para isso que o `cloid` e' derivado da referencia:
-//     a mesma referencia da' o mesmo `cloid`, e o reenvio nao duplica ordem (RN-H9).
+//     em `desfechos-<conta>.jsonl` ja' chegou ao venue e NAO se reenvia. Uma boleta com INTENCAO gravada e sem
+//     desfecho tambem NAO se reenvia (`intencoesSemDesfecho`): o processo pode ter morrido depois do accept.
+//     A pergunta ao venue por esse cloid e' a prova que ainda falta; reenviar "porque nao ha desfecho" foi o
+//     que duplicou a ordem. O cloid derivado da referencia (RN-H9) nao substitui essa pergunta.
 //
 //  2. RECONSTRUIR O MAPA. O mapa (`marcas-<conta>.jsonl`) so' ganhava linhas em RUNTIME: ao reiniciar, o
 //     processo novo nao sabia das marcas que o processo anterior ja' tinha confirmado, e a posicao ABERTA
@@ -199,4 +200,52 @@ export function reconstruirMapaDeMarcas(caminhoDosDesfechos: string, caminhoDoMa
     marcas_ja_no_mapa: jaNoMapa,
     desfechos_que_nao_confirmam: semConfirmacao,
   };
+}
+
+export type IntencaoPendente = { marca: number; referencia: string; instrumento: string };
+
+/**
+ * INTENCOES SEM DESFECHO. Escritas antes do pedido ao venue (`intencoes-<conta>.jsonl`).
+ *
+ * Uma referencia que ja' tem desfecho nao esta' pendente: o desfecho e' a prova. Uma referencia pedida e sem
+ * desfecho pode ter chegado ao venue — nao se reenvia. Linha ilegivel recusa o arranque, pela mesma razao
+ * que o ficheiro de desfechos: um buraco aqui e' uma ordem que pode voltar a sair.
+ */
+export function intencoesSemDesfecho(
+  caminhoDasIntencoes: string,
+  jaComDesfecho: Map<string, EnvioRegistado>,
+): IntencaoPendente[] {
+  if (!existsSync(caminhoDasIntencoes)) return [];
+  const linhas = readFileSync(caminhoDasIntencoes, "utf8").split("\n").filter((l) => l.trim() !== "");
+  const pendentes: IntencaoPendente[] = [];
+  const vistas = new Set<string>();
+  for (let i = 0; i < linhas.length; i++) {
+    const posicao = i + 1;
+    let bruto: unknown;
+    try {
+      bruto = JSON.parse(linhas[i]!);
+    } catch {
+      throw new Error(
+        `o ficheiro de intencoes (${caminhoDasIntencoes}) tem uma linha ilegivel na posicao ${posicao}: ` +
+          "um buraco aqui e' uma boleta que pode voltar a sair",
+      );
+    }
+    const o = objecto(bruto);
+    if (o === undefined) {
+      throw new Error(`a linha ${posicao} de ${caminhoDasIntencoes} nao e' um objecto`);
+    }
+    const referencia = typeof o.referencia === "string" && o.referencia !== "" ? o.referencia : undefined;
+    const instrumento = typeof o.instrumento === "string" && o.instrumento !== "" ? o.instrumento : undefined;
+    const marca = o.marca;
+    if (referencia === undefined || instrumento === undefined || typeof marca !== "number" || !Number.isFinite(marca)) {
+      throw new Error(
+        `a linha ${posicao} de ${caminhoDasIntencoes} nao traz referencia, instrumento e marca: sem isso nao se ` +
+          "sabe que boleta ja' saiu daqui",
+      );
+    }
+    if (jaComDesfecho.has(referencia) || vistas.has(referencia)) continue;
+    vistas.add(referencia);
+    pendentes.push({ marca, referencia, instrumento });
+  }
+  return pendentes;
 }
