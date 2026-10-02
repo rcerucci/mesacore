@@ -634,6 +634,26 @@ async function main(): Promise<void> {
   // ninguém ler. Drena-se para o nosso `stderr`, que é o ficheiro onde o operador já escreve.
   conector.stderr.on("data", (b: Buffer) => process.stderr.write(b));
 
+  // ---- O FEED DE MERCADO: um processo AO LADO do conector, e NÃO no caminho da decisão -------------------
+  //
+  // PORQUE AQUI: o `garantirVelas` (acima) decide pela FRESCURA do ficheiro de velas — puxa o histórico quando ele
+  // não existe, e um puxão de recurso quando a última barra envelhece dois passos. Com o feed a manter o ficheiro
+  // fresco por stream (`bbo` a ~0,5 s, `candle` no fecho da barra), a condição de puxar deixa de se cumprir: o
+  // operador pára de bater à porta do venue a cada barra, e o que resta do puxão é a rede de segurança (o feed
+  // morreu, ou o ficheiro nunca existiu). Medido antes disto: 1,2-1,5 s BLOQUEADOS por puxão dentro do laço que
+  // decide, um processo `bun` novo por puxão (80 MB de pico) e 253× `429` quando o ritmo da volta subiu.
+  //
+  // O que ele NÃO faz: não decide, não escreve na operação, não fala com a mesa. Se ele morrer, o motor opera
+  // igual — só as velas param de chegar, e o puxão de recurso acima volta a fazer o seu trabalho.
+  const feed = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "feed.ts"),
+    "--corrida", dirname(para), "--ambiente", ambienteDaConta],
+    { cwd: RAIZ, env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+  // O `stdout` e o `stderr` dele vão para o NOSSO `stderr`: as subscrições, os buracos nomeados e as recusas são
+  // diagnósticos que têm de ser visíveis — e um `pipe` que ninguém lê bloqueia quem nele escreve (a mesma lição
+  // do `stderr` do conector). O `stdout` do operador fica só para a operação, sem se misturar com o feed.
+  feed.stdout.on("data", (b: Buffer) => process.stderr.write(b));
+  feed.stderr.on("data", (b: Buffer) => process.stderr.write(b));
+
   // ---- O CARTEIRO: a mao que aperta o gatilho --------------------------------------------------------
   //
   // A mesa decide e escreve a BOLETA na linha do ciclo do registo (que e' append-only). Quem a leva ao conector
@@ -731,9 +751,23 @@ async function main(): Promise<void> {
     } catch {
       // o processo ja' nao existe: nada a fazer, e nao se inventa um erro
     }
+    try {
+      // O FEED MORRE COM O OPERADOR, pela mesma razao que o conector: um processo de aquisicao orfao continuaria a
+      // escrever nas velas de uma corrida que ja' fechou — e a ficha da corrida seguinte lia o que ele escrevesse.
+      feed.kill();
+    } catch {
+      // o processo ja' nao existe: nada a fazer, e nao se inventa um erro
+    }
     dizer({ etapa: "operador", veredicto: "fim", voltas, operacao: para, setups: [...new Set(ligadas.map((f) => `${f.setup} ${manifestoDe(f).versao} (${manifestoDe(f).linguagem})`))] });
     process.exit(0);
   };
+
+  // UM SINAL TEM DE PASSAR PELO MESMO CAMINHO QUE O FIM NATURAL — correcção MEDIDA a 02/10/2026: matei o operador
+  // com SIGTERM e o FEED ficou ÓRFÃO, a servir a corrida antiga. O conector saiu (o `stdin` dele fechou, e ele lê o
+  // `stdin`), mas o feed não lê `stdin` nenhum, e ninguém o matou: um processo de aquisição órfão continua a
+  // escrever nas velas de uma corrida que já fechou — e a corrida seguinte leria o que ele escrevesse. Com o
+  // handler, o sinal faz o que o fim natural já fazia: mata o conector, mata o feed, escreve o fim no registo.
+  for (const sinal of ["SIGTERM", "SIGINT"] as const) process.on(sinal, () => terminar());
 
   // AS PORTAS DO ARRANQUE: o operador recolhe o desfecho delas e grava-o onde a mesa o vai ler. Sem este
   // ficheiro a mesa RECUSA o `start` (nomeando `nao conferidas`) — e faz bem.

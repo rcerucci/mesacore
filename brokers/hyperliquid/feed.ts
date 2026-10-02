@@ -41,8 +41,18 @@ const PASTA_DO_MERCADO = join(DIR_DA_CORRIDA, "mercado");
 const CAMINHO_DA_OPERACAO = join(DIR_DA_CORRIDA, "operacao.json");
 const CAMINHO_DOS_PRECOS = join(PASTA_DO_MERCADO, "precos-vivos.json");
 const SEM_PRECOS = argv.includes("--sem-precos");
-// O ambiente: por omissão o de TESTE (é onde o sistema corre hoje); `real` só quando o dono o disser.
-const IS_TESTNET = argumento("--ambiente") !== "real";
+/**
+ * Os dois ambientes do venue, com nome — a MESMA lista do `mercado.ts`. O `--ambiente` confere-se contra ela
+ * (não contra um `as`), e o que não pertencer é recusado com nome. Por omissão: o de TESTE, que é onde o sistema
+ * corre hoje; `producao` só quando o dono o disser.
+ */
+const AMBIENTES = ["teste", "producao"] as const;
+const AMBIENTE_DECLARADO = argumento("--ambiente") ?? "teste";
+if (!(AMBIENTES as readonly string[]).includes(AMBIENTE_DECLARADO)) {
+  process.stderr.write(JSON.stringify({ etapa: "feed", erro: "ambiente_fora_do_conjunto", ambiente: AMBIENTE_DECLARADO, aceitos: AMBIENTES }) + "\n");
+  process.exit(2);
+}
+const IS_TESTNET = AMBIENTE_DECLARADO !== "producao";
 
 /** A lista de pares relê-se da operação: é assim que uma ficha ligada a quente entra (sem reiniciar o feed). */
 const RELER_A_OPERACAO_MS = 5_000;
@@ -309,7 +319,7 @@ function escreverPrecos(): void {
 // ---------------------------------------------------------------- o relógio do feed
 
 async function main(): Promise<void> {
-  dizer({ arranque: "ligado", corrida: DIR_DA_CORRIDA, ambiente: IS_TESTNET ? "teste" : "real", precos: !SEM_PRECOS });
+  dizer({ arranque: "ligado", corrida: DIR_DA_CORRIDA, ambiente: AMBIENTE_DECLARADO, precos: !SEM_PRECOS });
   await garantirSubscricoes();
 
   let ultimaLeituraDaOperacao = Date.now();
