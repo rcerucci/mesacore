@@ -29,7 +29,7 @@
    "tempo_maximo_em_posicao": ""
   },
   "prazo_de_resposta_ms": 5000,
-  "enviar": false,
+  "enviar": true,
   "tolera_posicao_manual": false
  },
  "constantes": {
@@ -42,5 +42,6 @@
   "usar_zz": true,
   "zz_atr": "2.0",
   "atr_len": 14
- }
+ },
+ "_nota": "Ligado na arvore local (run e enviar true). tolera_posicao_manual false: posicao aberta a mao nao se gere. tempo_maximo_em_posicao vazio: sem limite, declarado."
 }

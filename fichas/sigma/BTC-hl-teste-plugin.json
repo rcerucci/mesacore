@@ -5,7 +5,7 @@
   "instrumento": "BTC",
   "setup": "sigma",
   "relogio": "1h",
-  "run": false,
+  "run": true,
   "ao_desligar": "fechar",
   "saldo_pct": "10",
   "alavancagem": "1",
@@ -29,7 +29,7 @@
    "tempo_maximo_em_posicao": ""
   },
   "prazo_de_resposta_ms": 5000,
-  "enviar": false,
+  "enviar": true,
   "tolera_posicao_manual": false
  },
  "constantes": {
@@ -43,5 +43,5 @@
   "zz_atr": "2.0",
   "atr_len": 14
  },
- "_nota": "Desligado (run:false): a conta de teste le' SOL, e o que o dono quer a rodar e' o SOL."
+ "_nota": "Ligado na arvore local (run e enviar true). tolera_posicao_manual false: posicao aberta a mao nao se gere. tempo_maximo_em_posicao vazio: sem limite, declarado."
 }
