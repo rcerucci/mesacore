@@ -562,7 +562,8 @@ e estava fora.
   onde ele veio), e a classe medida: **114** ternários com literal por omissão no produto, **23** deles a
   mencionar sequer a ausência — e a amostra desses 23 é o idioma legítimo da casa, logo um padrão que os
   reprovasse matava o portão à fome de falsos positivos. Fica **declarado e contado** (`--ternarios`): o buraco é
-  um número que desce, não uma frase.
+  um número que desce, não uma frase. A recusa ficou **provada com duas contas de prova** (sem o campo → «veio
+  undefined»; com `"producao "` → «veio "producao "»), apagadas depois — a árvore voltou ao que estava.
 - **A contradição do `config/contas/hl-teste-plugin.json` continua a NÃO ser minha** (o `.gitignore` diz que
   `config/contas/` não se versiona; o ficheiro está rastreado): a árvore fica com esse **um** ficheiro sujo, como
   estava. Não a resolvi.

@@ -805,6 +805,10 @@ lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *
 > ser o que o `mercado.ts` já fazia com a ficha: **a conta que não declara o ambiente NÃO ARRANCA** (morre com o
 > valor que veio), e **o registo diz de onde o ambiente veio** (`arranque: "ambiente_declarado"`, com o caminho
 > da conta) — o valor sozinho não diz se veio da conta ou de uma omissão nossa.
+> **Medido** (contas de prova no sítio da conta, apagadas depois; a árvore voltou ao que estava):
+> a conta sem `conexao.ambiente` → `recusado: ... veio undefined — o ambiente viaja em TEXTO e é um de
+> teste|producao`; a conta com o ambiente `"producao "` (uma gralha) → `recusado: ... veio "producao "`. As duas
+> **antes** de qualquer ordem, de qualquer spawn e de qualquer leitura da chave.
 >
 > **A CLASSE, decidida por medição (e a catraca dos fallbacks fica a saber-se).** A catraca procura `??`/`||`
 > (e, em Python, `or`/`get(k, literal)`) — um ternário com literal por omissão passava por baixo dela. Medido
