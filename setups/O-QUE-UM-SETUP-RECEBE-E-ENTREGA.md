@@ -142,9 +142,20 @@ Uma linha JSON no `stdout`, o envelope do contrato:
 | `hold` | não faz nada — e **regista** que a proposta não tinha lado a executar |
 | `caixa` | fecha a posição em `reduce_only` (nunca inverte) |
 
-**A virada de mão não existe no vocabulário, e não é preciso:** faz-se com **dois passos** — `caixa` (fecha) e
-depois o lado inverso. É assim que funciona nos dois modelos de posição (netting e hedge), e a bateria prova-o
-ao vivo (`buy → sell/ro → sell → buy/ro`, com o sinal a inverter).
+**A virada de mão EXISTE no vocabulário — e quem a decide é a MESA, não o setup** (contrato 1.10.0). O setup
+continua a propor o **LADO**: `buy`/`sell` (para que lado quer estar), `caixa` (sai) e `hold` (espera). Quando
+`buy`/`sell` chega com uma posição **nossa** do lado oposto, a mesa decide **`reverse`** — fecha o que está aberto
+e abre o do lado declarado, **numa só decisão** — e quem a executa é o **conector**, que tem o venue (na
+Hyperliquid, netting: cabe numa só ordem; onde não couber, as duas pernas **no mesmo acto**).
+
+> **NOTA DATADA — 02/10/2026: esta secção dizia o contrário, e a medição desmentiu-a.** Dizia «a virada de mão não
+> existe no vocabulário, e não é preciso: faz-se com **dois passos**». Os dois passos **não cabem no tempo da
+> mesa**: ela decide UMA vez por barra, e a segunda perna chegava à barra seguinte — onde o setup já não autoriza
+> entrada («não abro no meio da perna»). Medido ao vivo (ETH a 1 m, conta de teste): o par abriu, a viragem chegou,
+> a mesa **fechou e não abriu** — ficou plano até à viragem seguinte. A virada em dois passos só funcionaria
+> enquanto a mesa decidisse mais de uma vez por barra; com o relógio da barra, perde-se **uma perna em cada duas**.
+> O verbo (`reverse`) entrou na 1.10.0, e o tratamento foi para o **plugin de venue** — que é o sítio certo: é ele
+> que sabe se o venue inverte numa ordem ou precisa das duas.
 
 `relogio` (opcional) é o relógio do próprio setup — a barra que ele considera fechada. Sem ele, vale o da mesa.
 

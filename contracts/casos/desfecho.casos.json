@@ -5,70 +5,70 @@
     {
       "nome": "desfecho/aceite",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-1", "carga": {"classificacao": "aceite", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"order_id": "8842", "estado": "filled"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-1", "carga": {"classificacao": "aceite", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"order_id": "8842", "estado": "filled"}}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "desfecho/parcial",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-2", "carga": {"classificacao": "parcial", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"order_id": "8843", "estado": "partial", "preenchido": "0.11"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-2", "carga": {"classificacao": "parcial", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"order_id": "8843", "estado": "partial", "preenchido": "0.11"}}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "desfecho/desconhecido",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-3", "carga": {"classificacao": "desconhecido", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"erro": "timeout"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-3", "carga": {"classificacao": "desconhecido", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"erro": "timeout"}}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "desfecho/recusado-com-motivo",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-4", "carga": {"classificacao": "recusado", "motivo": "minimo_do_instrumento_acima_da_banda", "resolucao": {"quantidade": "0.01", "nocional": "108.54", "margem_empenhada": "3.62", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"order_id": null, "erro": "min_volume"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-4", "carga": {"classificacao": "recusado", "motivo": "minimo_do_instrumento_acima_da_banda", "resolucao": {"quantidade": "0.01", "nocional": "108.54", "margem_empenhada": "3.62", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"order_id": null, "erro": "min_volume"}}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "desfecho/recusado-sem-motivo",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-5", "carga": {"classificacao": "recusado", "resolucao": {"quantidade": "0.01", "nocional": "108.54", "margem_empenhada": "3.62", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"erro": "sla"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-5", "carga": {"classificacao": "recusado", "resolucao": {"quantidade": "0.01", "nocional": "108.54", "margem_empenhada": "3.62", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"erro": "sla"}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_obrigatorio_ausente"
     },
     {
       "nome": "desfecho/sem-resolucao",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-6", "carga": {"classificacao": "aceite", "resposta_do_venue": {"order_id": "8844", "estado": "filled"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-6", "carga": {"classificacao": "aceite", "resposta_do_venue": {"order_id": "8844", "estado": "filled"}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_obrigatorio_ausente"
     },
     {
       "nome": "desfecho/sem-resposta-do-venue",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-7", "carga": {"classificacao": "aceite", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-7", "carga": {"classificacao": "aceite", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_obrigatorio_ausente"
     },
     {
       "nome": "desfecho/recusado-antes-de-resolver-sem-resolucao",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-10", "carga": {"classificacao": "recusado", "motivo": "capacidade_nao_declarada", "resposta_do_venue": {"erro": "tipo_de_ordem_nao_suportado"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-10", "carga": {"classificacao": "recusado", "motivo": "capacidade_nao_declarada", "resposta_do_venue": {"erro": "tipo_de_ordem_nao_suportado"}}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "desfecho/classificacao-inventada",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-8", "carga": {"classificacao": "talvez", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"estado": "?"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-8", "carga": {"classificacao": "talvez", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"estado": "?"}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_do_conjunto"
     },
     {
       "nome": "desfecho/motivo-fora-do-vocabulario",
       "mensagem": "desfecho",
-      "entrada": {"contrato": "1.9.0", "tipo": "desfecho", "id": "d-9", "carga": {"classificacao": "recusado", "motivo": "deu_ruim", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"erro": "generico"}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "desfecho", "id": "d-9", "carga": {"classificacao": "recusado", "motivo": "deu_ruim", "resolucao": {"quantidade": "0.18", "nocional": "1953.74", "margem_empenhada": "65.12", "alavancagem_efectiva": "30", "preco_de_liquidacao": "1.05141"}, "resposta_do_venue": {"erro": "generico"}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_do_conjunto"
     }

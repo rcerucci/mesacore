@@ -68,6 +68,10 @@ function pedidoDoCaso(c: any): Pedido {
     saldo: c.saldo !== undefined ? c.saldo : casos.pedido_base?.saldo,
     preco: c.preco !== undefined ? c.preco : casos.pedido_base?.preco,
   };
+  // A VIRADA (1.10.0): a POSICAO VIVA entra no pedido como o saldo e o preco — e' do VENUE, e o caso declara-a.
+  // Sem ela, quem recusa e' a traducao (`reversao_sem_posicao_a_reverter`), que e' o caso 2 daqui.
+  if (c.posicao_a_reverter !== undefined) pedido.posicao_a_reverter = c.posicao_a_reverter;
+  if (c.lado_da_posicao !== undefined) pedido.lado_da_posicao = c.lado_da_posicao;
   for (const caminho of itens(c.sem, "sem") as string[]) apagar(pedido, caminho);
   return pedido as Pedido;
 }

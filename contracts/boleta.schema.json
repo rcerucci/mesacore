@@ -16,6 +16,7 @@
     "prazo_da_passiva_ms",
     "destino_do_resto",
     "reduce_only",
+    "reverter",
     "referencia_do_cliente",
     "marca_de_posse"
   ],
@@ -41,6 +42,7 @@
       "description": "O que fazer com o que ficou por executar quando o prazo da passiva acaba."
     },
     "reduce_only": {"type": "boolean", "description": "So reduz posicao. Se o venue nao tiver reduce-only nativo, e o conector que o garante — e tem de o declarar."},
+    "reverter": {"type": "boolean", "description": "A VIRADA (aditivo na 1.10.0): `true` diz ao conector para FECHAR a posicao viva e ABRIR a do lado declarado em `lado`, com o tamanho do mandato. Obrigatorio porque a ausencia nao e' um valor: `false` diz «nao e' reversao» e a ausencia diria «nao foi declarado» (D4). Contradicao impossivel: `reverter: true` com `reduce_only: true` RECUSA (`reversao_com_reduce_only`) — «reduz, nunca inverte» e «inverte» nao cabem na mesma ordem."},
     "referencia_do_cliente": {"$ref": "_defs/forma.schema.json#/$defs/correlacao", "description": "Idempotencia: reenviar com a MESMA referencia nao pode criar segunda ordem (RN-C4)."},
     "marca_de_posse": {"$ref": "_defs/forma.schema.json#/$defs/marca_de_posse"}
   }

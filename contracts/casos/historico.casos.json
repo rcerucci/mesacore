@@ -5,35 +5,35 @@
     {
       "nome": "historico/com-taxas-e-funding-em-campos-proprios",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-1", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01"}, {"referencia_do_cliente": "r-2", "marca_de_posse": 1694498817, "instante_ms": 1758999600000, "lado": "sell", "quantidade": "0.18", "preco": "1.08521", "taxa": "0.05", "funding": "-0.01"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-1", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01"}, {"referencia_do_cliente": "r-2", "marca_de_posse": 1694498817, "instante_ms": 1758999600000, "lado": "sell", "quantidade": "0.18", "preco": "1.08521", "taxa": "0.05", "funding": "-0.01"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "historico/sem-funding-declarado",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-2", "carga": {"instrumento": "XAUUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "12.60", "execucoes": [{"referencia_do_cliente": "r-3", "marca_de_posse": 1694498818, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.02", "preco": "2650.25", "taxa": "0.02"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-2", "carga": {"instrumento": "XAUUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "12.60", "execucoes": [{"referencia_do_cliente": "r-3", "marca_de_posse": 1694498818, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.02", "preco": "2650.25", "taxa": "0.02"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
     {
       "nome": "historico/resultado-recalculado-por-execucao",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-3", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01", "resultado_liquido": "-2.34"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-3", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05", "funding": "-0.01", "resultado_liquido": "-2.34"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "campo_desconhecido"
     },
     {
       "nome": "historico/preco-como-numero-de-virgula-flutuante",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-4", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": 1.08542, "taxa": "0.05"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-4", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": [{"referencia_do_cliente": "r-1", "marca_de_posse": 1694498816, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.18", "preco": 1.08542, "taxa": "0.05"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "tipo_invalido"
     },
     {
       "nome": "historico/execucoes-como-objecto",
       "mensagem": "historico",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-5", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": {"r-1": {"preco": "1.08542"}}}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-5", "carga": {"instrumento": "EURUSD", "moeda": "USD", "instante_ms": 1759000000000, "resultado_realizado": "-2.34", "execucoes": {"r-1": {"preco": "1.08542"}}}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "tipo_invalido"
     },
@@ -41,7 +41,7 @@
       "nome": "historico/moeda-de-quatro-letras-cabe-na-forma",
       "mensagem": "historico",
       "nota": "(a) MEDIDO: a Hyperliquid escreve a moeda da taxa como `USDC`, com quatro letras, e o contrato exigia tres. Dentro da banda medida na 1.6.0, provado pelo lado do que PASSA.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-6", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"referencia_do_cliente": "r-4", "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-6", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"referencia_do_cliente": "r-4", "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -49,7 +49,7 @@
       "nome": "historico/moeda-de-uma-e-de-duas-letras-cabem-na-banda-medida",
       "mensagem": "historico",
       "nota": "(a) MEDIDO na 1.6.0: o universo do venue tem 11 simbolos de UMA letra (`W`, `S`, `P`, ...) e 47 de DUAS (`0G`, `2Z`, ...). A banda medida comeca em UM — a forma da 1.5.0 (3..5) recusava-os.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-7", "carga": {"instrumento": "EURUSD", "moeda": "W", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "sell", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-7", "carga": {"instrumento": "EURUSD", "moeda": "W", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "sell", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -57,7 +57,7 @@
       "nome": "historico/moeda-de-duas-letras-com-DIGITO-cabe-na-banda-medida",
       "mensagem": "historico",
       "nota": "(a) MEDIDO: 1400 dos 1863 simbolos do venue trazem DIGITO (`0G`, `TEST1`, `TUSDC`, `PACOU0`, `TSRSFG0`). A banda passa a ser alfanumerica — e o DIGITO entra por medicao, nao por tolerancia.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-7b", "carga": {"instrumento": "ETH", "moeda": "0G", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.02", "preco": "2650.25", "taxa": "0.02"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-7b", "carga": {"instrumento": "ETH", "moeda": "0G", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.02", "preco": "2650.25", "taxa": "0.02"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -65,7 +65,7 @@
       "nome": "historico/moeda-de-onze-letras-cabe-na-banda-medida",
       "mensagem": "historico",
       "nota": "(a) MEDIDO: o comprimento maximo do universo e ONZE (`TSRSFGQQQQQ`, `LAUNCHCOIN`, `JELLYJELLY`, `TestPascal1`) — 2 simbolos. A banda medida fecha em ONZE.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-7c", "carga": {"instrumento": "BTC", "moeda": "TSRSFGQQQQQ", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-7c", "carga": {"instrumento": "BTC", "moeda": "TSRSFGQQQQQ", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -73,7 +73,7 @@
       "nome": "historico/moeda-em-MINUSCULAS-cabe-na-banda-medida",
       "mensagem": "historico",
       "nota": "(a) MEDIDO: 15 simbolos do venue trazem MINUSCULA (`kPEPE`, `kSHIB`, `TestPascal1`, `werfqwer`). ATENCAO, e de proposito: este caso MUDA DE VEREDICTO na 1.6.0 — era `recusado` e passa a `aceite`, porque a medicao desmentiu a forma que o tinha recusado. A prova negativa que a 1.5.0 tinha aqui e SUBSTITUIDA pelas da banda nova (`historico/moeda-com-ESPACO-recusa`, `.../moeda-com-HIFEN-recusa`, `.../moeda-com-doze-letras-recusa`).",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-9", "carga": {"instrumento": "BTC", "moeda": "usdc", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-9", "carga": {"instrumento": "BTC", "moeda": "usdc", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -81,7 +81,7 @@
       "nome": "historico/moeda-com-doze-letras-recusa",
       "mensagem": "historico",
       "nota": "(a) PROVA NEGATIVA da banda nova: nao se alargou mais do que o medido. Doze letras RECUSAM (`formato_invalido`) — o medido fecha em ONZE.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-8", "carga": {"instrumento": "BTC", "moeda": "TSRSFGQQQQQQ", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-8", "carga": {"instrumento": "BTC", "moeda": "TSRSFGQQQQQQ", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "formato_invalido"
     },
@@ -89,7 +89,7 @@
       "nome": "historico/moeda-com-HIFEN-recusa",
       "mensagem": "historico",
       "nota": "(a) PROVA NEGATIVA da banda nova: o universo do venue medido NAO tem um unico simbolo com HIFEN (0 de 1863). O hifen RECUSA (`formato_invalido`).",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-9b", "carga": {"instrumento": "EURUSD", "moeda": "EUR-USD", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "sell", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-9b", "carga": {"instrumento": "EURUSD", "moeda": "EUR-USD", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "sell", "quantidade": "0.18", "preco": "1.08542", "taxa": "0.05"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "formato_invalido"
     },
@@ -97,7 +97,7 @@
       "nome": "historico/moeda-com-ESPACO-recusa",
       "mensagem": "historico",
       "nota": "(a) PROVA NEGATIVA da banda nova, e ela e MEDIDA: dos 1863 simbolos do venue, 1862 cabem na forma nova e UM nao — `JPL `, com um ESPACO no fim. Nao se alargou a banda para o acomodar: o espaco RECUSA (`formato_invalido`).",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-9c", "carga": {"instrumento": "BTC", "moeda": "JPL ", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-9c", "carga": {"instrumento": "BTC", "moeda": "JPL ", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "formato_invalido"
     },
@@ -105,7 +105,7 @@
       "nome": "historico/sem-o-resultado-por-instrumento-a-carga-serve",
       "mensagem": "historico",
       "nota": "(b) MEDIDO: o venue publica o resultado POR EXECUCAO (`closedPnl`) e nao por instrumento. A carga sem `resultado_realizado` PASSA — e a ausencia e o que se escreve, nunca zero.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-10", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "sell", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-10", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "sell", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -113,7 +113,7 @@
       "nome": "historico/marca-de-posse-na-forma-do-cloid-cabe",
       "mensagem": "historico",
       "nota": "(c) MEDIDO: o manifesto da Hyperliquid declara `marca_de_posse: cloid` (0x + 32 hexadecimais). A marca que o VENUE publica passa a admitir as duas formas declaradas.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-11", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"marca_de_posse": "0x00000000000000000000000000000001", "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-11", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"marca_de_posse": "0x00000000000000000000000000000001", "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -121,7 +121,7 @@
       "nome": "historico/marca-de-posse-em-terceiro-tipo-recusa",
       "mensagem": "historico",
       "nota": "(c) PROVA NEGATIVA: um TEXTO que nao e um `cloid` bem formado RECUSA. As formas sao duas, e so duas — nao ha tolerancia para um terceiro tipo de marca.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-12", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"marca_de_posse": "nao-e-marca", "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-12", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"marca_de_posse": "nao-e-marca", "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "formato_invalido"
     },
@@ -129,7 +129,7 @@
       "nome": "historico/marca-de-posse-acima-dos-31-bits-recusa",
       "mensagem": "historico",
       "nota": "(c) PROVA NEGATIVA: a forma do INTEIRO nao se afrouxou — 2147483648 (2^31) RECUSA, como recusava antes da emenda. Alargar a marca para dois tipos nao podia alargar o inteiro.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-13", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"marca_de_posse": 2147483648, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-13", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"marca_de_posse": 2147483648, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_fora_da_banda"
     },
@@ -137,7 +137,7 @@
       "nome": "historico/sem-a-referencia-do-cliente-a-execucao-serve",
       "mensagem": "historico",
       "nota": "(d) MEDIDO: 415 de 415 ordens desta conta vieram com o `cloid` (a referencia do cliente) NULO, e o venue nao a guardou. A execucao sem `referencia_do_cliente` PASSA, e a chave simplesmente nao esta la.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-14", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-14", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -145,7 +145,7 @@
       "nome": "historico/referencia-do-cliente-a-null-recusa",
       "mensagem": "historico",
       "nota": "(d) PROVA NEGATIVA, e o coracao do fail-closed: AUSENTE e ausente, mas escrever `null` no campo e por um VALOR onde nao ha nenhum — RECUSA (D4). Ausencia nao se declara com null.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-15", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"referencia_do_cliente": null, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-15", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"referencia_do_cliente": null, "instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41"}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "valor_nulo_nao_permitido"
     },
@@ -153,7 +153,7 @@
       "nome": "historico/funding-por-execucao-declarado-cabe",
       "mensagem": "historico",
       "nota": "(e) o funding por execucao continua OPCIONAL: quando o venue o declara, ele entra em campo PROPRIO e a carga PASSA.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-16", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41", "funding": "-0.07"}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-16", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41", "funding": "-0.07"}]}},
       "veredicto_esperado": "aceite",
       "motivo_esperado": null
     },
@@ -161,7 +161,7 @@
       "nome": "historico/funding-por-execucao-como-numero-recusa",
       "mensagem": "historico",
       "nota": "(e) PROVA NEGATIVA: o funding e DECIMAL TEXTUAL, sem expoente. Um numero de virgula flutuante RECUSA — o caminho facil para «nao ha» (zero) tambem passa por aqui.",
-      "entrada": {"contrato": "1.9.0", "tipo": "historico", "id": "h-17", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41", "funding": 0.07}]}},
+      "entrada": {"contrato": "1.10.0", "tipo": "historico", "id": "h-17", "carga": {"instrumento": "BTC", "moeda": "USDC", "instante_ms": 1759000000000, "execucoes": [{"instante_ms": 1758999000000, "lado": "buy", "quantidade": "0.001", "preco": "64000.10", "taxa": "0.41", "funding": 0.07}]}},
       "veredicto_esperado": "recusado",
       "motivo_esperado": "tipo_invalido"
     }

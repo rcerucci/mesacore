@@ -192,6 +192,7 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
   let acao: Decisao["acao"];
   let ladoDaBoleta: string;
   let reduce_only: boolean;
+  let reverter: boolean;
 
   if (lado === "caixa") {
     if (!nossa) {
@@ -207,27 +208,34 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
     // Fechar NUNCA inverte: o lado da boleta e o oposto da posicao que existe (RN-B5).
     ladoDaBoleta = posicao.lado === "buy" ? "sell" : "buy";
     reduce_only = true;
+    reverter = false;
   } else if (nossa && posicao.lado !== lado) {
-    // O LADO OPOSTO A' NOSSA POSICAO NAO E' ABRIR — E' REDUZIR (D-013, medido 29/09/2026).
+    // O LADO OPOSTO A' NOSSA POSICAO E' UMA VIRADA — `reverse` (D-013, fechado na 1.10.0).
     //
-    // O que se mediu, na bateria de teste do venue (P15): com posicao nossa aberta, uma proposta do lado oposto
-    // produzia `acao: "abrir"` e a boleta saia com `reduce_only: false` — e o venue FAZ NETTING: a mesma ordem
-    // do mesmo tamanho ZEROU a posicao, e o registo ficou a dizer `abrir` sobre uma reducao. Pior: se a boleta
-    // fosse MAIOR que a posicao, o mesmo caminho entregava uma VIRADA NUMA SO' ORDEM — exactamente o que a
-    // virada de mao em dois passos (o vocabulario nao tem verbo para ela) existe para nao deixar acontecer.
+    // O que se mediu, na bateria de teste do venue (P15, 29/09/2026): com posicao nossa aberta, uma proposta do
+    // lado oposto produzia `acao: "abrir"` e a boleta saia com `reduce_only: false` — e o venue FAZ NETTING: a
+    // mesma ordem do mesmo tamanho ZEROU a posicao, e o registo ficou a dizer `abrir` sobre uma reducao. O
+    // perigo era a VIRADA EM SILENCIO, e a defesa foi proibir a inversao (`reduce_only: true`) e compor a
+    // virada em DOIS PASSOS — porque o vocabulario nao tinha verbo para ela.
     //
-    // A CORRECCAO, e porque e' esta: `reduce_only` e' a unica forma de dizer «reduz, nunca inverte» sem a mesa
-    // calcular unidades (que nao e' dela, RN-B0) — o venue corta no tamanho da posicao, e a boleta pode ir por
-    // cima sem risco. A accao fica `fechar`, que e' o nome que o vocabulario ja tem para «isto so' reduz»
-    // (`abrir | fechar | adoptar | nada`): uma REDUCAO PARCIAL continua sem nome proprio, e isso esta' declarado
-    // como o que falta ao vocabulario — mas o perigo (a virada em silencio) fica fechado hoje.
-    acao = "fechar";
+    // Essa defesa FALHOU na medicao de 02/10/2026 (ETH a 1 m, conta de teste): a mesa decide UMA vez por barra
+    // e a virada em dois passos precisa de DUAS. A 16:08:35 a mesa fechou (aceite, marca 2289) e na barra
+    // seguinte o setup ja' nao autorizava a entrada do lado novo (ele so' entra na barra do flip); o par ficou
+    // PLANO ate' a viragem seguinte — metade das pernas fora do mercado, contra o indicador.
+    //
+    // O que fecha a CLASSE: a virada passa a ser UMA accao, decidida num so' ciclo. Quem a executa e' o
+    // CONECTOR — e' ele que tem o venue e as unidades (RN-B0): onde houver netting cabe numa ordem, e onde nao
+    // houver ele faz as duas pernas na MESMA passagem. A mesa deixa de depender do proprio relogio para a
+    // segunda perna, e o `reverse` nomeia o que antes saia como `abrir`/`fechar` e escondia a inversao.
+    acao = "reverse";
     ladoDaBoleta = lado;
-    reduce_only = true;
+    reduce_only = false;
+    reverter = true;
   } else {
     acao = "abrir";
     ladoDaBoleta = lado;
     reduce_only = false;
+    reverter = false;
   }
 
   // 4. As travas, por ordem: primeiro o que a mesa DEVE, depois se PODE, depois se CABE.
@@ -374,6 +382,7 @@ export function decidirInstrumento(entrada: EntradaDoInstrumento): Decisao {
       mandato: entrada.mandato,
       template: entrada.template,
       reduce_only,
+      reverter,
       ficha: entrada.ficha,
       ciclo: entrada.ciclo,
     }),

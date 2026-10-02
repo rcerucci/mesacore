@@ -78,6 +78,7 @@
      "prazo_da_passiva_ms": 3000,
      "destino_do_resto": "cancelar",
      "reduce_only": false,
+     "reverter": false,
      "referencia_do_cliente": "mesa-3232-000000",
      "marca_de_posse": 1694498816,
      "stop_pct": "0.3",
@@ -204,7 +205,8 @@
     "avisa": false,
     "boleta": {
      "lado": "sell",
-     "reduce_only": true
+     "reduce_only": true,
+     "reverter": false
     }
    },
    "historico": "RN-B5 - reduce_only e da mesa, na saida: fechar nunca inverte",
@@ -268,7 +270,8 @@
     "condicao": "sem_ligacao",
     "avisa": true,
     "boleta": {
-     "reduce_only": true
+     "reduce_only": true,
+     "reverter": false
     }
    },
    "historico": "SC-003 - reduzir risco nunca espera por dado fresco",
@@ -402,7 +405,8 @@
     "condicao": "congelada",
     "avisa": true,
     "boleta": {
-     "reduce_only": true
+     "reduce_only": true,
+     "reverter": false
     }
    },
    "historico": "FR-018 - o setup mudo impede abrir e cancelar, mas a defesa NAO depende do setup",
@@ -740,7 +744,8 @@
     "avisa": false,
     "boleta": {
      "lado": "sell",
-     "reduce_only": true
+     "reduce_only": true,
+     "reverter": false
     }
    },
    "ligacao": "ligada",
@@ -900,7 +905,8 @@
     "avisa": false,
     "boleta": {
      "lado": "sell",
-     "reduce_only": true
+     "reduce_only": true,
+     "reverter": false
     }
    },
    "historico": "D-001 - travar o FECHO por causa da divergencia seria defender-se do lado errado: reduzir risco e sempre permitido, mesmo sem leitura e mesmo sem ligacao (RN-M9).",
@@ -944,6 +950,7 @@
     "boleta": {
      "lado": "buy",
      "reduce_only": false,
+     "reverter": false,
      "referencia_do_cliente": "mesa-3232-000042"
     }
    },
@@ -1281,7 +1288,8 @@
     "avisa": false,
     "boleta": {
      "lado": "sell",
-     "reduce_only": true
+     "reduce_only": true,
+     "reverter": false
     }
    },
    "historico": "D-008: o MESMO stop fora da banda que trava a abertura (0.3 contra um maximo de 0.1) nao trava o fecho. E' o outro lado da regra: um setup mal declarado nao pode prender uma posicao aberta - reduzir risco e' sempre permitido.",
@@ -1334,7 +1342,7 @@
    "barra_do_sinal_esperada": 1730001600000
   },
   {
-   "nome": "d013-lado-oposto-a-nossa-posicao-fecha-em-reduce-only",
+   "nome": "d013-lado-oposto-a-nossa-posicao-e-uma-VIRADA-numa-so-decisao",
    "leitura": {
     "instrumento": "EURUSD",
     "idade_do_dado_ms": 300,
@@ -1357,16 +1365,17 @@
     1694498816
    ],
    "decisao_esperada": {
-    "acao": "fechar",
+    "acao": "reverse",
     "motivo": null,
     "condicao": "normal",
     "avisa": false,
     "boleta": {
      "lado": "sell",
-     "reduce_only": true
+     "reduce_only": false,
+     "reverter": true
     }
    },
-   "historico": "D-013 (29/09/2026): o lado oposto a' NOSSA posicao NAO e' abrir. Medido na bateria de teste (P15): com `abrir` e reduce_only=false o venue fez NETTING e zerou a posicao, e se a boleta fosse maior virava a mao numa so' ordem. Fecha, e so' reduz.",
+   "historico": "1.10.0 (02/10/2026), e o D-013 fechado: o lado OPOSTO a' nossa posicao e' uma VIRADA — e e' UMA decisao. Ate' aqui era `fechar` em `reduce_only` e a abertura do lado novo era um SEGUNDO passo, que so' chegava se a mesa voltasse a decidir DENTRO da mesma barra. Medido ao vivo (ETH a 1 m, conta de teste): a mesa fechou a' 16:08:35 (aceite, marca 2289) e a barra seguinte ja' nao autorizava a entrada (o setup so' entra na barra do flip) — o par ficou PLANO ate' a viragem seguinte, com metade das pernas fora do mercado. Agora sai `reverse` com `reverter: true`, e quem faz as duas pernas no MESMO acto e' o conector, que tem o venue (onde ha' netting cabe numa so' ordem — P15, 29/09/2026).",
    "ligacao": "ligada",
    "falhas": {},
    "divergente": false,
@@ -1402,7 +1411,8 @@
     "avisa": false,
     "boleta": {
      "lado": "buy",
-     "reduce_only": false
+     "reduce_only": false,
+     "reverter": false
     }
    },
    "historico": "Par de controle do D-013: o MESMO lado da nossa posicao e' um AUMENTO, e sai com reduce_only=false — se os dois lados fechassem, a correccao teria ido longe de mais.",
@@ -1412,7 +1422,7 @@
    "barra_do_sinal_esperada": 1730001600000
   },
   {
-   "nome": "d013-posicao-vendida-e-proposta-buy-fecha-em-reduce-only",
+   "nome": "d013-posicao-vendida-e-proposta-buy-e-uma-VIRADA-numa-so-decisao",
    "leitura": {
     "instrumento": "EURUSD",
     "idade_do_dado_ms": 300,
@@ -1435,16 +1445,17 @@
     1694498816
    ],
    "decisao_esperada": {
-    "acao": "fechar",
+    "acao": "reverse",
     "motivo": null,
     "condicao": "normal",
     "avisa": false,
     "boleta": {
      "lado": "buy",
-     "reduce_only": true
+     "reduce_only": false,
+     "reverter": true
     }
    },
-   "historico": "D-013, o espelho: posicao vendida nossa e proposta `buy` fecha em reduce_only, pelo mesmo motivo (netting do venue, e nunca inverter).",
+   "historico": "1.10.0 (02/10/2026), e o D-013 fechado: o lado OPOSTO a' nossa posicao e' uma VIRADA — e e' UMA decisao. Ate' aqui era `fechar` em `reduce_only` e a abertura do lado novo era um SEGUNDO passo, que so' chegava se a mesa voltasse a decidir DENTRO da mesma barra. Medido ao vivo (ETH a 1 m, conta de teste): a mesa fechou a' 16:08:35 (aceite, marca 2289) e a barra seguinte ja' nao autorizava a entrada (o setup so' entra na barra do flip) — o par ficou PLANO ate' a viragem seguinte, com metade das pernas fora do mercado. Agora sai `reverse` com `reverter: true`, e quem faz as duas pernas no MESMO acto e' o conector, que tem o venue (onde ha' netting cabe numa so' ordem — P15, 29/09/2026).",
    "ligacao": "ligada",
    "falhas": {},
    "divergente": false,

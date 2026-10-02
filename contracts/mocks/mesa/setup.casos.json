@@ -10,7 +10,7 @@
    "nota": "a proposta do template, e a unica que um setup de verdade tem de saber entregar - este caso corre contra o mock de setup do recorte 001 (FR-031: estendido, nao substituido)",
    "prazo_de_resposta_ms": 3000,
    "resposta_do_plugin": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "proposta",
     "id": "p-1",
     "carga": {
@@ -23,7 +23,7 @@
     }
    },
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -47,7 +47,7 @@
    "nota": "sem a assinatura do setup nao se sabe que estrategia propoe isto",
    "prazo_de_resposta_ms": 3000,
    "resposta_do_plugin": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "proposta",
     "id": "p-2",
     "carga": {
@@ -56,7 +56,7 @@
     }
    },
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -79,7 +79,7 @@
    "nota": "um campo a mais na proposta e a porta dos setups a alargarem-se sozinhos",
    "prazo_de_resposta_ms": 3000,
    "resposta_do_plugin": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "proposta",
     "id": "p-3",
     "carga": {
@@ -93,7 +93,7 @@
     }
    },
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -116,7 +116,7 @@
    "nota": "grandeza do venue nao entra na proposta: quem converte e a mesa",
    "prazo_de_resposta_ms": 3000,
    "resposta_do_plugin": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "proposta",
     "id": "p-4",
     "carga": {
@@ -130,7 +130,7 @@
     }
    },
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -153,7 +153,7 @@
    "nota": "o lado e do conjunto fechado - nao ha 'talvez'",
    "prazo_de_resposta_ms": 3000,
    "resposta_do_plugin": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "proposta",
     "id": "p-5",
     "carga": {
@@ -166,7 +166,7 @@
     }
    },
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -189,7 +189,7 @@
    "nota": "nulo nao e ausente: recusa-se com o nome proprio",
    "prazo_de_resposta_ms": 3000,
    "resposta_do_plugin": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "proposta",
     "id": "p-6",
     "carga": {
@@ -202,7 +202,7 @@
     }
    },
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -238,7 +238,7 @@
     }
    },
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -262,7 +262,7 @@
    "modo_adversario": "silencio",
    "prazo_de_resposta_ms": 3000,
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -287,7 +287,7 @@
    "chegada_ms": 9000,
    "prazo_de_resposta_ms": 3000,
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -311,7 +311,7 @@
    "modo_adversario": "recusa",
    "prazo_de_resposta_ms": 3000,
    "mercado": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {

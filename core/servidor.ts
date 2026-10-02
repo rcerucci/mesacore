@@ -75,6 +75,11 @@ export const TRADUCAO: Record<string, string> = {
   minimo_do_instrumento_acima_da_banda: "comando_com_tipo_invalido",
   valor_abaixo_do_minimo_do_venue: "comando_com_tipo_invalido",
   instrumento_deslistado_no_venue: "comando_com_tipo_invalido",
+  // A VIRADA (1.10.0): as duas recusas da reversao sao da mesma familia — a boleta nao passou a porta da
+  // traducao, e o defeito esta' do nosso lado (a mesa pediu uma virada sem o que ela exige). Vao para o mesmo
+  // motivo do vigia que as outras recusas de validade, e o nome certo da recusa fica no `dizer` do conector.
+  reversao_com_reduce_only: "comando_com_tipo_invalido",
+  reversao_sem_posicao_a_reverter: "comando_com_tipo_invalido",
   prazo_excedido: "comando_com_tipo_invalido",
   desfecho_nao_reconhecido: "comando_com_tipo_invalido",
 };

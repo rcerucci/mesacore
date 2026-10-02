@@ -617,6 +617,34 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
         )
     tif = TIF_POR_PARCIAL_E_DESTINO[par]
 
+    # ---- porta 5-bis: a VIRADA (1.10.0) -----------------------------------------------------------------------
+    # A boleta passa a declarar `reverter` — OBRIGATORIO desde a 1.10.0 (a ausencia nao e' um valor: `false` diz
+    # «nao e' virada», e a ausencia diria «nao foi declarado», D4). Este venue NAO a sabe executar: ele nao tem
+    # `reduce_only` (porta 5) e a inversao exigiria as duas pernas, que aqui nao se improvisam. E' recusa
+    # NOMEADA, e nao meia virada — a mesma resposta que o `reduce_only` deste venue ja' da'.
+    reverter = _campo(boleta, "reverter")
+    if isinstance(reverter, Recusa):
+        return reverter
+    if not isinstance(reverter, bool):
+        return _recusa("tipo_invalido", "`boleta.reverter` tem de ser booleano")
+    if reverter and boleta.get("reduce_only") is True:
+        return _recusa(
+            "reversao_com_reduce_only",
+            (
+                "a boleta pede `reverter: true` e `reduce_only: true` na mesma ordem: «inverte» e «reduz, nunca "
+                "inverte» nao cabem juntas, e nao se resolve por precedencia"
+            ),
+        )
+    if reverter:
+        return _recusa(
+            "capacidade_nao_declarada",
+            (
+                "a boleta pede a virada (`reverter: true`) e este conector nao a sabe executar: este venue nao faz "
+                "a inversao numa ordem (nao tem `reduce_only`, RN-CT34) e as duas pernas nao se improvisam — "
+                "recusa, em vez de deixar meia virada"
+            ),
+        )
+
     # ---- porta 5: o `reduce_only` NAO EXISTE neste venue (RN-CT34/FR-... ) ------------------------------------
     reduce_only = _campo(boleta, "reduce_only")
     if isinstance(reduce_only, Recusa):

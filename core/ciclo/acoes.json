@@ -151,6 +151,16 @@
       "accao": "reduzir_e_registar",
       "provadamente_nao_feito": false,
       "porque": "A conferencia da banda do ultimo ciclo deste instrumento nao passou: nao se abre risco novo (nem com divergencia provada, nem com numero nao conferivel), e o que ha a fazer e reduzir o que ja esta aberto ate a divergencia estar explicada."
+    },
+    "reversao_com_reduce_only": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a boleta pede «inverte» e «nunca inverte» na mesma ordem — nunca saiu assim, e o defeito esta' do nosso lado."
+    },
+    "reversao_sem_posicao_a_reverter": {
+      "accao": "recusar_e_registar",
+      "provadamente_nao_feito": true,
+      "porque": "Recusa de validade: a virada foi pedida sem posicao viva do lado oposto — a mensagem nunca saiu assim, e o defeito esta' do nosso lado."
     }
   }
 }

@@ -79,6 +79,8 @@ export type Boleta = {
   prazo_da_passiva_ms: number;
   destino_do_resto: string;
   reduce_only: boolean;
+  /** A VIRADA (1.10.0): `true` faz esta traducao somar a posicao viva a' quantidade nova (ver a porta 8). */
+  reverter: boolean;
   referencia_do_cliente: string;
   marca_de_posse: number;
 };
@@ -92,6 +94,14 @@ export type Pedido = {
   saldo: string;
   /** Preco de referencia/limite, decimal textual — LIDO do venue (marca ou cotacao). */
   preco: string;
+  /**
+   * A POSICAO VIVA, quando a boleta pede a virada (`reverter: true`) — a quantidade em unidades neutras, LIDA do
+   * venue pelo conector. A mesa nao a calcula (RN-B0) e nao a manda na boleta: e' entrada desta traducao, como o
+   * `saldo` e o `preco`, e vem so' do que o venue disse.
+   */
+  posicao_a_reverter?: string;
+  /** O LADO da posicao viva — para a virada recusar quando nao ha nada a virar (a posicao ja' esta' do lado). */
+  lado_da_posicao?: string;
 };
 
 /** A accao que o venue aceita, ja traduzida. NAO leva a referencia de cliente crua — leva o `cloid`. */
@@ -111,6 +121,8 @@ export type AccaoDoVenue = {
   nocional: string;
   alavancagem: string;
   reduce_only: boolean;
+  /** A VIRADA: a ordem que sai tem de FECHAR o que esta' aberto e ABRIR o novo, num so' envio (netting). */
+  reverter: boolean;
   cloid: string;
 };
 
@@ -276,6 +288,22 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
   if (b.reduce_only === null) return recusa("valor_nulo_nao_permitido", "boleta.reduce_only veio a null (D4)");
   if (typeof b.reduce_only !== "boolean") return recusa("tipo_invalido", `boleta.reduce_only tem de ser booleano, e veio ${typeof b.reduce_only}`);
   const reduce_only = b.reduce_only;
+
+  // A VIRADA (1.10.0). Obrigatoria (D4: a ausencia nao e' um valor — «nao e' reversao» e' `false`, e a ausencia
+  // diria «nao foi declarado»), e com a unica combinacao impossivel recusada a' porta: `reverter` e `reduce_only`
+  // dizem coisas OPOSTAS sobre a mesma ordem. Escolher uma por precedencia seria a mesa a decidir em lugar do
+  // dono — quem recusa e' a traducao, e nomeia as duas.
+  if (b.reverter === undefined) return recusa("campo_obrigatorio_ausente", "falta boleta.reverter");
+  if (b.reverter === null) return recusa("valor_nulo_nao_permitido", "boleta.reverter veio a null (D4)");
+  if (typeof b.reverter !== "boolean") return recusa("tipo_invalido", `boleta.reverter tem de ser booleano, e veio ${typeof b.reverter}`);
+  const reverter = b.reverter;
+  if (reverter && reduce_only) {
+    return recusa(
+      "reversao_com_reduce_only",
+      "a boleta pede `reverter: true` e `reduce_only: true` na mesma ordem: «inverte» e «reduz, nunca inverte» " +
+        "nao cabem juntas, e nao se resolve por precedencia",
+    );
+  }
 
   const contaR = exigirTexto((pedido as unknown as Record<string, unknown>)?.conta, "conta");
   if (!contaR.ok) return contaR;
@@ -497,11 +525,54 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
     );
   }
 
+  // ---- porta 8: A VIRADA (1.10.0) ---------------------------------------------------------------------------
+  //
+  // A mesa NAO calcula unidades (RN-B0) e nao sabe o que esta' aberto no venue: a boleta pede a virada
+  // (`reverter: true`) e diz o LADO, e a POSICAO VIVA entra por `pedido.posicao_a_reverter`, que o CONECTOR le'
+  // do venue. Aqui somam-se as duas — a ordem que sai tem de FECHAR o que esta' aberto E abrir o novo, num so'
+  // envio. E' por isso que ela sai SEM `reduce_only`: reduzir E abrir na mesma ordem e' exactamente o que a
+  // virada pede, e o venue (netting) faz as duas coisas com o tamanho certo.
+  //
+  // Porque NAO se verifica se a posicao cabe no passo: ela vem do VENUE, que a quantiza no mesmo `szDecimals` de
+  // que este manifesto deriva o passo (`manifesto.ts`: `passo = 10^-szDecimals`) — a soma de dois multiplos do
+  // passo e' um multiplo do passo. Um motivo para um caso impossivel seria um motivo sem produtor; se um dia a
+  // posicao vier fora do passo, o venue recusa a ordem e o desfecho di-lo, que e' onde isso se ve'.
+  let quantidade = k;
+  let casasDaQuantidade = casasPasso;
+  if (reverter) {
+    const posicaoR = exigirTexto(pedido.posicao_a_reverter, "posicao_a_reverter");
+    if (!posicaoR.ok) {
+      return recusa(
+        "reversao_sem_posicao_a_reverter",
+        "a boleta pede a virada (`reverter: true`) e a posicao viva nao entrou na traducao: sem ela nao se sabe " +
+          "o que fechar, e mandar so' o lado novo seria uma entrada a mais com o registo a dizer `reverse`",
+      );
+    }
+    if (!PADRAO_DECIMAL_POSITIVO.test(posicaoR.valor)) {
+      return recusa(
+        "reversao_sem_posicao_a_reverter",
+        `a posicao viva veio ${JSON.stringify(posicaoR.valor)}: sem posicao POSITIVA para fechar nao ha virada a fazer`,
+      );
+    }
+    if (pedido.lado_da_posicao === lado) {
+      return recusa(
+        "reversao_sem_posicao_a_reverter",
+        `a posicao viva ja' esta' do lado ${lado}, que e' o lado da boleta: nao ha nada a virar (uma virada para o ` +
+          "proprio lado seria uma entrada a mais)",
+      );
+    }
+    const casasPosicao = decimais(posicaoR.valor);
+    const escalaSoma = Math.max(casasPasso, casasPosicao);
+    quantidade = k * pow10(escalaSoma - casasPasso) + escalado(posicaoR.valor) * pow10(escalaSoma - casasPosicao);
+    casasDaQuantidade = escalaSoma;
+  }
+
   // O nocional e' o da ordem QUE SE MANDA: quantidade x o preco que vai para o venue (no `mercado` isso e'
   // o CAP da banda declarada, e nao a referencia — declarar o nocional pela referencia seria declarar menos
-  // exposicao do que a ordem pode empenhar).
-  const nocionalEscalado = k * escalado(precoDeEnvio);
-  const escalaNocional = casasPasso + decimais(precoDeEnvio);
+  // exposicao do que a ordem pode empenhar). Na virada, a ordem que se manda e' a SOMA — logo o nocional e' o da
+  // soma, e nao o da perna nova.
+  const nocionalEscalado = quantidade * escalado(precoDeEnvio);
+  const escalaNocional = casasDaQuantidade + decimais(precoDeEnvio);
   if (nocionalEscalado * pow10(decimais(minimoDeValor)) < escalado(minimoDeValor) * pow10(escalaNocional)) {
     return recusa(
       "minimo_do_instrumento_acima_da_banda",
@@ -516,7 +587,7 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
       lado,
       tipo: par.tipo,
       tif: par.tif,
-      quantidade: formatar(k, casasPasso),
+      quantidade: formatar(quantidade, casasDaQuantidade),
       // O preco QUE VAI PARA O VENUE. No `limite` sai EXACTAMENTE como entrou (FR-009, caracter a caracter);
       // no `mercado` sai o Ioc que cruza, por dentro da banda declarada — e a referencia e o desvio de que
       // ele saiu vao declarados na accao, para quem envia poder provar de onde veio.
@@ -524,6 +595,7 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
       nocional: formatar(nocionalEscalado, escalaNocional),
       alavancagem,
       reduce_only,
+      reverter,
       cloid: cloidR.cloid,
       // O preco de REFERENCIA e o desvio ficam DECLARADOS na accao: quem envia tem de poder provar que
       // o preco que saiu esta dentro da banda que a boleta pediu, e de onde ele foi medido.

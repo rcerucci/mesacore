@@ -1144,6 +1144,10 @@ export async function atender(
   }
   diag.push({ etapa: "conta", equity: saldo, marca, origem_marca: "info.activeAssetData({user,coin}).markPx — [V]" });
 
+  // A POSICAO VIVA, da MESMA leitura que ja' se fez: e' dela que a virada (1.10.0) precisa para saber o que
+  // fechar — e a mesa nao a calcula (RN-B0). Nada novo se pede ao venue: le-se o que ja' esta' lido.
+  const posicaoViva = leitura.leitura.posicoes.find((p) => p.instrumento === b.instrumento);
+
   // 3. A TRADUCAO (o conector nao altera a boleta: converte, e recusa o que nao cabe). O manifesto entra
   // como esta: a traducao le o nome que o CONTRATO publica (`minimo_de_valor_por_ordem`), sem ponte.
   //
@@ -1162,6 +1166,10 @@ export async function atender(
     manifesto: manifestoEmVigor,
     saldo,
     preco: marca,
+    // A virada leva a posicao viva declarada (ausente quando nao ha posicao — e quem exige a posicao positiva e'
+    // a traducao, que recusa `reversao_sem_posicao_a_reverter` se a boleta a pedir sem ela existir).
+    posicao_a_reverter: posicaoViva?.unidades,
+    lado_da_posicao: posicaoViva?.lado,
   });
   if (!accao.ok) {
     return recusa(id, accao.motivo, `${accao.porque} — e nao se arredonda para caber (RN-C9)`, {}, []);

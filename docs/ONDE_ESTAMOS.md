@@ -430,3 +430,34 @@ caso nunca esteve em bancada nenhuma porque só aparece com a mão **aberta** �
 mexe no caminho que decide ordens, e faz-se com o teste a correr para medir o efeito.
 
 Portão: **35 de 35** (era 34 — entrou a bancada do manifesto).
+
+## 02/10/2026 (noite) — a virada existia em DOIS PASSOS, e os dois passos não cabem no tempo da mesa
+
+**O defeito, medido ao vivo (não em bancada):** o ETH abriu comprado às 16:02 (aceite), o indicador virou, e às
+16:08 a mesa **fechou** (aceite) — e **não abriu** o lado novo. Ficou plano, e de 16:09 em diante o registo só
+diz `proposta_de_barra_antiga`. O dono reparou: «não obedeceu o flip».
+
+**A causa é de relógios.** A virada estava desenhada em **dois actos** — `caixa` (fecha) e depois o lado inverso —
+e o próprio código o declarava («o vocabulário não tem verbo para ela», D-013). Só que:
+
+- a **mesa decide UMA vez por barra** (o relógio dela é o da barra: 60 s = 1 m);
+- o primeiro acto gastou essa decisão (16:08:35 → fechou);
+- o segundo caiu na barra seguinte, onde o **setup já não autoriza entrada** («não abro no meio da perna»).
+
+Resultado: **uma perna perdida em cada duas viragens**, com o par fora do mercado contra o indicador. Não era do
+ETH: era de todos os pares com relógio igual ao da mesa.
+
+**O que a emenda 1.10.0 fez** (contrato `1.10.0`, e a nota inteira em `contracts/versao.json`):
+
+| peça | o que passou a ser |
+|---|---|
+| **a acção da mesa** | cinco (`abrir · fechar · reverse · adoptar · nada`), declaradas no `contracts/vocabulario.json` (`acoes_da_mesa`) — era a última lista que vivia só no código |
+| **a regra** | proposta do lado OPOSTO a uma posição nossa → **`reverse`** (era `fechar` em `reduce_only`) |
+| **a boleta** | ganha **`reverter`** (obrigatório, D4) — e `reverter: true` com `reduce_only: true` **RECUSA** |
+| **quem executa** | o **conector**: soma a posição viva à quantidade nova e manda **uma só ordem** (netting), recusando a nomear quando não há o que virar |
+| **o segundo venue** | o ctrader **recusa a nomear** (`capacidade_nao_declarada`): não faz a inversão numa ordem, e meia virada é pior que nenhuma |
+| **o setup** | **não mudou** — continua a propor o lado; quem sabe se isso é uma virada é a mesa |
+
+**As provas, todas por execução:** `ordens: 44 casos · 44 ok` (4 novos: a virada soma a posição — `0.00833 + 0.00833 = 0.01666`, nocional `1004.598` —, e as três recusas); os **3 casos do D-013** da bateria do ciclo mudaram de veredicto de propósito e provam `reverse` + `reverter: true` numa só decisão; a bancada do ciclo fecha em **104 verificações · 0 divergentes**. E o **porteiro fez o seu trabalho duas vezes**: recusou-me um motivo inventado no código (`reversao_sem_posicao_a_reverter` teve de ser declarado no vocabulário) e um motivo sem tradução para o vigia.
+
+**Fica por fazer, declarado:** a **redução parcial** continua sem verbo próprio (nenhum setup do repositório a emite — o σ emite `caixa` ou um lado).

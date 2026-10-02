@@ -3,7 +3,7 @@
   "conta_de_teste": "demo-ctrader-1",
   "manifesto_base": {
     "conector": {"nome": "ctrader", "versao": "0.1.0"},
-    "versao": "1.9.0",
+    "versao": "1.10.0",
     "instrumentos": [
       {
         "simbolo": "EURUSD",
@@ -55,7 +55,7 @@
     "desvio_maximo": "0.5",
     "prazo_da_passiva_ms": 0,
     "destino_do_resto": "agressivo",
-    "reduce_only": false,
+    "reduce_only": false, "reverter": false,
     "referencia_do_cliente": "ciclo-1/linha-1",
     "marca_de_posse": 7
   },
@@ -174,7 +174,7 @@
       "caso": "ordens/reduce-only-pedido-recusa-o-venue-nao-o-tem",
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
-      "boleta": {"reduce_only": true}
+      "boleta": {"reduce_only": true, "reverter": false}
     },
     {
       "caso": "ordens/marca-de-posse-maior-que-50-caracteres-recusa",

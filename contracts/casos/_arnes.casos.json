@@ -6,7 +6,7 @@
    "nome": "envelope/valido",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -47,7 +47,7 @@
    "nome": "envelope/campo-desconhecido-no-envelope",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "nota": "isto nao existe no contrato",
@@ -67,7 +67,7 @@
    "nome": "envelope/null-em-correlacao",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": null,
     "carga": {
@@ -86,7 +86,7 @@
    "nome": "envelope/sem-correlacao",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "carga": {
      "instrumento": "EURUSD",
@@ -104,7 +104,7 @@
    "nome": "envelope/tipo-fora-do-conjunto",
    "mensagem": "encomenda",
    "entrada": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "encomenda",
     "id": "m-1",
     "carga": {}
@@ -116,7 +116,7 @@
    "nome": "envelope/carga-nao-e-objecto",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.9.0",
+    "contrato": "1.10.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": "mercado"

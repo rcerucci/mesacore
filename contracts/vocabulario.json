@@ -1,5 +1,5 @@
 {
-  "contrato": "1.9.0",
+  "contrato": "1.10.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",
@@ -7,6 +7,14 @@
     "hold",
     "caixa"
   ],
+  "acoes_da_mesa": [
+    "abrir",
+    "fechar",
+    "reverse",
+    "adoptar",
+    "nada"
+  ],
+  "nota_das_acoes_da_mesa": "O que a MESA decide — e o unico conjunto de onde sai o que a boleta pode pedir ao conector: `abrir` (posicao nova), `fechar` (reduz, nunca inverte: vai com `reduce_only`), `reverse` (FECHA a posicao viva e ABRE a do lado declarado na boleta: e' a virada, ADITIVA na 1.10.0), `adoptar` (a posicao que ja' esta' passa a ser gerida) e `nada` (com o motivo declarado). Estavam so' no codigo (`core/ciclo/decisao.ts`), contra a regra deste ficheiro («os runners leem a lista DAQUI — nao ha esta lista escrita em codigo em lado nenhum»); passa a viver AQUI. Porque o `reverse` nao entrou no conjunto dos `lados`: o setup propoe um LADO (`buy`/`sell` = entrar, `caixa` = sair, `hold` = esperar) e quem sabe se isso e' uma inversao e' a MESA — e' ela que tem a posicao, os travos e o mandato. Um `reverse` no lado do setup obrigaria a proposta a trazer tambem PARA QUE LADO vira, e o setup nao tem (nem precisa de ter) essa decisao.",
   "conjuntos_do_vigia": {
     "de_onde_vem": "Cada nome vem de um conjunto FECHADO, e o conjunto vem declarado - licao da fail-closed-validation: uma tabela indexada por nomes tem de dizer de que conjunto cada nome vem. Os verbos vem da RN-V1; os motivos e os efeitos vem de core/estados/motivos.json, filtrados pelo PRODUTOR (interpretador de comando e encerramento) - 26 dos 50, research R7. `liquidacao_em_curso` e o unico nome que serve de recusa E de efeito: como recusa, e um `start` durante a liquidacao; como efeito, e a decisao do dono que a comecou (o recorte 002 ja o usava assim); as respostas vem do encerramento do recorte 002; os estados vem do eixo da mesa. UMA excecao, e da PORTA, nao do livro: `versao_do_contrato_divergente` (quem recusa e o CONTRATO, e a porta relata-o tal e qual - traduzi-lo para um motivo da mesa faria o vigia perder a razao certa, que e o que se quer saber quando nada acontece). ATE 29/09/2026 eram DUAS: `posicao_desconhecida` saiu ao fechar o D-006 - a tabela deixou de tratar «nao sei» como «nao ha posicao» e passou a recusar por linha propria, e por isso o nome passou a ser do livro, como qualquer motivo que a tabela produz.",
     "verbos": [
@@ -169,6 +177,14 @@
       "descricao": "O valor nao pertence ao conjunto fechado do campo.",
       "quando": "Um lado que nao e buy/sell/hold/caixa; uma politica de parcial que nao existe."
     },
+    "reversao_com_reduce_only": {
+      "descricao": "A boleta pede para INVERTER (`reverter: true`) e para NUNCA inverter (`reduce_only: true`) na mesma ordem.",
+      "quando": "Contradicao declarada: as duas intencoes nao cabem numa ordem so', e nao se resolve por precedencia (escolher uma seria a mesa a decidir em lugar do dono). Recusa na porta do conector, antes de qualquer envio."
+    },
+    "reversao_sem_posicao_a_reverter": {
+      "descricao": "A boleta pede a virada (`reverter: true`) e nao ha posicao viva, do lado oposto, que se possa fechar.",
+      "quando": "A posicao viva vem do VENUE, e e' ela que diz o que fechar. Sem ela, mandar so' o lado novo seria uma entrada a mais com o registo a dizer `reverse`, e a virada ficaria pela metade — recusa na traducao, antes de qualquer envio."
+    },
     "valor_fora_da_banda": {
       "descricao": "O valor excede o limite que o dono declarou para aquele item.",
       "quando": "Conferencia contra o config da ficha. A mesa recusa; nao limita nem corta."
@@ -213,6 +229,8 @@
     "formato_invalido",
     "tipo_invalido",
     "valor_fora_do_conjunto",
+    "reversao_com_reduce_only",
+    "reversao_sem_posicao_a_reverter",
     "valor_abaixo_do_minimo_do_venue",
     "instrumento_deslistado_no_venue"
   ]

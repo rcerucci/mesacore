@@ -53,7 +53,7 @@
     "desvio_maximo": "0.5",
     "prazo_da_passiva_ms": 0,
     "destino_do_resto": "cancelar",
-    "reduce_only": false,
+    "reduce_only": false, "reverter": false,
     "referencia_do_cliente": "ciclo-1/linha-1",
     "marca_de_posse": 7
   },
@@ -76,7 +76,7 @@
         "desvio_maximo": "0.5",
         "nocional": "502.299",
         "alavancagem": "5",
-        "reduce_only": false
+        "reduce_only": false, "reverter": false
       }
     },
     {
@@ -309,10 +309,10 @@
       "caso": "ordens/reduce-only-pedido-e-honrado",
       "esperadoOk": true,
       "boleta": {
-        "reduce_only": true
+        "reduce_only": true, "reverter": false
       },
       "conferir": {
-        "reduce_only": true
+        "reduce_only": true, "reverter": false
       }
     },
     {
@@ -320,7 +320,7 @@
       "esperadoOk": false,
       "motivo_esperado": "capacidade_nao_declarada",
       "boleta": {
-        "reduce_only": true
+        "reduce_only": true, "reverter": false
       },
       "manifesto": {
         "reduce_only_suportado": false
@@ -395,6 +395,45 @@
       "manifesto": {
         "sabe_ajustar_alavancagem": false
       }
+    },
+    {
+      "caso": "ordens/reversao-soma-a-posicao-viva-e-manda-uma-ordem-so",
+      "esperadoOk": true,
+      "boleta": { "reverter": true },
+      "posicao_a_reverter": "0.00833",
+      "lado_da_posicao": "sell",
+      "conferir": {
+        "instrumento": "BTC",
+        "lado": "buy",
+        "tipo": "mercado",
+        "tif": "Ioc",
+        "quantidade": "0.01666",
+        "preco": "60300",
+        "preco_de_referencia": "60000",
+        "desvio_maximo": "0.5",
+        "nocional": "1004.598",
+        "alavancagem": "5",
+        "reduce_only": false,
+        "reverter": true
+      }
+    },
+    {
+      "caso": "ordens/reversao-sem-posicao-a-reverter-recusa",
+      "esperadoOk": false,
+      "boleta": { "reverter": true },
+      "motivo_esperado": "reversao_sem_posicao_a_reverter"
+    },
+    {
+      "caso": "ordens/reversao-com-reduce-only-recusa",
+      "esperadoOk": false,
+      "boleta": { "reverter": true, "reduce_only": true },
+      "motivo_esperado": "reversao_com_reduce_only"
+    },
+    {
+      "caso": "ordens/sem-reverter-na-boleta-recusa",
+      "esperadoOk": false,
+      "sem": ["boleta.reverter"],
+      "motivo_esperado": "campo_obrigatorio_ausente"
     }
   ],
   "checagens_de_cloid": [

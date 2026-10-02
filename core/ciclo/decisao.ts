@@ -1,8 +1,10 @@
 // A decisao do ciclo: o que a mesa decidiu fazer com UM instrumento, e por que nao fez o resto.
 //
 // Esta peca NAO envia nada (R5). Devolve um objecto observavel - `abrir` com a boleta, `fechar`,
-// `adoptar` ou `nada` - e e por isso que o SC-002 se mede contando decisoes de `abrir`, e nao lendo
-// codigo.
+// `reverse`, `adoptar` ou `nada` - e e por isso que o SC-002 se mede contando decisoes de `abrir`, e nao
+// lendo codigo. A lista das acoes vive declarada no `contracts/vocabulario.json` (`acoes_da_mesa`), que e
+// o que este `Acao` exprime: `reverse` e' a virada (aditiva na 1.10.0) — fecha a posicao viva e abre a do
+// lado, tratada pelo CONECTOR (e' ele que tem o venue).
 //
 // A boleta e montada do mandato (o dono) e do TEMPLATE (o setup), e mais nada: nenhum valor ajustavel
 // nasce aqui. Depois de montada, e VALIDADA contra o contrato - a mesa nao entrega um documento que o
@@ -14,7 +16,7 @@ import { validar, versaoVigente } from "../../contracts/esqueleto/framing.ts";
 import { RAIZ_DO_REPO } from "../livro-de-motivos.ts";
 import type { NomeDeCondicao } from "./condicoes.ts";
 
-export type Acao = "abrir" | "fechar" | "adoptar" | "nada";
+export type Acao = "abrir" | "fechar" | "reverse" | "adoptar" | "nada";
 
 export interface Mandato {
   /** % do saldo - valor do DONO (RN-A1, RN-M4.3). */
@@ -47,6 +49,8 @@ export interface PedidoDeBoleta {
   mandato: Mandato;
   template: Template;
   reduce_only: boolean;
+  /** A VIRADA (1.10.0): `true` so' com a accao `reverse` — fecha a posicao viva e abre a do lado. */
+  reverter: boolean;
   ficha: string;
   ciclo: number;
 }
@@ -117,6 +121,7 @@ export function montarBoleta(pedido: PedidoDeBoleta): any {
     prazo_da_passiva_ms: template.prazo_da_passiva_ms,
     destino_do_resto: template.destino_do_resto,
     reduce_only: pedido.reduce_only,
+    reverter: pedido.reverter,
     referencia_do_cliente: referenciaDoCliente(pedido.ficha, pedido.ciclo),
     marca_de_posse: marcaDePosse(Number(pedido.ficha), pedido.ciclo),
   };

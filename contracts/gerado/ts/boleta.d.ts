@@ -58,6 +58,10 @@ export interface BoletaUniversal {
    */
   reduce_only: boolean;
   /**
+   * A VIRADA (aditivo na 1.10.0): `true` diz ao conector para FECHAR a posicao viva e ABRIR a do lado declarado em `lado`, com o tamanho do mandato. Obrigatorio porque a ausencia nao e' um valor: `false` diz «nao e' reversao» e a ausencia diria «nao foi declarado» (D4). Contradicao impossivel: `reverter: true` com `reduce_only: true` RECUSA (`reversao_com_reduce_only`) — «reduz, nunca inverte» e «inverte» nao cabem na mesma ordem.
+   */
+  reverter: boolean;
+  /**
    * Idempotencia: reenviar com a MESMA referencia nao pode criar segunda ordem (RN-C4).
    */
   referencia_do_cliente: string;

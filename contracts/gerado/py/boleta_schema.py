@@ -72,6 +72,10 @@ class BoletaUniversal(BaseModel):
         ...,
         description='So reduz posicao. Se o venue nao tiver reduce-only nativo, e o conector que o garante — e tem de o declarar.',
     )
+    reverter: bool = Field(
+        ...,
+        description="A VIRADA (aditivo na 1.10.0): `true` diz ao conector para FECHAR a posicao viva e ABRIR a do lado declarado em `lado`, com o tamanho do mandato. Obrigatorio porque a ausencia nao e' um valor: `false` diz «nao e' reversao» e a ausencia diria «nao foi declarado» (D4). Contradicao impossivel: `reverter: true` com `reduce_only: true` RECUSA (`reversao_com_reduce_only`) — «reduz, nunca inverte» e «inverte» nao cabem na mesma ordem.",
+    )
     referencia_do_cliente: forma_schema.Correlacao = Field(
         ...,
         description='Idempotencia: reenviar com a MESMA referencia nao pode criar segunda ordem (RN-C4).',

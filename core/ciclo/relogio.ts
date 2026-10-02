@@ -287,7 +287,10 @@ export function correrUmCiclo(fontes: FontesDoCiclo): ResultadoDoCiclo {
       barra_da_ultima_entrada: barraDaUltimaEntrada.get(instrumento) ?? null,
     });
     // ENTROU: guarda-se a barra. E' isto que faz a segunda proposta na mesma barra virar `nada` com motivo.
-    if (decisao.acao === "abrir") barraDaUltimaEntrada.set(instrumento, barraAtual);
+    // A VIRADA TAMBEM E' UMA ENTRADA (1.10.0): o `reverse` abre a posicao do lado novo, e a barra dele conta
+    // para o travo. Sem isto, uma virada e uma abertura na mesma barra passariam as duas — que e' exactamente
+    // a segunda entrada na mesma barra que este travo existe para impedir.
+    if (decisao.acao === "abrir" || decisao.acao === "reverse") barraDaUltimaEntrada.set(instrumento, barraAtual);
 
 
     registarCiclo(
