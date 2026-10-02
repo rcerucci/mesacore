@@ -25,10 +25,12 @@
    "tp_pct": {
     "minimo": "0.1",
     "maximo": "10"
-   }
+   },
+   "tempo_maximo_em_posicao": ""
   },
   "prazo_de_resposta_ms": 5000,
-  "enviar": false
+  "enviar": false,
+  "tolera_posicao_manual": false
  },
  "constantes": {
   "ma_len": 24,
