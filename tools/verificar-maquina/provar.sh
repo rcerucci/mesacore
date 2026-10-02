@@ -60,7 +60,11 @@ declarar "arranque (sete portas)"        bun run tools/verificar-maquina/arranqu
 declarar "tipos (tsc)"                   bash tools/verificar-maquina/tipos.sh
 declarar "sessao e CB"                   bun run tools/verificar-maquina/sessao.ts
 declarar "pausa e encerramento"          bun run tools/verificar-maquina/pausa.ts
-declarar "registo (SC-011)"              bun run tools/verificar-maquina/registo.ts
+declarar "registo (SC-011)"               bun run tools/verificar-maquina/registo.ts
+# O REGISTO DO VIGIA: ausente e' novo, ilegivel e' RECUSA — e a recusa vale para a gravacao (o dia da
+# operacao nao se apaga por cima). Esteve fora da porta desde que existe: era o unico ficheiro do vigia
+# que lia o ilegivel como ausente (medido 01/10/2026).
+declarar "registo do vigia (ausente x ilegivel)" bun run tools/verificar-maquina/registo-do-vigia.ts
 declarar "retencao do ledger (RN-L6)"    bun run core/estado/retencao.prova.ts
 declarar "contenda (T066)"      bun run tools/verificar-maquina/contenda.ts  "resumo"
 declarar "chaves do core (SC-012)"       bun run tools/verificar-maquina/chaves.ts
@@ -83,7 +87,7 @@ declarar "Pine x motor (todas as opcoes)" bash -c "cd contracts && uv run python
 # A REGRA DA ENTRADA (regra do dono, 30/09/2026): a entrada so' acontece na barra do FLIP — nao se abre no meio da
 # perna, e uma ordem fechada a mao so' reabre no proximo flip. Sao oito casos, com as barras reais truncadas de
 # proposito para que a ultima barra fechada seja (ou nao seja) a barra de uma viragem.
-declarar "sigma: entrada so' no flip (8 casos)" bash -c "cd contracts && uv run python ../tools/verificar-setup/sigma-casos.py"
+declarar "sigma: entrada so' no flip (10 casos)" bash -c "cd contracts && uv run python ../tools/verificar-setup/sigma-casos.py"
 # AS FICHAS conferidas contra o que o sistema LE': as tres regras de identidade, os tipos (D4: o numero viaja em
 # TEXTO) e a forma das bandas — e, sobretudo, a chave que NINGUEM le': «chave que ninguem le e' lixo» (o criterio
 # do proprio inventario), com as que estao a espera de decisao do dono reportadas em vez de escondidas.

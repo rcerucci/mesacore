@@ -5,8 +5,10 @@
 // outra coisa deixa de ser extrato.
 //
 // A escrita e ATOMICA (ficheiro temporario + rename): um vigia morto a meio de uma gravacao nao pode deixar
-// um registro pela metade. Um registro ilegivel e o mesmo que um registro ausente, e quem vier depois le-o
-// como "nao houve nada" - que e exactamente a conclusao errada.
+// um registro pela metade. Um registro AUSENTE e um registro novo, e le-se como vazio; um registro PRESENTE
+// mas ILEGIVEL nao e' ausente - quem grava nao grava o que nao conseguiu ler, e reescreve-lo por cima seria
+// apagar o historico e chamar a isso vida nova. E' a mesma regra que os outros ficheiros do vigia ja' seguem
+// (os desfechos e o mapa de marcas recusam a linha ilegivel, `vigia/arranque.ts`): o registro era a excepcao.
 //
 // Uma linha por TRANSICAO, e nao por comando: um comando recusado tambem transita (de X para X), e um
 // registro que so guardasse o que mudou de estado esconderia justamente as recusas.
@@ -112,16 +114,40 @@ function exigirCaminho(caminho: string, quem: string): void {
 
 export function lerRegisto(caminho: string): Registro {
   exigirCaminho(caminho, "lerRegisto");
+  let texto: string;
   try {
-    const lido = JSON.parse(readFileSync(caminho, "utf8")) as Registro;
-    // Um registro gravado antes de existirem leituras nao tem a chave: completa-se VAZIA, para quem le nao
-    // ter de saber a idade do ficheiro para o ler.
-    if (!Array.isArray(lido.leituras)) lido.leituras = [];
-    if (!Array.isArray(lido.processos)) lido.processos = [];
-    return lido;
-  } catch {
-    return registoVazio();
+    texto = readFileSync(caminho, "utf8");
+  } catch (erro) {
+    // AUSENTE e' um registro NOVO. Qualquer outra falha de leitura (permissao, caminho que e' pasta) nao e'
+    // ausencia: sem o texto nao se sabe o que la' esta', e gravar por cima seria decidir sem ler.
+    if ((erro as NodeJS.ErrnoException).code === "ENOENT") return registoVazio();
+    throw new Error(
+      `lerRegisto: nao se leu o registro (${caminho}): ${erro instanceof Error ? erro.message : String(erro)}. ` +
+        "Nao se reescreve o que nao se leu.",
+    );
   }
+  let lido: Registro;
+  try {
+    lido = JSON.parse(texto) as Registro;
+  } catch (erro) {
+    throw new Error(
+      `lerRegisto: o registro (${caminho}) nao e' JSON: ${erro instanceof Error ? erro.message : String(erro)}. ` +
+        "Um registro partido nao e' um registro vazio, e nao se grava por cima dele.",
+    );
+  }
+  // O REGISTRO TEM DE TRAZER AS TRANSICOES COMO LISTA. Sem elas nao se sabe o que ja' houve, e completa-las
+  // vazias seria dizer que nao houve nada - a conclusao errada que esta funcao existe para nao dar.
+  if (lido === null || typeof lido !== "object" || Array.isArray(lido) || !Array.isArray((lido as Registro).transicoes)) {
+    throw new Error(
+      `lerRegisto: o registro (${caminho}) nao tem \`transicoes\` como lista. Sem a lista nao se sabe o que ` +
+        "ja' houve, e completa-la vazia seria dizer que nao houve nada.",
+    );
+  }
+  // Um registro gravado antes de existirem leituras nao tem a chave: completa-se VAZIA, para quem le nao
+  // ter de saber a idade do ficheiro para o ler.
+  if (!Array.isArray(lido.leituras)) lido.leituras = [];
+  if (!Array.isArray(lido.processos)) lido.processos = [];
+  return lido;
 }
 
 /** Acrescenta um processo levantado e grava (mesma escrita atomica das transicoes). */

@@ -110,15 +110,22 @@ const entrada = await new Promise<string>((resolve) => {
   process.stdin.on("end", () => resolve(dados));
 });
 let leitura: any = null;
+// A LINHA ILEGIVEL NAO SE DESCARTA EM SILENCIO. Era um `catch {}` vazio: uma linha do stdin que nao fosse
+// JSON desaparecia, e o plugin seguia a decidir com o que sobrasse. O operador escreve UMA linha
+// (`vigia/operador.ts`: `p.stdin.write(JSON.stringify(leitura) + "\n")`, seguido de `end()`), logo lixo aqui
+// e' a LEITURA corrompida - e nao ruido de outro lado a ignorar. Sem esta guarda, um stdin partido com uma
+// mensagem `mercado` valida a meio era lido como leitura inteira.
+let linhaIlegivel = false;
 for (const linha of entrada.split("\n")) {
   if (linha.trim() === "") continue;
   try {
     const o = JSON.parse(linha);
     if (o?.tipo === "mercado") leitura = o.carga;
   } catch {
-    // linha ilegivel nao vira leitura
+    linhaIlegivel = true;
   }
 }
+if (linhaIlegivel) naoProponho("linha_ilegivel: uma linha do stdin nao e' JSON, e nao se decide sobre uma leitura partida");
 if (leitura === null) naoProponho("sem leitura do mercado: nao se decide sobre o que nao se leu");
 if (leitura.estado !== "aberto") naoProponho(`o mercado esta' ${leitura.estado}`);
 

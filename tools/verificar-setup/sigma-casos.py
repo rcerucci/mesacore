@@ -16,6 +16,8 @@ truncada de propósito para que a última barra FECHADA seja (ou não seja) a ba
   F posição contra o indicador, sem flip       -> proposta no lado do indicador (fecha; a entrada espera o flip)
   G posição contra o indicador, E a barra é o flip -> proposta no lado do flip (fecha e inverte, dois passos)
   H sem leitura no stdin                       -> SILÊNCIO (não se decide sobre o que não se leu)
+  I leitura PARTIDA no stdin                   -> SILÊNCIO, e o stderr nomeia `linha_ilegivel`
+  J lixo DEPOIS de uma leitura válida          -> SILÊNCIO na mesma (o operador manda UMA linha; lixo é leitura corrompida)
 
 Uso: sigma-casos.py            (sai 1 se algum caso divergir do que a regra diz)
 """
@@ -119,6 +121,9 @@ def main():
             ("G posicao contra, e a barra E o flip", os.path.join(tmp, f"v{i_flip+1}.jsonl"),
              leitura(v_flip[-1]["t"], "sell" if lado_do_flip == "buy" else "buy"), None, lado_do_flip),
             ("H sem leitura no stdin", VELAS, "", None, None),
+            ("I leitura partida no stdin", VELAS, leitura(velas[-1]["t"])[:45], None, None),
+            ("J lixo depois da leitura valida", os.path.join(tmp, f"v{i_flip+1}.jsonl"),
+             leitura(v_flip[-1]["t"]) + "{isto nao e json\n", {"ultima_barra": -1}, None),
         ]
 
         for etiqueta, velas_path, mercado, estado, esperado in casos:
@@ -146,6 +151,18 @@ def main():
         if "meio da perna" not in err:
             print("DIVERGE caso A: o silencio tinha de vir com o motivo nomeado")
             falhas += 1
+        # I e J: a LINHA ILEGIVEL tem nome proprio, e nao se confunde com "o stdin vinha vazio" (caso H).
+        # Sem esta guarda, o lixo desaparecia no `catch {}` e o plugin seguia a decidir com o que sobrasse.
+        # O caso J corre com o estado LIMPO (barra -1): sem isso, o ficheiro de estado do caso C vazava para
+        # ele e o silencio vinha de «a barra ja' deu a sua entrada» — o caso nao media o que diz medir.
+        for etiqueta, velas_path, mercado, estado in [
+            ("I", VELAS, leitura(velas[-1]["t"])[:45], None),
+            ("J", os.path.join(tmp, f"v{i_flip+1}.jsonl"), leitura(v_flip[-1]["t"]) + "{isto nao e json\n", {"ultima_barra": -1}),
+        ]:
+            _, err = correr(velas_path, mercado, tmp, estado)
+            if "linha_ilegivel" not in err:
+                print(f"DIVERGE caso {etiqueta}: o silencio tinha de nomear `linha_ilegivel` (e nao «sem leitura»)")
+                falhas += 1
 
     print(f"\nsigma.casos: {len(casos)} casos · {len(casos) - falhas} ok · {falhas} divergentes")
     return 1 if falhas else 0

@@ -134,6 +134,14 @@ Aritméticas, não interpretativas — é por isso que esta vista apanha o que a
 7. **`conta.retencao_ledger`** — RN-L6 manda declarar e não há chave.
 8. **`estudo`** — RN-E13 manda registrar o estudo que sustenta o número e não há campo.
 
+> **Nota de 02/10/2026 — o que trava as duas chaves certas, medido.** `tolera_posicao_manual` (item 5) e
+> `bandas.tempo_maximo_em_posicao` continuam sem leitor, e agora sabe-se **exactamente** o que falta a cada uma:
+> a primeira precisa da perna que liga a ficha ao mandato (`vigia/operador.ts`, a vista `fichasParaAMesa`, que
+> copia campos por **lista explícita** — a chave não está nela) **e** da decisão de desenho sobre o que a
+> ausência da chave significa; a segunda precisa do **instante de abertura da posição**, que não existe em
+> ficheiro nenhum do repositório (medido: **0 ocorrências**). Um ramo publicado nesta data tentou as duas e não
+> fechou nenhuma — a medição dos dois lados está em `docs/ONDE_ESTAMOS.md` §«02/10/2026».
+
 ### Achadas na reconferência (27 set 2026, contra a regra v3)
 
 9. **`conta.invalidos_seguidos_para_inibir`** — a própria RN-T4 confessava a lacuna ("`ABERTA`: quantos

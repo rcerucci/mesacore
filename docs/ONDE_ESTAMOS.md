@@ -327,3 +327,44 @@ dois meus hoje, ambos corrigidos), a leitura AO VIVO na testnet a passar o contr
 execuções incluídas, o início a quente medido nas duas direções (ligar e desligar um par a meio da corrida), e o
 registo da observação a mostrar o travão da barra (`abrir x1` + `nada (entrada_ja_feita_nesta_barra)`).
 **Nenhuma ordem foi enviada e nenhum processo ficou a correr.**
+
+
+## 02/10/2026 — um ramo publicado por um agente: o que se aplicou, e o que fica registado
+
+Um agente publicou no GitHub o ramo `fix/recusa-em-vez-de-presumir` (13 commits, `rcerucci` como autor) com
+trabalho bom colado a ficheiros TRUNCADOS: `core/estados/motivos.json` passou de **55 motivos para 4** (o
+próprio ficheiro confessa o corte — `"_livro": "58 motivos no disco; ... o corpo completo segue no mesmo commit
+se a chamada o aceitar"`), e `core/ciclo/ciclo.ts` foi gravado uma vez com **0 linhas**, «reposto» a seguir com
+238 de 424. O ramo **não se aceita** (com o livro em 4, `motivoConhecido` lança «motivo de recusa fora do
+conjunto fechado» no arranque), mas tinha lá dentro duas correções reais. Foram extraídas e reaplicadas à mão.
+
+**Aplicado, com caso de bancada e prova negativa:**
+
+| O que | Onde | A prova |
+|---|---|---|
+| O registo do vigia distingue **ausente** de **ilegível**: ausente é registo novo; ilegível RECUSA, e a gravação seguinte não passa por cima do ficheiro | `vigia/registro.ts` | bancada nova `tools/verificar-maquina/registo-do-vigia.ts` (**7 verificações**) **dentro da porta única**; contra o código de antes: **5 divergentes**, e o registo era reescrito por cima (medido: `lerRegisto` devolvia `transicoes: []` de um ficheiro com uma transição dentro) |
+| O setup RECUSA a linha ilegível no stdin em vez de a descartar em silêncio | `setups/sigma/plugin.ts` | `sigma-casos.py` casos I e J (passou de 8 para **10 casos**); contra o plugin de antes, o caso J **propõe `lado=sell`** com lixo no stdin — decidia-se sobre uma leitura corrompida |
+
+O registo do vigia era ainda o **único** ficheiro do vigia que lia o ilegível como ausente — os desfechos e o
+mapa de marcas já recusavam (`vigia/arranque.ts`). A incoerência é o que a correção fecha.
+
+**Registado, e NÃO aplicado — cada um com o que falta, medido:**
+
+- **`tolera_posicao_manual` (RN-T16).** O agente escreveu a chave nas fichas e o leitor no ciclo, mas **faltou a
+  perna que liga a ficha ao mandato**: `vigia/operador.ts` monta a vista `fichasParaAMesa` com uma lista
+  **explícita** de campos (`saldo_pct`, `alavancagem`, `bandas`, `versao_do_mandato`, `setup`) e a chave não está
+  nela. Com a guarda do ciclo a exigir booleano e o mandato sem o campo, a mesa **rebentava em todos os ciclos**.
+  Decidir antes de fechar: a ausência da chave **recusa** (o estilo da casa) ou tem sentido declarado; e onde se
+  exige — a **porta do mandato** (`core/ciclo/arranque.ts`), que é o sítio arquitectural, e não o ciclo a cada
+  volta (é o que obriga a mexer em todos os construtores de mandato das bancadas).
+- **`bandas.tempo_maximo_em_posicao` (RN-S11).** O leitor que o agente escreveu **não confere** o «sem instante
+  de abertura» que o motivo dele próprio nomeia — dispara sempre que a chave está preenchida — e **o instante de
+  abertura não existe em parte nenhuma do repositório** (0 ocorrências). Assim, um prazo preenchido bloquearia a
+  gestão da posição e mentiria no motivo. Falta decidir **de onde vem o instante** (da posição do venue?).
+- **O reenvio da boleta sem desfecho.** O agente exportou `intencoesSemDesfecho` e **ninguém a chama**, e o
+  ficheiro `intencoes-<conta>.jsonl` que ela lê **ninguém o escreve**. O master reenvia sem desfecho de propósito,
+  com o `cloid` derivado da referência (idempotente, RN-H9); trocar isso exige a pergunta ao venue pelo `cloid`,
+  que o comentário do próprio agente admite faltar. Sem essa perna, a guarda é código morto — e se fosse ligada,
+  mataria em silêncio uma ordem que ainda pode chegar.
+
+Portão, com esta vaga gravada: **34 de 34** (era 33 — entrou a bancada do registo do vigia).
