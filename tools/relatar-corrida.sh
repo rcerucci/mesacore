@@ -34,6 +34,41 @@ for pat in "[o]perador.ts --conta" "[s]ervidor.ts --tick" "[p]rocesso.ts --casos
   echo "  processos '$pat': $n"
 done
 
+# A CONFIGURACAO QUE GOVERNA LE-SE DO DISCO, e nao do HEAD.
+#
+# Medido a 02/10/2026: um relatorio descreveu as fichas «como estao no master» (`run: false`, `enviar: false`)
+# quando a arvore de trabalho tinha `run: true` e `enviar: true` — e e' a arvore que o operador abre. Quem leu
+# o relatorio concluiu que o par estava desligado e que nada saia; o par estava armado. Este bloco existe para
+# que a resposta a «o que esta' armado?» seja um comando, e nao a leitura de um blob por quem relata.
+echo
+echo "--- a configuracao que o operador le' AGORA (do DISCO, nao do HEAD) ---"
+python3 - "$RAIZ" <<'PY'
+import glob, json, os, sys
+raiz = sys.argv[1]
+for p in sorted(glob.glob(os.path.join(raiz, "config", "contas", "*.json"))):
+    nome = os.path.basename(p)[:-5]
+    try:
+        d = json.load(open(p, encoding="utf-8"))
+    except Exception as e:
+        print(f"  [{nome}] ILEGIVEL: {e}  (o operador RECUSA arrancar com isto)")
+        continue
+    conta = d.get("conta") or {}
+    cx = d.get("conexao") or {}
+    ambiente = str(cx.get("ambiente"))
+    print(f"  [{nome}] ambiente={ambiente} api={cx.get('url_da_api')}")
+    if ambiente != "teste":
+        print("      ^^ ATENCAO: NAO e' o ambiente de teste — aqui as ordens sao a serio")
+    print(f"      endereco={conta.get('identificador')} instrumentos={conta.get('instrumentos')}")
+for p in sorted(glob.glob(os.path.join(raiz, "fichas", "*", "*.json"))):
+    c = (json.load(open(p, encoding="utf-8")).get("cabecalho") or {})
+    marca = "  <-- ARMADO: a boleta deste par SAI para o venue" if c.get("enviar") is True else ""
+    print(f"      ficha {c.get('instrumento')}-{c.get('conta')}: run={c.get('run')} enviar={c.get('enviar')}{marca}")
+PY
+if [ -n "$(git -C "$RAIZ" status --short -- fichas config 2>/dev/null)" ]; then
+  echo "  (e o que esta' no DISCO difere do que esta' GRAVADO: a arma de cima nao vive no historico)"
+  git -C "$RAIZ" status --short -- fichas config | sed 's/^/      /'
+fi
+
 echo
 echo "--- a mesa: estado, ciclos e decisoes ---"
 python3 - "$DIR" <<'PY'
