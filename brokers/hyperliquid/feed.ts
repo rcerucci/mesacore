@@ -35,8 +35,15 @@ const argumento = (nome: string): string | undefined => {
 };
 
 const RAIZ = join(import.meta.dir, "..", "..");
-const DIR_DA_CORRIDA =
-  argumento("--corrida") ?? `${process.env["HOME"]}/.hermes/profiles/appbuilder/cache/scratch/corrida-de-risco`;
+/**
+ * A corrida: quem não declara `--corrida` está a servir a corrida de risco por omissão — e a ausência fica dita
+ * (`fonte_da_corrida` no arranque), pelo mesmo motivo do ambiente: registo de corrida lê-se depois, e «não foi
+ * declarado» não pode parecer «foi declarado».
+ */
+const CORRIDA_NO_ARGUMENTO = argumento("--corrida");
+const CORRIDA_POR_OMISSAO = `${process.env["HOME"]}/.hermes/profiles/appbuilder/cache/scratch/corrida-de-risco`;
+const DIR_DA_CORRIDA = CORRIDA_NO_ARGUMENTO === undefined ? CORRIDA_POR_OMISSAO : CORRIDA_NO_ARGUMENTO;
+const FONTE_DA_CORRIDA = CORRIDA_NO_ARGUMENTO === undefined ? "ausente: a corrida de risco por omissao" : "--corrida";
 const PASTA_DO_MERCADO = join(DIR_DA_CORRIDA, "mercado");
 const CAMINHO_DA_OPERACAO = join(DIR_DA_CORRIDA, "operacao.json");
 const CAMINHO_DOS_PRECOS = join(PASTA_DO_MERCADO, "precos-vivos.json");
@@ -47,11 +54,20 @@ const SEM_PRECOS = argv.includes("--sem-precos");
  * corre hoje; `producao` só quando o dono o disser.
  */
 const AMBIENTES = ["teste", "producao"] as const;
-const AMBIENTE_DECLARADO = argumento("--ambiente") ?? "teste";
-if (!(AMBIENTES as readonly string[]).includes(AMBIENTE_DECLARADO)) {
-  process.stderr.write(JSON.stringify({ etapa: "feed", erro: "ambiente_fora_do_conjunto", ambiente: AMBIENTE_DECLARADO, aceitos: AMBIENTES }) + "\n");
+const AMBIENTE_NO_ARGUMENTO = argumento("--ambiente");
+if (AMBIENTE_NO_ARGUMENTO !== undefined && !(AMBIENTES as readonly string[]).includes(AMBIENTE_NO_ARGUMENTO)) {
+  process.stderr.write(JSON.stringify({ etapa: "feed", erro: "ambiente_fora_do_conjunto", ambiente: AMBIENTE_NO_ARGUMENTO, aceitos: AMBIENTES }) + "\n");
   process.exit(2);
 }
+/**
+ * E A AUSÊNCIA TEM NOME — o mesmo cuidado do `mercado.ts`: quem não declara `--ambiente` está a declarar o de
+ * TESTE, e isso fica **dito** (`FONTE_DO_AMBIENTE`) em vez de se presumir por um valor por omissão. A catraca
+ * dos fallbacks exige zero no produto, e tem razão: um `?? "teste"` esconderia «não foi declarado» de «foi
+ * declarado teste» — e são coisas diferentes quando se lê o registo de uma corrida.
+ */
+const AMBIENTE_DECLARADO: string = AMBIENTE_NO_ARGUMENTO === undefined ? "teste" : AMBIENTE_NO_ARGUMENTO;
+const FONTE_DO_AMBIENTE =
+  AMBIENTE_NO_ARGUMENTO === undefined ? "ausente: o ambiente de TESTE, por decisao de quem nao o declarou" : "--ambiente";
 const IS_TESTNET = AMBIENTE_DECLARADO !== "producao";
 
 /** A lista de pares relê-se da operação: é assim que uma ficha ligada a quente entra (sem reiniciar o feed). */
@@ -319,7 +335,14 @@ function escreverPrecos(): void {
 // ---------------------------------------------------------------- o relógio do feed
 
 async function main(): Promise<void> {
-  dizer({ arranque: "ligado", corrida: DIR_DA_CORRIDA, ambiente: AMBIENTE_DECLARADO, precos: !SEM_PRECOS });
+  dizer({
+    arranque: "ligado",
+    corrida: DIR_DA_CORRIDA,
+    fonte_da_corrida: FONTE_DA_CORRIDA,
+    ambiente: AMBIENTE_DECLARADO,
+    fonte_do_ambiente: FONTE_DO_AMBIENTE,
+    precos: !SEM_PRECOS,
+  });
   await garantirSubscricoes();
 
   let ultimaLeituraDaOperacao = Date.now();
