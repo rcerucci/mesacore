@@ -461,3 +461,16 @@ ETH: era de todos os pares com relógio igual ao da mesa.
 **As provas, todas por execução:** `ordens: 44 casos · 44 ok` (4 novos: a virada soma a posição — `0.00833 + 0.00833 = 0.01666`, nocional `1004.598` —, e as três recusas); os **3 casos do D-013** da bateria do ciclo mudaram de veredicto de propósito e provam `reverse` + `reverter: true` numa só decisão; a bancada do ciclo fecha em **104 verificações · 0 divergentes**. E o **porteiro fez o seu trabalho duas vezes**: recusou-me um motivo inventado no código (`reversao_sem_posicao_a_reverter` teve de ser declarado no vocabulário) e um motivo sem tradução para o vigia.
 
 **Fica por fazer, declarado:** a **redução parcial** continua sem verbo próprio (nenhum setup do repositório a emite — o σ emite `caixa` ou um lado).
+
+**E a PROVA AO VIVO, com a emenda a correr** (mesa reiniciada às 16:51 UTC, conta de teste, as mesmas fichas):
+
+| instante | o que aconteceu |
+|---|---|
+| 16:54:32 | a mesa decidiu **`reverse`** no ETH — boleta `lado: sell`, `reduce_only: false`, **`reverter: true`** (ciclo 3) |
+| 16:54:37 | desfecho **aceite**, marca **3**, **quantidade `0.008`** = a posição viva (`0.004`) **somada** à nova (`0.004`) |
+| depois | a posição do ETH é **`sell` 0.004**, com a marca 3 no mapa das nossas |
+
+O conector declarou `"veredicto":"aceite","preenchido":"0.008","origem_dos_numeros":"posicao_lida_depois_do_envio"`.
+**A virada que hoje fechou e não abriu passou a fechar e abrir numa só ordem** — e o registo diz `reverse`, em vez de
+esconder a inversão atrás de um `fechar`. O ETH, que ficou plano durante 46 minutos com o defeito, virou na primeira
+barra em que o setup propôs depois do reinício.
