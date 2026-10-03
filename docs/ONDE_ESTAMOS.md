@@ -996,7 +996,7 @@ marcar de memória: para cada um, **um comando** que o mostre, e só depois o t�
 | **D-006** («não sei» ≠ «não há») | FECHADO 29/09/2026 | `bun run core/estados/provar.ts` → **38 casos · 0 divergentes**, com as **três** letras declaradas |
 | **D-015** (o travão da RN-M4.12) | FECHADO 02/10/2026 | o motivo `risco_por_ordem_excedido` no livro + os **seis** casos `d015-*`; `provar.ts` → **118 · 0 divergentes** |
 | **D-018** (instrumento acrescentado a quente) | FECHADO 03/10/2026 | `manifesto-acompanha-as-fichas.ts` → **8 verificações · 0 divergentes** (no portão) |
-| **D-020** (o conector não entrega leitura) | **RETRATADO** 03/10/2026 | a operação com os **três** pares + o registo com **7173 voltas** e ~1085 linhas por par |
+| **D-020** (o conector não entrega leitura) | **RETRATADO** 03/10/2026 | a operação com os **três** pares + o registo com **7173 voltas** e ~2391 linhas por par (uma leitura por volta, a rodar pelos três pares) |
 
 **D-017 — o caso que faltava, e a costura que ele exigiu.** A bancada de hoje não provava que o operador não
 espera para sempre por uma leitura que não vem. O operador **fixava o comando do conector no código**, e não havia

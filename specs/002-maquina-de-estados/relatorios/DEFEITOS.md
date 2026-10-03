@@ -1216,7 +1216,7 @@ Uma peca que fala e nao e' ouvida nao e' uma peca de um sistema: e' uma caixa.
 >
 > - `mercado/velas-*.jsonl` — a operação escrita pelo operador `operacao.json`, `ligacao: "ligada"`, com os
 >   **três** instrumentos e cada um com a sua `leitura` e o seu `tempo_do_venue_ms` (BTC, ETH, SOL);
-> - o registo do operador (`operador.log`, 7173 voltas): **1085 linhas de BTC, 1085 de ETH e 1095 de SOL**, com
+> - o registo do operador (`operador.log`, 7173 voltas): **2392 linhas de BTC, 2391 de ETH e 2390 de SOL** — uma leitura por volta, a rodar pelos três pares (re-medido a 03/10/2026; o `1085` era uma contagem a meio da corrida — 3 × 1085 = 3255 voltas, contra as 7173 finais —, e a frase juntou o total final com a contagem antiga) — com
 >   `bid`/`ask` reais em cada uma (ex.: BTC `84808.0/84810.0`, ETH `2677.2/2677.3`, SOL `119.89/120.14`), e o
 >   setup a falar em cada leitura;
 > - o fim da corrida é `{"etapa":"operador","veredicto":"fim","voltas":7173}` — o processo **terminou por
