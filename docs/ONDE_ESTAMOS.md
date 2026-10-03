@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **03/10/2026 (madrugada, 2ª parte), 03:2x (-03)** · contrato vigente **1.12.0** · portão **38 de 38** · árvore **limpa** · os defeitos VIVOS por ordem de risco foram corrigidos com prova (ver a última secção)
+medido em **03/10/2026 (madrugada, 3ª parte), 06:0x (-03)** · contrato vigente **1.12.0** · portão **39 de 39** · árvore **limpa** · os títulos do `DEFEITOS.md` dizem o estado, cada um com o comando que o confirma (ver a última secção)
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
@@ -950,6 +950,22 @@ conviviam sem data.
 - **O que NÃO apareceu:** nenhuma regra que peça à mesa para decidir algo do plugin por desenho. Os sítios eram de
   **redação**, não de intenção — e por isso não houve nada a perguntar-lhe sobre isto.
 
+**A varredura final, com as procuras escritas (03/10/2026, 2ª passagem).** Para não ficar na afirmação, ficam os
+comandos e o que cada um devolveu:
+
+| procura | resultado |
+|---|---|
+| `grep -rniE "(a mesa\|mesa)[^.]{0,140}(stop_pct\|distancia do stop\|perda implicita\|stop e o tp)" docs/*.md specs/*/*.md web/*.md fichas/*.md` | **2 sítios, os dois já corrigidos** (`docs/inventario-de-chaves.md` §2 e a nota de vaga do `ONDE_ESTAMOS.md`) |
+| `grep -rniE "a mesa calcula\|mesa calcula" docs/*.md specs/*/*.md web/*.md` | **4 sítios: os dois da emenda datada** (`regra-de-negocio.md` 184 + o texto original por baixo, linhas 186/199) **e dois que dizem o contrário** (`specs/001/…/spec.md:173` — «nenhum caminho do contrato prevê a mesa calcular o resultado» — e a própria nota de vaga) |
+| `grep -rnE "^\s*[-*>\|].*RN-[A-Z0-9.]+.*(stop\|tp_pct)" docs/regra-de-negocio.md` | RN-B7 (o stop/tp são **declarados** em % de movimento), RN-T14 (**adoção** de uma ordem de stop órfã, cancelada «só com decisão declarada») e as quatro já emendadas. Nenhuma põe a mesa a **decidir o valor** |
+
+**O que sobra, e por que é legítimo** (não se apagou por parecer mal): (a) `docs/regra-de-negocio-ctrader.md`
+RN-CT21/RN-CT32 — é a **tradução do CONECTOR** (`stop_pct` → `relativeStopLoss`), que é o trabalho dele; (b) a
+**RN-T14** — adoção de ordem órfã, uma regra de **posse**, com o cancelamento a exigir decisão declarada; (c) os
+**registos datados** (os corpos do `DEFEITOS.md` e as tabelas do `ONDE_ESTAMOS.md`), que são retratos de um
+momento e não regras vivas. **A `regra-de-negocio.md` não tem, hoje, um só sítio que peça à mesa para decidir
+stop, tp ou limite — a linha 184 foi emendada e o ponto 14 do resumo macro caiu na segunda passagem.**
+
 ### O veredicto da vaga, em números
 
 | | antes | agora |
@@ -960,4 +976,37 @@ conviviam sem data.
 | casos das ordens do conector | 50 | **53** |
 | cenários do encerramento | 7 | **9** |
 | defeitos VIVOS fechados com prova | — | **D-007 · D-009 · D-011 · D-012(b) · D-021** |
-| defeitos declarados com o que falta | — | **D-003 · D-008(1) · D-012(a) · D-017** |
+| bancadas do portão | 38 | **39** (a do prazo do operador) |
+| defeitos VIVOS fechados com prova | — | **D-007 · D-009 · D-011 · D-012(b) · D-017 · D-021** |
+| defeitos RETRATADOS com medição | — | **D-020** (o conector entrega leitura: 7173 voltas, os três pares) |
+| defeitos declarados com o que falta | — | **D-003 · D-008(1) · D-012(a)** |
+
+---
+
+## 03/10/2026 (madrugada, 3ª parte) — os títulos passaram a dizer o estado, e o operador ganhou o caso que faltava
+
+**Os títulos que mentiam por omissão.** Cinco defeitos estavam **fechados no código** e o título continuava a
+parecer aberto — e foi assim que **uma auditoria inteira** (e eu) os tratou como vivos. A regra desta vaga foi não
+marcar de memória: para cada um, **um comando** que o mostre, e só depois o título:
+
+| defeito | estado no título | o comando que o confirma |
+|---|---|---|
+| **D-001** (a banda do mandato) | FECHADO 29/09/2026 | `bun run core/ciclo/provar.ts` → **118 verificações · 0 divergentes · 15 de banda** |
+| **D-002** (as três obrigações do conector) | FECHADO 29/09/2026 | as três no `required` do manifesto + a porta `manifesto` que as nomeia; `porta-do-contrato.ts` → **0 falhas** |
+| **D-006** («não sei» ≠ «não há») | FECHADO 29/09/2026 | `bun run core/estados/provar.ts` → **38 casos · 0 divergentes**, com as **três** letras declaradas |
+| **D-015** (o travão da RN-M4.12) | FECHADO 02/10/2026 | o motivo `risco_por_ordem_excedido` no livro + os **seis** casos `d015-*`; `provar.ts` → **118 · 0 divergentes** |
+| **D-018** (instrumento acrescentado a quente) | FECHADO 03/10/2026 | `manifesto-acompanha-as-fichas.ts` → **8 verificações · 0 divergentes** (no portão) |
+| **D-020** (o conector não entrega leitura) | **RETRATADO** 03/10/2026 | a operação com os **três** pares + o registo com **7173 voltas** e ~1085 linhas por par |
+
+**D-017 — o caso que faltava, e a costura que ele exigiu.** A bancada de hoje não provava que o operador não
+espera para sempre por uma leitura que não vem. O operador **fixava o comando do conector no código**, e não havia
+conector de mentira que se lhe apontasse: a prova só contra a conta de teste depende da rede e gasta o orçamento
+de leituras ao venue para medir uma regra que é deste lado. Passou a existir **`--conector <ficheiro>`** (só para
+a bancada, e **dito em voz alta** quando usado). A bancada escreve um conector falso que lê **outro** instrumento
+(o `ADA`) e uma ficha ligada de `SOL` — a cena exacta do defeito — e exige a operação escrita com `sem_leitura` e
+o processo terminado (257 ms). **Prova negativa:** `prova-negativa-do-operador.sh` repõe o defeito e a bancada
+fica vermelha **a nomear o caso**. O portão vai de **38 para 39** bancadas.
+
+**O que continua a ser seu, e não se tocou:** **D-012(a)** (o `limite` continua declarado — tirá-lo é perda de
+capacidade) e **D-008(1)** (as duas chaves sem leitor nem comportamento). **D-003** segue bloqueado na superfície,
+e agora com a porta nomeada: é a porta **`contenda`** do arranque, alimentada pelas fichas da configuração.

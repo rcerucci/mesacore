@@ -29,6 +29,11 @@
 //   bun run vigia/operador.ts --conta hl-real-sol \
 //        --para /tmp/operacao.json --tick 60000 --voltas 6 [--par SOL] [--mercado <pasta>] [--dias 30]
 //
+// `--conector <ficheiro>` **nao e' para producao**: substitui o comando do conector por um ficheiro, para a
+// bancada medir o que este processo faz sem depender do venue nem da rede (D-017). Quando e' usado, o operador
+// DIZ-SE na primeira linha (`veredicto: "conector_substituto"`), e nada do que sair dessa corrida se pode
+// confundir com uma corrida a serio.
+//
 // Repare que NÃO há `--setup`: quem diz qual setup serve cada par é a ficha (`cabecalho.setup`). É assim que um
 // operador só serve setups diferentes em pares diferentes da mesma conta.
 
@@ -111,6 +116,18 @@ const caminhoDaCredencial = join(RAIZ, "config", "contas", `${nomeDaConta}.json`
 if (!existsSync(caminhoDaCredencial)) {
   morrer(`nao existe a credencial da conta ${nomeDaConta} (${caminhoDaCredencial}): a ficha diz o NOME da conta, o ficheiro da conta guarda a chave — e a chave nao mora nas fichas`);
 }
+// O CONECTOR DESTA CORRIDA — e a COSTURA DA BANCADA (D-017).
+//
+// O comando do conector era um literal aqui dentro, e isso deixava a bancada SEM FORMA de medir a coisa mais
+// simples deste processo: o que ele faz quando o conector nao entrega a leitura de um par ligado. Nao havia
+// conector de mentira que se pudesse apontar a um caminho fixo — e um caso que so' corre contra a conta de
+// teste a serio gasta o orcamento de leituras ao venue e depende da rede para provar uma regra daqui.
+//
+// Passa a haver `--conector <ficheiro>`: a bancada aponta-o a um conector de mentira, e o operador NAO fala
+// com o venue nenhum. Usado SO' pela bancada, e DITO EM VOZ ALTA quando e' usado — o registo tem de poder
+// responder «que conector correu esta corrida?» sem se ler codigo (SC-011), e nenhuma corrida de producao o
+// pode tomar por engano.
+const conectorSubstituto = arg("--conector") ?? null;
 // A CONTA le^--se UMA vez (e' um ficheiro so'): dela vem o AMBIENTE, que manda nas velas, e o TECTO DE RISCO POR
 // ORDEM (RN-M4.12, D-015) — que e' grandeza DA CONTA e tem de chegar a' mesa pela config que ela ja' le^.
 const configDaConta = ((): Record<string, any> => {
@@ -650,9 +667,16 @@ async function main(): Promise<void> {
   // `MARCAS_DA_CONTA` la' — mesmo com o mapa escrito (a marca registada ao confirmar o preenchimento), a
   // posicao chegava a mesa SEM marca, e uma posicao sem marca e' alheia. O caminho e' O MESMO ficheiro que
   // este processo escreve (`caminhoDasMarcas()`): nao se inventa formato nenhum, liga-se o que ja' existia.
-  const conector = spawn("bun", ["run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
-    "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(leituraACadaMs)],
+  const conector = spawn("bun",
+    conectorSubstituto !== null
+      ? ["run", conectorSubstituto]
+      : ["run", join(RAIZ, "brokers", "hyperliquid", "processo.ts"),
+         "--casos", casos, "--ficha", `@${caminhoDaCredencial}`, "--ao-vivo", "--leitura-a-cada", String(leituraACadaMs)],
     { cwd: RAIZ, env: { ...process.env, MARCAS_DA_CONTA: caminhoDasMarcas() } });
+  if (conectorSubstituto !== null) {
+    dizer({ etapa: "operador", veredicto: "conector_substituto", caminho: conectorSubstituto,
+            porque: "o comando do conector veio de `--conector` (bancada): esta corrida NAO fala com o venue, e o desfecho dela nao se le^ como uma corrida a serio" });
+  }
   // O `stderr` DO CONECTOR É DRENADO — e isto é uma correcção, não um enfeite. Era um `pipe` que ninguém lia:
   // (a) os diagnósticos dele (as portas, as leituras recusadas) eram INVISÍVEIS no registo do operador — e foi
   // isso que deixou sem resposta a pergunta «porque é que o BTC não foi lido depois de a ficha dele ligar?» no

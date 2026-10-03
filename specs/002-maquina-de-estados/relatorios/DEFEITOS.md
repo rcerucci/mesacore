@@ -12,7 +12,16 @@ e é por isso que fica escrito.
 
 ---
 
-## D-001 — A banda do mandato não é conferida em lado nenhum
+## D-001 — A banda do mandato não é conferida em lado nenhum — **FECHADO** (29/09/2026: a conferência existe e está medida)
+
+> **Estado confirmado NO CÓDIGO a 03/10/2026** (o título parecia aberto e não estava — foi assim que uma
+> auditoria inteira o tratou como vivo). Os comandos, agora:
+> `bun run core/ciclo/provar.ts` → **118 verificações · 0 divergentes · 15 de banda** (as três comparações que o
+> contrato permite emparelhar, com o par de controle `dentro → seguir` / `fora → reduzir_e_registar`); a
+> conferência é pura e vive em `core/ciclo/banda.ts`, ligada nos dois sítios onde a resolução e a acção
+> vivem (`core/ciclo/desfecho.ts`, `core/ciclo/ciclo.ts`); a aritmética é exacta (inteiros escalados) e os
+> 15 casos estão declarados em `core/ciclo/banda.casos.json`.
+
 
 > **FECHADO — 29/09/2026.** A conferência existe, é pura e está medida. O que a fecha:
 > `core/ciclo/banda.ts` (a conferência) + a ligação nos dois sítios onde a resolução e a acção vivem
@@ -90,7 +99,19 @@ nocional **acima** da banda → a mesa reduz e registra a divergência, com o mo
 resolução **dentro** da banda → segue, e **não** reduz. Sem a metade (b), "reduziu" podia ser o código a
 reduzir tudo; sem a metade (a), a conferência podia estar a aceitar tudo.
 
-## D-002 — As três obrigações do conector não têm casa no manifesto
+## D-002 — As três obrigações do conector não têm casa no manifesto — **FECHADO** (29/09/2026: as três são campos OBRIGATÓRIOS)
+
+> **Estado confirmado NO CÓDIGO a 03/10/2026.** `ligacao_por_protocolo`, `releitura_de_preco_ao_enviar` e
+> `devolve_a_resolucao` estão as três no `required` do `contracts/manifesto.schema.json` (o esquema é fechado:
+> ausente é o CONTRATO que recusa) e a porta `manifesto` do arranque da mesa verifica cada uma e **nomeia-a**
+> quando vale `false` (`core/ciclo/arranque.ts`, as três em sequência: `ligacao_por_protocolo`,
+> `releitura_de_preco_ao_enviar`, `devolve_a_resolucao`). A sonda não inventa declaração: sem conseguir medir,
+> o manifesto não sai.
+>
+> Comando: `bun tools/verificar-conector/porta-do-contrato.ts` → **0 falhas · 23 motivos fechados nas duas
+> direções**; `bun run brokers/hyperliquid/processo.ts --bancada` → **41 casos · 0 divergentes · 8 portas do
+> arranque**.
+
 
 > **FECHADO — 29/09/2026** (contrato **1.6.0 → 1.7.0**, emenda `emenda-1.7.0.txt`). As três são agora
 > **três campos OBRIGATÓRIOS do manifesto**, e cada uma **medida** — não prometida: `ligacao_por_protocolo`
@@ -170,6 +191,20 @@ três não está declarada, e um caso de controle em que as três estão e o arr
 > "fifo_desempatado_por_simbolo"`) em vez de se chamar FIFO. Fechar isto exige a **superficie** (a web a ligar um
 > instrumento, o dono a carregar num botao), que nao existe nesta vaga — e **nao se inventa um pedido** para a fila
 > ter ordem. NAO e' um defeito do conector nem da mesa: e' trabalho que ainda nao tem quem o dispare.
+
+> **A PORTA, confirmada a 03/10/2026, e o que a bloqueia.** A porta é a **`contenda`** — uma das seis do arranque
+> da mesa (`core/ciclo/arranque.ts`: manifesto, mandato, **contenda**, inventário de chaves, versão do contrato,
+> sessão). Quem a alimenta é `resolverContenda(pedidos, ...)`, e os `pedidos` são montados
+> **das fichas da CONFIGURAÇÃO** (`Object.entries(fichas).map(...)`, com o comentário a dizê-lo no próprio
+> código: «As fichas vêm da CONFIGURAÇÃO: ninguém as pediu, logo não têm hora de chegada»). Só quando todos os
+> pedidos trouxerem um instante é que o critério é `fifo` (`core/ciclo/contenda.ts`, `decididoPeloInstante`); sem
+> ele, o critério registado é `fifo_desempatado_por_simbolo` — o arranque **diz que desempatou**, em vez de se
+> chamar FIFO. **O que a bloqueia:** a **superfície** (a web a ligar um instrumento, o dono a carregar num botão)
+> — no sistema de hoje ninguém pede: as fichas estão no ficheiro. A fila e o desempate estão medidos
+> (`bun run tools/verificar-maquina/contenda.ts` → **35 verificações · 0 divergentes · 7 casos**, com o par de
+> controle dos instantes trocados), e o que falta é **quem peça**. Nada aqui é decisão de desenho por tomar.
+>
+> *O diagnóstico original fica por baixo, para auditoria.*
 
 **O que devia acontecer.** A fila ordena pela **hora de chegada à mesa** (o relógio é o da mesa: o venue
 nunca viu estas intenções, e o instante que o pedido traga de fora não é usado — quem escolhe o lugar na
@@ -266,7 +301,19 @@ reconciliar (RN-V6), com a transição registrada.
 
 ---
 
-## D-006 — A tabela trata «não sei» como «não há»
+## D-006 — A tabela trata «não sei» como «não há» — **FECHADO** (29/09/2026: o desconhecido tem linha própria)
+
+> **Estado confirmado NO CÓDIGO a 03/10/2026** (o estado estava POR MEDIR, e mediu-se). As duas guardas
+> disjuntas existem em `core/estados/transicoes.json`: `portas_do_arranque_nao_conferidas` (`=== undefined`, uma
+> linha) e `posicao_viva_desconhecida` (`=== undefined`, duas linhas — `stop` em `em_operacao` e `pausada`),
+> e o motivo `posicao_desconhecida` é do **livro** da mesa, não excepção da porta.
+>
+> Comandos e casos: `bun run core/estados/provar.ts` → **38 casos · 13 aceites · 25 recusados · 0 divergentes ·
+> 0 recusas sem motivo**, com as três letras do «como se saberá» declaradas —
+> `start-em-parada-com-as-portas-nao-conferidas-recusa`, `stop-sem-posicao-sabida-recusa-e-nao-para-a-mesa` e
+> `stop-da-pausa-com-posicao-nao-sabida-recusa`; `bun run tools/verificar-maquina/tabela.ts` → invariantes da
+> tabela, 0 falhas.
+
 
 > **FECHADO — 29/09/2026.** As duas guardas passam a distinguir os **três** casos, e o desconhecido ganha
 > linha própria de recusa na tabela:
@@ -418,7 +465,7 @@ o mesmo `start` cancela a pergunta (o caminho do US7 continua a existir).
 
 ---
 
-## D-008 — As bandas do mandato têm leitores a menos, e duas chaves das regras não existem — **(2) FECHADO 29/09; (1) declarado, à espera do dono** (03/10/2026)
+## D-008 — As bandas do mandato têm leitores a menos, e duas chaves das regras não existem — **(2) FECHADO 29/09/2026: as duas BANDAS têm leitor; (1) MEDIDO 03/10/2026: as duas CHAVES não têm leitor nem comportamento**
 
 > **ESTADO EM 03/10/2026 — a metade (2) esta' fechada desde 29/09 (as duas BANDAS do stop/tp morrem no ciclo, com 8
 > casos e 6 provas negativas). O que resta e' a metade (1): as DUAS CHAVES que governariam comportamento que nao
@@ -680,7 +727,7 @@ adapta uma boleta em silêncio»), agora com o risco do lado do dinheiro.
 prender, **recusar nomeando** (`capacidade_nao_declarada`); e, para o `prazo`/`destino`, ou se implementam
 (verbo de cancelamento, D-012) ou saem do contrato.
 
-## D-012 — O tipo `limite` é inalcançável neste venue (e o `destino_do_resto: cancelar` não tem verbo) — **(b) FECHADO; (a) e' decisão do dono** (03/10/2026)
+## D-012 — O tipo `limite` é inalcançável neste venue (e o `destino_do_resto: cancelar` não tem verbo) — **(b) FECHADO 03/10/2026; (a) FICA declarado: o `limite` continua no conjunto declarado, e tirá-lo é decisão do dono**
 
 > **ESTADO EM 03/10/2026 — a metade (b) fechou, a metade (a) nao e' nossa.**
 >
@@ -699,6 +746,11 @@ prender, **recusar nomeando** (`capacidade_nao_declarada`); e, para o `prazo`/`d
 > de a usar crua) — o que **muda o preco a que uma ordem de limite sai**, e por isso nao e' decisao de quem escreve
 > o codigo — ou **retirar o tipo** do que o manifesto declara, o que e' uma **perda de capacidade** e e' o dono que
 > a aceita. **Vai ao dono com a medicao na mao** (ver a nota de vaga em `docs/ONDE_ESTAMOS.md`).
+>
+> **O QUE FICA, em uma linha (03/10/2026):** o `limite` **continua declarado** no manifesto (`tipos_de_ordem`) e
+> a decisao continua **em aberto e sua** — (A) executar com o preco derivado/quantizado, ou (B) retirar o tipo.
+> Nao se retirou nada por conta propria, porque tirar o tipo e' **perda de capacidade**, e uma perda de capacidade
+> nao se decide por omissao: **fica declarado como o que falta**, com a medicao ao lado.
 
 **Encontrado ao tentar exercer o outro tipo de ordem que o manifesto declara.** O manifesto diz
 `tipos_de_ordem: ["mercado","limite"]`; medido, **toda** a boleta `limite` morre antes de sair:
@@ -849,7 +901,19 @@ lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *
 
 ---
 
-## D-015 — a RN-M4.12 não existe no código: o travão de risco por ordem não está lá
+## D-015 — a RN-M4.12 não existe no código: o travão de risco por ordem não está lá — **FECHADO** (02/10/2026: o travão existe e está medido)
+
+> **Estado confirmado NO CÓDIGO a 03/10/2026** (o título parecia aberto). O travão existe: o motivo
+> `risco_por_ordem_excedido` está no **livro** (`core/estados/motivos.json`, 56 motivos, `cruzam_a_fronteira:
+> false` — nasce e morre dentro do ciclo) e o ciclo produz-o em `core/ciclo/ciclo.ts` antes de montar a boleta,
+> para `abrir` **e** `reverse` (os dois que AUMENTAM exposição). A comparação é a mesma aritmética exacta das
+> bandas, contra o tecto que a **conta** declara (`conta.risco_maximo_por_ordem_pct`) — e uma conta que o não
+> declara **não tem travão, e a mesa di-lo no registo**.
+>
+> Comandos e casos: `bun run core/ciclo/provar.ts` → **118 verificações · 0 divergentes**; os **seis casos**
+> `d015-*` em `core/ciclo/ciclo.casos.json` (acima do tecto recusa, dentro abre, na borda é dentro, sem tecto na
+> conta não há travão, a **virada** acima do tecto recusa e a virada dentro do tecto vira numa só decisão).
+
 
 > **FECHADO — 02/10/2026.** O travão existe, é uma comparação **PURA**, e está medido. O que o fecha:
 >
@@ -1056,23 +1120,32 @@ do Pine nunca abre.**
 
 ---
 
-## D-017 — o operador espera para sempre por uma leitura que nao vem — **FECHADO no codigo, SEM CASO no portao** (03/10/2026)
+## D-017 — o operador espera para sempre por uma leitura que nao vem — **FECHADO** (03/10/2026: com caso no portão e prova negativa)
 
-> **ESTADO EM 03/10/2026 — fechado no codigo, e a PROVA continua a faltar. Dito, e nao disfarcado.**
-> O limite de espera **existe**: passadas `LEITURAS_INUTEIS` voltas sem uma leitura para os pares ligados
-> (`vigia/operador.ts`), a operacao e' **escrita** com os pares que tem leitura e os outros entram **sem** `leitura`
-> (`sem_leitura`, RN-D7) — com o motivo no `erro_do_setup` — e o processo termina em vez de esperar para sempre.
-> Mais: a operacao ja' nao sai de um retrato, porque a mesa **rele^ a operacao a cada volta** (D-021, com caso).
+> **FECHADO — 03/10/2026.** O limite de espera **existe** (`LEITURAS_INUTEIS` voltas sem leitura para os pares
+> ligados → a operação é **escrita** com o que existe, os pares sem leitura entram `sem_leitura` com o motivo no
+> `erro_do_setup`, e o processo **termina**) e passou a ter **prova no portão**.
 >
-> **PORQUE NAO HA CASO, medido:** o operador **fixa o comando do conector no codigo**
-> (`spawn("bun", ["run", ..., "brokers/hyperliquid/processo.ts", "--ao-vivo", ...])`, `vigia/operador.ts`), e nao
-> ha' costura nenhuma por onde a bancada lhe ponha um conector de mentira a ler **outros** instrumentos — que e' a
-> cena exata do defeito (o SOL numa conta que so' le' BTC). Uma prova offline exige **abrir essa costura** (uma
-> variavel de ambiente com o argv do conector) — e o operador e' **o processo em observacao**, a gerir posicoes
-> vivas: nao se lhe mexe sem a palavra do dono. A alternativa (correr a cena a' serio, contra a conta de teste) gasta
-> o orcamento de 429 que esta vaga deixou **fora** por decisao da auditoria.
-> **O que fica por fazer, em uma linha:** a costura do conector (ambiente) + o caso do par ligado que o conector nao
-> le^ -> operacao escrita com `sem_leitura` e processo terminado. **Nao fechado, e e' isto que falta.**
+> **A costura que faltava, e que foi feita com nome:** o operador **fixava o comando do conector no código**, e
+> não havia conector de mentira que se lhe apontasse — a prova só contra a conta de teste depende da rede e gasta
+> o orçamento de leituras ao venue para medir uma regra que é deste lado. Passou a existir
+> **`--conector <ficheiro>`** (`vigia/operador.ts`), usado **só pela bancada** e **dito em voz alta** quando é
+> usado (`veredicto: "conector_substituto"`), para nenhuma corrida a sério se poder ler como se tivesse falado
+> com o venue.
+>
+> **Prova:** `bun tools/verificar-maquina/operador-nao-espera.ts` → **6 verificações · 0 divergentes**, dentro do
+> `provar.sh` ("operador: o prazo por leitura que nao vem (D-017)"). A bancada escreve um conector falso que lê
+> **outro** instrumento (o `ADA`, que a conta não tem) e uma ficha **ligada** de `SOL` — a cena exacta do defeito
+> — e exige: o processo **termina sozinho** (257 ms, não os 25 s do limite), o veredicto é `prazo` com o número
+> das leituras inúteis, e a operação fica escrita, `ligacao: "sem_leitura"`, com o `SOL` presente e **sem**
+> `leitura`. Sem rede, sem venue, sem chave.
+> **Prova negativa:** `bash tools/verificar-maquina/prova-negativa-do-operador.sh` — reposto o defeito (a guarda
+> do prazo morta), a bancada fica **vermelha a NOMEAR o caso** (`D-017: o operador TERMINA sozinho …
+> terminou_sozinho=false · 25025 ms`) e o ficheiro volta pelo `sha256`.
+>
+> **O que a bancada NÃO prova, dito no cabeçalho dela:** que o operador corre contra o venue a sério. Essa metade
+> é da corrida viva — a de 03/10/2026 entregou leitura dos **três** pares em **7173 voltas** e nunca chegou ao
+> prazo (é a retratação do D-020, logo abaixo).
 
 **Declarado em 30/09/2026.** Medido: com uma ficha ligada (`run: true`) cujo instrumento a conta do conector
 nao le — o caso do SOL na conta de teste, que declarava so' BTC — o operador fica a' espera
@@ -1087,7 +1160,19 @@ leitura e os outros entram sem `leitura` (o mesmo caminho do ETH na prova do mul
 
 ---
 
-## D-018 — o conector nao pega um instrumento acrescentado ao mandato (sintoma medido, causa por medir)
+## D-018 — o conector nao pega um instrumento acrescentado ao mandato — **FECHADO** (03/10/2026: o manifesto acompanha as fichas)
+
+> **FECHADO — 03/10/2026.** A causa estava no manifesto publicado no arranque: um instrumento acrescentado ao
+> mandato **depois** de o processo nascer não tinha unidade declarada, e a leitura dele morria em
+> `unidadeDo(manifesto, ...)`. Passou a haver `manifestoParaInstrumento` (`brokers/hyperliquid/manifesto.ts`),
+> que devolve o do arranque **ou um reconstruído** do mandato em vigor — o conector deixou de precisar de
+> reiniciar para pegar um par novo.
+>
+> **A prova, e ela está no portão:** `bun run tools/verificar-conector/manifesto-acompanha-as-fichas.ts` →
+> **8 verificações · 0 divergentes · 1 instrumento ligado a quente traduzido** (dentro do `provar.sh`, "manifesto
+> acompanha as fichas (quente)"). E a corrida viva confirma-o do lado de fora: a operação de 03/10/2026 traz
+> leitura dos **três** pares (BTC, ETH, SOL — ver a retratação do D-020 logo abaixo).
+
 
 **Declarado em 30/09/2026, com o sintoma exacto.** A ficha da conta de teste foi editada de
 `conta.instrumentos = ["BTC"]` para `["BTC","SOL"]` (para o setup do Pine poder decidir sobre SOL ao vivo), e a
@@ -1124,7 +1209,28 @@ Uma peca que fala e nao e' ouvida nao e' uma peca de um sistema: e' uma caixa.
 
 ---
 
-## D-020 — o modo ao vivo do conector arranca e nao entrega leitura (sintoma aberto)
+## D-020 — o modo ao vivo do conector arranca e nao entrega leitura — **RETRATADO** (03/10/2026: medido, entrega)
+
+> **RETRATADO — 03/10/2026, com a medição na mão.** O sintoma **morreu**: o conector entrega leitura, e os
+> **três** pares são lidos na corrida de observação da conta de teste. Medido no que a corrida deixou:
+>
+> - `mercado/velas-*.jsonl` — a operação escrita pelo operador `operacao.json`, `ligacao: "ligada"`, com os
+>   **três** instrumentos e cada um com a sua `leitura` e o seu `tempo_do_venue_ms` (BTC, ETH, SOL);
+> - o registo do operador (`operador.log`, 7173 voltas): **1085 linhas de BTC, 1085 de ETH e 1095 de SOL**, com
+>   `bid`/`ask` reais em cada uma (ex.: BTC `84808.0/84810.0`, ETH `2677.2/2677.3`, SOL `119.89/120.14`), e o
+>   setup a falar em cada leitura;
+> - o fim da corrida é `{"etapa":"operador","veredicto":"fim","voltas":7173}` — o processo **terminou por
+>   limite de voltas**, não por ausência de leitura.
+>
+> **O que isto NÃO diz:** que o sintoma nunca existiu — existiu, e o retrato dele fica por baixo, com a data em
+> que foi medido (30/09/2026, 02:10). O que mudou entre os dois é o que o **D-019** fechou (o operador passou a
+> ouvir o conector) e a correcção do `--leitura-a-cada` para 10 s. **Um defeito retratado não é um defeito
+> esquecido**: fica escrito o que o fechou.
+>
+> **Nota de 03/10/2026, medida agora:** a corrida em observação **já terminou** (o último `operacao.json` é das
+> 08:36 UTC e o registo fecha em `fim`). Em execução está só o painel. O trabalho desta vaga não tocou em nenhum
+> deles.
+
 
 **Declarado em 30/09/2026, 02:10.** Medido, com tudo o resto confirmado bom:
 

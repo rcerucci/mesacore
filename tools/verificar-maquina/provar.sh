@@ -70,6 +70,10 @@ declarar "contenda (T066)"      bun run tools/verificar-maquina/contenda.ts  "re
 declarar "chaves do core (SC-012)"       bun run tools/verificar-maquina/chaves.ts
 declarar "porteiro do estado (script)"   bash tools/verificar-maquina/porteiro-do-estado.sh
 declarar "marcas sobrevivem ao reinicio" bash tools/verificar-maquina/reiniciar.sh
+# O PRAZO DO OPERADOR (D-017): um par ligado cujo instrumento o conector nao le^ nao pode deixar o operador a'
+# espera para sempre. A bancada corre o operador contra um conector FALSO (a costura `--conector`, so' para
+# bancada) e exige a operacao escrita com `sem_leitura` e o processo terminado — sem rede, sem venue, sem chave.
+declarar "operador: o prazo por leitura que nao vem (D-017)" bun tools/verificar-maquina/operador-nao-espera.ts
 declarar "porta da mesa (T014-T016)"      bun run tools/verificar-maquina/servidor.ts
 declarar "preparar contas (script + questionario)" bash tools/preparar-contas/provas.sh
 declarar "conector hyperliquid (offline, US1)" bash tools/verificar-conector/provas-offline.sh
