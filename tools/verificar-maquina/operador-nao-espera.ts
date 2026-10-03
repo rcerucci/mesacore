@@ -17,6 +17,11 @@
 // e' da corrida viva — a de 03/10/2026 entregou leitura dos TRES pares em 7173 voltas e nunca chegou ao prazo
 // (ver a retratacao do D-020). Esta bancada mede o PRAZO, e so' o prazo.
 //
+// E ela NAO e' uma bancada «sem rede», pela mesma honestidade: o operador arranca o **feed de mercado** por
+// desenho (`feed.ts`, uma subscricao PUBLICA do livro — sem chave, sem conta, sem orcamento de leituras), e a
+// bancada nao o desliga nem espera por ele. O que a bancada mede nao depende dele: se o feed nao conseguir
+// ligar, o operador faz o mesmo (o feed nao esta' no caminho da decisao).
+//
 // A BANCADA ESCREVE DOIS FICHEIROS NO REPOSITORIO E REMOVE-OS NO FIM (`fichas/sigma/SOL-hl-nao-le.json` e
 // `config/contas/hl-nao-le.json`): o operador resolve as fichas e a conta a partir da raiz do repositorio e nao
 // ha' opcao que o faca olhar para outro sitio. Os dois sao de uma conta de teste com um nome que nao existe em
