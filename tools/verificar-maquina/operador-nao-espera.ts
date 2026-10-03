@@ -18,9 +18,17 @@
 // (ver a retratacao do D-020). Esta bancada mede o PRAZO, e so' o prazo.
 //
 // E ela NAO e' uma bancada «sem rede», pela mesma honestidade: o operador arranca o **feed de mercado** por
-// desenho (`feed.ts`, uma subscricao PUBLICA do livro — sem chave, sem conta, sem orcamento de leituras), e a
-// bancada nao o desliga nem espera por ele. O que a bancada mede nao depende dele: se o feed nao conseguir
-// ligar, o operador faz o mesmo (o feed nao esta' no caminho da decisao).
+// desenho (`feed.ts`, uma subscricao PUBLICA do livro — sem chave, sem conta, sem orcamento de leituras). O que a
+// bancada mede nao depende dele: se o feed nao conseguir ligar, o operador faz o mesmo (o feed nao esta' no
+// caminho da decisao). Mas a bancada RECOLHE-O: e' ela que o arrancou, por mao do operador, e nao o larga.
+//
+// COMO, E PORQUE ASSIM. No caminho em que a bancada mata o operador a meio (o prazo estourou e ele nao saiu), o
+// `SIGKILL` nao passa pelos handlers DELE: o `terminar()` (que faz `feed.kill()` em `vigia/operador.ts`) nunca
+// corre, e o feed ficava ORFAO — reparentado ao `systemd --user`, a apontar para uma pasta que a bancada ja'
+// apagou, com a subscricao publica aberta a sobreviver a' bancada. Medido a 03/10/2026 (PIDs 608659, 649478 e
+// 667710). Por isso o operador arranca aqui com `detached: true` — e' ele o LIDER de um grupo de processos
+// proprio, e o feed nasce dentro desse grupo — e o recolhimento mata o GRUPO, nao o processo sozinho. Um sigilo
+// que so' mata o operador deixa sempre o feed vivo: matar o grupo e' a diferenca entre fechar e mudar de orfao.
 //
 // A BANCADA ESCREVE DOIS FICHEIROS NO REPOSITORIO E REMOVE-OS NO FIM (`fichas/sigma/SOL-hl-nao-le.json` e
 // `config/contas/hl-nao-le.json`): o operador resolve as fichas e a conta a partir da raiz do repositorio e nao
@@ -34,7 +42,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { RAIZ_DO_REPO } from "../../core/livro-de-motivos.ts";
 
 const RAIZ = RAIZ_DO_REPO;
@@ -101,9 +109,44 @@ ficha.cabecalho.run = true;
 writeFileSync(FICHA_DA_BANCADA, JSON.stringify(ficha, null, 1) + "\n");
 cpSync(CONTA_MOLDE, CONTA_DA_BANCADA);
 
+// ---- O RECOLHIMENTO DO GRUPO ---------------------------------------------------------------------------------
+// (o PORQUE esta' no cabecalho) O operador e' o LIDER de um grupo de processos proprio (`detached: true`), e o
+// conector e o feed de mercado nascem DENTRO desse grupo. Matar o grupo leva os tres; matar so' o operador deixa
+// o feed vivo — e' essa a diferenca entre fechar e mudar de orfao.
+function matarOGrupo(p: ChildProcess, sinal: NodeJS.Signals): void {
+  if (p.pid === undefined) return;
+  try {
+    process.kill(-p.pid, sinal); // o GRUPO inteiro (o `-` a' frente do pid e' o grupo, nao o processo)
+  } catch {
+    // `ESRCH`: nao ha' membro nenhum no grupo (tudo morto) — nao ha' nada a fazer, e nao se inventa um erro.
+    // Qualquer outra falha cai aqui tambem, e o processo sozinho e' a segunda tentativa: se o grupo nao existe,
+    // e' porque nao ha' membro nenhum dele.
+    try { p.kill(sinal); } catch { /* ja' morreu */ }
+  }
+}
+
+// A ESPERA E' PELO GRUPO, e nao so' pelo operador: o feed e' um NETO, e a morte dele nao chega por evento nenhum.
+// `kill(-pgid, 0)` pergunta ao kernel se ainda ha' alguem no grupo — e' o unico sinal fiável de que a bancada nao
+// esta' a terminar com um processo seu ainda vivo (`ESRCH` = grupo vazio).
+async function esperarOGrupoVazio(p: ChildProcess, ms: number): Promise<boolean> {
+  if (p.pid === undefined) return true;
+  const limite = Date.now() + ms;
+  for (;;) {
+    try {
+      process.kill(-p.pid, 0);
+    } catch {
+      return true; // ESRCH: o grupo esta' vazio
+    }
+    if (Date.now() >= limite) return false;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
 // ---- A CORRIDA ---------------------------------------------------------------------------------------------
 // `--voltas 50`: o processo NAO pode terminar pelo limite de voltas — a unica saida legitima desta corrida e' o
 // prazo. Sem `--mercado`, o operador tambem nao puxa velas nenhumas (nem uma linha de rede).
+// `detached: true`: e' isto que da' ao operador (e ao feed que ele arranca) um grupo proprio, para o recolhimento
+// abaixo os poder fechar os tres sem tocar em mais nada.
 const LIMITE_MS = 25_000;
 const inicio = Date.now();
 const proc = spawn("bun", [
@@ -113,7 +156,24 @@ const proc = spawn("bun", [
   "--tick", "4000", // LEITURAS_INUTEIS = max(3, ceil(10000/4000)) = 3: tres leituras inuteis bastam
   "--voltas", "50",
   "--conector", conectorFalso,
-], { cwd: RAIZ, stdio: ["pipe", "pipe", "pipe"] });
+], { cwd: RAIZ, detached: true, stdio: ["pipe", "pipe", "pipe"] });
+
+// A REDE DE SEGURANCA FINAL: uma bancada que rebente entre o arranque e o recolhimento nao pode deixar o grupo
+// vivo. O `exit` handler cobre os FICHEIROS (`limpar`) e este cobre os PROCESSOS — um `exit` handler nao pode
+// esperar, mas pode matar, e mata o grupo inteiro.
+process.on("exit", () => {
+  if (proc.exitCode === null && proc.signalCode === null) matarOGrupo(proc, "SIGKILL");
+});
+
+// E UM SINAL A' BANCADA NAO A DEIXA LARGAR O GRUPO NEM O LIXO: sem handler, um SIGINT/SIGTERM mata este processo
+// sem correr o `exit` — ficava o feed vivo (o defeito deste cartao) E as duas fixtures na arvore (a bancada
+// escreveu-as e nao as removeria). Um `exit` handler so' nao chega para uma bancada interrompida a' mao.
+for (const sinal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(sinal, () => {
+    matarOGrupo(proc, "SIGKILL");
+    process.exit(sinal === "SIGINT" ? 130 : 143);
+  });
+}
 
 let bruto = "";
 let erros = "";
@@ -130,7 +190,19 @@ const saiu = new Promise<{ porSi: boolean }>((resolver) => {
 const { porSi } = await saiu;
 const demorou_ms = Date.now() - inicio;
 if (!porSi) {
-  try { proc.kill("SIGKILL"); } catch { /* ja' morreu */ }
+  // A BANCADA RECOLHE O QUE ARRANCOU (D-017): primeiro o `SIGTERM` ao grupo — o handler do operador corre o
+  // `terminar()` de sempre, que mata o conector e o feed pelo caminho natural — e o `SIGKILL` ao grupo como rede
+  // de seguranca, se ele nao sair. A espera e' pelo GRUPO (ver `esperarOGrupoVazio`), nao so' pelo operador.
+  matarOGrupo(proc, "SIGTERM");
+  if (!(await esperarOGrupoVazio(proc, 2_000))) {
+    matarOGrupo(proc, "SIGKILL");
+    if (!(await esperarOGrupoVazio(proc, 5_000))) {
+      // Nao devia acontecer (um `SIGKILL` ao grupo nao se recusa): se acontecer, a bancada NAO se cala — um
+      // residuo declarado nao deixa o proximo a procura-lo. Nao e' uma verificacao: o criterio desta bancada e' o
+      // PRAZO, e um 7.º caso mudaria a contagem que ela publica.
+      console.error("operador-nao-espera: RECOLHIMENTO INCOMPLETO — o grupo do operador ainda tem processos vivos depois do SIGKILL");
+    }
+  }
 }
 
 // A LEITURA DO QUE SAIU — a operacao (o stdout do operador e' o diagnostico; a operacao vai no ficheiro).
