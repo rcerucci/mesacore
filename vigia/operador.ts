@@ -814,7 +814,13 @@ async function main(): Promise<void> {
         // o que me deixou cego quando o conector arrancava e nao entregava leitura: o operador registava o
         // silencio e o conector sabia a razao. (D-019.)
         const limpa = l.trim();
-        if (limpa !== "") console.error(`[conector] ${limpa.slice(0, 400)}`);
+        // A LINHA VAI INTACTA. Prefixar (`[conector] `) ou cortar (`.slice(0, 400)`) fabrica, deste lado, o
+        // `enquadramento_invalido` que o proprio contrato nomeia («linha partida a meio, JSON malformado»).
+        // Medido a 03/10/2026 no `operador.log` da corrida de risco: 48 linhas ilegiveis ao retrato — 24
+        // `resolucao` (JSON valido, mas prefixado) e 24 `desfecho` TODAS cortadas, que e' o dado que diz se a
+        // ordem foi aceite, preenchida ou recusada. A origem nao se perde: o contrato traz `tipo`/`id` e o
+        // operador traz `etapa` — e' assim que se distinguem; a PROSA distingue-se por NAO ser JSON.
+        if (limpa !== "") console.error(limpa);
       }
     }
   });
@@ -873,7 +879,8 @@ async function main(): Promise<void> {
             }
           }
         }
-        console.error(`[conector] ${linha.slice(0, 300)}`);
+        // Intacta, pelo mesmo motivo do outro eco acima: cortar a 300 caracteres destruia o `desfecho`.
+        console.error(linha);
         continue;
       }
       const instrumento = String(msg.carga?.instrumento);
