@@ -1143,6 +1143,19 @@ do Pine nunca abre.**
 > do prazo morta), a bancada fica **vermelha a NOMEAR o caso** (`D-017: o operador TERMINA sozinho …
 > terminou_sozinho=false · 25025 ms`) e o ficheiro volta pelo `sha256`.
 >
+> **O resíduo que esta bancada deixava — fechado a 03/10/2026, em código.** No caminho em que a bancada mata o
+> operador a meio (a prova negativa), o `SIGKILL` **não passa pelos handlers dele**: o `terminar()` (que faz
+> `feed.kill()`) nunca corria, e o **feed de mercado** que o operador arranca por desenho ficava **órfão**,
+> reparentado ao `systemd --user`, a apontar para uma pasta que a bancada já tinha apagado, com a subscrição
+> pública aberta — um por corrida (medido: PIDs 608659, 649478 e 667710). A bancada passa a arrancar o operador
+> com **grupo de processos próprio** (`detached: true`) e a **matar o grupo** no recolhimento — `SIGTERM` ao grupo
+> primeiro (o handler do operador fecha o feed pelo caminho natural), `SIGKILL` ao grupo como rede de segurança —
+> com a espera **pelo grupo** (`kill(-pgid, 0)`), e não só pelo operador: o feed é um **neto** e a morte dele não
+> chega por evento nenhum. Prova medida: a prova negativa continua a reprovar e a nomear o caso em **25,207 s de
+> parede** (25,0 s de prazo + ~0,2 s de recolhimento — o `SIGTERM` bastou) e **não deixa feed nenhum**; a bancada
+> positiva passa as **6 verificações** sem deixar feed; um `SIGINT` a meio da bancada sai com `rc 130`, sem órfão
+> e sem fixtures na árvore; o portão fica **39 de 39**.
+>
 > **O que a bancada NÃO prova, dito no cabeçalho dela:** que o operador corre contra o venue a sério. Essa metade
 > é da corrida viva — a de 03/10/2026 entregou leitura dos **três** pares em **7173 voltas** e nunca chegou ao
 > prazo (é a retratação do D-020, logo abaixo).
