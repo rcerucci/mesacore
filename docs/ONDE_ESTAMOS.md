@@ -940,11 +940,13 @@ conviviam sem data.
   de EXPOSIÇÃO** do mandato: `saldo_pct × alavancagem` contra o teto da conta), mantém o texto original por baixo
   para auditoria, e aponta para a emenda de 02/10 e para a prova (`core/ciclo/provar.ts`, D-015).
 - **A varredura** (`docs/*.md`, `specs/`) pelo mesmo padrão — a mesa ligada a stop/tp/limite, ou «a mesa calcula» com
-  um parâmetro do setup — achou **mais três sítios**, os três corrigidos com nota datada:
+  um parâmetro do setup — achou **mais QUATRO sítios**, os quatro corrigidos com nota datada:
   `docs/diagrama-de-blocos.html` («perda implícita acima do teto» → «exposição (nocional) acima do teto»),
   `docs/regra-de-negocio.md` §8 («Metade da mesa» não dizia quem dá o **valor** ao stop — é o SETUP; a mesa só o
-  transporta) e `docs/inventario-de-chaves.md` §2 (a linha dizia que a mesa **lê** o stop e o tp da ficha; o que ela
-  lê é a **banda**).
+  transporta), `docs/inventario-de-chaves.md` §2 (a linha dizia que a mesa **lê** o stop e o tp da ficha; o que ela
+  lê é a **banda**) e o **ponto 14 do resumo macro** do mesmo `regra-de-negocio.md` («o stop e o CB de cada operação
+  são definidos **na ficha**»). Este quarto só apareceu na **segunda passagem** — a primeira varria a mesa como
+  sujeito, e a confusão aqui não estava em quem **calcula**: estava em quem **dá o valor**.
 - **O que NÃO apareceu:** nenhuma regra que peça à mesa para decidir algo do plugin por desenho. Os sítios eram de
   **redação**, não de intenção — e por isso não houve nada a perguntar-lhe sobre isto.
 

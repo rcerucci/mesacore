@@ -680,8 +680,13 @@ determinístico que só obedece a cinco verbos. Não sabe de estratégia, de mer
     sozinha** (RN-M3).
 13. **Margem total máxima pode ser 100%**: a 1x, com um ou dois pares, empenhar o saldo inteiro é escolha
     legítima — típica em instrumentos de variação baixa (RN-M4).
-14. **Risco máximo por ordem no macro** (ex.: 2%): nenhuma ordem, de corretora nenhuma, arrisca mais do
-    que isso. Dentro do teto, o stop e o CB de cada operação são definidos na ficha (RN-M4.12).
+14. **Risco máximo por ordem no macro** (ex.: 2%): nenhuma ordem, de corretora nenhuma, **excede esse
+    teto de exposição**. Dentro do teto, o **stop e o tp** são do **SETUP** (o valor é do template) e a
+    **ficha** declara a **banda** que os limita — a mesa **transporta-os** e confere-os contra a banda
+    (RN-M4.12, RN-S3, RN-M6.1/RN-M6.2).
+    > **Nota datada — 03/10/2026.** Este ponto dizia «o **stop** e o CB de cada operação são definidos **na
+    > ficha**». É a mesma confusão que a emenda da **RN-M4.12** (§7) corrigiu: o stop é da **estratégia
+    > (o setup)**, não da ficha — a ficha diz a **banda**. Os dois sítios passaram a dizer o mesmo.
 15. **Distância mínima de liquidação é opcional** e vive na config de risco da ordem: **sem ela, a ordem
     é livre** (RN-M4.13).
 16. **`/tools`**: o dono estuda o par (volatilidade por sessão, amplitude típica) e escolhe os números de
