@@ -1035,9 +1035,11 @@ que fica: o travao do lado de quem manda.
 
 ---
 
-## D-022 — `posicao_pct: "1"` num FECHO: a posição INTEIRA, ou «não é parcial»? (declarado 03/10/2026)
+## D-022 — `posicao_pct: "1"` num FECHO — **FECHADO pela via (A)**, 03/10/2026
 
-**Encontrado na auditoria de 03/10/2026, e NÃO fechado por aqui: a decisão é do dono.** O achado tem o número que
+**Encontrado na auditoria de 03/10/2026. O dono mandou avançar e a via escolhida foi a (A) — o FECHO lê a
+posição VIVA.** A contradição era real e vale a pena guardá-la: o campo `posicao_pct`, no contrato, dizia duas
+coisas ao mesmo tempo — «`1` é a posição INTEIRA» e «é o valor de uma ordem que NÃO é uma redução parcial». O achado tem o número que
 o torna real — e o número diz também que, hoje, **não há dano nas posições que existem**, o que é precisamente o
 que faz o defeito passar despercebido.
 

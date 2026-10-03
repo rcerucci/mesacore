@@ -626,18 +626,29 @@ export function traduzirOrdem(pedido: Pedido): Resultado {
     const escalaSoma = Math.max(casasPasso, casasPosicao);
     quantidade = k * pow10(escalaSoma - casasPasso) + escalado(posicaoR.valor) * pow10(escalaSoma - casasPosicao);
     casasDaQuantidade = escalaSoma;
-  } else if (reducaoParcial) {
-    // ---- porta 8-bis: A REDUCAO PARCIAL (1.11.0) -------------------------------------------------------------
+  } else if (reducaoParcial || (reduce_only === true && comparacaoComInteiro === 0)) {
+    // ---- porta 8-bis: A REDUCAO PARCIAL (1.11.0) — e, desde o D-022, TAMBEM O FECHO --------------------------
     //
-    // A boleta diz a FRACCAO (`posicao_pct` abaixo de `1`) e a POSICAO VIVA vem do VENUE — a mesa nao a calcula
-    // e nao a manda (RN-B0), como no `saldo` e no `preco`. Sem ela nao ha' de quanto calcular a fraccao: uma
-    // fraccao de nada nao e' uma ordem, e inventar uma quantidade seria decidir o tamanho do lado de ca'.
+    // UM FECHO COM `posicao_pct: "1"` FECHA A POSICAO INTEIRA, e a quantidade sai do VENUE (`posicao_pct x
+    // posicao_viva`), nao do `saldo_pct`. Era o que faltava: o contrato diz, desde a 1.11.0, que `1` e' «a
+    // posicao INTEIRA», e o codigo tratava `"1"` como «nao e' parcial» — deixando a quantidade sair do saldo.
+    // Medido no D-022: as duas leituras COINCIDEM hoje (residuo 0,00% nas tres posicoes) e DIVERGEM assim que o
+    // preco anda — a -0,22% o fecho excede a posicao e o venue RECUSA (o par fica ABERTO), a +0,65% sobra
+    // residuo (posicao orfa). Um `caixa` significa SAIR: sai-se do que esta' aberto.
+    // A ABERTURA NAO MUDA: com `reduce_only` false, a quantidade continua a sair do `saldo_pct` (a condicao
+    // exige as duas coisas — e' um FECHO e e' a posicao inteira).
+    //
+    // A boleta diz a FRACCAO (`posicao_pct`) e a POSICAO VIVA vem do VENUE — a mesa nao a calcula e nao a manda
+    // (RN-B0), como no `saldo` e no `preco`. Sem ela nao ha' de quanto calcular: uma fraccao de nada nao e' uma
+    // ordem, e inventar uma quantidade seria decidir o tamanho do lado de ca'. Num fecho sem posicao viva, a
+    // recusa NOMEIA-SE (`reducao_parcial_sem_posicao_viva`) em vez de mandar uma ordem que o venue recusaria.
     const posicaoR = exigirTexto(pedido.posicao_viva, "posicao_viva");
     if (!posicaoR.ok) {
       return recusa(
         "reducao_parcial_sem_posicao_viva",
-        `a boleta pede uma reducao PARCIAL (posicao_pct ${posicao_pct}) e a posicao viva nao entrou na traducao: ` +
-          "a posicao e' do VENUE, e uma fraccao de nada nao e' uma ordem",
+        `a boleta pede ${comparacaoComInteiro === 0 ? "um FECHO da posicao INTEIRA" : `uma reducao PARCIAL (posicao_pct ${posicao_pct})`} ` +
+          "e a posicao viva nao entrou na traducao: a posicao e' do VENUE, e nem uma fraccao de nada nem o " +
+          "fecho do que nao se sabe sao ordens",
       );
     }
     if (!PADRAO_DECIMAL_POSITIVO.test(posicaoR.valor)) {

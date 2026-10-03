@@ -319,7 +319,8 @@
       "conferir": {
         "reduce_only": true,
         "reverter": false
-      }
+      },
+      "posicao_viva": "0.01"
     },
     {
       "caso": "ordens/reduce-only-nao-declarado-no-manifesto-recusa",
@@ -471,7 +472,7 @@
       "nota": "1.11.0 (D-013, via (b)): a boleta diz a FRACCAO da posicao (`posicao_pct` 0.5) e a POSICAO VIVA vem do venue (`0.01`) — a quantidade que sai e' `0.5 x 0.01 = 0.005`, ajustada ao passo POR BAIXO. A mesa nao calcula unidades (RN-B0): quem as sabe e' o conector, e a ordem sai com `reduce_only` (quem reduz nunca inverte)."
     },
     {
-      "caso": "ordens/reducao-parcial-par-de-controle-a-fraccao-inteira-e-o-fecho-de-sempre",
+      "caso": "ordens/d022-fecho-com-posicao-inteira-fecha-a-posicao-nao-o-saldo",
       "esperadoOk": true,
       "boleta": {
         "reduce_only": true,
@@ -479,7 +480,7 @@
       },
       "posicao_viva": "0.01",
       "conferir": {
-        "quantidade": "0.00833",
+        "quantidade": "0.01",
         "reduce_only": true,
         "reverter": false
       },
