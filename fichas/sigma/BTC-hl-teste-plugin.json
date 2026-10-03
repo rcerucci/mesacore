@@ -4,7 +4,7 @@
   "conta": "hl-teste-plugin",
   "instrumento": "BTC",
   "setup": "sigma",
-  "relogio": "1h",
+  "relogio": "30m",
   "run": true,
   "ao_desligar": "fechar",
   "saldo_pct": "10",
