@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **02/10/2026 (noite), 17:37 (-03)** · contrato vigente **1.11.0** · portão **38 de 38** · árvore **limpa** (a config das contas passou a versionada — ver a nota)
+medido em **03/10/2026 (madrugada), 01:3x (-03)** · contrato vigente **1.11.0** · portão **38 de 38** · árvore **limpa** · o feed de mercado tem a agregação corrigida (ver a secção desta vaga, no fim)
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
@@ -69,7 +69,7 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 
 | O que | Onde está | Você consegue abrir? |
 |---|---|---|
-| A regra de negócio (136), a máquina de estados, o inventário de chaves, o diagrama | `docs/` | Sim — leitura, no computador |
+| A regra de negócio (149), a máquina de estados, o inventário de chaves, o diagrama | `docs/` | Sim — leitura, no computador |
 | O conector Hyperliquid: lê o venue, traduz, recusa, lê o histórico | `brokers/hyperliquid/` | **Não tem tela** — é peça de máquina, provada por comandos |
 | A mesa e o vigia (o ciclo, a boleta, o ledger, a operação) | `core/`, `vigia/` | **Não tem tela** |
 | A superfície web | `web/` | **Não existe**: o diretório tem só o `README.md` com as regras que ela deve cumprir |
@@ -79,22 +79,30 @@ que não foi medido diz-se **não medido**, com a razão. Nenhum adjectivo subst
 
 ## 2. O que está feito e medido (bancadas corridas agora)
 
-| Bancada | Comando | Número medido (29/09, 19:39–21:2x) |
+> **Nota datada — 03/10/2026.** Esta é uma tabela **VIVA** (o cabeçalho da coluna diz «corrido agora»), e por isso
+> foi **re-medida** nesta hora — o portão inteiro mais os comandos de cada linha. O que ela dizia antes
+> («29/09, 19:39–21:2x», com «29 de 29», «1.7.0 · 131 casos», «livro 50 · 24 ficam», «ordens+cloid 40»,
+> «17.895+ linhas») **envelheceu em cinco emendas** e passou a mentir: um número escrito à mão numa tabela viva
+> envelhece sozinho. O retrato antigo fica alcançável no histórico (`git show <commit>^:docs/ONDE_ESTAMOS.md`) —
+> não se reescreve o passado, corrige-se o presente.
+
+| Bancada | Comando | Número medido (03/10/2026) |
 |---|---|---|
-| A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **29 de 29 passaram** (o envio do conector entrou hoje na porta — ver §4) |
-| O **ciclo** e as bandas (D-001 e D-008) | `bun run core/ciclo/provar.ts` | **99 verificações · 0 divergentes** — 12 de condição · **36 de ciclo** (eram 27) · 10 de desfecho · 15 de banda · 6 de reconciliação |
-| A **tabela de transições** (D-006, fechado hoje) | `bun run core/estados/provar.ts` + `bun run tools/verificar-maquina/tabela.ts` | **38 casos · 13 aceites · 25 recusados · 0 divergentes** (eram 35) + **36 linhas · 0 falhas nos 7 invariantes** |
-| A **fronteira** vigia ↔ mesa (motivos) | `uv run python tools/verificar-contrato/py/fronteira.py --motivos` | **0 falhas** — livro **50** motivos · **26** cruzam · 24 ficam · **1** excepção da porta |
-| A **retenção do ledger** (RN-L6, leitor novo) | `bun run core/estado/retencao.prova.ts` | **14 casos · 7 declarações aceites · 7 recusadas · 0 divergentes** |
-| A **conta na linha do registo** (D-004, fechado hoje) | `bun run tools/verificar-maquina/registo.ts` | **12 verificações · 0 divergentes** — duas contas, reconstrução **por conta**, e a troca como controle |
-| **A porta do MERCADO** (velas + livro, para as features e para o estudo) | `bun run brokers/hyperliquid/mercado.ts --velas BTC --intervalo 1h --dias 7` · `--livro BTC` · `--intervalos` | **169 velas** de BTC 1h (7 dias) lidas na TESTE e na producao · livro **20/20 niveis** (o manifesto declara 20) · **14 intervalos** medidos na fonte do SDK · CSV para estudo: **73 velas** |
-| O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **40** · leitura 14 · histórico **26** |
-| **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** — **dentro da porta única desde hoje** (antes só corria à mão) |
+| A porta única da máquina | `bash tools/verificar-maquina/provar.sh` | **38 de 38 passaram** (o número lê-se sempre na última linha da própria porta) |
+| O **ciclo** e as bandas (D-001 e D-008) | `bun run core/ciclo/provar.ts` | **118 verificações · 0 divergentes** — 12 de condição · **47 de ciclo** · 10 de desfecho · 15 de banda · 6 de reconciliação |
+| A **tabela de transições** (D-006) | `bun run core/estados/provar.ts` + `bun run tools/verificar-maquina/tabela.ts` | **38 casos · 13 aceites · 25 recusados · 0 divergentes** + **36 linhas · 0 falhas nos 7 invariantes** |
+| A **fronteira** vigia ↔ mesa (motivos) | `uv run python tools/verificar-contrato/py/fronteira.py --motivos` | **0 falhas** — livro **56** motivos · **26** cruzam · **30** ficam · **1** excepção da porta |
+| A **retenção do ledger** (RN-L6) | `bun run core/estado/retencao.prova.ts` | **14 casos · 7 declarações aceites · 7 recusadas · 0 divergentes** |
+| A **conta na linha do registo** (D-004) | `bun run tools/verificar-maquina/registo.ts` | **16 verificações · 0 divergentes** — duas contas, reconstrução **por conta**, e a troca como controle |
+| **A porta do MERCADO** (velas + livro, para as features e para o estudo) | `bun run brokers/hyperliquid/mercado.ts --velas BTC --intervalo 1h --dias 7` · `--livro BTC` · `--intervalos` | **169 velas** de BTC 1h (7 dias) lidas na TESTE e na producao · livro **20/20 niveis** (o manifesto declara 20) · **14 intervalos** medidos na fonte do SDK · CSV para estudo: **721 velas** (30 dias) |
+| O conector, offline | `bash tools/verificar-conector/provas-offline.sh` | **0 falhas** — credencial 9 · manifesto **24** · ordens+cloid **50** · leitura 14 · histórico **26** · posse do preenchimento **17 de 17** |
+| **O caminho do envio** (tradutor + processo) | `bun run brokers/hyperliquid/processo.ts --bancada` | **38 casos · 38 ok · 0 divergentes · 262 verificações · 8 portas** |
+| **A bancada do FEED de mercado** (núcleo puro, sem rede) | `bun run brokers/hyperliquid/casos/correr-feed.ts` | **15 provas · 15 ok · 0 divergentes** — com as duas regras de 03/10/2026 (a agregação só toca em barra NOSSA; a lista fica ordenada por `t`) e a prova negativa de **10 de 10** nomes de caso (`casos/prova-negativa-do-feed.sh`) |
 | **A bateria de TESTE do venue** (SC-004, a que envia) | `bun tools/testar-venue/bateria.ts --ate 8 --registar` | **21 provas · 20 passaram · 1 reprovou** — e é **D-009** (a idempotência). O **D-010** (a alavancagem nunca era pedida ao venue) foi **fechado nesta vaga**: o conector pede-a (`updateLeverage`) e confirma-a pela leitura antes de a resolução sair — medido ao vivo, o venue passou de 40 para os 2 que a boleta pede. **O D-013** (o lado oposto a uma posição nossa não era distinguido de «abrir») também ficou **fechado**: passa a `fechar` com `reduce_only`, nunca abre do outro lado, com par de controle e espelho no `core/ciclo/provar.ts` (**102 verificações · 0 divergentes**). O **D-011** (a boleta pedia stop e o stop não saía) foi fechado na varredura do vocabulário — passou a **recusa nomeada**, e deixou de ser silêncio. A varredura cobre os **15 valores** que um setup pode usar (6 aceites, 9 recusas nomeadas) e está em `specs/004-conector-hyperliquid/relatorios/cobertura-do-vocabulario.md`; dela saíram ainda **D-012** (o `limite` inalcançável) e **D-013** (o lado oposto à nossa posição não é distinguido de «abrir»). Corre contra a TESTNET e move dinheiro: **não** entra no `provar.sh` |
 | A conformidade do conector (offline) | `bun tools/verificar-conector/conformidade.ts` | **9 de 9 · 241 verificações · 0 divergentes** (a linha do venue diz `INCOMPLETO` — nunca `passou`) |
-| O contrato nas duas linguagens | `bun tools/verificar-conector/porta-do-contrato.ts` | **0 falhas** — contrato **1.7.0** · **131 casos** nos dois motores · 23 sondas da emenda |
-| As tarefas dos recortes | `grep -c '^- \[x\]' specs/*/tasks.md` | 001 **59/59** · 002 **67/67** · 003 **63/63** · 004 **74/74 medidas** — as três últimas (T042/T048/T057) foram medidas na testnet e **dois critérios não se cumprem**: SC-003 (D-009) e SC-004 (11 de 12) |
-| O tamanho do que é nosso | `git ls-files` + `wc -l` | **17.895+** linhas de TypeScript · 2.980 de Python · 3.499 de shell |
+| O contrato nas duas linguagens | `bun tools/verificar-conector/porta-do-contrato.ts` | **0 falhas** — contrato **1.11.0** · **136 casos** nos dois motores · **22 motivos** fechados nas duas direcções · 23 sondas da emenda |
+| As tarefas dos recortes | `grep -c '^- \[x\]' specs/*/tasks.md` | 001 **59/59** · 002 **67/67** · 003 **63/63** · 004 **74/74 medidas** · 005 **13/52** — as três últimas do 004 (T042/T048/T057) foram medidas na testnet e **dois critérios não se cumprem**: SC-003 (D-009) e SC-004 (11 de 12) |
+| O tamanho do que é nosso | `git ls-files` + `wc -l` | **28.408** linhas de TypeScript (com o gerado) · **9.959** de Python · **4.554** de shell |
 
 ## 3. O que NÃO existe (e não é «espera» — é falta)
 
@@ -662,4 +670,158 @@ envio, onde o **venue manda** quando publica o número.
 escrito) → **38 de 38**, com a data; o cabeçalho deste documento passa a **38** e à hora desta medição. As secções
 **datadas** deste retrato (o §2 mede «29/09, 19:39–21:2x») ficam com os números que tinham — são a auditoria
 daquele momento, e um número datado que se reescreve deixa de servir para auditar nada.
+
+## 03/10/2026 (madrugada) — o feed MUTAVA a barra do venue, e três `.d.ts` obsoletos passavam por frescos
+
+Duas correcções de raiz, uma decisão que **não é minha** (e vai medida), e a reparação do ficheiro que o σ lê.
+Esta secção é o registo do que foi medido — e o que fica por fazer depende de uma palavra do dono (religar o feed).
+
+### 1. A agregação do `bbo` mutava a barra do venue (o defeito mais grave — corrompia o ficheiro que o setup lê)
+
+**O que se mediu, no ficheiro da corrida de risco** (`mercado/velas-*.jsonl`) às 01:3x desta madrugada:
+
+| ficheiro | linhas | barras com a marca `agregada_do_bbo` | **mutadas** (marca + o `v`/`n` do VENUE) |
+|---|---|---|---|
+| `velas-ETH-1m.jsonl` | 5.767 | 356 | **331** |
+| `velas-BTC-1h.jsonl` | 553 | 7 | **7** |
+| `velas-SOL-1h.jsonl` | 553 | 6 | **6** |
+
+Uma barra com `agregada_do_bbo: true` **e** o `v`/`n` do venue é a assinatura do defeito: o venue manda a barra do
+período (com volume e trades), ela substitui a nossa agregada — e o `bbo` **seguinte** volta a mexer nela. O ramo
+`ultima.t === inicio` do `agregarDoBbo` não distinguia **de quem** era a barra: punha-lhe o mid no `o`/`h`/`l`/`c`
+e carimbava-lhe a marca da agregação **por cima da barra de quem tinha mandado o período**. Reproduzido por
+execução antes de mexer (sonda que importa o módulo real):
+
+```
+1. depois do bbo (agregada):                      {...,"v":"0","n":0,"agregada_do_bbo":true}
+2. depois do venue (substituiu):                  {...,"v":"3","n":2}            <- o venue manda
+3. depois do bbo POSTERIOR a substituicao:        {...,"h":"105","c":"105","v":"3","n":2,"agregada_do_bbo":true}   <- DEFEITO
+```
+
+**A segunda consequência, também medida (o «achado 2»): 23 barras** do ETH-1m em que o venue **já tinha
+publicado** o período e a nossa agregada (`v`/`n` a zero, preços do mid) tinha ficado no lugar dela — porque a
+barra do venue chegou **depois** de o primeiro `bbo` da volta nova ter aberto o período seguinte, e o ramo
+`else { return; }` deitava-a fora **em silêncio**.
+
+**A regra (decidida, não reaberta): o venue manda no período dele, e a agregação só toca em barra NOSSA.**
+
+| # | O que passou a valer | Onde |
+|---|---|---|
+| (a) | a agregação só actua em barra com a marca `agregada_do_bbo` — nunca na do venue, que a faz **calar-se** nesse período | `feed-barras.ts`, `agregarDoBbo` |
+| (b) | a barra do venue substitui a agregada do mesmo período (já era assim no ramo do `t` igual) | `encaixarVela` |
+| (c) | a lista fica **ORDENADA** por `t`: a barra atrasada que casa com uma que já lá está toma o **lugar** dela; a que preenche um buraco **insere-se** ordenada; e a que é **anterior à última FECHADA** é **NOMEADA** (`barra_atrasada_descartada`), nunca ignorada | `encaixarVela` |
+
+**A bancada cresceu de 11 para 15 provas**, e as quatro novas são as que faltavam: a sequência inteira
+(agregar → o venue substitui → **chega outro `bbo`**), a barra atrasada a tomar o lugar da nossa agregada, a que
+insere num buraco, e o **controlo negativo** (a anterior à última fechada é nomeada e **não** entra).
+
+```
+bun run brokers/hyperliquid/casos/correr-feed.ts   -> feed: 15 provas · 15 ok · 0 divergentes
+bash brokers/hyperliquid/casos/prova-negativa-do-feed.sh -> PROVA NEGATIVA: 10 de 10 nomes de caso conferidos
+```
+
+**A prova negativa é 10 de 10** (eram 6): os quatro defeitos novos foram injectados um a um — a guarda da marca
+sai, a barra atrasada deixa de tomar o lugar dela, o `splice` da inserção sai, e o nome da barra descartada sai —
+e **cada um** põe a bancada vermelha **com o nome do caso dentro**, com o ficheiro reposto e conferido por
+`sha256`. E a bancada NOVA contra o código de ANTES fica vermelha **exactamente nos quatro casos novos**
+(11 ok · 4 divergentes) — é a medida de que ela mede o defeito, e não a si própria.
+
+### 2. O feed em execução continua a corromper (e o conserto do código só vale ao religar)
+
+**Medido:** o `feed.ts` da corrida de risco corre desde as 16:12 de 02/10 (`bun run feed.ts --corrida …`) e **tem
+o código antigo em memória** — o defeito continua a acontecer **enquanto isto se escreve** (três barras novas
+ficaram mutadas entre a leitura do ficheiro e a reconstrução, minutos depois). Nada foi tocado no operador, na
+mesa, no conector nem no feed: **religar o feed é decisão do dono**, e a ordem é: parar o feed → gravar a
+correcção → reparar o ficheiro → religar (ao arrancar, o `estadoDoPar` relê o ficheiro, e a partir daí as barras
+saem certas).
+
+**A reparação do ficheiro, medida (antes/depois).** `mercado.ts --actualizar` **não repara**: ele só
+**acrescenta** o que vem depois da última barra (`novas: 0` medido com o descritor no lugar — as barras já
+gravadas ninguém as toca), e sem descritor reescreve o ficheiro inteiro com a série do venue — o que **perde** as
+barras mais antigas que a janela dele já não cobre (o `candleSnapshot` devolveu 5.163 velas de 1m; o ficheiro tem
+5.767). O que repara é a **substituição por `t`**: puxar a série do venue e, para cada barra do ficheiro com
+período no venue, ficar com a **do venue**; o resto (a barra em curso) fica como está.
+
+| ficheiro | antes (marca / mutadas) | depois (marca / mutadas) | linhas substituídas |
+|---|---|---|---|
+| `velas-ETH-1m.jsonl` | 356 / **331** | 1 / **0** | 446 |
+| `velas-BTC-1h.jsonl` | 7 / **7** | 0 / **0** | 27 |
+| `velas-SOL-1h.jsonl` | 6 / **6** | 0 / **0** | 21 |
+
+Exemplo (ETH-1m, 1790946720000): antes `c: "2753.2", v: "0.0242", n: 2` (mutada por nós) → depois
+`c: "2752.9", v: "0.0423", n: 5` (a do venue). A reconstrução correu **numa cópia** (o feed vivo reescreve o
+ficheiro a cada segundo); o ficheiro reparado está em
+`~/.hermes/profiles/appbuilder/cache/scratch/velas-ETH-1m.reconstruido.jsonl` e o procedimento é este.
+
+### 3. A frescura do contrato deixava passar três `.d.ts` obsoletos (e um deles mentia)
+
+**O mecanismo, confirmado antes de mexer — e a auditoria dava-o ao contrário:** o `gerar.sh` **produz** os
+`.d.ts` (`bun x json-schema-to-typescript`); o que havia era **restos** de quando os schemas se chamavam
+`decisao-do-encerramento.schema.json` (com hífen). O gerador escreve `decisao_do_encerramento.d.ts` e **nunca
+toca** nos antigos — e a frescura comparava **duas cópias do mesmo directório**: o obsoleto estava nos **dois**
+lados, idêntico, logo invisível. Medido: a frescura dava `0 divergencias (30 ficheiros)` com os três lá dentro,
+rastreados em git desde 28/09, e o `resposta-de-comando.d.ts` a carregar **contrato velho** («15 dos 42 motivos»
+contra os vigentes «22 dos 50»; `grep` mostrou **0** importadores).
+
+**O conserto é na raiz: o gerador passou a ser DONO do que produz** — gera numa pasta própria, verifica a
+completude e só então **substitui** `gerado/ts` e `gerado/py`. Um ficheiro que ele não produz deixa de existir, e
+o `diff` passa a vê-lo. Se a geração falhar, os ficheiros velhos ficam onde estavam.
+
+```
+1a corrida: frescura: o gerado NAO corresponde aos schemas
+            Somente em <guardado>/gerado/ts: decisao-do-encerramento.d.ts
+            Somente em <guardado>/gerado/ts: pergunta-do-encerramento.d.ts
+            Somente em <guardado>/gerado/ts: resposta-de-comando.d.ts      -> e a cura apaga-os
+2a corrida: frescura: 0 divergencias — o gerado corresponde aos schemas (27 ficheiros)
+```
+
+**A prova negativa cobre agora as DUAS classes** (`frescura.sh --prova-negativa`): o gerado atrasado **à mão**
+(T057, o que já existia) e um `.d.ts` **obsoleto que o gerador não produz** — este último tem de **reprovar** e a
+cura tem de o **apagar**. O `diff` passou também a excluir `__pycache__` (deriva dos `.py`, não é gerado — sem
+isso, um cache deixado por um import fazia a frescura mentir).
+
+### 4. DECISÃO PENDENTE (do dono): `posicao_pct: "1"` num FECHO
+
+**Não se tocou em código.** A boleta diz `posicao_pct: "1"` em **todo** fecho (`core/ciclo/ciclo.ts`, que declara
+nunca emitir redução parcial) e o contrato diz, na mesma frase, **duas** coisas: «`1` **é a posição INTEIRA**» e
+«`1` é o valor de uma ordem que **não** é uma redução parcial». Na tradução de hoje vale a **segunda** leitura: com
+`posicao_pct: "1"` a quantidade sai do **`saldo_pct`** e a **posição viva não é lida**. Se valer a **primeira**, o
+fecho passa a fechar **tudo o que está aberto** (a quantidade é a posição lida do venue).
+
+**A medição (o tradutor REAL, importado; a posição e o equity lidos do ficheiro da operação — equity
+991,99):**
+
+| instrumento | posição viva | qtd que o fecho emite **hoje** (`saldo_pct`) | resíduo | a ½ (`posicao_pct: 0.5`, o caminho da fracção) |
+|---|---|---|---|---|
+| BTC (10% · passo 0,00001) | 0,00116 | 0,00116 | 0,000000 (**0,00%**) | 0,00058 |
+| ETH (1,1% · passo 0,0001) | 0,004 | 0,004 | 0,000000 (**0,00%**) | **RECUSA** `minimo_do_instrumento_acima_da_banda` |
+| SOL (10% · passo 0,01) | 0,82 | 0,82 | 0,000000 (**0,00%**) | 0,41 |
+
+**Hoje as duas leituras coincidem nas três posições vivas** — e é preciso dizê-lo, porque é o que torna a decisão
+menos urgente e mais traiçoeira: elas coincidem porque as posições foram abertas pela **mesma fórmula**, ao mesmo
+equity e a um preço vizinho. **Divergem assim que o preço andar** (medido com o código real, à volta da posição
+viva):
+
+| instrumento | o fecho deixa de fechar tudo (sobra resíduo) | o fecho **passa** a posição → o venue **recusa** o reduce-only |
+|---|---|---|
+| BTC | a partir de **+0,65%** de preço (0,00115, sobra 0,00001) | a partir de **−0,22%** (0,00117 > 0,00116) |
+| ETH | a partir de **+1,96%** (0,0039, sobra 0,0001) | a partir de **−0,54%** (0,0041 > 0,004) |
+| SOL | a partir de **+1,06%** (0,81, sobra 0,01) | a partir de **−0,17%** (0,83 > 0,82) |
+
+Ou seja: o custo de hoje é **1 passo** de quantidade (o resíduo) ou **a ordem recusada** (quando a fatia excede a
+posição — com `reduce_only`, o venue não deixa reduzir mais do que existe, e o fecho **não acontece**). E é maior
+nos relógios longos (1h/4h), onde o preço anda muito entre a abertura e o fecho. **A decisão é do dono** e está
+declarada como **D-022** em `specs/002-maquina-de-estados/relatorios/DEFEITOS.md`, com esta medição. Nada muda de
+comportamento enquanto ele não decidir.
+
+### 5. Os números dos documentos que tinham envelhecido
+
+O §2 deste retrato foi **re-medido** (era o de 29/09) e as quatro linhas que o portão cobre estavam erradas:
+contrato **1.7.0 · 131 casos** → **1.11.0 · 136**; a fronteira **livro 50 · 24 ficam** → **livro 56 · 30 ficam**;
+as provas offline **ordens+cloid 40** → **50**; o tamanho do código **17.895+ linhas** → **28.408** de TypeScript.
+No `README.md`: «**136** regras» → **149** `RN-*` (10 famílias, contadas por `grep -oE 'RN-[A-Z][0-9]+(\.[0-9]+)*'
+docs/regra-de-negocio.md | sort -u | wc -l`), «**9 schemas** · **81 casos**» → **12 · 136**, e a regra de negócio
+«(136)» → «(149)». E o buraco declarado dos ternários passou a **115** (era **114** na medição de 02/10; um
+ternário novo fá-lo subir — o número lê-se da corrida, `--ternarios`).
+
 

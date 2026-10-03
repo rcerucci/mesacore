@@ -4,7 +4,7 @@
 #
 # PORQUE EXISTE, e porque não está no portão: uma bancada que nunca reprovou não mediu nada — e a única maneira de
 # saber se ela mede o produto é estragar o produto de propósito e ver o vermelho com o NOME do caso dentro. Isto
-# corre à mão (é lento: injecta, corre, repõe, seis vezes), e o `tools/verificar-maquina/provar.sh` não o chama; o
+# corre à mão (é lento: injecta, corre, repõe, DEZ vezes), e o `tools/verificar-maquina/provar.sh` não o chama; o
 # que o portão mede é a bancada. Corre-se quando o `feed-barras.ts` ou a bancada mudam.
 #
 # Uso:  bash brokers/hyperliquid/casos/prova-negativa-do-feed.sh
@@ -69,17 +69,35 @@ injectar 'v: "0", n: 0, agregada_do_bbo: true' 'v: "1", n: 0, agregada_do_bbo: t
 echo "--- (2) a marca da agregacao desaparece da barra agregada ---"
 injectar 'e.velas.push({ t: inicio, o: p, h: p, l: p, c: p, v: "0", n: 0, agregada_do_bbo: true });' 'e.velas.push({ t: inicio, o: p, h: p, l: p, c: p, v: "0", n: 0 });' 'feed/a-barra-agregada-do-bbo-e-marcada-e-o-vn-fica-a-zero'
 
-echo "--- (3) a barra do venue com o mesmo t deixa de substituir (passa a ser ignorada) ---"
-injectar '} else if (v.t === ultima.t) {' '} else if (false && v.t === ultima.t) {' 'feed/a-barra-do-venue-com-o-mesmo-t-substitui-a-agregada'
+echo "--- (3) a barra do venue com o mesmo t deixa de substituir a agregada ---"
+injectar '    // A barra do venue substitui a nossa agregada: o que é do venue manda, e a agregação sai de cena sozinha.
+    e.velas[e.velas.length - 1] = v;' '    void v;' 'feed/a-barra-do-venue-com-o-mesmo-t-substitui-a-agregada'
 
-echo "--- (4) o buraco deixa de ser nomeado ---"
+echo "--- (4) a agregacao volta a tocar em barra do VENUE (a guarda da marca sai) ---"
+injectar '    if (ultima.agregada_do_bbo !== true) return;' '    if (false) return;' 'feed/a-agregacao-so-toca-em-barra-nossa-e-cala-se-no-periodo-do-venue'
+
+echo "--- (5) a barra atrasada deixa de tomar o lugar da NOSSA agregada do mesmo periodo ---"
+injectar '      e.velas[i] = v;' '      void v;' 'feed/a-barra-atrasada-do-venue-toma-o-lugar-da-nossa-agregada'
+
+echo "--- (6) a barra atrasada deixa de INSERIR no lugar ordenado (o buraco nao se preenche) ---"
+injectar '      e.velas.splice(i + 1, 0, v);' '      void v;' 'feed/a-barra-atrasada-que-preenche-um-buraco-insere-se-ordenada'
+
+echo "--- (7) a barra anterior a' ultima fechada deixa de ser NOMEADA (volta ao silencio) ---"
+injectar '        dizer({
+          veredicto: "barra_atrasada_descartada",
+          par: chave,
+          t: v.t,
+          ultima_fechada: ultimaFechada === undefined ? null : ultimaFechada.t,
+        });' '        void chave;' 'feed/controle-a-barra-anterior-a-ultima-fechada-e-nomeada-e-nao-entra'
+
+echo "--- (8) o buraco deixa de ser nomeado ---"
 injectar 'dizer({ veredicto: "buraco_no_historico", par: chave, de: ultima.t, ate: v.t, faltam: Math.round((v.t - ultima.t) / passo) - 1 });' 'void chave;' 'feed/o-buraco-no-historico-e-nomeado-e-nunca-inventado'
 
-echo "--- (5) a escrita passa a ser NO SITIO (deixa de haver troca de nome) ---"
+echo "--- (9) a escrita passa a ser NO SITIO (deixa de haver troca de nome) ---"
 injectar '  writeFileSync(temporario, e.velas.map((v) => JSON.stringify(v)).join("\n") + "\n");
   renameSync(temporario, caminho);' '  writeFileSync(caminho, e.velas.map((v) => JSON.stringify(v)).join("\n") + "\n");' 'feed/a-escrita-e-atomica-e-o-historico-fica-intacto'
 
-echo "--- (6) a lista vazia volta a deitar a primeira barra do par novo fora ---"
+echo "--- (10) a lista vazia volta a deitar a primeira barra do par novo fora ---"
 injectar '  if (ultima === undefined) {
     e.velas.push(v);
   } else if (v.t > ultima.t) {' '  if (ultima === undefined) {
@@ -92,7 +110,7 @@ $BANCADA 2>&1 | tail -1
 echo "selo final  : $(sha256sum "$FICHEIRO" | cut -d' ' -f1)"
 
 if [ "$FALHAS" -ne 0 ]; then
-  echo "PROVA NEGATIVA: $FALHAS de 6 falharam"
+  echo "PROVA NEGATIVA: $FALHAS de 10 falharam"
   exit 1
 fi
-echo "PROVA NEGATIVA: 6 de 6 nomes de caso conferidos"
+echo "PROVA NEGATIVA: 10 de 10 nomes de caso conferidos"

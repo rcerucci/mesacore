@@ -7,15 +7,25 @@
 // barra agregada mal marcada, ou uma barra inventada onde houve um buraco, envenena a decisão a jusante sem que
 // nada fique vermelho (o setup lê o ficheiro e não sabe de onde ele veio).
 //
-// O QUE ESTA BANCADA PROVA (as cinco regras do núcleo, cada uma com o seu controle):
+// O QUE ESTA BANCADA PROVA (as regras do núcleo, cada uma com o seu controle):
 //
 //   1. A BARRA EM CURSO AGREGADA DO `bbo` leva `agregada_do_bbo: true`, e o `v`/`n` ficam a ZERO. O livro não
 //      diz o volume nem o número de trades: inventá-los seria fingir uma medida que não foi feita. Controle:
 //      uma barra que veio DO VENUE não é zerada por nós (a marca da agregação é do que é NOSSO, e só dele); e
 //      num relógio que não se alinha por divisão do dia (`1d`) não se agrega nada (fail-closed).
 //   2. A BARRA DO VENUE COM O MESMO `t` SUBSTITUI a agregada — e a marca `agregada_do_bbo` DESAPARECE com ela
-//      (o que é do venue manda). Controles: `t` maior acrescenta (não substitui), `t` menor é ignorado (andar
-//      para trás no histórico seria inventar).
+//      (o que é do venue manda). Controles: `t` maior acrescenta (não substitui); uma barra mais ANTIGA do que a
+//      última FECHADA é NOMEADA (`barra_atrasada_descartada`) e não entra, em vez de ser ignorada em silêncio.
+//   2-bis. A AGREGAÇÃO SÓ TOCA EM BARRA NOSSA (03/10/2026). Medido na corrida viva: depois de o venue substituir
+//      a agregada, o `bbo` seguinte MUTAVA a barra do venue (punha-lhe o mid no `o`/`h`/`l`/`c` e carimbava-lhe a
+//      marca) — 316 barras do ETH-1m ficaram com a marca da agregação E o `v`/`n` do venue. O caso que faltava
+//      mede a sequência inteira: agregar -> o venue substitui -> CHEGA OUTRO `bbo` do mesmo período. A agregação
+//      cala-se: a barra do venue fica como veio, e nada fica por escrever.
+//   2-ter. A LISTA FICA ORDENADA POR `t` (03/10/2026). A barra do venue que chega DEPOIS de a agregação já ter
+//      aberto o período seguinte: se o período dela já está na lista (a NOSSA agregada), ela toma o LUGAR dela; se
+//      o período não estava (um buraco), ela INSERE-SE na posição ordenada. Era deitada fora em silêncio (achado 2
+//      da auditoria, `feed-barras.ts` ~132-134). Controle negativo: uma barra ANTERIOR à última fechada é NOMEADA
+//      e não entra — inserir para trás seria reescrever história que já foi gravada.
 //   3. O STREAM NÃO TEM MEMÓRIA: uma barra que se perdeu é NOMEADA (`buraco_no_historico`, com quantas faltam)
 //      e NUNCA inventada — a lista cresce um só (a barra que chegou). Controle: duas barras seguidas não
 //      produzem buraco nenhum; sem esse par, o aviso podia sair sempre.
@@ -172,17 +182,104 @@ function apanhar(): { linhas: Record<string, unknown>[]; dizer: (o: Record<strin
   registar("feed/a-barra-do-venue-com-o-mesmo-t-substitui-a-agregada", problemas);
 }
 
-// 2-b. CONTROLE: `t` MAIOR acrescenta (a anterior fechou), `t` MENOR e' ignorado.
+// 2-b. CONTROLE: `t` MAIOR acrescenta (a anterior fechou), `t` IGUAL substitui (a mesma barra, mais fresca).
 {
   const problemas: string[] = [];
   const e = estadoVazio();
   encaixarVela(e, barraDoVenue(INICIO, "100"), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
   encaixarVela(e, barraDoVenue(INICIO + PASSO, "101"), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
   if (e.velas.length !== 2) problemas.push(`um \`t\` maior acrescenta: esperava 2 barras, veio ${e.velas.length}`);
+  encaixarVela(e, barraDoVenue(INICIO + PASSO, "102"), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
+  if (e.velas.length !== 2) problemas.push(`um \`t\` igual ao da ultima substitui (nao acrescenta): veio ${e.velas.length} barras`);
+  const ultima = barra(e, 1, problemas);
+  if (ultima !== null && ultima.c !== "102") problemas.push(`a barra do mesmo \`t\` tinha de ser a mais fresca (c=102), veio ${ultima.c}`);
+  registar("feed/controle-t-maior-acrescenta-e-t-igual-substitui", problemas);
+}
+
+// 2-c. A SEQUENCIA QUE FALTAVA (03/10/2026): bater o `bbo` DEPOIS de o venue substituir a agregada.
+//      A agregação SO' TOCA EM BARRA NOSSA: a barra do venue do mesmo período faz a agregação CALAR-SE.
+{
+  const problemas: string[] = [];
+  const e = estadoVazio();
+  agregarDoBbo(e, RELOGIO, 100, INICIO + 1_000); // a NOSSA agregada abre o periodo
+  encaixarVela(e, barraDoVenue(INICIO, "101", "3", 2), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
+  // O venue mandou a barra do periodo: ela substituiu a nossa (e' o caso 2). Agora chega outro `bbo` do MESMO periodo.
+  e.porEscrever = false; // se a agregacao mexer, volta a `true` — e' assim que se ve' que ela se calou
+  agregarDoBbo(e, RELOGIO, 105, INICIO + 2_000);
+  if (e.velas.length !== 1) problemas.push(`o bbo posterior nao pode criar barra nenhuma (veio ${e.velas.length})`);
+  const b = barra(e, 0, problemas);
+  if (b !== null) {
+    if (b.c !== "101" || b.h !== "101" || b.l !== "101") {
+      problemas.push(`a barra do VENUE foi MUTADA pelo bbo (o/h/l/c deviam ficar 101/101/101, veio ${b.o}/${b.h}/${b.l}/${b.c})`);
+    }
+    if (b.v !== "3" || b.n !== 2) problemas.push(`o v/n do venue nao se toca (veio ${JSON.stringify(b.v)}/${b.n})`);
+    if (b.agregada_do_bbo !== undefined) problemas.push(`a marca da NOSSA agregacao nao se carimba numa barra do venue (veio ${JSON.stringify(b.agregada_do_bbo)})`);
+  }
+  if (e.porEscrever !== false) problemas.push("a agregacao tinha de se CALAR neste periodo: nada mudou, logo nada fica por escrever");
+  registar("feed/a-agregacao-so-toca-em-barra-nossa-e-cala-se-no-periodo-do-venue", problemas);
+}
+
+// 2-d. INSERCAO FORA DE ORDEM (achado 2): a agregacao ja' abriu o periodo SEGUINTE e o venue manda o ANTERIOR.
+//      E' a NOSSA agregada desse periodo que esta' la': o venue toma o LUGAR dela (a lista fica ordenada).
+{
+  const problemas: string[] = [];
+  const e = estadoVazio();
+  agregarDoBbo(e, RELOGIO, 100, INICIO + 1_000); // agregada do periodo N
+  agregarDoBbo(e, RELOGIO, 101, INICIO + PASSO + 1_000); // agregada do periodo N+1 (o bbo da volta nova)
+  const { linhas, dizer } = apanhar();
+  encaixarVela(e, barraDoVenue(INICIO, "101", "3", 2), `${PAR}-${RELOGIO}`, RELOGIO, dizer);
+  if (e.velas.length !== 2) problemas.push(`a barra atrasada entra NO LUGAR dela, nao acrescenta (veio ${e.velas.length})`);
+  const n = barra(e, 0, problemas);
+  if (n !== null) {
+    if (n.t !== INICIO) problemas.push(`a barra do venue tinha de ficar no periodo dela (${INICIO}), veio ${n.t}`);
+    if (n.v !== "3" || n.agregada_do_bbo !== undefined) problemas.push(`a NOSSA agregada do periodo tinha de dar lugar a' do venue (veio ${JSON.stringify(n)})`);
+  }
+  const seguinte = barra(e, 1, problemas);
+  if (seguinte !== null) {
+    if (seguinte.t !== INICIO + PASSO) problemas.push(`a barra seguinte tinha de continuar no fim (${INICIO + PASSO}), veio ${seguinte.t}`);
+    if (seguinte.agregada_do_bbo !== true) problemas.push("a NOSSA agregada do periodo seguinte nao se toca (a barra do venue e' de outro periodo)");
+  }
+  const ts = e.velas.map((v) => v.t);
+  if (!ts.every((t, i) => i === 0 || ts[i - 1]! < t)) problemas.push(`a lista tem de ficar ORDENADA por t, veio ${JSON.stringify(ts)}`);
+  if (linhas.length !== 0) problemas.push(`o que ENTRA no lugar dele nao se nomeia (veio ${JSON.stringify(linhas)})`);
+  registar("feed/a-barra-atrasada-do-venue-toma-o-lugar-da-nossa-agregada", problemas);
+}
+
+// 2-e. O BURACO QUE A AGREGACAO NAO PREENCHEU: o periodo do venue nao estava na lista — ela INSERE-SE ordenada.
+{
+  const problemas: string[] = [];
+  const e = estadoVazio();
+  encaixarVela(e, barraDoVenue(INICIO - PASSO, "99"), `${PAR}-${RELOGIO}`, RELOGIO, () => {}); // venue, N-1
+  agregarDoBbo(e, RELOGIO, 101, INICIO + PASSO + 1_000); // a agregacao abre N+1 (N ficou em buraco)
+  encaixarVela(e, barraDoVenue(INICIO, "100", "7", 4), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
+  if (e.velas.length !== 3) problemas.push(`a barra que preenche o buraco entra na lista (esperava 3, veio ${e.velas.length})`);
+  const meio = barra(e, 1, problemas);
+  if (meio !== null && (meio.t !== INICIO || meio.v !== "7")) problemas.push(`a barra tinha de entrar ENTRE N-1 e N+1 (veio ${JSON.stringify(meio)})`);
+  const ts = e.velas.map((v) => v.t);
+  if (!ts.every((t, i) => i === 0 || ts[i - 1]! < t)) problemas.push(`a lista tem de ficar ORDENADA por t, veio ${JSON.stringify(ts)}`);
+  registar("feed/a-barra-atrasada-que-preenche-um-buraco-insere-se-ordenada", problemas);
+}
+
+// 2-f. CONTROLE NEGATIVO da insercao fora de ordem: mais ANTIGA do que a ultima FECHADA -> NOMEIA-SE, e nao entra.
+//      Sem este par, «insere-se no lugar dela» podia querer dizer «acha sempre um lugar» — e reescrever historia.
+{
+  const problemas: string[] = [];
+  const e = estadoVazio();
+  encaixarVela(e, barraDoVenue(INICIO, "100"), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
+  encaixarVela(e, barraDoVenue(INICIO + PASSO, "101"), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
   const antes = JSON.stringify(e.velas);
-  encaixarVela(e, barraDoVenue(INICIO, "999"), `${PAR}-${RELOGIO}`, RELOGIO, () => {});
-  if (JSON.stringify(e.velas) !== antes) problemas.push("um `t` menor (o venue pode reenviar) nao pode mexer no historico");
-  registar("feed/controle-t-maior-acrescenta-e-t-menor-e-ignorado", problemas);
+  const { linhas, dizer } = apanhar();
+  encaixarVela(e, barraDoVenue(INICIO - PASSO, "999"), `${PAR}-${RELOGIO}`, RELOGIO, dizer);
+  if (JSON.stringify(e.velas) !== antes) problemas.push("uma barra ANTERIOR a' ultima fechada nao pode entrar na lista");
+  if (linhas.length !== 1) {
+    problemas.push(`esperava UMA linha a nomear a barra descartada, veio ${linhas.length}`);
+  } else {
+    const l = linhas[0]!;
+    if (l.veredicto !== "barra_atrasada_descartada") problemas.push(`o nome tinha de ser \`barra_atrasada_descartada\`, veio ${JSON.stringify(l.veredicto)}`);
+    if (l.t !== INICIO - PASSO) problemas.push(`a linha tem de dizer o instante da barra descartada (${INICIO - PASSO}), veio ${l.t}`);
+    if (l.ultima_fechada !== INICIO) problemas.push(`a linha tem de dizer a ultima fechada (${INICIO}), veio ${JSON.stringify(l.ultima_fechada)}`);
+  }
+  registar("feed/controle-a-barra-anterior-a-ultima-fechada-e-nomeada-e-nao-entra", problemas);
 }
 
 // ---------------------------------------------------------------------------------------------------------

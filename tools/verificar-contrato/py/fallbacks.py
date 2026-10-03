@@ -43,6 +43,9 @@ assim deixa de ser lido — pela mesma razao que o `or` do Python ficou restrito
 catraca (nao soma aos `total`), mas e' CONTADO e LISTAVEL em cada corrida (`--ternarios`), para o buraco ser um
 NUMERO que desce e nao uma frase. Um ternario NOVO com literal por omissao e' defeito por revisao: quem o
 escrever le^ aqui que a catraca nao o apanha.
+**O numero moveu-se: 114 (02/10) -> 115 (03/10/2026)** — um ternario novo com literal por omissao entrou no
+produto depois daquela medicao. E' o buraco declarado a funcionar como foi decidido: sobe quando alguem o
+escreve, e o `--ternarios` diz quem. O numero que vale e' SEMPRE o da corrida, nunca o desta linha.
 
 (Nota do que ESTE padrao tambem nao ve^: o `?? null` e o `?? undefined` — `null` nao esta' na lista de literais.
 Medido a 02/10/2026: **58** sitios no produto, e a leitura e' outra — um `x ?? null` NAO substitui a ausencia por

@@ -85,7 +85,7 @@ importa `core`** (verificado por teste).
 
 | Documento | O que é |
 |---|---|
-| `docs/regra-de-negocio.md` | **a fonte da verdade** — 136 regras em 10 famílias (`RN-A` chaves, `RN-B` boleta, `RN-C` conector, `RN-D` dados, `RN-E` estrutura, `RN-L` ledger, `RN-M` mandato, `RN-S` setup, `RN-T` mesa, `RN-V` vigia) |
+| `docs/regra-de-negocio.md` | **a fonte da verdade** — 149 regras em 10 famílias (`RN-A` chaves, `RN-B` boleta, `RN-C` conector, `RN-D` dados, `RN-E` estrutura, `RN-L` ledger, `RN-M` mandato, `RN-S` setup, `RN-T` mesa, `RN-V` vigia) |
 | `docs/maquina-de-estados.md` | os eixos da mesa, das condições do instrumento e da posição, as marcas persistidas e as portas do arranque |
 | `docs/inventario-de-chaves.md` | cada grandeza ajustável: dono, tipo, omissão e **quem a lê** |
 | `docs/diagrama-de-blocos.html` · `.png` | o desenho dos anéis, do fluxo e das arestas de falha |
@@ -130,16 +130,16 @@ aceite. O comportamento dele é o **oráculo de aceite**: medido, não opinado.
 
 | Pasta | O que é |
 |---|---|
-| `contracts/` | **normativo** (recorte 001, fechado): 9 schemas, vocabulário, mocks das duas pontas, bateria de 81 casos nas duas linguagens |
+| `contracts/` | **normativo** (recorte 001, fechado): 12 schemas, vocabulário, mocks das duas pontas, bateria de 136 casos nas duas linguagens |
 | `core/` | a mesa: a tabela, o intérprete, o ciclo, o relógio, as marcas, o registo. **Decide e não envia** |
 | `vigia/` | **a camada de operação** (recorte 003): uma linha entra e uma sai; arranca a mesa e os conectores como **processos**, corre as sete portas, guarda o registro da operação. Não decide risco, nem estado, nem marcas |
 | `tools/verificar-maquina/` | as bancadas da mesa (tabela, arranque, sessão, pausa, registo, chaves) |
 | `tools/verificar-contrato/` | as do contrato (001): ponta-a-ponta, frescura, inventário, porta da dependência |
 | `specs/001-contrato-neutro/` | a spec do contrato — **59/59 tarefas**, fechada |
 | `specs/002-maquina-de-estados/` | a spec da máquina — 7 histórias, 44 FR, 12 SC. Relatórios em `relatorios/` |
-| `docs/` | a regra de negócio (136), a máquina de estados, o inventário de chaves |
+| `docs/` | a regra de negócio (149), a máquina de estados, o inventário de chaves |
 
-**Uma porta para provar tudo:** `bash tools/verificar-maquina/provar.sh` (**38 de 38**, medido 02/10/2026 — o
+**Uma porta para provar tudo:** `bash tools/verificar-maquina/provar.sh` (**38 de 38**, re-medido 03/10/2026 — o
 "15 de 15" que aqui estava era do recorte 002, e o "35 de 35" tinha três bancadas atrás; o número verdadeiro
 lê-se sempre na última linha da própria porta, e é por isso que este número leva data).
 

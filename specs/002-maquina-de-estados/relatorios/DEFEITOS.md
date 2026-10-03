@@ -836,6 +836,9 @@ lia um objecto, a decisão é um ficheiro, e o `fichas/README.md` diz a forma. *
 > código certo deixa de ser lido (a mesma razão por que o `or` do Python ficou restrito). **Decisão: o ternário
 > não entra na catraca, mas passa a ser CONTADO e LISTÁVEL em cada corrida** (`--ternarios`): o buraco é um
 > número que desce (114), não uma frase. E a medição vai ao lado da decisão, no cabeçalho do próprio conferidor.
+> **Nota datada — 03/10/2026:** o número moveu-se para **115** (um ternário novo com literal por omissão entrou
+> no produto depois desta medição, e é isso que o buraco declarado faz — sobe quando alguém o escreve). O 114
+> fica como o que aqui se mediu; o número que vale é sempre o da corrida, `--ternarios`.
 > Medido também o `?? null`/`?? undefined` (58 sítios): não é buraco — um `x ?? null` **nomeia** a ausência em vez
 > de a substituir por um valor, que é o que a regra pede.
 >
@@ -1029,3 +1032,65 @@ que e' quem aperta o gatilho, e nao so' no setup.
 **O que falta:** a mesa (a) reler a operacao a cada volta, ou (b) guardar o instante da ultima entrada por
 instrumento e recusar uma segunda na mesma barra. A (b) e' a que não depende do ficheiro estar fresco — e e' a
 que fica: o travao do lado de quem manda.
+
+---
+
+## D-022 — `posicao_pct: "1"` num FECHO: a posição INTEIRA, ou «não é parcial»? (declarado 03/10/2026)
+
+**Encontrado na auditoria de 03/10/2026, e NÃO fechado por aqui: a decisão é do dono.** O achado tem o número que
+o torna real — e o número diz também que, hoje, **não há dano nas posições que existem**, o que é precisamente o
+que faz o defeito passar despercebido.
+
+**A contradição, dentro do próprio contrato.** `contracts/boleta.schema.json`, no campo `posicao_pct` (1.11.0):
+«*`1` e' a posicao INTEIRA, e e' o valor de uma ordem que NAO e' uma reducao parcial*». As duas metades desta
+frase pedem coisas diferentes quando a ordem é um **fecho**:
+
+- **(A) «a posição INTEIRA»** ⇒ a quantidade do fecho é a **posição viva** (lida do venue), como no caminho da
+  fracção — `posicao_pct × posicao_viva` com `posicao_pct = 1` dá exactamente a posição;
+- **(B) «não é parcial»** ⇒ é o caminho de hoje: a quantidade sai do **`saldo_pct`**
+  (`saldo_pct% × equity × alavancagem / preço`, ajustada ao passo por baixo) e a **posição viva não é lida**.
+
+Medido no código: `core/ciclo/ciclo.ts` declara **`const posicao_pct = "1"`** para **todo** fecho (nenhum setup
+emite redução parcial), e `brokers/hyperliquid/ordens.ts` trata `posicao_pct === "1"` como **não-parcial** — o
+ramo que lê `pedido.posicao_viva` só corre com `posicao_pct < 1`. Logo hoje vale **(B)**, e o fecho de um
+`caixa` fecha uma fatia do saldo, **não** o que está aberto.
+
+**A medição (o tradutor real, importado por caminho absoluto; posição e equity lidos do ficheiro da operação da
+corrida de risco, equity `991,99`):**
+
+| instrumento | posição viva | qtd que o fecho emite **hoje** | resíduo | a ½ (`posicao_pct: 0.5`) |
+|---|---|---|---|---|
+| BTC — `saldo_pct` 10 · passo 0,00001 | 0,00116 | 0,00116 | **0,000000 (0,00%)** | 0,00058 |
+| ETH — `saldo_pct` 1,1 · passo 0,0001 | 0,004 | 0,004 | **0,000000 (0,00%)** | **RECUSA** `minimo_do_instrumento_acima_da_banda` |
+| SOL — `saldo_pct` 10 · passo 0,01 | 0,82 | 0,82 | **0,000000 (0,00%)** | 0,41 |
+
+**As duas leituras coincidem hoje nas três posições** — porque todas foram abertas pela mesma fórmula, ao mesmo
+equity e a um preço vizinho. **Divergem assim que o preço andar** (varrendo o preço com o código real):
+
+| instrumento | sobra resíduo (o fecho não fecha tudo) | **o fecho excede a posição** → o venue recusa o `reduce_only` |
+|---|---|---|
+| BTC | a partir de **+0,65%** (0,00115; sobra 0,00001) | a partir de **−0,22%** (0,00117 > 0,00116) |
+| ETH | a partir de **+1,96%** (0,0039; sobra 0,0001) | a partir de **−0,54%** (0,0041 > 0,004) |
+| SOL | a partir de **+1,06%** (0,81; sobra 0,01) | a partir de **−0,17%** (0,83 > 0,82) |
+
+**A consequência, dita nos dois sentidos.** A fatia a menos deixa **resíduo aberto** — o par não fica plano, o
+setup acha que está fora e a mesa fica com uma posição que ninguém decidiu manter. A fatia a mais é o caso caro:
+com `reduce_only`, o venue **não deixa reduzir mais do que existe** e a ordem é **recusada** — o fecho **não
+acontece**, e a posição fica toda aberta. É maior nos relógios longos (1h/4h), onde o preço anda muito entre a
+abertura e o fecho.
+
+**As duas saídas — e o dono escolhe:**
+
+- **(A) `1` = a posição inteira.** O fecho passa a exigir a posição viva (como a fracção) e a quantidade é
+  `posicao_pct × posicao_viva`. Fecha tudo, sempre; e o `saldo_pct` deixa de mandar em qualquer fecho. Custo: o
+  caminho do fecho passa a depender de uma leitura do venue (sem ela, recusa — o que já é o comportamento da
+  fracção, `reducao_parcial_sem_posicao_viva`);
+- **(B) `1` = «não é parcial» (como hoje).** O fecho continua a ser um pedaço dimensionado pelo `saldo_pct`, e a
+  letra do contrato corrige-se («`1` é o valor de uma ordem que não é redução parcial» — e nada mais). Custo: um
+  `caixa` deixa de garantir plano, e num `reduce_only` acima da posição a ordem é recusada.
+
+**O que fecha este defeito.** A decisão do dono, escrita — e, com ela, o caso que a mede: um fecho com
+`posicao_pct: "1"`, **posição viva diferente da fatia do saldo**, com o par de controlo (`posicao_pct: "0.5"` a
+sair pela posição viva, que já é o comportamento de hoje) e a prova negativa do lado que se estragar. Não se toca
+em código antes disso: **mudar isto muda o volume dos fechos**, e isso não é de quem audita.
+

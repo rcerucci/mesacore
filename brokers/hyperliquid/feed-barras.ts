@@ -98,21 +98,33 @@ export function escreverVelas(
 }
 
 /**
- * A BARRA QUE CHEGOU DO STREAM, encaixada no sítio dela.
+ * A BARRA QUE CHEGOU DO STREAM, encaixada no SÍTIO dela — e a lista fica ORDENADA por `t`.
  *
  * O `candle` manda a barra EM CURSO, e volta a mandá-la a cada mudança — com o mesmo `t` enquanto ela corre, e com
- * um `t` maior quando vira. Daí as três regras, e só três:
+ * um `t` maior quando vira. Daí as regras:
  *   * `t` igual ao da última -> SUBSTITUI (é a mesma barra, mais fresca);
  *   * `t` maior             -> ACRESCENTA (a anterior fechou, e o que dela sabemos já está gravado);
- *   * `t` menor             -> ignora (o venue pode reenviar; andar para trás no histórico seria inventar).
+ *   * `t` menor             -> a barra chegou ATRASADA, e é aqui que a lista se ordena (abaixo).
  *
- * E a lista VAZIA (histórico novo, o ficheiro do par ainda não existe): a barra do venue ACRESCENTA — não há com
+ * A LISTA VAZIA (histórico novo, o ficheiro do par ainda não existe): a barra do venue ACRESCENTA — não há com
  * o que comparar, e é ela o primeiro dado. Medido pela bancada (`casos/correr-feed.ts`), que o apanhou ao montar o
  * controle: sem este ramo, a PRIMEIRA barra de um par novo era deitada fora em silêncio — até um período inteiro
  * (1h, 4h) sem nada no ficheiro, e sem uma linha a dizê-lo.
  *
- * O `dizer` entra como parâmetro porque o buraco é um ACONTECIMENTO do processo (vai para o canal de diagnóstico
- * do `feed.ts`), e este módulo não escreve em canais que não são dele.
+ * A BARRA ATRASADA (`t` menor). Era ignorada em silêncio, e isso custava DUAS coisas medidas na corrida viva
+ * (03/10/2026 — ver `casos/correr-feed.ts`, os casos que faltavam):
+ *
+ *   1. quando a agregação já abriu o período SEGUINTE (o primeiro `bbo` da volta nova cria a barra dele), a barra
+ *      do venue do período ANTERIOR chegava com `t` menor e era DEITADA FORA — a casa ficava com a NOSSA agregada
+ *      (`v`/`n` a zero, preços do mid) no lugar da barra do venue do mesmo período. O venue manda no período dele:
+ *      a barra atrasada entra no LUGAR DELA (procura-se o `t` na lista; achado, substitui; não achado e mais nova do
+ *      que a última FECHADA, INSERE-SE na posição ordenada);
+ *   2. uma barra mais ANTIGA do que a última fechada não se ignora sem nome: `barra_atrasada_descartada`, com o
+ *      instante dela e o da última fechada. Andar para trás no histórico que já foi gravado seria inventar; o
+ *      silêncio seria pior — a casa conta o que deita fora.
+ *
+ * O `dizer` entra como parâmetro porque o buraco (e a barra descartada) é um ACONTECIMENTO do processo (vai para o
+ * canal de diagnóstico do `feed.ts`), e este módulo não escreve em canais que não são dele.
  */
 export function encaixarVela(e: Estado, v: Vela, chave: string, relogio: string, dizer: (o: Record<string, unknown>) => void): void {
   const ultima = e.velas[e.velas.length - 1];
@@ -130,7 +142,27 @@ export function encaixarVela(e: Estado, v: Vela, chave: string, relogio: string,
     // A barra do venue substitui a nossa agregada: o que é do venue manda, e a agregação sai de cena sozinha.
     e.velas[e.velas.length - 1] = v;
   } else {
-    return;
+    // ---- a barra chegou ATRASADA (`t` menor): a lista ordena-se, e o que não entra leva nome ----------------
+    let i = e.velas.length - 1;
+    while (i >= 0 && e.velas[i]!.t > v.t) i -= 1; // i = último índice com `t <= v.t` (ou -1)
+    if (i >= 0 && e.velas[i]!.t === v.t) {
+      // Já havia barra DESTE período (tipicamente a nossa agregada): o venue toma o lugar dela, no sítio dela.
+      e.velas[i] = v;
+    } else {
+      const ultimaFechada = e.velas[e.velas.length - 2];
+      if (ultimaFechada === undefined || v.t < ultimaFechada.t) {
+        // Mais antiga do que a última FECHADA: não se inventa ordem para trás — nomeia-se, e não se ignora em silêncio.
+        dizer({
+          veredicto: "barra_atrasada_descartada",
+          par: chave,
+          t: v.t,
+          ultima_fechada: ultimaFechada === undefined ? null : ultimaFechada.t,
+        });
+        return;
+      }
+      // Cabe entre a última fechada e a barra em curso: entra no sítio ordenado (o buraco que a agregação abriu).
+      e.velas.splice(i + 1, 0, v);
+    }
   }
   e.porEscrever = true;
 }
@@ -154,6 +186,13 @@ export function precoLimpo(x: number): string {
  * Quando o venue manda a barra do mesmo período, ela SUBSTITUI a agregada (ver `encaixarVela`): o que é do venue
  * manda, e a nossa agregação sai de cena sozinha.
  *
+ * E a agregação SÓ TOCA EM BARRA NOSSA — a que leva a marca `agregada_do_bbo`. A barra do VENUE do mesmo período
+ * faz a agregação CALAR-SE nesse período (o `return` abaixo), em vez de a MUTAR. Sem esta guarda, medido na corrida
+ * viva (03/10/2026): 316 barras do ETH-1m ficaram com `agregada_do_bbo: true` E o `v`/`n` do venue — a barra do
+ * venue era mutada no `bbo` seguinte à substituição (o `o`/`h`/`l`/`c` passavam a ser do mid e a marca era
+ * carimbada por cima da barra de quem tinha mandado o período), e a agregação ficava a respirar sobre um dado que
+ * já não era dela. O que é do venue manda no período dele; o que é NOSSO é que se agrega.
+ *
  * Não se agrega em relógios que não se alinhem por divisão do dia (`1d`, `3d`, `1w`, `1M`): a esses, a barra fica
  * como o venue a mandou. Fail-closed: melhor parada do que errada.
  *
@@ -169,14 +208,20 @@ export function agregarDoBbo(e: Estado, relogio: string, mid: number, agoraMs: n
   if (ultima === undefined || ultima.t < inicio) {
     // A barra do período ainda não existe: cria-se, com o mid como abertura.
     e.velas.push({ t: inicio, o: p, h: p, l: p, c: p, v: "0", n: 0, agregada_do_bbo: true });
-  } else if (ultima.t === inicio) {
+    e.porEscrever = true;
+    return;
+  }
+  if (ultima.t === inicio) {
+    // A marca diz de QUEM é a barra: só se agrega sobre o que NÓS abrimos. A barra do venue do mesmo período
+    // faz a agregação calar-se (e nada muda, logo nada fica por escrever).
+    if (ultima.agregada_do_bbo !== true) return;
     ultima.h = precoLimpo(Math.max(Number(ultima.h), mid));
     ultima.l = precoLimpo(Math.min(Number(ultima.l), mid));
     ultima.c = p;
-    ultima.agregada_do_bbo = true;
+    e.porEscrever = true;
   }
-  // `ultima.t > inicio` não acontece (o venue não manda do futuro); se acontecesse, não se mexia.
-  e.porEscrever = true;
+  // `ultima.t > inicio` não acontece (o venue não manda do futuro); se acontecesse, não se mexia — e, sem mexer,
+  // não há nada por escrever.
 }
 
 /** O estado novo de um par, com o histórico que já existe no disco. */

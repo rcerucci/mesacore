@@ -90,10 +90,13 @@ declarar "ordens do conector (50 casos)"  bun brokers/hyperliquid/casos/correr-o
 # havia era execucao ao vivo). A bancada mede o NUCLEO PURO (`feed-barras.ts`, modulo sem efeitos ao carregar):
 # a barra agregada do `bbo` marcada e com `v`/`n` a zero, a barra do venue a substituir a agregada, o buraco
 # NOMEADO e nunca inventado, a escrita atomica, e a primeira barra de um par novo (que se perdia em silencio —
-# medido pela propria bancada a 02/10/2026). O que ela NAO prova, dito no cabecalho dela: a ligacao ao venue (o
-# `SubscriptionClient`), que continua a ser prova de execucao ao vivo — a casa prefere a prova declarada mais
-# fraca a uma prova que finge ser do portao.
-declarar "feed de mercado (11 provas, SEM REDE)" bun run brokers/hyperliquid/casos/correr-feed.ts
+# medido pela propria bancada a 02/10/2026). A 03/10/2026 entraram as duas regras que a corrida viva mostrou
+# faltar: a agregacao so' toca em barra NOSSA (a do venue faz a agregacao CALAR-SE no periodo — antes ela mutava
+# a barra do venue, 316 do ETH-1m) e a lista fica ORDENADA por `t` (a barra atrasada do venue toma o lugar dela, e
+# a que e' anterior a' ultima fechada e' NOMEADA, nunca ignorada). O que ela NAO prova, dito no cabecalho dela: a
+# ligacao ao venue (o `SubscriptionClient`), que continua a ser prova de execucao ao vivo — a casa prefere a prova
+# declarada mais fraca a uma prova que finge ser do portao.
+declarar "feed de mercado (15 provas, SEM REDE)" bun run brokers/hyperliquid/casos/correr-feed.ts
 # O UNICO SETUP do repositorio e' o `sigma`: os moldes de exemplo (`cruzamento_de_media`, TS e Python) foram
 # retirados a pedido do dono (30/09/2026), e a bancada que os corria foi com eles. O que fica em pe' para o
 # setup e' o que interessa: a traducao do indicador e a regra da entrada (as duas bancadas abaixo).
