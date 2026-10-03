@@ -575,7 +575,32 @@ async function bancadaDoEncerramento() {
     gParou?.de === "encerrando" && String(gParou?.nota).includes("liquidacao cumprida"),
     `transicao=${gParou?.de}->${gParou?.para} nota=${String(gParou?.nota).slice(0, 40)}`);
 
-  for (const x of [a, b, c, d, e, f, g]) rmSync(x.dir, { recursive: true, force: true });
+  // 8. A LIQUIDACAO EM CURSO NAO SE INTERROMPE (D-007, FR-013). O dono respondeu «fechar a mercado» e a
+  //    liquidacao esta' a correr — um `start` a meio NAO reabre: a tabela recusa-o com o motivo proprio
+  //    (`liquidacao_em_curso`). Era aqui que a mesa REABRIA: a guarda `com_liquidacao_em_curso` existia na
+  //    tabela, mas nenhum contexto a punha a `true`, e o `start` caia na linha `sempre` — a posicao ficava
+  //    meio fechada e a mesa a volta a geri-la. A prova mede os DOIS lados: o nome da recusa, e o registo
+  //    sem a transicao de reabertura.
+  const h = await correr("liquidacao-em-curso", [cmd("h1", "start"), cmd("h2", "stop"), decisao("h3", "h2", "fechar_a_mercado"), cmd("h4", "start")], 5, { espera: 900 });
+  const hReabriu = h.ledger.filter((l: any) => l.tipo === "transicao" && l.verbo === "start" && l.de === "encerrando" && l.para === "em_operacao");
+  conferir("liquidacao-em-curso/D-007: o `start` a meio da liquidacao e RECUSADO nomeado",
+    h.carga(4).motivo === "liquidacao_em_curso", `motivo=${h.carga(4).motivo}`);
+  conferir("liquidacao-em-curso/D-007: e a mesa NAO reabre (nenhuma transicao `start`->em_operacao depois do stop)",
+    hReabriu.length === 0, `reaberturas=${hReabriu.length} · ultima=${JSON.stringify(h.ledger.filter((l: any) => l.tipo === "transicao").at(-1))?.slice(0, 120)}`);
+  conferir("liquidacao-em-curso/D-007: a recusa fica no registo com o nome dela",
+    h.ledger.some((l: any) => l.tipo === "recusa" && l.motivo === "liquidacao_em_curso"),
+    `recusas=${JSON.stringify(h.ledger.filter((l: any) => l.tipo === "recusa").map((l: any) => l.motivo))}`);
+
+  // 9. O CONTROLO DO CASO 8, e o que impede o caso 8 de ser «a mesa recusa sempre»: o MESMO `start`, com a
+  //    liquidacao POR COMECAR (o dono ainda nem respondeu a pergunta), REABRE a operacao — e' a resposta
+  //    «nao feche» da US7, com a transicao `encerrando -> em_operacao` escrita pelo verbo `start`.
+  const i = await correr("nao-fechar", [cmd("i1", "start"), cmd("i2", "stop"), cmd("i3", "start")], 4, { espera: 300 });
+  const iReabriu = i.ledger.filter((l: any) => l.tipo === "transicao" && l.verbo === "start" && l.de === "encerrando" && l.para === "em_operacao");
+  conferir("nao-fechar/US7: com a liquidacao por comecar o `start` REABRE a operacao",
+    iReabriu.length === 1 && i.carga(3).transicao?.para === "em_operacao",
+    `reaberturas=${iReabriu.length} para=${i.carga(3).transicao?.para}`);
+
+  for (const x of [a, b, c, d, e, f, g, h, i]) rmSync(x.dir, { recursive: true, force: true });
 
   for (const falha of falhas) console.log("FALHA " + falha);
   // Uma linha por cenario: o relatorio e a saida crua, e nao a leitura que alguem fez dela (T026).
@@ -586,9 +611,11 @@ async function bancadaDoEncerramento() {
   console.log(`ok    cenario/sem-numeros-da-corretora · recusada: ${e.carga(1).motivo}`);
   console.log(`ok    cenario/sem-prazo-do-dono · recusada: ${f.carga(1).motivo}`);
   console.log(`ok    cenario/liquidacao-cumprida · ${gParou?.de}->${gParou?.para} (sem posicao nossa a fechar)`);
+  console.log(`ok    cenario/liquidacao-em-curso · o stop->fechar_a_mercado abre a liquidacao e o \`start\` a meio e recusado: ${h.carga(4).motivo}`);
+  console.log(`ok    cenario/nao-fechar · com a liquidacao por comecar o mesmo \`start\` reabre: ${i.carga(3).transicao?.para}`);
   console.log(
-    `\nresumo: ${verificacoes} verificacoes · ${divergentes} divergentes · 7 cenarios ` +
-      "(prazo, manter, fechar, decisao-sem-pergunta, sem-numeros, sem-prazo, liquidacao-cumprida)",
+    `\nresumo: ${verificacoes} verificacoes · ${divergentes} divergentes · 9 cenarios ` +
+      "(prazo, manter, fechar, decisao-sem-pergunta, sem-numeros, sem-prazo, liquidacao-cumprida, liquidacao-em-curso, nao-fechar)",
   );
   process.exit(divergentes === 0 ? 0 : 1);
 }
@@ -726,7 +753,25 @@ async function bancadaDaOrfandade() {
     repetidas.length > 0 && repetidas.every((l: any) => l.acao === "nada" && l.motivo === "entrada_ja_feita_nesta_barra"),
     `obtido ${JSON.stringify(repetidas.map((l: any) => [l.acao, l.motivo]))}`);
 
-  // 4. O REGRESSO (T029): um vigia novo le o estado da mesa no ledger dela e nao arranca nada.
+  // 4. A MESA RELE^ A OPERACAO (D-021). A mesma mesa orfa, o mesmo ficheiro: tira-se a `leitura` do
+  //    instrumento e as voltas SEGUINTES tem de decidir `nada` pelo motivo da leitura ausente
+  //    (`leitura_ausente_no_ciclo`). Era esta a prova que faltava: o defeito medido a 30/09/2026 foi a mesa
+  //    decidir 44 vezes sobre o MESMO retrato (a operacao era lida uma vez, no arranque). Uma mesa que so'
+  //    lesse uma vez continuaria a decidir sobre a leitura que ja' nao esta' no ficheiro, e esta prova
+  //    reprovava — e' essa a diferenca que ela mede.
+  const semLeitura = JSON.parse(JSON.stringify(operacao));
+  delete semLeitura.instrumentos[instrumento].leitura;
+  semLeitura.nota = "duble de operacao: a leitura SAIU do ficheiro (D-021)";
+  writeFileSync(caminhos.operacao, JSON.stringify(semLeitura));
+  await espera(900); // voltas suficientes (tick 120 ms) para a mudanca aparecer no ledger
+
+  const depoisDaTroca = voltas(lerLinhas(caminhos.ledger)).slice(antes.length + novas.length);
+  const peloMotivo = depoisDaTroca.filter((l: any) => l.motivo === "leitura_ausente_no_ciclo");
+  conferir("orfandade/D-021: a mesa RELE^ a operacao - tirar a leitura do ficheiro muda a decisao seguinte",
+    depoisDaTroca.length >= 2 && peloMotivo.length === depoisDaTroca.length,
+    `voltas depois da troca=${depoisDaTroca.length} · pelo motivo novo=${peloMotivo.length} · ${JSON.stringify(depoisDaTroca.slice(0, 3).map((l: any) => [l.acao, l.motivo]))}`);
+
+  // 5. O REGRESSO (T029): um vigia novo le o estado da mesa no ledger dela e nao arranca nada.
   const resultado2 = spawnSync("bun", argsDoVigia, {
     input: comando("o-2", { verbo: "start", autor: "dono", pedido_id: "o-2" }) + "\n",
     encoding: "utf8", timeout: 20000,

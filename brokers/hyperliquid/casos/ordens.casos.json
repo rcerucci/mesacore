@@ -1,5 +1,5 @@
 {
-  "nota": "Casos da TRADUCAO DE ORDENS e do CLOID (FR-006 a FR-011; RN-H4 a RN-H9). A boleta e o manifesto entram como DADO, e os dois numeros que so o conector tem (saldo e preco) entram como DADO tambem — por isso isto corre offline, sem rede e sem chave. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que a traducao AFIRMA. Os casos adversarios (preco fora da regra, alavancagem fora do intervalo, abaixo do minimo, capacidade nao declarada) valem tanto como os felizes: um conector que so sabe dizer sim prova a fiacao, nao o comportamento.",
+  "nota": "Casos da TRADUCAO DE ORDENS e do CLOID (FR-006 a FR-011; RN-H4 a RN-H9). A boleta e o manifesto entram como DADO, e os dois numeros que so o conector tem (saldo e preco) entram como DADO tambem — por isso isto corre offline, sem rede e sem chave. Nenhum caso espera um numero que o codigo tenha escrito: o que se confere sao os campos que a traducao AFIRMA. Os casos adversarios (preco fora da regra, alavancagem fora do intervalo, abaixo do minimo, capacidade nao declarada) valem tanto como os felizes: um conector que so sabe dizer sim prova a fiacao, nao o comportamento. Alem dos 44 casos declarados: o STOP e o TP (D-011) e o `destino_do_resto: cancelar` (D-012) entraram a 03/10/2026 — os tres campos que a auditoria dizia nao terem verbo passaram a ter PROVA (a recusa nomeada, duas vezes, e o TIF que honra o resto).",
   "conta_de_teste": "0x00000000000000000000000000000000000000ab",
   "manifesto_base": {
     "conector": {
@@ -528,6 +528,36 @@
       },
       "posicao_viva": "0.00001",
       "nota": "Metade da posicao minima do instrumento e' menor que o passo: ajustar para baixo daria zero, e arredondar para cima fecharia mais do que foi pedido — recusa, e di-lo."
+    },
+    {
+      "caso": "ordens/stop-pedido-nao-sai-recusa-nomeada",
+      "nota": "D-011: a boleta pede `stop_pct` e este conector NAO manda stop nenhum. A resposta e' a RECUSA NOMEADA (`capacidade_nao_declarada`) — a unica saida proibida era ACEITAR E IGNORAR, que era o que acontecia antes de 29/09/2026 (medido, P10 da bateria de teste: o payload era IDENTICO ao de uma boleta sem stop). O venue TEM o verbo (a ordem `trigger`, tpsl); o que falta e' implementa-lo — e' capacidade, declarada em aberto, nao silencio.",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {
+        "stop_pct": "1.5"
+      }
+    },
+    {
+      "caso": "ordens/tp-pedido-nao-sai-recusa-nomeada",
+      "nota": "D-011, o outro lado: o `tp_pct` leva a mesma recusa nomeada. Os dois campos vao juntos no mesmo laco porque sao a mesma proteccao — uma ordem que sai sem eles, em silencio, deixa a mesa a acreditar numa proteccao que nao existe (FR-007).",
+      "esperadoOk": false,
+      "motivo_esperado": "capacidade_nao_declarada",
+      "boleta": {
+        "tp_pct": "3"
+      }
+    },
+    {
+      "caso": "ordens/resto-a-cancelar-honrado-pelo-ioc",
+      "nota": "D-012(b): o `destino_do_resto: cancelar` NAO precisa de verbo de cancelamento nesta ponta — quem cancela o que nao encheu e' o proprio venue, pelo TIF `Ioc`, e o payload prova-o: o campo nao chega ao venue e o `tif` e' `Ioc`. Era esta a leitura que faltava: a accao `cancelar` nao esta' (nem precisa de estar) em `acoes_da_mesa`, porque nao ha nada para a mesa decidir — o cancelamento e' propriedade do TIF, nao uma decisao dela.",
+      "esperadoOk": true,
+      "conferir": {
+        "tipo": "mercado",
+        "tif": "Ioc"
+      },
+      "boleta": {
+        "destino_do_resto": "cancelar"
+      }
     }
   ],
   "checagens_de_cloid": [

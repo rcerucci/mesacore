@@ -6,7 +6,7 @@
    "nome": "mercado/completo",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -51,7 +51,7 @@
    "nome": "mercado/ausencia-de-livro-e-declarada",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-2",
     "carga": {
@@ -73,7 +73,7 @@
    "nome": "mercado/ausencia-de-funding-e-declarada",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-3",
     "carga": {
@@ -92,7 +92,7 @@
    "nome": "mercado/ausencia-de-posicao-e-declarada",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-4",
     "carga": {
@@ -113,7 +113,7 @@
    "nome": "mercado/fechado-e-estado-nao-erro",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-5",
     "carga": {
@@ -132,7 +132,7 @@
    "nome": "mercado/campo-desconhecido",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-6",
     "carga": {
@@ -152,7 +152,7 @@
    "nome": "mercado/null-em-bid",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-7",
     "carga": {
@@ -173,7 +173,7 @@
    "nome": "mercado/preco-como-numero-de-virgula-flutuante",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-8",
     "carga": {
@@ -194,7 +194,7 @@
    "nome": "mercado/idade-do-dado-como-texto",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-9",
     "carga": {
@@ -213,7 +213,7 @@
    "nome": "mercado/decimal-com-expoente",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-10",
     "carga": {
@@ -234,7 +234,7 @@
    "nome": "mercado/simbolo-em-minusculas",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-11",
     "carga": {
@@ -253,7 +253,7 @@
    "nome": "mercado/sem-equity",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-12",
     "carga": {
@@ -271,7 +271,7 @@
    "nome": "mercado/estado-fora-do-conjunto",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-13",
     "carga": {
@@ -290,7 +290,7 @@
    "nome": "mercado/com-ordem-viva",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {
@@ -345,7 +345,7 @@
    "nome": "mercado/ordem-viva-com-lado-inventado",
    "mensagem": "mercado",
    "entrada": {
-    "contrato": "1.11.0",
+    "contrato": "1.12.0",
     "tipo": "mercado",
     "id": "m-1",
     "carga": {

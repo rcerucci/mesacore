@@ -825,6 +825,57 @@ function comPrazo(promessa: Promise<Resposta>, ms: number): Promise<Resposta> {
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// A RECONCILIACAO ANTES DO ENVIO — a guarda contra a ORDEM DUPLICADA (D-009, RN-C4).
+//
+// O QUE SE MEDIU, e porque isto existe. O manifesto declara `idempotencia`, e este venue DECLARA `true` — mas a
+// P6 da bateria de teste (29/09/2026) mediu o CONTRARIO: a MESMA boleta (mesma referencia de cliente, logo o
+// mesmo `cloid`) enviada duas vezes produziu DUAS ordens, e a posicao passou de 0.00023 para 0.00046. O `cloid`
+// NAO e um mecanismo de deduplicacao neste venue: ele guarda-o, publica-o, e aceita a segunda ordem na mesma.
+//
+// Uma declaracao que mente nao pode ser a unica guarda do dinheiro. Por isso a reconciliacao e' INCONDICIONAL
+// (corre em todo o envio, e nao so' quando a declaracao diz «nao»): antes de mandar, le-se o registo de ordens
+// da conta e procura-se o `cloid` que a traducao DERIVOU desta referencia. A derivacao e' de mao unica: da
+// referencia para o `cloid` vai-se; de volta, nao (o venue guarda o hash, nao a referencia).
+//
+// E' o que a decisao de reenviar da casa ja' diz por escrito (`contracts/esqueleto/referencia.ts`): «sem
+// idempotencia declarada pelo venue, a mesa NUNCA reenvia a credo — reconcilia primeiro». Aqui a reconciliacao
+// e' feita onde o venue esta' — esta ponta — em vez de se esperar que outra ponta a peca.
+//
+// OS TRES DESFECHOS, e nenhum deles manda uma segunda ordem:
+//   * ninguem com este `cloid` -> segue (envia);
+//   * a ordem JA' ESTA' LA'     -> RECUSA (`referencia_ja_enviada_ao_venue`), e a ordem que existe vai inteira
+//     em `resposta_do_venue` (a resposta BRUTA do venue, que o contrato nao interpreta);
+//   * a leitura NAO SE FEZ (venue calado, erro, ou fora do prazo) -> `desconhecido`, e NAO se envia: sem saber
+//     se a ordem ja' la' esta', mandar e' uma aposta — e uma aposta custa dinheiro duas vezes.
+export function ordemDaReferencia(ordens: unknown, cloid: string): Record<string, unknown> | null {
+  if (!Array.isArray(ordens)) return null;
+  for (const item of ordens) {
+    // A forma do registo deste venue: cada item traz a ordem em `order` (`historicalOrders`).
+    const o = objecto(objecto(item)?.order);
+    if (o === undefined) continue;
+    // Comparacao EXACTA: o venue ecoa o `cloid` que recebeu (medido: `0xbf…aa8` foi e voltou igual).
+    if (texto(o.cloid) === cloid) return o;
+  }
+  return null;
+}
+
+export type VeredictoDaReconciliacao =
+  | { veredicto: "livre" }
+  | { veredicto: "ja_existe"; ordem: Record<string, unknown> }
+  | { veredicto: "nao_se_leu"; erro: string };
+
+function reconciliarAntesDoEnvio(porta: Porta, conta: string, cloid: string, prazoMs: number): Promise<VeredictoDaReconciliacao> {
+  return comPrazo(
+    (async () => ({ ok: true as const, valor: await porta.historico.ordensHistoricas(conta) }))(),
+    prazoMs,
+  ).then((r) => {
+    if (!r.ok) return { veredicto: "nao_se_leu" as const, erro: r.erro };
+    const ordem = ordemDaReferencia(r.valor, cloid);
+    return ordem === null ? ({ veredicto: "livre" } as const) : ({ veredicto: "ja_existe", ordem } as const);
+  });
+}
+
 function marcaDoVenue(resposta: unknown): string | undefined {
   const o = objecto(objecto(resposta)?.valor);
   return o !== undefined ? texto(o.markPx) : undefined;
@@ -1197,11 +1248,53 @@ export async function atender(
   const resolucaoAntes = resolucaoDaTraducao(accao.accao, tick);
   diag.push({
     etapa: "traducao",
-    cloid: accao.accao.cloid, // a referencia derivada: e por ela que um reenvio NAO duplica (FR-011)
+    cloid: accao.accao.cloid, // a referencia derivada: e' por ela que se PROCURA no registo do venue (D-009)
     quantidade: accao.accao.quantidade,
     nocional: accao.accao.nocional,
     tif: accao.accao.tif,
   });
+
+  // 3-ter. A RECONCILIACAO ANTES DO ENVIO (D-009, RN-C4) — uma referencia que JA' produziu ordem nao volta a
+  // produzir. Fica AQUI, e nao depois da alavancagem, por uma razao pratica: o ajuste de alavancagem e' uma
+  // ESCRITA no venue, e uma ordem que nao vai sair nao deve mexer em nada. E antes de a `resolucao` sair: nada
+  // foi resolvido quando nada foi enviado.
+  //
+  // O COMENTARIO DO `diag` ACIMA DIZIA «e' por ela que um reenvio NAO duplica (FR-011)» — e isso era FALSO neste
+  // venue: medido (P6 da bateria, 29/09/2026), a mesma referencia produziu DUAS ordens. O que impede a segunda
+  // ordem nao e' o `cloid` la' dentro: e' esta leitura, feita do NOSSO lado.
+  const reconciliacao = await reconciliarAntesDoEnvio(porta, estado.ficha.conta, accao.accao.cloid, prazoDoVenue);
+  if (reconciliacao.veredicto === "ja_existe") {
+    diag.push({ etapa: "reconciliacao", veredicto: "ja_existe_no_venue", cloid: accao.accao.cloid });
+    return recusa(
+      id,
+      "referencia_ja_enviada_ao_venue",
+      `a referencia de cliente ${JSON.stringify(String(b.referencia_do_cliente))} ja' produziu ordem neste ` +
+        `venue (o cloid ${accao.accao.cloid} esta' no registo de ordens da conta): NAO se manda segunda. ` +
+        "Reenviar a mesma referencia abre uma posicao a mais — este venue NAO deduplica pelo cloid (medido, P6 " +
+        "da bateria de teste), e quem garante a nao-duplicacao somos nos (RN-C4)",
+      { estado: "ja_existia_no_venue", cloid: accao.accao.cloid, ordem: reconciliacao.ordem },
+      [],
+    );
+  }
+  if (reconciliacao.veredicto === "nao_se_leu") {
+    diag.push({ etapa: "reconciliacao", veredicto: "nao_se_leu", erro: reconciliacao.erro });
+    // NAO SE ENVIA, e di-lo: sem saber se a ordem ja' esta' la', mandar e' uma aposta — e a aposta custa dinheiro
+    // duas vezes. O desfecho e' `desconhecido` (RN-T7.1: o silencio nao vira sucesso nem falha) e leva a
+    // `resolucao` que se compôs ANTES do envio — o contrato EXIGE-a fora da recusa («aceite, parcial e
+    // desconhecido so existem depois de haver algo resolvido para enviar»), e a origem dos numeros vai dita.
+    return {
+      linhas: [
+        saidaDeDesconhecido(id, resolucaoAntes, {
+          estado: "reconciliacao_nao_lida",
+          erro: reconciliacao.erro,
+          origem_dos_numeros: "calculo_antes_do_envio",
+          nota: "sem saber se esta referencia ja' produziu ordem, nao se manda segunda (RN-C4)",
+        }),
+      ],
+      diag,
+    };
+  }
+  diag.push({ etapa: "reconciliacao", veredicto: "livre", cloid: accao.accao.cloid });
 
   // 3-bis. A ALAVANCAGEM PEDIDA TEM DE CHEGAR AO VENUE (FR-008). Antes de a `resolucao` sair: se ela saisse
   // primeiro, a resolucao declararia a alavancagem PEDIDA enquanto o venue tinha outra — e a conferencia da

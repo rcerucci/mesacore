@@ -114,7 +114,7 @@
       "conferir": {
         "conector.nome": "hyperliquid",
         "conector.versao": "0.1.0",
-        "versao": "1.11.0",
+        "versao": "1.12.0",
         "instrumentos.0.simbolo": "BTC",
         "instrumentos.0.passo": "0.00001",
         "instrumentos.0.minimo": "0.00001",

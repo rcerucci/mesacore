@@ -15,7 +15,7 @@ import { aplicar, type Contexto, type Estado, type Resposta } from "./estados/ma
 import { validarComando } from "./estados/comando.ts";
 import * as marcas_mod from "./estado/marcas.ts";
 import * as sessao_mod from "./estado/sessao.ts";
-import { instanteDaUltimaTransicaoPara, registarRecusa, registarTransicao } from "./estado/registo.ts";
+import { instanteDaUltimaTransicaoPara, registarRecusa, registarTransicao, ultimaTransicaoPara } from "./estado/registo.ts";
 import { correrPedidoDeParada, type PedidoDeParada, type ResultadoDoEncerramento } from "./ciclo/encerramento.ts";
 
 export const RAIZ_DO_CORE = join(import.meta.dir);
@@ -264,7 +264,28 @@ export class Mesa {
     const m = this.marcas();
     const presentes = marcas_mod.marcasPresentes(m);
 
-    const contextoDoVerbo: Contexto = { ...contexto, inibicao_cb: marcas_mod.haInibicao(m) };
+    // A LIQUIDACAO EM CURSO, DITA PELO REGISTO (D-007).
+    //
+    // A tabela tem a linha propria para este caso — `encerrando` + `start`, com a guarda
+    // `com_liquidacao_em_curso`, RECUSA com o motivo `liquidacao_em_curso` (FR-013: «uma vez comecada a
+    // liquidacao, nao se interrompe a meio»). Mas a guarda lia `contexto.liquidacao_em_curso === true`, e
+    // NINGUEM escrevia o campo: a linha nunca valia `true`, o `start` caia na linha `sempre` (a do dono a dizer
+    // «nao feche») e a mesa REABRIA a operacao a meio da liquidacao — a posicao ficava meio fechada e a mesa a
+    // volta a geri-la. Uma regra declarada que nunca dispara e' uma regra que nao existe.
+    //
+    // Quem sabe que a liquidacao comecou e' o REGISTO, e e' a MESMA verdade que o servidor ja' le' dele para
+    // mandar liquidar (`core/servidor.ts`, `ultimaTransicaoPara("encerrando", ...)`): a ultima entrada em
+    // `encerrando` traz o motivo da decisao do dono, e `liquidacao_em_curso` e' ele a escolher fechar a mercado
+    // (`core/ciclo/encerramento.ts`). A guarda so' faz sentido DENTRO de `encerrando` — la' fora, o campo seria
+    // uma memoria velha de uma liquidacao que ja' acabou.
+    const liquidacaoEmCurso =
+      this.estado === "encerrando" &&
+      ultimaTransicaoPara("encerrando", this.caminhoDoRegisto)?.motivo === "liquidacao_em_curso";
+    const contextoDoVerbo: Contexto = {
+      ...contexto,
+      inibicao_cb: marcas_mod.haInibicao(m),
+      liquidacao_em_curso: liquidacaoEmCurso,
+    };
     const resposta = aplicar(this.estado, comando.verbo, contextoDoVerbo, presentes);
 
     if (resposta.resultado === "aceite") {

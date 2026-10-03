@@ -171,6 +171,11 @@
       "accao": "recusar_e_registar",
       "provadamente_nao_feito": true,
       "porque": "Recusa de validade: a reducao parcial foi pedida sem a posicao viva, que e' do VENUE — a quantidade nao se inventa por nos (RN-B0), e a mensagem nunca saiu assim."
+    },
+    "referencia_ja_enviada_ao_venue": {
+      "accao": "parar_e_reconciliar",
+      "provadamente_nao_feito": false,
+      "porque": "A referencia DESTA boleta ja' produziu ordem no venue (D-009): nao se mandou segunda — mas a ordem EXISTE, e o que lhe aconteceu nao se sabe deste lado. Repetir era abrir a segunda posicao que o defeito abriu (a posicao dobrou, medido na P6 da bateria): primeiro reconcilia-se contra o registo do venue (RN-T7.1), e so' depois se decide."
     }
   }
 }

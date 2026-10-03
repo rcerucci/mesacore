@@ -192,6 +192,50 @@ if [ "${1:-}" = "--prova-negativa" ]; then
     echo "RECUSADO  o fragmento da prova mudou — o ficheiro nao foi tocado"
     rm -f "$copia"; falhas=$((falhas+1))
   fi
+
+  # ---- a SEGUNDA prova negativa: A RECONCILIACAO ANTES DO ENVIO (D-009) -----------------------------------
+  # O defeito injectado e' o que a RN-C4 proibe: a leitura do registo de ordens deixa de ENCONTRAR a ordem, e uma
+  # referencia repetida volta a produzir uma segunda ordem (foi o que a P6 da bateria de teste mediu, com a
+  # posicao a dobrar). A prova exige o NOME DO CASO no vermelho — o processo pode cair por outra razao, e vermelho
+  # sem nome nao mediu nada.
+  declarar "prova negativa (D-009): a reconciliacao"
+  alvo2="brokers/hyperliquid/conector.ts"
+  copia2=$(mktemp); cp "$alvo2" "$copia2"
+  antes2=$(sha256sum "$alvo2" | cut -d' ' -f1)
+  if python3 "$(dirname "$0")/py/injectar-defeito-reconciliacao.py" "$alvo2"; then
+    injetado2=$(sha256sum "$alvo2" | cut -d' ' -f1)
+    saida2=$(bun run brokers/hyperliquid/processo.ts --bancada 2>&1); rc2=$?
+    if [ "$rc2" -eq 0 ]; then
+      echo "FALHOU   sem a reconciliacao a bancada PASSOU: nao mede o que diz medir"
+      falhas=$((falhas+1))
+    elif printf '%s\n' "$saida2" | grep -q "processo/reconciliacao-a-referencia-ja-produziu-ordem"; then
+      echo "OK   o defeito foi REPROVADO e o caso nomeado: $(printf '%s\n' "$saida2" | grep -m1 'processo/reconciliacao-a-referencia-ja-produziu-ordem' | cut -c1-80)"
+    else
+      echo "FALHOU   vermelho, mas SEM nomear o caso — e' inconclusivo:"
+      printf '%s\n' "$saida2" | tail -3 | sed 's/^/      /'
+      falhas=$((falhas+1))
+    fi
+
+    # A reposicao: igual a de cima, e pelo mesmo motivo (outro escritor pode ter tocado no ficheiro).
+    agora2=$(sha256sum "$alvo2" | cut -d' ' -f1)
+    if [ "$agora2" != "$injetado2" ]; then
+      echo "$(printf '%-52s' 'repor o original (conector)')RECUSADO — outro escritor tocou no ficheiro durante a prova; NAO reponho"
+      falhas=$((falhas+1))
+      rm -f "$copia2"
+    else
+      cp "$copia2" "$alvo2"; rm -f "$copia2"
+      depois2=$(sha256sum "$alvo2" | cut -d' ' -f1)
+      if [ "$antes2" = "$depois2" ]; then
+        echo "$(printf '%-52s' 'curado: o reposto e byte a byte o original')OK   sha256 ${antes2:0:12}..."
+      else
+        echo "$(printf '%-52s' 'curado: o reposto e byte a byte o original')FALHOU — a reposicao deixou o ficheiro diferente"
+        falhas=$((falhas+1))
+      fi
+    fi
+  else
+    echo "RECUSADO  o fragmento da prova mudou — o ficheiro nao foi tocado"
+    rm -f "$copia2"; falhas=$((falhas+1))
+  fi
 fi
 
 echo

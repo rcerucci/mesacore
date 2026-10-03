@@ -3,7 +3,7 @@
   "conta_de_teste": "demo-ctrader-1",
   "manifesto_base": {
     "conector": {"nome": "ctrader", "versao": "0.1.0"},
-    "versao": "1.11.0",
+    "versao": "1.12.0",
     "instrumentos": [
       {
         "simbolo": "EURUSD",

@@ -85,6 +85,11 @@ export const TRADUCAO: Record<string, string> = {
   // nome certo da recusa fica no `dizer` do conector.
   reducao_parcial_sem_reduce_only: "comando_com_tipo_invalido",
   reducao_parcial_sem_posicao_viva: "comando_com_tipo_invalido",
+  // A RECONCILIACAO ANTES DO ENVIO (1.12.0, D-009): a boleta foi recusada porque aquela referencia JA' produziu
+  // ordem no venue. E' da mesma familia das outras recusas da ponta — a ordem nao passou a porta, e o nome certo
+  // da recusa fica no `dizer` do conector. A mesa nao decide sobre a referencia repetida: quem reconcilia e' o
+  // conector (que tem o registo do venue), e o que a mesa faz com isto e' o que faz com qualquer recusa.
+  referencia_ja_enviada_ao_venue: "comando_com_tipo_invalido",
   prazo_excedido: "comando_com_tipo_invalido",
   desfecho_nao_reconhecido: "comando_com_tipo_invalido",
 };

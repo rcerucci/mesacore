@@ -1,5 +1,5 @@
 {
-  "contrato": "1.11.0",
+  "contrato": "1.12.0",
   "nota": "Conjunto FECHADO de valores e motivos, partilhado pelas duas linguagens. Os runners leem a prioridade e a lista de campos proibidos DAQUI — nao ha esta lista escrita em codigo em lado nenhum.",
   "lados": [
     "buy",
@@ -224,6 +224,10 @@
     "desfecho_nao_reconhecido": {
       "descricao": "A resposta do venue nao encaixa em nenhuma das quatro classificacoes.",
       "quando": "Vira desconhecido e pede reconciliacao — nunca vira sucesso nem falha."
+    },
+    "referencia_ja_enviada_ao_venue": {
+      "descricao": "A referencia de cliente desta boleta JA' produziu ordem neste venue — nao se manda segunda.",
+      "quando": "Conferido ANTES do envio, pela RECONCILIACAO (D-009, RN-C4): o conector le' o registo de ordens da conta e, se o `cloid` derivado desta referencia (`cloid.ts`) la' esta', RECUSA e devolve, em `resposta_do_venue`, a ordem que existe. Medido (P6 da bateria de teste, 29/09/2026): a MESMA referencia produziu DUAS ordens neste venue — o `cloid` NAO deduplica, e a garantia de nao-duplicar tem de ser NOSSA."
     }
   },
   "prioridade_dos_motivos": [
@@ -242,6 +246,7 @@
     "reducao_parcial_sem_reduce_only",
     "reducao_parcial_sem_posicao_viva",
     "valor_abaixo_do_minimo_do_venue",
-    "instrumento_deslistado_no_venue"
+    "instrumento_deslistado_no_venue",
+    "referencia_ja_enviada_ao_venue"
   ]
 }

@@ -174,6 +174,7 @@ class Motivo(StrEnum):
     desfecho_nao_reconhecido = 'desfecho_nao_reconhecido'
     valor_abaixo_do_minimo_do_venue = 'valor_abaixo_do_minimo_do_venue'
     instrumento_deslistado_no_venue = 'instrumento_deslistado_no_venue'
+    referencia_ja_enviada_ao_venue = 'referencia_ja_enviada_ao_venue'
 
 
 class Moeda(RootModel[constr(pattern=r'^[A-Za-z0-9]{1,11}$')]):

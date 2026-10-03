@@ -71,7 +71,7 @@
       "esperadoOk": true,
       "conferir": {
         "conector.nome": "hyperliquid",
-        "versao": "1.11.0",
+        "versao": "1.12.0",
         "instrumentos.0.simbolo": "BTC",
         "instrumentos.0.passo": "0.00001",
         "instrumentos.0.tick": "0.1",

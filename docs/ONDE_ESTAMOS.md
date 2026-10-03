@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **03/10/2026 (madrugada), 01:3x (-03)** · contrato vigente **1.11.0** · portão **38 de 38** · árvore **limpa** · o feed de mercado tem a agregação corrigida (ver a secção desta vaga, no fim)
+medido em **03/10/2026 (madrugada, 2ª parte), 03:2x (-03)** · contrato vigente **1.12.0** · portão **38 de 38** · árvore **limpa** · os defeitos VIVOS por ordem de risco foram corrigidos com prova (ver a última secção)
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
@@ -824,4 +824,138 @@ docs/regra-de-negocio.md | sort -u | wc -l`), «**9 schemas** · **81 casos**» 
 «(136)» → «(149)». E o buraco declarado dos ternários passou a **115** (era **114** na medição de 02/10; um
 ternário novo fá-lo subir — o número lê-se da corrida, `--ternarios`).
 
+---
 
+## 03/10/2026 (madrugada, 2ª parte) — os defeitos VIVOS, por ordem de risco, com a prova ao lado de cada um
+
+O que se fez nesta vaga, e o que **não** se fez. Cada linha diz **com que prova** se fecha — e onde a prova é uma
+bancada, ela **reprova** com o defeito reposto antes de passar sem ele (a regra da casa: uma bancada que nunca
+reprovou não mediu nada).
+
+**O contrato subiu para 1.12.0** (emenda aditiva, um só nome): `referencia_ja_enviada_ao_venue`. O conjunto fechado
+dos motivos do `desfecho` ganhou-o porque o D-009 precisava de dizer «esta referência já produziu ordem» e não
+havia nome nenhum para isso. O espelho (`_defs/forma.schema.json`) e a `TRADUCAO` da mesa foram atrás — e foi a
+**porta da mesa que apanhou a falta da tradução**, no primeiro portão a seguir à emenda (`FALHA traducao cobre
+'referencia_ja_enviada_ao_venue'`): o conjunto fechado a funcionar nas duas direções, como foi desenhado.
+
+### 1. D-009 — a posição DUPLICAVA (o mais grave: mexe em dinheiro) — **FECHADO pela via (a)**
+
+A referência repetida deixou de produzir uma segunda ordem. O conector **reconcilia ANTES de enviar**: lê o registo
+de ordens da conta e procura o `cloid` derivado daquela referência; achado, **recusa nomeada**
+(`referencia_ja_enviada_ao_venue`) e devolve a ordem que existe; a leitura falhou, **não envia** (`desconhecido`).
+
+A reconciliação é **incondicional** — e isso é deliberado: o manifesto continua a declarar `idempotencia: true`
+porque o campo vem do registo da bateria de teste, e a **P6 mediu o contrário** (a mesma referência produziu duas
+ordens, a posição passou de 0,00023 para 0,00046 BTC). **Uma declaração que mente não pode ser a única guarda do
+dinheiro.** Custo: uma leitura do registo de ordens por ordem enviada (ordens são raras; o orçamento de leituras ao
+venue não foi tocado — o limiar de 429 ficou fora desta medição por decisão da auditoria).
+
+- **Prova:** `bun run brokers/hyperliquid/processo.ts --bancada` → **41 casos · 0 divergentes** (três novos:
+  a recusa nomeada, o **controle** com a ordem de OUTRA referência — que ENVIA —, e a leitura que não se fez).
+  O dublê **não declara a resposta do envio** nos dois casos de recusa: se o caso chegasse ao venue, a bancada
+  rebentava — é isso que prova que **nada foi enviado**.
+- **Prova negativa:** `bash tools/verificar-conector/provas-offline.sh --prova-negativa` → com o defeito reposto a
+  bancada fica **vermelha a nomear o caso**; o ficheiro volta pelo `sha256`.
+
+### 2. D-007 — a mesa REABRIA a meio da liquidação — **FECHADO** (pela saída (i))
+
+A guarda `com_liquidacao_em_curso` (FR-013) existia na tabela e **nunca valia `true`**: ninguém escrevia o campo no
+contexto, e o `start` caía na linha `sempre` — a mesa voltava a operar a meio da liquidação. Quem sabe que a
+liquidação começou é o **registo** (a mesma verdade que o servidor já lia para mandar liquidar), e é de lá que o
+contexto do verbo passa a tirá-la — **só dentro de `encerrando`**.
+
+- **Prova:** `bash tools/verificar-maquina/vigia.sh --encerramento` → cenário `liquidacao-em-curso` (o `start` a
+  meio é recusado **com o nome**, zero transições de reabertura, a recusa escrita no registo) e o **controle**
+  `nao-fechar` (o mesmo `start`, com a liquidação por começar, **reabre** — o caminho do US7 continua vivo).
+- **Prova negativa:** `bash tools/verificar-maquina/prova-negativa-do-encerramento.sh`.
+
+### 3. D-021 — a mesa lê a operação UMA VEZ — **FECHADO** (com caso no portão)
+
+O código já relia a operação a cada volta e já tinha o travão da barra; faltava a **prova em processo**. Com a
+mesa órfã e a ciclar, tira-se a `leitura` do ficheiro e as voltas seguintes decidem `nada` por
+`leitura_ausente_no_ciclo` — uma mesa que lesse uma só vez continuaria a decidir sobre o retrato que já não está
+no ficheiro (o defeito medido: **44 ciclos sobre o mesmo retrato**).
+- **Prova:** `bash tools/verificar-maquina/vigia.sh --orfandade` (a verificação `orfandade/D-021`).
+
+### 4. D-011 — o stop — **FECHADO** (a recusa nomeada ganhou o caso que faltava)
+
+A varredura dos 44 casos de `ordens.casos.json` mostrou **zero** casos com `stop_pct`/`tp_pct`: a recusa existia no
+código desde 29/09 e **não tinha prova nenhuma no portão**. Entraram dois casos — e o que fica **declarado como
+capacidade, não como defeito fechado**: o venue **tem** a ordem `trigger` (medido nos tipos do SDK) e implementá-la
+exige, junto, o cancelamento que impede a trigger de descansar. Enquanto não existir, recusar nomeando é a resposta
+honesta (a posição não sai desprotegida em silêncio, FR-007).
+- **Prova:** `bun brokers/hyperliquid/casos/correr-ordens.ts` → **53 casos · 0 divergentes**
+  (`ordens/stop-pedido-nao-sai-recusa-nomeada`, `ordens/tp-pedido-nao-sai-recusa-nomeada`).
+
+### 5. D-012 — `limite` e `destino_do_resto` — **(b) FECHADO; (a) é DECISÃO SUA**
+
+- **(b) fechado:** o `destino_do_resto: cancelar` **não precisa de verbo** nesta ponta — para o único tipo
+  alcançável (`mercado`, tif `Ioc`) quem cancela o resto é o **próprio venue**, por construção. Prova:
+  `ordens/resto-a-cancelar-honrado-pelo-ioc` (o campo não chega ao payload, o `tif` que sai é `Ioc`). Nada a
+  acrescentar a `acoes_da_mesa`.
+- **(a) é sua, e é dinheiro:** o `limite` **é** alcançável (`ordens/limite-post-only-aceite-e-preco-exacto`), mas
+  **não com o preço que a mesa tem**: no tipo `limite` o preço vai **caractere a caractere** da marca, e a marca do
+  BTC tem **6 algarismos significativos** (`83554.0`) contra os **5** que o venue aceita — recusa nomeada
+  `valor_fora_da_banda`. As duas saídas: **(A)** derivar o preço da marca com a quantização da regra — o que muda
+  **o preço a que uma ordem de limite sai**; ou **(B)** retirar o `limite` do que o manifesto declara — **perda de
+  capacidade**. Uma destas duas é sua; a mesa não escolhe o preço de uma ordem de limite por conta própria.
+
+### 6. D-008 — as duas chaves sem botão — **declarado, e é uma PERGUNTA sua**
+
+As duas bandas do stop/tp estão fechadas desde 29/09. O que resta são as duas chaves que governariam comportamento
+que **não existe**: `tolera_posicao_manual` (RN-T16) e `bandas.tempo_maximo_em_posicao`. Medido outra vez hoje:
+**0 leitores, 0 fichas, 0 validadores**.
+- `tolera_posicao_manual`: a dependência (o **mapa de posse**) **já existe**, e o comportamento «vista, dita e não
+  gerida» também (`posicao_alheia_relatada_nao_gerida`). O que não existe é o ramo `false` — **pausar o instrumento**.
+  Isso é comportamento novo sobre dinheiro, e não se inventa sem a sua palavra;
+- `bandas.tempo_maximo_em_posicao`: fechar por tempo exige saber **quando a posição abriu**, e `mercado.posicao`
+  não traz o instante de abertura. Falta um **dado**, não uma linha de código.
+
+### 7. D-003 — a fila da contenda — **BLOQUEADO na superfície** (não é defeito da mesa nem do conector)
+
+Não há **pedido** nenhum que o arranque possa carimbar: as fichas vêm da configuração, e um ficheiro de
+configuração não pede nada. O ramo FIFO existe e está medido (`contenda.ts`, 7 casos, com o controle dos instantes
+trocados) e o arranque **diz** que usou o desempate por símbolo. Fecha quando existir a superfície (a web a ligar um
+instrumento) — e não se inventa um pedido para a fila ter ordem.
+
+### 8. D-017 — o operador — **fechado no código, e a PROVA continua a faltar (dito, não disfarçado)**
+
+O limite de espera existe: passadas `LEITURAS_INUTEIS` voltas sem leitura para os pares ligados, a operação é
+**escrita** com os pares que têm leitura e os outros entram `sem_leitura`, e o processo termina. **Não há caso no
+portão**, e a razão é medida: o operador **fixa o comando do conector no código** e não tem costura nenhuma por onde
+a bancada lhe ponha um conector de mentira a ler outros instrumentos — a cena exata do defeito (o SOL numa conta que
+só lê BTC). Uma prova offline exige abrir essa costura no processo **que está em observação a gerir posições vivas**;
+a alternativa (correr a cena contra a conta de teste) gasta o orçamento de 429 que esta vaga deixou **fora** por
+decisão da auditoria. Fica declarado com o que falta, em vez de marcado como feito.
+
+### 5-E. A DOCUMENTAÇÃO QUE FAZIA A MESA DECIDIR O QUE É DO PLUGIN — **EMENDADA, e a varredura feita**
+
+Toda a auditoria caía no mesmo caso, e a culpa não era dos auditores: era da `docs/regra-de-negocio.md`. A **RN-M4.12
+antiga (linha 184)** dizia «antes de enviar, **a mesa calcula** a perda implícita — distância do **stop** × exposição
+— e recusa a ordem», e isso punha a mesa a medir o stop — contra a **RN-S3** (o stop é da estratégia, arquivo do
+SETUP) e contra a própria RN-M4.12 emendada (02/10, no fim do mesmo documento). As duas redações da **mesma** regra
+conviviam sem data.
+
+- **A emenda, datada (03/10/2026),** tira o stop da fórmula da mesa, deixa o que a regra sempre quis dizer (o **teto
+  de EXPOSIÇÃO** do mandato: `saldo_pct × alavancagem` contra o teto da conta), mantém o texto original por baixo
+  para auditoria, e aponta para a emenda de 02/10 e para a prova (`core/ciclo/provar.ts`, D-015).
+- **A varredura** (`docs/*.md`, `specs/`) pelo mesmo padrão — a mesa ligada a stop/tp/limite, ou «a mesa calcula» com
+  um parâmetro do setup — achou **mais três sítios**, os três corrigidos com nota datada:
+  `docs/diagrama-de-blocos.html` («perda implícita acima do teto» → «exposição (nocional) acima do teto»),
+  `docs/regra-de-negocio.md` §8 («Metade da mesa» não dizia quem dá o **valor** ao stop — é o SETUP; a mesa só o
+  transporta) e `docs/inventario-de-chaves.md` §2 (a linha dizia que a mesa **lê** o stop e o tp da ficha; o que ela
+  lê é a **banda**).
+- **O que NÃO apareceu:** nenhuma regra que peça à mesa para decidir algo do plugin por desenho. Os sítios eram de
+  **redação**, não de intenção — e por isso não houve nada a perguntar-lhe sobre isto.
+
+### O veredicto da vaga, em números
+
+| | antes | agora |
+|---|---|---|
+| contrato | 1.11.0 | **1.12.0** (um motivo novo) |
+| motivos fechados (duas direções) | 22 | **23** |
+| casos do envio do conector | 38 | **41** |
+| casos das ordens do conector | 50 | **53** |
+| cenários do encerramento | 7 | **9** |
+| defeitos VIVOS fechados com prova | — | **D-007 · D-009 · D-011 · D-012(b) · D-021** |
+| defeitos declarados com o que falta | — | **D-003 · D-008(1) · D-012(a) · D-017** |

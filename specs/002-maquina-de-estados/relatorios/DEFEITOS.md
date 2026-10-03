@@ -160,7 +160,16 @@ três não está declarada, e um caso de controle em que as três estão e o arr
 
 ---
 
-## D-003 — A fila da contenda não tem hora de chegada no arranque
+## D-003 — A fila da contenda não tem hora de chegada no arranque  *(BLOQUEADO na superfície — 03/10/2026)*
+
+> **ESTADO EM 03/10/2026 — NAO fechado, e o que falta tem nome.** A varredura da documentacao do stop/limite (5-E)
+> relê isto e confirma o que ja' estava dito: **nao ha pedido nenhum** que o arranque possa carimbar. O arranque e'
+> disparado pela **configuracao** (as fichas com `run: true`), e um ficheiro de configuracao nao pede nada — nao tem
+> hora de chegada. O ramo FIFO existe e esta' medido (`tools/verificar-maquina/contenda.ts`, 7 casos, com o par de
+> controle dos instantes trocados), e o arranque **diz que usou o desempate** (`criterio:
+> "fifo_desempatado_por_simbolo"`) em vez de se chamar FIFO. Fechar isto exige a **superficie** (a web a ligar um
+> instrumento, o dono a carregar num botao), que nao existe nesta vaga — e **nao se inventa um pedido** para a fila
+> ter ordem. NAO e' um defeito do conector nem da mesa: e' trabalho que ainda nao tem quem o dispare.
 
 **O que devia acontecer.** A fila ordena pela **hora de chegada à mesa** (o relógio é o da mesa: o venue
 nunca viu estas intenções, e o instante que o pedido traga de fora não é usado — quem escolhe o lugar na
@@ -354,7 +363,26 @@ exigir o vermelho.
 
 <!-- FIM DO FICHEIRO — o defeito abaixo foi declarado ao fechar o D-006, e não é o mesmo defeito. -->
 
-## D-007 — A recusa por liquidação em curso não é alcançável pela porta (declarado 29/09/2026)
+## D-007 — A recusa por liquidação em curso não é alcançável pela porta — **FECHADO** (03/10/2026, com prova no portão)
+
+> **FECHADO — 03/10/2026, pela saida (i): a verdade chega ao contexto.** Quem sabe que a liquidacao comecou e' o
+> **registo**, e e' a mesma verdade que o servidor ja' lia dele para mandar liquidar: a ultima entrada em
+> `encerrando` traz o motivo da decisao do dono, e `liquidacao_em_curso` e' ele a escolher fechar a mercado
+> (`core/ciclo/encerramento.ts`). O contexto do verbo (`core/mesa.ts`, `receber`) passa a trazer
+> `liquidacao_em_curso` — e so' **dentro** de `encerrando`, para nao ser memoria velha de uma liquidacao acabada.
+> Com isso a linha da tabela (`encerrando` + `start`, guarda `com_liquidacao_em_curso` -> recusa
+> `liquidacao_em_curso`, FR-013) **passa a governar**: uma regra declarada que nunca disparava deixa de ser papel.
+>
+> **A PROVA, e ela e' a que o proprio defeito pedia (os dois lados):**
+> `bash tools/verificar-maquina/vigia.sh --encerramento` — cenario `liquidacao-em-curso` (o dono responde
+> `fechar_a_mercado`, a liquidacao corre, e o `start` a meio e' **recusado nomeado**: `motivo=liquidacao_em_curso`,
+> zero transicoes de reabertura, e a recusa escrita no registo) e o **controle** `nao-fechar` (o MESMO `start`,
+> com a liquidacao por comecar, **reabre** — o caminho do US7 continua a existir).
+> **Prova negativa:** `bash tools/verificar-maquina/prova-negativa-do-encerramento.sh` — tira-se o campo do contexto
+> (o defeito reposto, byte a byte o medido) e a bancada fica **vermelha a NOMEAR o caso**
+> (`liquidacao-em-curso/D-007 ... motivo=undefined`); o ficheiro volta pelo `sha256`.
+>
+> *O diagnostico original fica por baixo, para auditoria.*
 
 **Encontrado ao fechar o D-006** — a mesma família, mas é outro defeito, e por isso fica declarado em vez de
 resolvido à socapa.
@@ -390,7 +418,27 @@ o mesmo `start` cancela a pergunta (o caminho do US7 continua a existir).
 
 ---
 
-## D-008 — As bandas do mandato têm leitores a menos, e duas chaves das regras não existem (declarado 29/09/2026)
+## D-008 — As bandas do mandato têm leitores a menos, e duas chaves das regras não existem — **(2) FECHADO 29/09; (1) declarado, à espera do dono** (03/10/2026)
+
+> **ESTADO EM 03/10/2026 — a metade (2) esta' fechada desde 29/09 (as duas BANDAS do stop/tp morrem no ciclo, com 8
+> casos e 6 provas negativas). O que resta e' a metade (1): as DUAS CHAVES que governariam comportamento que nao
+> existe.** Medido hoje outra vez, por `grep -rn 'tolera_posicao_manual|tempo_maximo_em_posicao'` em todo o
+> repositorio (fora dos documentos): **0 leitores, 0 fichas, 0 validadores**.
+>
+> - **`tolera_posicao_manual` (RN-T16)** — a dependencia que a travava (**o mapa de posse**, RN-T16.1) **ja' existe**
+>   desde o recorte do ledger: `mercado.posicao.marca_de_posse` + `marcas-<conta>.jsonl`, e o comportamento «vista,
+>   dita e **nao gerida**» tambem ja' existe (`posicao_alheia_relatada_nao_gerida`, medido em
+>   `tools/verificar-conector/posse-do-preenchimento.ts`). O que **nao existe** e' o ramo `false` da regra — «se a
+>   ficha nao tolerar, a mesa fica em **pausa** nesse instrumento». **Pausar um instrumento e' comportamento novo**
+>   sobre dinheiro: nao se inventa sem a palavra do dono;
+> - **`bandas.tempo_maximo_em_posicao`** — fechar por tempo exige saber **quando a posicao abriu**, e
+>   `mercado.posicao` traz lado, unidades, preco medio e marca de posse — **nao traz instante de abertura**. A chave
+>   nem consta da lista de bandas que o arranque confere. **Sem o instante de abertura nao ha' onde ler o tempo** —
+>   e' um dado que falta, nao uma linha de codigo que falta (ha' que medir se o venue o publica).
+>
+> *Nada se inventou: a doutrina da casa para chave sem comportamento e' esta' — declara-se com a dependencia que
+> falta, em vez de se criar a chave para o inventario parecer completo. As duas perguntas vao ao dono em
+> `docs/ONDE_ESTAMOS.md` (nota de vaga, 03/10/2026).*
 
 **Encontrado ao fechar o item das chaves sem leitor.** Três coisas medidas, e a terceira não estava na lista.
 
@@ -475,7 +523,34 @@ venue, com a mesa a dizer que a viu e a **não a gerir** (e, no caso `false`, a 
 (iii) para o tempo em posição: a posição aberta há mais do que a banda, e o fecho a acontecer — com o par de
 controle de uma posição **dentro** do tempo, que fica.
 
-## D-009 — A idempotência declarada no manifesto não é a do venue (declarado 29/09/2026)
+## D-009 — A idempotência declarada no manifesto não é a do venue — **FECHADO pela via (a)** (03/10/2026)
+
+> **FECHADO — 03/10/2026, pela saida (a): a idempotencia passou a ser NOSSA.** Antes de tocar no venue — e antes de a
+> `resolucao` sair — o conector **le' o registo de ordens da conta** (`historicalOrders`) e procura o `cloid` que a
+> traducao derivou desta referencia. Achado, **NAO MANDA**: responde `recusado` com o motivo novo
+> **`referencia_ja_enviada_ao_venue`** (emenda **1.12.0**) e leva a ordem que existe inteira em `resposta_do_venue`.
+> A leitura nao se fez (venue calado, erro ou fora do prazo)? **`desconhecido`**, e tambem nao se envia: sem saber
+> se a ordem la' esta', mandar e' uma aposta.
+>
+> **A RECONCILIACAO E' INCONDICIONAL, e e' isso que a torna uma guarda a serio:** o manifesto continua a declarar
+> `idempotencia: true` (le'-se da bateria, e a P6 mediu o contrario) — **uma declaracao que mente nao pode ser a
+> unica guarda do dinheiro**. Por isso ela corre em TODO o envio, e nao so' quando a declaracao diz «nao». O custo
+> e' UMA leitura do registo de ordens por ordem enviada (ordens sao raras; o orcamento de leituras ao venue nao e'
+> tocado — e o limiar de 429 continua fora desta medicao, por decisao da auditoria).
+>
+> **A PROVA (no portao):** `bun run brokers/hyperliquid/processo.ts --bancada` -> **41 casos, 0 divergentes**, com
+> tres casos novos: `processo/reconciliacao-a-referencia-ja-produziu-ordem` (a ordem esta' no registo: RECUSA
+> nomeada, UMA linha, e a resposta do ENVIO nem esta' declarada no duble — se o caso chegasse ao venue, a bancada
+> rebentava), `processo/reconciliacao-com-ordem-de-outra-referencia` (**o controle**: o registo tem uma ordem, mas de
+> OUTRA referencia — nao encontrar a nossa, ENVIA) e `processo/reconciliacao-nao-se-leu-nao-envia` (`desconhecido`
+> com `reconciliacao_nao_lida`, sem envio).
+> **Prova negativa:** `bash tools/verificar-conector/provas-offline.sh --prova-negativa` — injecta-se o defeito (a
+> leitura deixa de encontrar a ordem), a bancada fica **vermelha a NOMEAR** o caso, e o ficheiro volta pelo `sha256`.
+>
+> **O que fica declarado, e nao escondido:** o **manifesto continua a mentir** (`idempotencia: true`) porque o campo
+> vem do registo da bateria de teste, e gerar um novo registo exige uma corrida ao venue **a mover dinheiro** — que
+> nao se faz nesta vaga. A guarda protege o dinheiro sem depender da declaracao; a declaracao continua a ser o que a
+> bateria mediu. Trabalho de casa: derivar `idempotencia` da **P6** (e nao das notas de documentacao do venue).
 
 **Encontrado na primeira corrida da bateria de TESTE contra a testnet** — a primeira vez que este conector
 falou com a corretora a sério para **enviar**. O manifesto declara `idempotencia: true`; medido, é **falso do
@@ -550,7 +625,25 @@ P5 medir «1 de 5 coincidem» com a leitura do venue.
 **O que fecharia:** pedir a alavancagem ao venue antes de abrir (o verbo existe no SDK deste venue) e, quando
 ele recusar, **recusar a boleta** em vez de seguir com outra alavancagem — o silêncio é que não serve.
 
-## D-011 — A boleta pede stop e o stop não sai: o conector aceita e não lê (declarado 29/09/2026)
+## D-011 — A boleta pede stop e o stop não sai — **FECHADO** (03/10/2026: recusa nomeada COM CASO; a ordem `trigger` fica declarada)
+
+> **FECHADO — 03/10/2026.** Este defeito tem duas metades, e as duas ficam ditas com o seu nome. **(1) O SILENCIO
+> ACABOU** (29/09/2026): a boleta com `stop_pct`/`tp_pct` e' **RECUSADA COM NOME** (`capacidade_nao_declarada`),
+> porque este conector ainda nao manda a ordem `trigger` — a unica saida proibida era «aceitar e ignorar», que era
+> o que acontecia (P10: payload identico com e sem stop). **(2) O CASO FALTAVA**, e entrou hoje: na varredura dos 44
+> casos de `ordens.casos.json` **nao havia UM unico caso com `stop_pct` ou `tp_pct`** — a recusa existia no codigo e
+> nao tinha prova no portao. Agora tem dois:
+> `ordens/stop-pedido-nao-sai-recusa-nomeada` e `ordens/tp-pedido-nao-sai-recusa-nomeada`
+> (`bun brokers/hyperliquid/casos/correr-ordens.ts` -> **53 casos, 0 divergentes**).
+>
+> **O QUE FICA EM ABERTO, declarado como capacidade e nao como defeito fechado:** o venue **TEM** o verbo (medido
+> nos tipos do SDK: `t: { trigger: { tpsl, triggerPx, isMarket } }`; o manifesto declara `stop_anexo: false`, logo
+> o stop e' entregavel como ordem `trigger` separada). Implementa-lo exige, junto, o **cancelamento** que impede a
+> trigger de descansar depois de a posicao fechar (D-012). Enquanto isso nao existir, a resposta honesta e' a que
+> esta': recusar nomeando, em vez de entregar uma posicao desprotegida a quem pediu proteccao (FR-007).
+>
+> **Porque e' que isto NAO e' decisao da mesa:** o stop e' do **SETUP** (RN-S3/RN-S11) e a mesa so' o transporta —
+> quem nao o sabe honrar e' a **ponta** (o conector), e e' por isso que a resposta sai la'.
 
 > **ESTADO EM 29/09/2026, ao fechar a varredura do vocabulário: o SILÊNCIO acabou; o stop ainda não sai.**
 > O tradutor passou a **recusar com nome** (`capacidade_nao_declarada`) qualquer boleta que traga `stop_pct`
@@ -587,7 +680,25 @@ adapta uma boleta em silêncio»), agora com o risco do lado do dinheiro.
 prender, **recusar nomeando** (`capacidade_nao_declarada`); e, para o `prazo`/`destino`, ou se implementam
 (verbo de cancelamento, D-012) ou saem do contrato.
 
-## D-012 — O tipo `limite` é inalcançável neste venue (e o `destino_do_resto: cancelar` não tem verbo) (declarado 29/09/2026)
+## D-012 — O tipo `limite` é inalcançável neste venue (e o `destino_do_resto: cancelar` não tem verbo) — **(b) FECHADO; (a) e' decisão do dono** (03/10/2026)
+
+> **ESTADO EM 03/10/2026 — a metade (b) fechou, a metade (a) nao e' nossa.**
+>
+> **(b) O `destino_do_resto: cancelar` — FECHADO, e a leitura e' a que ja' estava no codigo, agora com prova.** O
+> verbo de cancelar **nao e' preciso nesta ponta**: para o UNICO tipo alcancavel depois do D-012 (`mercado`, tif
+> `Ioc`), quem cancela o que nao encheu e' o **proprio venue**, por construcao — o `Ioc` e' um cancelamento
+> imediato do resto. O caso novo `ordens/resto-a-cancelar-honrado-pelo-ioc` prova-o: o campo nao chega ao payload e
+> o `tif` que sai e' `Ioc`. Nao ha accao nenhuma para a mesa decidir (logo, nada a acrescentar a `acoes_da_mesa`).
+>
+> **(a) O `limite` — NAO fechado, e a decisao e' do DONO.** Medido: `limite` **e' alcancavel** (ha' um caso a
+> provar: `ordens/limite-post-only-aceite-e-preco-exacto`, `preco 1234.5` -> `Alo`), mas **nao com o preco que a
+> mesa tem**: no tipo `limite` o preco vai **caractere a caractere** da marca (`ordens.ts`), e a marca que este
+> venue publica para o BTC tem **6 algarismos significativos** (`83554.0`) contra os **5** que o proprio venue aceita
+> — recusa nomeada `valor_fora_da_banda` (caso `ordens/preco-com-6-algarismos-significativos-recusa`). As duas
+> saidas sao as que o defeito ja' dizia: **executar** o `limite` (derivar da marca com a quantizacao da regra, em vez
+> de a usar crua) — o que **muda o preco a que uma ordem de limite sai**, e por isso nao e' decisao de quem escreve
+> o codigo — ou **retirar o tipo** do que o manifesto declara, o que e' uma **perda de capacidade** e e' o dono que
+> a aceita. **Vai ao dono com a medicao na mao** (ver a nota de vaga em `docs/ONDE_ESTAMOS.md`).
 
 **Encontrado ao tentar exercer o outro tipo de ordem que o manifesto declara.** O manifesto diz
 `tipos_de_ordem: ["mercado","limite"]`; medido, **toda** a boleta `limite` morre antes de sair:
@@ -945,7 +1056,23 @@ do Pine nunca abre.**
 
 ---
 
-## D-017 — o operador espera para sempre por uma leitura que nao vem
+## D-017 — o operador espera para sempre por uma leitura que nao vem — **FECHADO no codigo, SEM CASO no portao** (03/10/2026)
+
+> **ESTADO EM 03/10/2026 — fechado no codigo, e a PROVA continua a faltar. Dito, e nao disfarcado.**
+> O limite de espera **existe**: passadas `LEITURAS_INUTEIS` voltas sem uma leitura para os pares ligados
+> (`vigia/operador.ts`), a operacao e' **escrita** com os pares que tem leitura e os outros entram **sem** `leitura`
+> (`sem_leitura`, RN-D7) — com o motivo no `erro_do_setup` — e o processo termina em vez de esperar para sempre.
+> Mais: a operacao ja' nao sai de um retrato, porque a mesa **rele^ a operacao a cada volta** (D-021, com caso).
+>
+> **PORQUE NAO HA CASO, medido:** o operador **fixa o comando do conector no codigo**
+> (`spawn("bun", ["run", ..., "brokers/hyperliquid/processo.ts", "--ao-vivo", ...])`, `vigia/operador.ts`), e nao
+> ha' costura nenhuma por onde a bancada lhe ponha um conector de mentira a ler **outros** instrumentos — que e' a
+> cena exata do defeito (o SOL numa conta que so' le' BTC). Uma prova offline exige **abrir essa costura** (uma
+> variavel de ambiente com o argv do conector) — e o operador e' **o processo em observacao**, a gerir posicoes
+> vivas: nao se lhe mexe sem a palavra do dono. A alternativa (correr a cena a' serio, contra a conta de teste) gasta
+> o orcamento de 429 que esta vaga deixou **fora** por decisao da auditoria.
+> **O que fica por fazer, em uma linha:** a costura do conector (ambiente) + o caso do par ligado que o conector nao
+> le^ -> operacao escrita com `sem_leitura` e processo terminado. **Nao fechado, e e' isto que falta.**
 
 **Declarado em 30/09/2026.** Medido: com uma ficha ligada (`run: true`) cujo instrumento a conta do conector
 nao le — o caso do SOL na conta de teste, que declarava so' BTC — o operador fica a' espera
@@ -1014,7 +1141,17 @@ repetir a corrida e **ler o que ele diz** — e nao voltar a tentar as cegas.
 
 ---
 
-## D-021 — a mesa le a operacao UMA VEZ, e por isso o relogio da ficha nao a trava
+## D-021 — a mesa le a operacao UMA VEZ, e por isso o relogio da ficha nao a trava — **FECHADO** (03/10/2026, com caso no portao)
+
+> **FECHADO — 03/10/2026, no portao.** O codigo ja' tinha as duas metades: (a) a mesa **rele^ a operacao a cada
+> volta** do relogio (`core/servidor.ts`, `lerOperacao` dentro do `setInterval`) e (b) o **travao da barra** do lado
+> de quem aperta o gatilho (`entrada_ja_feita_nesta_barra`, semeado do registo no arranque). O que faltava era a
+> prova de que a (a) e' verdadeira **em processo** — e ela entrou na bancada da orfandade: com a mesa orfa e a ciclar,
+> **tira-se a `leitura` do ficheiro de operacao** e as voltas seguintes passam a decidir `nada` pelo motivo
+> `leitura_ausente_no_ciclo`. Uma mesa que lesse a operacao uma so' vez (o defeito medido: 44 ciclos sobre o MESMO
+> retrato) continuaria a decidir sobre a leitura que ja' nao esta' no ficheiro, e a prova reprovava.
+> **Como se corre:** `bash tools/verificar-maquina/vigia.sh --orfandade` (a verificacao chama-se
+> `orfandade/D-021: a mesa RELE^ a operacao - tirar a leitura do ficheiro muda a decisao seguinte`).
 
 **Declarado em 30/09/2026, medido em operacao.** O setup passou a propor **uma vez por barra fechada** (o
 relogio da ficha manda na entrada) — e isso esta' provado: em 4 voltas do operador, **1 proposta**. Mas o

@@ -80,12 +80,12 @@ declarar "manifesto acompanha as fichas (quente)" bun run tools/verificar-conect
 # O CAMINHO DO ENVIO faltava na porta unica: as 38 provas da porta de processo do conector (tradutor, precos,
 # assinatura, as 8 portas do arranque) so corriam quando alguem se lembrava de as chamar. Um caminho que mexe
 # em dinheiro fora do portao e um caminho que pode regredir sem ninguem dar por isso (medido 29/09/2026).
-declarar "envio do conector (38 casos)"   bun run brokers/hyperliquid/processo.ts --bancada
+declarar "envio do conector (41 casos)"   bun run brokers/hyperliquid/processo.ts --bancada
 # A TRADUCAO DE ORDENS entra no portao pela MESMA razao que o envio: e' ela que decide a quantidade que vai
 # para o mercado, e e' o UNICO sitio onde uma reducao parcial se vira em numero (emenda 1.11.0). Corria so' a'
 # mao (`casos/correr-ordens.ts`), fora de todas as bancadas — e um caminho que mexe em dinheiro fora do portao e'
 # um caminho que pode regredir sem ninguem dar por isso (a licao de 29/09/2026, paga com o envio).
-declarar "ordens do conector (50 casos)"  bun brokers/hyperliquid/casos/correr-ordens.ts
+declarar "ordens do conector (53 casos)"  bun brokers/hyperliquid/casos/correr-ordens.ts
 # O FEED DE MERCADO entra no portao: e' o processo que serve TODOS os setups, e nao tinha bancada nenhuma (o que
 # havia era execucao ao vivo). A bancada mede o NUCLEO PURO (`feed-barras.ts`, modulo sem efeitos ao carregar):
 # a barra agregada do `bbo` marcada e com `v`/`n` a zero, a barra do venue a substituir a agregada, o buraco

@@ -181,11 +181,27 @@ transporta. Quem decide é a mesa, dentro do mandato.
 - **RN-M4.11.** O desempate alfabético é pelo **símbolo do instrumento**, em comparação simples de
   caracteres (não por regras de idioma), para que a mesma situação dê sempre o mesmo resultado.
 - **RN-M4.12.** O mandato declara também o **risco máximo por ordem**, em percentagem do saldo (ex.: 2%).
-  Antes de enviar, a mesa calcula a perda implícita — distância do stop × exposição — e **recusa** a
-  ordem que a exceda, mesmo que o setup a peça e mesmo que a ficha a permita. É o travão que nenhuma
-  ordem de corretora nenhuma atravessa. Dentro dele, o **stop e o circuit breaker de cada operação** são
-  definidos na ficha conforme a necessidade — uma operação de várias sessões pode querer outro valor,
-  desde que caiba no teto.
+  Antes de enviar, a mesa recusa a ordem cuja **EXPOSIÇÃO** exceda esse teto, mesmo que o setup a peça e
+  mesmo que a ficha a permita. É o travão que nenhuma ordem de corretora nenhuma atravessa.
+  > **EMENDA DATADA — 03/10/2026.** A redacção que aqui estava dizia «a mesa calcula a **perda implícita** —
+  > **distância do stop × exposição** — e recusa a ordem». Isso **punha a MESA a medir o stop**, e o stop é da
+  > **estratégia** (o arquivo do SETUP, **RN-S3**, duas linhas abaixo) — não do mandato nem da mesa. As duas
+  > redacções da MESMA regra conviveram sem data, e foi isso que fez cada leitura nova desta regra concluir que a
+  > mesa decide o stop: **três auditorias seguidas caíram neste caso**. O que vale, e é o que a regra sempre quis
+  > dizer: o travão da mesa é o **teto de EXPOSIÇÃO do mandato** — `saldo_pct × alavancagem`, em % do saldo,
+  > contra o tecto que a **CONTA** declara (`conta.risco_maximo_por_ordem_pct`). A mesa **não lê o stop**: não o
+  > mede, não o corrige e não o inventa. O **stop e o tp** viajam na boleta porque o **plugin** os declarou
+  > (RN-S3), e a mesa só os transporta — recusando a boleta se o conector os não souber honrar (D-011), nunca
+  > deixando-os cair em silêncio. A **distância mínima de liquidação** é travão **opcional** da config de risco
+  > (RN-M4.13). A redacção vigente com a decisão do dono está na **emenda de 02/10/2026**, no fim deste documento
+  > (procurada por «RN-M4.12 (risco por ordem)»), com a prova em `core/ciclo/provar.ts` e o fecho do **D-015**.
+  >
+  > *Texto original, mantido por baixo para auditoria:* «Antes de enviar, a mesa calcula a perda implícita —
+  > distância do stop × exposição — e **recusa** a ordem que a exceda, mesmo que o setup a peça e mesmo que a
+  > ficha a permita. É o travão que nenhuma ordem de corretora nenhuma atravessa. Dentro dele, o **stop e o
+  > circuit breaker de cada operação** são definidos na ficha conforme a necessidade — uma operação de várias
+  > sessões pode querer outro valor, desde que caiba no teto.» (Também esta última frase cai: o **stop** não é
+  > definido na ficha — a ficha tem as **bandas** que o limitam, e o valor é do **setup**, RN-S3/RN-M6.1.)
 - **RN-M4.13.** A **distância mínima de liquidação** é um travão **opcional, da config de risco da
   ordem**. Quem a declara sabe que distância de movimento adverso aceita — normalmente depois de estudar
   o par em `/tools` (volatilidade por sessão, amplitude típica); **sem ela declarada, a ordem é livre**.
@@ -320,6 +336,11 @@ absolutos ou pontos, que são unidades de uma corretora concreta.
 - **Metade da mesa:** ciclo, instrumento, lado, tipo, percentagem do saldo, alavancagem, stop
   (percentagem de movimento, ou ausente), tp (idem), política de execução parcial, desvio máximo,
   reduce-only, referência do cliente.
+  > **EMENDA DATADA — 03/10/2026.** «Metade da mesa» enumera os campos que a **boleta** leva — e não diz quem
+  > lhes dá o **valor**, que era a confusão: o **stop** e o **tp** são escritos na boleta pela mesa, mas o valor
+  > é do **SETUP** (o template, RN-S3) — a mesa **transporta-os** e não os lê, não os mede e não os inventa.
+  > (O que a mesa confere do lado do dono é a **banda** da ficha, `core/ciclo/ciclo.ts` 3.6 — o valor do setup
+  > dentro da banda; e a RN-M4.12, no §7, passou a ser só o teto de exposição.)
 - **Metade da corretora (a resolução, RN-C10):** quantidade na unidade do instrumento, nocional,
   margem empenhada, alavancagem efectiva, preço de liquidação — e o desfecho.
 
