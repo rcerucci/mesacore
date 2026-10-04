@@ -153,6 +153,32 @@
   table.tab tr:last-child td { border-bottom: 0; }
   table.tab tr.vazio td { color: var(--tinta-fantasma); }
   table.tab tr.parado td { box-shadow: inset 2px 0 0 var(--venda); }
+  /* A LINHA DA ORDEM QUE ABRIU A POSIÇÃO: um DETALHE por baixo da posição, e não uma sexta coluna (a coluna de
+     306 px não a comporta — o cabeçalho já saía cortado com seis, ver posicoes.js). Fina, sem borda própria, e com
+     o `oid` em mono para se poder comparar com o UI do venue linha a linha. */
+  table.tab tr.detalhe td { padding: 0 8px 4px; border-bottom: 0; }
+  table.tab tr.detalhe + tr td { border-top: 1px solid var(--divisor); }
+  table.tab tr.detalhe .mini { text-transform: none; letter-spacing: 0; font-size: 10px; }
+
+  /* ---------- O FORMULÁRIO (criar/editar um documento) ----------
+     TRÊS LINHAS POR CAMPO, e não uma só: a PERGUNTA (o que se responde), o CONTROLE, e a RÉGUA (a chave do
+     documento · o tipo · o que o conector já declara). Antes saía tudo colado numa linha — «…?texto ·
+     obrigatórioconta.identificador» — e a mesma pergunta aparecia outra vez ao lado do campo; isso não é um
+     formulário, é um despejo. E os campos vão AGRUPADOS pela raiz da chave (conta.* · conexao.*), com título. */
+  .secao-do-formulario { margin: 0 0 12px; }
+  .titulo-da-seccao {
+    margin: 10px 0 2px; padding-bottom: 3px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--tinta-fraca); border-bottom: 1px solid var(--borda);
+  }
+  .campo { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--divisor); }
+  .campo .rot { font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--tinta); white-space: normal; display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
+  .campo .rot .tipo { font-size: 10px; color: var(--tinta-fantasma); white-space: nowrap; }
+  .campo .obrig { color: var(--venda); }
+  .campo input, .campo select { width: 100%; font-size: 12px; padding: 3px 5px; }
+  .campo .regua { font-size: 10px; color: var(--tinta-fantasma); }
+  .campo.por-preencher { box-shadow: inset 2px 0 0 var(--tinta-fraca); padding-left: 7px; }
+  .campo-sem-valor { font-size: 11px; color: var(--tinta-fraca); }
+  #vista-de-config input[data-novo], #vista-de-config select[data-novo] { min-height: 22px; }
 
   /* ---------- o rodapé ---------- */
   .rodape {

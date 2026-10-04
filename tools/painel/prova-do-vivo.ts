@@ -33,6 +33,8 @@ const haUmaHora = agora - 3_600_000;
 const haDoisMin = agora - 120_000;
 const fonte = (caminho: string, em_ms = agora) => ({ caminho, em_ms, idade_ms: Date.now() - em_ms });
 
+const ORDEM_DO_BTC = { encontrada: true, marca: 28, referencia: "mesa-sigma_v0-000028", quando: "2026-10-04T11:30:00.000Z", oid: 61809804678, cloid: "0xabc", preco_medio: "2675.3", classificacao: "aceite", recusado: false, preenchido: "0.004" };
+
 const instrumento = (nome: string, parado: boolean) => ({
   instrumento: nome, conta: "conta-de-bancada",
   ficha: { caminho: `fichas/sigma/${nome}-conta-de-bancada.json`, setup: "sigma", versao_do_setup: "0.1.0", linguagem: "typescript", relogio: "30m", run: true, enviar: false, ao_desligar: "fechar" },
@@ -43,6 +45,8 @@ const instrumento = (nome: string, parado: boolean) => ({
     posicao: nome === "BTC" ? { lado: "buy", unidades: "0.004", preco_medio: "2675.3", marca_de_posse: 28 } : null,
     ordens_abertas: nome === "BTC" ? [{ lado: "buy", unidades: "0.001", preco: "2600.0", ordem: "oid-9", marca_de_posse: 31 }] : [],
   },
+  // A LIGAÇÃO À ORDEM QUE ABRIU A POSIÇÃO (ver `desfechos.ts`): o `oid` do venue é o que se compara com o UI dele.
+  ordem_da_posicao: nome === "BTC" ? ORDEM_DO_BTC : null,
   velas: [
     { t: haUmaHora - 1_800_000, o: 85000, h: 85100, l: 84900, c: 85050, v: "1.2", n: 10 },
     { t: haUmaHora, o: 85050, h: 85200, l: 85000, c: 85181, v: "1.5", n: 12 },
@@ -56,7 +60,14 @@ const instrumento = (nome: string, parado: boolean) => ({
   o_que_o_setup_disse: {}, proposta: null,
   ultima_decisao: { instante_ms: haDoisMin, tipo: "ciclo", instrumento: nome, acao: "nada", motivo: "proposta_ausente_tratada_como_hold", nota: "ciclo 12" },
   decisao_contagem: { "nada:proposta_ausente_tratada_como_hold": 12 },
-  parado: parado ? { travado: true, porque: "proposta_ausente_tratada_como_hold", desde_ms: agora - 6_000_000, ciclos: 33 } : { travado: false },
+  // A NATUREZA DO QUE NÃO AGIU (ver `travado.ts`): o BTC está em ATENÇÃO (a mesa não conseguiu ler — é do dono) e o
+  // ETH em ESPERA (o setup não tem nada a dizer — o estado normal de um sistema em observação). As duas são DITAS,
+  // mas só a primeira usa a palavra «travado».
+  parado: parado
+    ? (nome === "BTC"
+      ? { travado: true, classe: "atencao", porque: "leitura_ausente_no_ciclo", desde_ms: agora - 6_000_000, ciclos: 33 }
+      : { travado: false, classe: "espera", porque: "proposta_ausente_tratada_como_hold", desde_ms: agora - 3_600_000, ciclos: 20 })
+    : { travado: false, classe: "atencao", porque: null, desde_ms: null, ciclos: 0 },
   decisoes_de_abrir_ms: [], marcas_nossas_conhecidas: [],
   fontes: { ficha: fonte(`fichas/sigma/${nome}-conta-de-bancada.json`, haUmaHora), velas: fonte(`velas-${nome}-30m.jsonl`, haDoisMin) },
   falhas: null, divergente: null,
@@ -77,11 +88,11 @@ const fio = {
   }],
   geral: {
     n_instalacoes: 1, n_pares: 2,
-    posicoes: [{ instalacao: "bancada-do-vivo", conta: "conta-de-bancada", instrumento: "BTC", setup: "sigma", lado: "buy", unidades: "0.004", preco_medio: "2675.3", marca_de_posse: 28 }],
+    posicoes: [{ instalacao: "bancada-do-vivo", conta: "conta-de-bancada", instrumento: "BTC", setup: "sigma", lado: "buy", unidades: "0.004", preco_medio: "2675.3", marca_de_posse: 28, ordem_que_a_abriu: ORDEM_DO_BTC }],
     ordens_vivas: [{ instalacao: "bancada-do-vivo", conta: "conta-de-bancada", instrumento: "BTC", setup: "sigma", lado: "buy", unidades: "0.001", preco: "2600.0", ordem: "oid-9" }],
     parados: [
-      { instalacao: "bancada-do-vivo", conta: "conta-de-bancada", instrumento: "BTC", setup: "sigma", porque: "proposta_ausente_tratada_como_hold", desde_ms: agora - 6_000_000, ciclos: 33, estado_da_mesa: "em_operacao" },
-      { instalacao: "bancada-do-vivo", conta: "conta-de-bancada", instrumento: "ETH", setup: "sigma", porque: "proposta_ausente_tratada_como_hold", desde_ms: agora - 6_000_000, ciclos: 33, estado_da_mesa: "em_operacao" },
+      { instalacao: "bancada-do-vivo", conta: "conta-de-bancada", instrumento: "BTC", setup: "sigma", classe: "atencao", travado: true, porque: "leitura_ausente_no_ciclo", desde_ms: agora - 6_000_000, ciclos: 33, estado_da_mesa: "em_operacao" },
+      { instalacao: "bancada-do-vivo", conta: "conta-de-bancada", instrumento: "ETH", setup: "sigma", classe: "espera", travado: false, porque: "proposta_ausente_tratada_como_hold", desde_ms: agora - 3_600_000, ciclos: 20, estado_da_mesa: "em_operacao" },
     ],
   },
   plugins: [{ nome: "sigma", versao: "0.1.0", linguagem: "typescript", pasta: "setups/sigma", publica_serie: false, pares: [] }],
@@ -122,6 +133,16 @@ try {
   await tem("vivas-corpo", /oid-9/, "a ORDEM em aberto aparece (oid-9)");
   await tem("contagem-das-vivas", /1 pos · 1 ord/, "a cabeça conta o que está vivo (1 pos · 1 ord)");
   await tem("fita", /travado\(s\)/i, "a fita diz a ATENÇÃO em 5 s (travados)");
+  // AS DUAS NATUREZAS DITAS EM SEPARADO (ver `travado.ts`): o que precisa do dono usa a palavra «travado»; o que é
+  // uma abstenção é dito como ESPERA. Sem isto, o painel chamava «travado» ao par que estava a operar.
+  await tem("fita", /1 travado\(s\)/i, "e só o par em ATENÇÃO conta como travado (1, não 2)");
+  await tem("fita", /à espera de sinal/i, "e o par que só abstém é dito À ESPERA DE SINAL, não como travado");
+  // A LIGAÇÃO À ORDEM QUE ABRIU A POSIÇÃO: sem ela, quem abre o painel vê a posição e não sabe de que ordem veio —
+  // e não consegue comparar com o UI do venue linha a linha (a ligação já era requisito).
+  await tem("vivas-corpo", /ordem que a abriu[\s\S]*oid 61809804678/, "a POSIÇÃO liga-se à ORDEM que a abriu, com o `oid` do venue");
+  await tem("vivas-corpo", /mesa-sigma_v0-000028/, "e com a NOSSA referência daquela ordem");
+  const detalhe = await bancada.avaliar(`(() => { const tr = document.querySelector("#vivas-corpo tr.detalhe"); return tr ? tr.querySelector("td").getAttribute("colspan") : null; })()`);
+  certeza(detalhe === "5", `a linha da ordem atravessa as 5 colunas (medido colspan=${detalhe})`);
 
   console.log("\n── 2. o que está PARADO e porquê, com o tempo");
   await tem("matriz", /sem proposta/, "a coluna TRAVA diz o motivo (em código curto, com o cru no title)");

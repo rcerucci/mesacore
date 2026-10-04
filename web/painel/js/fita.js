@@ -36,23 +36,28 @@ export function desenharFita() {
   // A ATENÇÃO, calculada e dita no topo — é ela que responde aos 5 segundos. A ordem é a da gravidade:
   // sem dados > faltas do retrato > travados (que num sistema em observação é o estado NORMAL, e por isso
   // não se pinta de vermelho: gritar sempre é o mesmo que não gritar).
-  const parados = estado.instalacao === "geral"
-    ? (estado.dados?.geral?.parados ?? []).length
-    : instrumentos.filter((i) => i.parado?.travado).length;
-  // O MAIS ANTIGO: a idade do par que há mais tempo não consegue agir. Sem ela, «travado» é um adjectivo sem
-  // tempo — e o dono não sabe se é de agora ou de ontem. Com ela, a fita conta o que se passa.
-  const desdeMaisAntigo = estado.instalacao === "geral"
-    ? (estado.dados?.geral?.parados ?? []).reduce((a, p) => (p.desde_ms && (!a || p.desde_ms < a) ? p.desde_ms : a), null)
-    : instrumentos.filter((i) => i.parado?.travado).reduce((a, i) => (i.parado?.desde_ms && (!a || i.parado.desde_ms < a) ? i.parado.desde_ms : a), null);
+  // QUEM NÃO AGIU, E DE QUE NATUREZA. `atencao` (a mesa não conseguiu fazer o que queria) é que usa a palavra
+  // «travado»; `espera` (o setup não tem nada a dizer) é dita como ESPERA, com o tempo — é o estado NORMAL de um
+  // sistema em observação, e gritá-lo é o mesmo que não gritar. Ver `tools/painel/travado.ts`.
+  const naoAgiram = (estado.instalacao === "geral"
+    ? (estado.dados?.geral?.parados ?? []).map((p) => ({ classe: p.classe, desde_ms: p.desde_ms }))
+    : instrumentos.filter((i) => (i.parado?.ciclos ?? 0) > 0).map((i) => ({ classe: i.parado?.classe, desde_ms: i.parado?.desde_ms })));
+  const deAtencao = naoAgiram.filter((x) => x.classe === "atencao");
+  const deEspera = naoAgiram.filter((x) => x.classe !== "atencao");
+  // O MAIS ANTIGO de cada lista: sem a idade, «travado» (ou «à espera») é um adjectivo sem escala.
+  const maisAntigo = (l) => l.reduce((a, x) => (x.desde_ms && (!a || x.desde_ms < a) ? x.desde_ms : a), null);
   const faltas = (estado.dados?.faltas ?? []).length;
+  // AS DUAS NATUREZAS SÃO DITAS, não só a mais grave: «1 travado(s) há 1,7 h · 2 à espera de sinal há 7,9 h» conta o
+  // que se passa; mostrar só a primeira escondia metade do estado (e era o que o dono lia como «o mesmo de sempre»).
+  const partes = [];
+  if (deAtencao.length > 0) partes.push(`${deAtencao.length} travado(s)${maisAntigo(deAtencao) ? ` há ${desde(maisAntigo(deAtencao))}` : ""}`);
+  if (deEspera.length > 0) partes.push(`${deEspera.length} à espera de sinal${maisAntigo(deEspera) ? ` há ${desde(maisAntigo(deEspera))}` : ""}`);
   const atencao = tOperacao
     ? { classe: "teste", texto: `sem dados há ${desde(mesa.operacao_em_ms)}` }
     : faltas > 0
       ? { classe: "teste", texto: `${faltas} falta(s) do retrato` }
-      : parados > 0
-        // O TEMPO FAZ PARTE DA FRASE: «2 travados há 7,2 h» diz o que se passa; «2 travados» é só um adjectivo.
-        // (E é `travado` no sentido estrito — uma abstenao que já durou MAIS de uma barra do par: ver `retrato.ts`.)
-        ? { classe: "parado", texto: `${parados} travado(s)${desdeMaisAntigo ? ` há ${desde(desdeMaisAntigo)}` : ""}` }
+      : partes.length > 0
+        ? { classe: deAtencao.length > 0 ? "teste" : "parado", texto: partes.join(" · ") }
         : { classe: "vivo", texto: "nada exige atenção" };
 
   fita.innerHTML = `

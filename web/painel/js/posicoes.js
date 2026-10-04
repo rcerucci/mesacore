@@ -7,7 +7,7 @@
  *
  * Em "Geral" a mesma tabela mostra todas as instalações — a coluna PAR passa a `instalação · par`.
  * ========================================================================================== */
-import { estado, mesaAtual, mesas, escapar, comoVeio, acaoDita, motivoCurto, fonteEIdade } from "./nucleo.js";
+import { estado, mesaAtual, mesas, escapar, comoVeio, diaEHora, acaoDita, motivoCurto, fonteEIdade } from "./nucleo.js";
 
 /** A decisão da mesa sobre um par, procurada onde ela vive (a última linha de ciclo daquele par). */
 function decisaoDe(instalacao, instrumento) {
@@ -33,9 +33,9 @@ function asVivas() {
   if (!m) return out;
   for (const i of m.contas?.[0]?.instrumentos ?? []) {
     const base = { instalacao: m.instalacao, conta: i.conta, instrumento: i.instrumento, setup: i.ficha?.setup ?? null };
-    if (i.leitura?.posicao) out.posicoes.push({ ...base, ...i.leitura.posicao, decisao: i.ultima_decisao });
+    if (i.leitura?.posicao) out.posicoes.push({ ...base, ...i.leitura.posicao, decisao: i.ultima_decisao, ordem_que_a_abriu: i.ordem_da_posicao ?? null });
     for (const o of i.leitura?.ordens_abertas ?? []) out.ordens.push({ ...base, ...o });
-    if (i.parado?.travado) out.parados.push({ ...base, porque: i.parado.porque, desde_ms: i.parado.desde_ms, ciclos: i.parado.ciclos, estado_da_mesa: m.estado_da_mesa });
+    if ((i.parado?.ciclos ?? 0) > 0) out.parados.push({ ...base, classe: i.parado.classe, travado: i.parado.travado, porque: i.parado.porque, desde_ms: i.parado.desde_ms, ciclos: i.parado.ciclos, estado_da_mesa: m.estado_da_mesa });
   }
   return out;
 }
@@ -45,6 +45,23 @@ const etiqueta = (v) => estado.instalacao === "geral"
   ? `${escapar(v.instalacao)}<span class="fraco"> · ${escapar(v.instrumento)}</span>`
   : escapar(v.instrumento);
 
+/** A LINHA DA ORDEM QUE ABRIU A POSIÇÃO — o que deixa comparar com o UI do venue linha a linha: o `oid` do venue, a
+ *  hora, a nossa referência e o preço médio. Sem desfecho para a marca, diz-se o que falta (nunca um `oid` a fingir). */
+function ordemQueAbriu(p) {
+  const o = p.ordem_que_a_abriu ?? p.ordem ?? null;
+  if (o === null) return "";
+  if (o.encontrada !== true) {
+    return `<div class="mini fraco" title="${escapar(o.porque ?? "")}">ordem que a abriu · não encontrada — ${escapar(o.porque ?? "sem registo")}</div>`;
+  }
+  // O `quando` do desfecho vem em ISO (o formato do ficheiro); o `diaEHora` da tela conta milissegundos desde a
+  // época. Converte-se aqui, com guarda: uma data ilegível diz-se «—», nunca «Invalid Date».
+  const ms = o.quando ? Date.parse(o.quando) : NaN;
+  const quando = Number.isFinite(ms) ? diaEHora(ms) : "—";
+  return `<div class="mini fraco">ordem que a abriu · <b class="mono">oid ${escapar(String(o.oid ?? "—"))}</b>` +
+    ` · ${escapar(quando)} · <span class="mono">${escapar(String(o.referencia ?? "—"))}</span>` +
+    ` · ${escapar(String(o.classificacao ?? "—"))}${o.preco_medio ? ` · ${escapar(String(o.preco_medio))}` : ""}</div>`;
+}
+
 export function desenharVivas() {
   const caixa = document.getElementById("vivas-corpo");
   if (!caixa) return;
@@ -52,13 +69,13 @@ export function desenharVivas() {
 
   const posicoes = v.posicoes.length === 0
     ? `<tr class="vazio"><td colspan="5">nenhuma posição viva</td></tr>`
-    : v.posicoes.map((p) => `<tr title="marca ${escapar(String(p.marca_de_posse ?? "—"))}">
+    : v.posicoes.map((p) => `<tr title="marca de posse ${escapar(String(p.marca_de_posse ?? "—"))}">
         <td>${etiqueta(p)}</td>
         <td><span class="lado ${p.lado === "buy" ? "compra" : "venda"}">${p.lado === "buy" ? "buy" : "sell"}</span></td>
         <td class="n">${comoVeio(p.unidades)}</td>
         <td class="n">${comoVeio(p.preco_medio)}</td>
         <td class="fraco" title="${escapar(p.decisao?.motivo ?? "")}">${escapar(acaoDita(p.decisao?.acao))}</td>
-      </tr>`).join("");
+      </tr>` + (ordemQueAbriu(p) === "" ? "" : `<tr class="detalhe"><td colspan="5">${ordemQueAbriu(p)}</td></tr>`)).join("");
 
   const ordens = v.ordens.length === 0
     ? `<tr class="vazio"><td colspan="5">nenhuma ordem em aberto</td></tr>`
@@ -85,9 +102,14 @@ export function desenharVivas() {
 
   // A contagem na cabeça do bloco: nada vivo é um zero, não uma frase. E ao lado, a FONTE e a idade do que a
   // tabela mostra: as posições e as ordens vivas vêm da leitura do venue, escrita na `operacao.json` da corrida.
-  const parado = v.parados.length;
+  // A CONTAGEM SEPARA AS DUAS NATUREZAS (ver `travado.ts`): `travado` precisa do dono; «à espera de sinal» é o estado
+  // normal de um sistema em observação, e vai em tom neutro.
+  const deAtencao = v.parados.filter((p) => p.classe === "atencao").length;
+  const deEspera = v.parados.length - deAtencao;
   document.getElementById("contagem-das-vivas").innerHTML =
-    `${v.posicoes.length} pos · ${v.ordens.length} ord${parado > 0 ? ` · <span class="venda-txt">${parado} travados</span>` : ""}`;
+    `${v.posicoes.length} pos · ${v.ordens.length} ord` +
+    (deAtencao > 0 ? ` · <span class="venda-txt">${deAtencao} travados</span>` : "") +
+    (deEspera > 0 ? ` · <span class="fraco">${deEspera} à espera</span>` : "");
   const fontes = estado.instalacao === "geral"
     ? mesas().map((m) => m.fontes?.operacao).filter(Boolean)
     : [mesaAtual()?.fontes?.operacao].filter(Boolean);

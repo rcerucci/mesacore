@@ -88,7 +88,8 @@ Chrome e o cliente do protocolo, num só sítio — duas cópias seriam duas con
 | `prova-do-recolhido.ts` | percorre TODOS os `[data-recolhivel]`, recolhe cada um, e exige que **recolheu E que o botão que o abre continua visível**; injecta uma secção mal formada (cabeça sem `.cabeca`, botão fora dela) e exige que o critério a **reprove** — e mostra que recolher à força escondia mesmo o botão |
 | `prova-do-vivo.ts` | sobre um fio de bancada, mede que o painel diz o que **está vivo** (posições, ordens, a decisão) e o que **está parado e porquê** (a matriz: `trava` + `há X`), que a **última barra** e o **ciclo mais recente** trazem a hora, e que as três secções do «lado de dentro» dizem a fonte+idade e **sobrevivem ao recolhido** |
 | `prova-dos-buracos.ts` | o **vão do histórico**: com um fio que traz os dois vãos reais (1 barra e 17,5 h / 34 barras), mede no DOM que o cabeçalho do gráfico os **nomeia** (`de→até · faltam N`) e que o gráfico os conta; o controle (fio sem vão) prova que o aviso **não sai sempre** |
-| `prova-do-travado.ts` | o que **trava** um par e o que **não** trava: `travado` é uma abstenção que durou **mais de uma barra do próprio par** (lida do `relogio`), não uma volta sem ação. Prova o ETH de 1m com **1 ciclo** (não travado — é o par a operar) e com 2 (travado), o BTC de 30m com 436 (travado) e com 30 (não), o ciclo com ação a zerar a corrente, e o **sem relógio legível a dizer que trava** — com a **provocação**: o critério antigo (`quantos > 0`) dava «travado» ao ETH de 1 ciclo |
+| `prova-do-travado.ts` | o que **trava** um par e o que **não** trava: `travado` é a **ATENÇÃO** (a mesa não conseguiu fazer o que queria), e a **ESPERA** (o setup não tem nada a dizer) é dita como espera. Prova as naturezas dos motivos, o ETH de 1m de **1 ciclo** (espera, não travado), **1 ciclo sem leitura** (atenção — um defeito não se cala por ser curto), a corrente do **motivo vigente** (um defeito que passou não arrasta), o **motivo desconhecido = atenção**, e o vazio (sem corrente) a **não** ser atenção — com a **provocação**: as DUAS réguas antigas erram (o `quantos > 0` chama travado à espera de um ciclo; a do tempo cala um defeito de uma volta) |
+| `prova-da-ordem.ts` | a **posição e a ordem que a abriu**: a marca de posse ligada ao desfecho (`referencia`, `oid` do venue, `cloid`, preço médio). Prova a ligação, a marca com **recusa e reenvio** (vale a ÚLTIMA linha), a posição sem marca e a marca sem desfecho (diz-se o porquê, **sem inventar um `oid`**) — e a **provocação**: a marca de OUTRA corrida não se liga |
 | `prova-do-dash.ts` | o **dash de configuração**: no telefone (390×844) ZERO alvos de toque abaixo de **44 px**; o gesto de editar a ficha **à vista** e o **diálogo legado ausente** do DOM; **ZERO chaves em mais de um sítio**; o fio **vazio é dito**; o **campo da credencial** (type=password) presente e com gesto; o **formulário de criar conta** sem parede vermelha (o que falta vai em tom NEUTRO, «por preencher») e a abrir no conector que **já se usa**; e a **tela que se recarrega sozinha** quando o servidor serve outra versão (cargas `1 → 2`) — com **provocação** (a mesma chave injectada noutro sítio faz a contagem subir; sem a comparação de versão, o `cargas` fica em `1 → 1`) |
 | `prova-da-credencial.ts` | a **credencial pela tela**: arranca o `servidor.ts` a sério com uma pasta de credenciais de **bancada**, grava o valor (ficheiro 0600, fora do repo), confirma que o **valor não está na resposta nem no registo** (só a FORMA e a impressão) e prova as **guardas** (origem/cabeçalho, caminho dentro da pasta, valor curto). Apaga o que criou |
 | `prova-da-fonte.ts` | o invariante da **fonte única**: arranca o servidor com os argumentos da unit e compara o `sha256` de CADA ficheiro servido com o do repositório (16 de 16), confirma que o fio servido é o que o servidor gera na sua pasta, que a unit e o `servir.sh` não apontam a outra pasta — e **provoca** (serve uma cópia divergente e exige que o critério a reprove) |
@@ -189,23 +190,59 @@ amarra **só** `192.168.15.24:8788` (nunca `0.0.0.0`/`[::]`) · `GET /index.html
 
 ## O que trava um par (e o que NÃO trava)
 
-`travado` é uma **abstenção que já durou mais de uma barra do próprio par** — não uma volta sem ação. A regra vive
-em `tools/painel/travado.ts` (módulo puro, provado por `prova-do-travado.ts`), e é lida do `relogio` da ficha
-(1m → 1 ciclo · 30m → 30 · 4h → 240). Sem relógio legível, mantém-se o critério antigo (qualquer volta sem ação):
-na dúvida diz-se que trava, nunca se esconde uma abstenção.
+Há **duas** razões para um par não fazer nada, e elas não valem o mesmo:
 
-**Porque é que isto importa, medido (04/10/2026):** o ETH (1m, com 273 preenchimentos na corrida e uma ordem
-preenchida 10 minutos antes) aparecia `travado` com `1 ciclo` — e como o `vivo.json` (2 s) e o `painel.json` (60 s)
-são gerados em instantes diferentes, o contador **oscilava entre 2 e 3 travados** a cada leitura. O dono lia «3 pares
-travados» com o par a operar. Depois da correcção, no painel vivo: `2 TRAVADO(S) HÁ 7,4 H` (BTC e SOL), o ETH na
-matriz com `— — —`, e **zero** elementos vermelhos na página.
+- **ESPERA** — o setup não tem nada a dizer (não propôs nada, propôs sem lado, a proposta era de uma barra antiga), ou
+  o dono/o próprio sistema mandaram esperar. Num sistema em observação este é o estado **NORMAL**: um sistema à
+  espera de uma viragem. Diz-se **«à espera de sinal»**, em tom neutro, com o tempo;
+- **ATENÇÃO** — a mesa **não conseguiu** fazer o que queria: sem leitura do venue, sem margem, risco por ordem
+  excedido, desfecho recusado, posição desconhecida ou alheia, reconciliação indecível, liquidação em curso, verbo
+  ou registo ilegível. Isto é do dono — e é o único caso que usa a palavra **«travado»**.
+
+A regra vive em `tools/painel/travado.ts` (módulo puro, provado por `prova-do-travado.ts`) e a lista dos motivos de
+espera é **fechada**: um motivo fora dela conta como ATENÇÃO — na dúvida diz-se que o dono tem de olhar, e a tela
+mostra o motivo cru para a lista se poder corrigir. Duas medições obrigaram a esta régua (04/10/2026): o
+`travado: quantos > 0` chamava «travado» a UMA volta (o ETH de 1m, com 273 preenchimentos, aparecia `travado, 1 ciclo`
+e o contador oscilava entre 2 e 3); e a correcção seguinte, «abstenção de mais de uma barra do próprio par», ainda
+oscilava num par de 1m — onde «mais de uma barra» são **dois minutos** — e ainda calava um defeito de uma só volta.
+A régua certa não é o tempo: é a natureza do motivo (o tempo fica dito, e não decide).
+
+Medido no painel vivo, depois da correcção: `2 à espera de sinal há 8,0 h` (BTC e SOL, 30m) e **zero** travados com
+o ETH a operar.
 
 Dois corolários que valem para qualquer bloco:
 
 - **a idade de um DOCUMENTO não é um alarme.** Uma ficha é do dono e pode ter semanas; o que envelhece é a LEITURA.
   `fonteDeDocumento()` diz a idade da ficha e nunca a pinta de vermelho (era o `RISCO EM VIGOR … · 26,5 h` em
   vermelho que fazia o ecrã parecer avariado);
-- **a frase leva o tempo.** «2 travados há 7,4 h» diz o que se passa; «2 travados» é um adjectivo.
+- **a frase leva o tempo.** «2 à espera de sinal há 8,0 h» diz o que se passa; «2 travados» é um adjectivo.
+
+## A posição e a ordem que a abriu
+
+Cada posição traz, por baixo, a **ordem nossa que a abriu**, ligada pela marca de posse: o `oid` **do venue**, a
+hora, a nossa referência e o preço médio — é isto que deixa comparar o painel com o UI da Hyperliquid **linha a
+linha**. Vive em `tools/painel/desfechos.ts` (`marcadorDosDesfechos` + `ordemDaPosicao`), provado por
+`prova-da-ordem.ts`; o `retrato.ts` só lê os `desfechos-<conta>.jsonl` e entrega as linhas ao módulo.
+
+Uma marca pode ter mais do que uma linha (uma recusa e um reenvio, como na colisão de referências) — vale a
+**última**. E sem desfecho para a marca, diz-se o que falta: nunca um `oid` a fingir.
+
+```
+POSIÇÕES VIVAS   1 pos · 0 ord
+ETH   buy   0.004   2698,7   inverteu
+      ordem que a abriu · oid 61834639077 · 04/10, 14:07 · mesa-sigma_v0-000479 · aceite · 2698,7
+```
+
+## O formulário (criar/editar um documento)
+
+**Três linhas por campo**, e não uma: a **pergunta** (o que se responde, com o tipo e se é obrigatório à direita), o
+**controle**, e a **régua** — a chave do documento em mono e o que o conector **já declara** (a omissão), para se ver
+o que é resposta do dono e o que é proposta do conector. E os campos vão **agrupados pela raiz da chave** (`conta.*`
+→ «A conta», `conexao.*` → «A ligação ao venue»), com título por grupo.
+
+Antes saía tudo colado numa célula («…?texto · obrigatórioconta.identificador»), com a pergunta repetida ao lado do
+campo: não se lia, e quem preenchia não sabia o que era pergunta e o que era chave. O que **falta preencher** vai em
+tom neutro («por preencher (N): …»); o vermelho fica para a **RECUSA** a sério.
 
 ## UMA SESSÃO SÓ — a tela nunca fica velha
 

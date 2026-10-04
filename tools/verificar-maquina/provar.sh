@@ -164,6 +164,10 @@ if [ "$RAPIDO" -eq 0 ]; then
   # par, e nao uma volta sem acao. Era isto que pintava de «travado» o par que estava a operar (o ETH de 1m, com uma
   # ordem preenchida 10 min antes, saia `travado, 1 ciclo`, e o contador oscilava entre 2 e 3 a cada leitura).
   declarar "painel: o que trava um par (e o que nao)" bun run tools/painel/prova-do-travado.ts
+  # A POSICAO E A ORDEM QUE A ABRIU: a marca de posse ligada ao desfecho (referencia, `oid`, `cloid`, preco medio).
+  # E' isto que deixa comparar a tela com o UI do venue LINHA A LINHA — sem o `oid`, quem abre o painel ve a posicao e
+  # nao sabe de que ordem dela veio. A bancada cobre a recusa+reenvio (vale a ULTIMA linha) e o sem-desfecho (diz-se).
+  declarar "painel: a posicao e a ordem que a abriu" bun run tools/painel/prova-da-ordem.ts
   # O DASH DE CONFIGURACAO: os quatro numeros do dono («impraticavel, confuso e cheio de bugs») — alvos de toque
   # ≥44 no telefone, o gesto de editar À VISTA, ZERO chaves duplicadas, e o fio vazio DITO. E as duas garantias de
   # 04/10/2026: o formulario de CRIAR CONTA nao abre «cheio de erros» (o que falta vai em tom neutro, e abre no

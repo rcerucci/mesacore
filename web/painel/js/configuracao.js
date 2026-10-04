@@ -328,12 +328,70 @@ function linhaDoCandidato(composto) {
   return porPreencher + recusa;
 }
 
+/** UM CAMPO DO QUESTIONÁRIO, EM TRÊS LINHAS — e não numa linha só.
+ *
+ *  1. a PERGUNTA (o que se responde), com o tipo e se é obrigatório à direita;
+ *  2. o CONTROLE (input ou `select` com as opções que o conector declara);
+ *  3. a RÉGUA — a chave do documento, em mono, e o que o conector JÁ DECLARA (a omissão), para se ver o que é
+ *     resposta do dono e o que é proposta do conector.
+ *
+ * Antes saía tudo colado numa célula («…?texto · obrigatórioconta.identificador»), com a pergunta repetida ao lado
+ * do campo: não se lia, e quem preenchia não sabia o que era pergunta e o que era chave. */
+function campoDoQuestionario(q, campos, nomeDaConta) {
+  const id = `q-${String(q.id).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+  const valor = valorDaPergunta(q, campos, nomeDaConta);
+  const tipo = q.obrigatorio ? `<b class="obrig" title="obrigatório: sem ele o conector recusa">obrigatório</b> · ${escapar(q.tipo)}` : `<span class="fraco">opcional</span> · ${escapar(q.tipo)}`;
+  const declarado = q.omissao === null || q.omissao === undefined
+    ? ""
+    : ` · o conector declara <b class="mono">${escapar(String(q.omissao).replace(/\{\{conta\}\}/g, nomeDaConta ?? ""))}</b>`;
+  const porPreencher = q.obrigatorio && (valor === null || valor === undefined || String(valor).trim() === "");
+  let controle;
+  if (q.tipo === "segredo") {
+    // O VALOR DE UM SEGREDO NÃO ENTRA AQUI: nem o campo, nem a omissão. O que se diz é a porta que o põe.
+    controle = `<div class="campo-sem-valor">o valor não passa por esta tela — ponha-o com <code class="comando mono">bash tools/guardar-credencial.sh gravar ${escapar(q.id)}</code></div>`;
+  } else if (q.tipo === "enum" && Array.isArray(q.opcoes)) {
+    controle = `<select id="${id}" data-novo="${escapar(q.id)}">${q.opcoes.map((o) => `<option value="${escapar(o)}" ${String(valor) === o ? "selected" : ""}>${escapar(o)}</option>`).join("")}</select>`;
+  } else {
+    controle = `<input id="${id}" type="text" data-novo="${escapar(q.id)}" value="${escapar(valor ?? "")}" placeholder="${escapar(q.exemplo ?? "")}"${ehSensivel(q) ? ' class="sensivel"' : ""}>${ehSensivel(q) ? `<div class="regua">só o caminho viaja · o valor vive fora</div>` : ""}`;
+  }
+  return `<div class="campo${porPreencher ? " por-preencher" : ""}">
+    <label class="rot" for="${id}" title="${escapar(q.explicacao ?? "")}">${escapar(q.pergunta ?? q.id)} <span class="tipo">${tipo}</span></label>
+    ${controle}
+    <div class="regua mono">${escapar(q.chave ?? "")}${declarado}</div>
+  </div>`;
+}
+
+/** AS SECÇÕES DO QUESTIONÁRIO — os campos agrupados pela RAIZ da chave (`conta.*` → «A conta», `conexao.*` → «A
+ *  ligação ao venue»). Um documento de 14 campos numa lista rasa não se lê; com título por grupo, lê-se. */
+const NOME_DA_SECCAO = { conta: "A conta", conexao: "A ligação ao venue", risco: "O risco", outros: "Outros campos" };
+function secoesDoQuestionario(perguntas, campos, nomeDaConta) {
+  const grupos = new Map();
+  for (const q of perguntas) {
+    if (q.id === "nome_da_conta" || q.chave === "(nome do ficheiro)") continue;
+    const raiz = String(q.chave ?? "outros").split(".")[0] || "outros";
+    if (!grupos.has(raiz)) grupos.set(raiz, []);
+    grupos.get(raiz).push(q);
+  }
+  return [...grupos.entries()].map(([raiz, qs]) =>
+    `<div class="secao-do-formulario"><h4 class="titulo-da-seccao">${escapar(NOME_DA_SECCAO[raiz] ?? raiz)}</h4>` +
+    qs.map((q) => campoDoQuestionario(q, campos, nomeDaConta)).join("") + `</div>`).join("");
+}
+
 function formularioDeCriacao() {
   const campos = modoDeCriacao.campos;
-  const campo = (nome, rotulo, dica = "", opcoes = null) => `<tr><td class="fraco">${escapar(rotulo)}</td><td class="n">${
-    opcoes
-      ? `<select data-novo="${escapar(nome)}">${opcoes.map((o) => `<option value="${escapar(o)}" ${campos[nome] === o ? "selected" : ""}>${escapar(o)}</option>`).join("")}</select>`
-      : `<input type="text" data-novo="${escapar(nome)}" value="${escapar(campos[nome] ?? "")}" placeholder="${escapar(dica)}">`}</td></tr>`;
+  // UM CAMPO, EM TRÊS LINHAS: o rótulo (o que se responde) · o controle · a régua (a chave do documento e o tipo).
+  // Antes eram duas células de uma tabela rasa, com o rótulo a repetir-se ao lado do campo.
+  const campo = (nome, rotulo, dica = "", opcoes = null) => {
+    const id = `s-${escapar(nome)}`;
+    const controle = opcoes
+      ? `<select id="${id}" data-novo="${escapar(nome)}">${opcoes.map((o) => `<option value="${escapar(o)}" ${campos[nome] === o ? "selected" : ""}>${escapar(o)}</option>`).join("")}</select>`
+      : `<input id="${id}" type="text" data-novo="${escapar(nome)}" value="${escapar(campos[nome] ?? "")}" placeholder="${escapar(dica)}">`;
+    return `<div class="campo">
+      <label class="rot" for="${id}">${escapar(rotulo)} <span class="tipo"><b class="obrig">obrigatório</b></span></label>
+      ${controle}
+      <div class="regua mono">${escapar(dica || "")}</div>
+    </div>`;
+  };
 
   if (modoDeCriacao.tipo === "setup") {
     return `<div class="aviso">um setup não é um documento — é um PLUGIN: um <b>manifesto</b> (<code>setups/&lt;nome&gt;/setup.json</code>),
@@ -350,26 +408,11 @@ function formularioDeCriacao() {
       return `<div class="aviso">nenhum conector publica um questionário (<code>brokers/&lt;venue&gt;/questionario.json</code>) — sem essa declaração
         esta tela não sabe que campos pedir, e não os inventa. O que se cria mesmo assim: uma ficha de par (o botão <b>+ ficha de par</b>).</div>`;
     }
-    const escolha = `<select data-novo="__conector">${conectoresQueCriamConta().map((c) => `<option value="${escapar(c.plugin)}" ${c.plugin === conector.plugin ? "selected" : ""}>${escapar(c.plugin)} · ${c.perguntas.length} campos</option>`).join("")}</select>`;
-    const linhas = (conector.perguntas ?? []).map((q) => {
-      if (q.id === "nome_da_conta" || q.chave === "(nome do ficheiro)") return "";
-      const valor = valorDaPergunta(q, campos, campos.nome ?? "");
-      const marca = q.obrigatorio ? `<b title="obrigatório: sem ele o conector recusa">*</b>` : `<span class="fraco">·</span>`;
-      const tipo = `${escapar(q.tipo)}${q.obrigatorio ? " · obrigatório" : " · opcional"}`;
-      const nota = `<small class="opcoes">${escapar(q.pergunta ?? q.id)} <i>${tipo}</i></small>`;
-      let controle;
-      if (q.tipo === "segredo") {
-        // O VALOR DE UM SEGREDO NÃO ENTRA AQUI: nem o campo, nem a omissão. O que se diz é o comando que o põe.
-        controle = `<span class="mono aviso">(o valor não passa por esta tela)</span>
-          <code class="comando mono">bash tools/guardar-credencial.sh gravar ${escapar(q.id)}</code>`;
-      } else if (q.tipo === "enum" && Array.isArray(q.opcoes)) {
-        controle = `<select data-novo="${escapar(q.id)}">${q.opcoes.map((o) => `<option value="${escapar(o)}" ${String(valor) === o ? "selected" : ""}>${escapar(o)}</option>`).join("")}</select>`;
-      } else {
-        controle = `<input type="text" data-novo="${escapar(q.id)}" value="${escapar(valor ?? "")}" placeholder="${escapar(q.exemplo ?? "")}"
-          title="${escapar(q.explicacao ?? "")}"${ehSensivel(q) ? ' class="sensivel"' : ""}>${ehSensivel(q) ? `<span class="fraco mono" style="font-size:10px">só o caminho viaja · o valor vive fora</span>` : ""}`;
-      }
-      return `<tr><td class="fraco" title="${escapar(q.explicacao ?? "")}">${marca} ${escapar(q.pergunta ?? q.id)}<small>${tipo}</small><small class="fraco mono">${escapar(q.chave ?? "")}</small></td><td class="n">${controle}${nota}</td></tr>`;
-    }).join("");
+    const escolha = `<select id="q-conector" data-novo="__conector">${conectoresQueCriamConta().map((c) => `<option value="${escapar(c.plugin)}" ${c.plugin === conector.plugin ? "selected" : ""}>${escapar(c.plugin)} · ${c.perguntas.length} campos</option>`).join("")}</select>`;
+    // O QUESTIONÁRIO EM SECÇÕES: os campos agrupados pela RAIZ da chave (`conta.*` · `conexao.*`), cada um em três
+    // linhas — a pergunta, o controle e a régua (chave · tipo · o que o conector já declara). Era uma tabela rasa de
+    // 14 linhas com tudo colado («…?texto · obrigatórioconta.identificador») e a pergunta repetida ao lado do campo.
+    const linhas = secoesDoQuestionario(conector.perguntas ?? [], campos, campos.nome ?? "");
     const mostraDoc = composto.documento === null ? "" : `
       <div class="mini fraco" style="margin-top:4px">o que vai ser escrito${composto.caminho ? ` em <b class="mono">${escapar(composto.caminho)}</b>` : ""}:</div>
       <table class="tab"><tbody>${Object.entries(composto.documento.conexao ?? {}).map(([k, v]) => `<tr><td class="fraco">conexao.${escapar(k)}</td><td class="n mono">${escapar(v !== null && typeof v === "object" ? JSON.stringify(v) : String(v))}</td></tr>`).join("")}
@@ -381,14 +424,13 @@ function formularioDeCriacao() {
       </div>
       ${resposta ? blocoDaResposta(resposta) : ""}`;
     return `
-      <table class="tab"><tbody>
-        <tr><td class="fraco">conector</td><td class="n">${escolha}</td></tr>
-        ${campo("nome", "nome do ficheiro", "ex.: " + (conector.conta_de_exemplo ?? "conta"))}
-      </tbody></table>
-      <div class="mini fraco" style="padding:2px 0">os campos vêm do que o <b>conector declara</b> ·
-        <code class="mono">${escapar(conector.ficheiro)}</code> · ${(conector.perguntas ?? []).length} campo(s)
-        ${conector.tem_segredos ? ` · ${(conector.perguntas ?? []).filter((q) => ehSensivel(q)).length} sensível(is): o valor nunca entra aqui` : ""}</div>
-      <table class="tab"><tbody>${linhas}</tbody></table>
+      <div class="campo">
+        <label class="rot" for="q-conector">conector <span class="tipo">é dele que vêm os campos</span></label>
+        ${escolha}
+        <div class="regua mono">${escapar(conector.ficheiro)} · ${(conector.perguntas ?? []).length} campo(s)${conector.tem_segredos ? ` · ${(conector.perguntas ?? []).filter((q) => ehSensivel(q)).length} sensível(is): o valor nunca entra aqui` : ""}</div>
+      </div>
+      ${campo("nome", "nome do ficheiro", "ex.: " + (conector.conta_de_exemplo ?? "conta"))}
+      ${linhas}
       ${linhaDoCandidato(composto)}
       ${mostraDoc}
       ${composto.documento !== null ? "" : `<div class="botoes-da-ficha"><button class="botao" data-acao="fechar-criacao">desistir</button></div>`}
@@ -400,9 +442,12 @@ function formularioDeCriacao() {
   const composto = candidatoComposto();
   const resposta = composto.caminho === null ? null : (criacao.get(composto.caminho) ?? null);
   return `
-    <table class="tab"><tbody>
-      ${campo("setup", "setup", "", setupsConhecidos()) + campo("instrumento", "instrumento", "ex.: BTC") + campo("conta", "conta", "", (estado.dados?.configuracao?.contas ?? []).map((x) => x.nome)) + campo("relogio", "relógio", "ex.: 30m")}
-    </tbody></table>
+    <div class="secao-do-formulario"><h4 class="titulo-da-seccao">O par</h4>
+      ${campo("setup", "setup", "", setupsConhecidos())}
+      ${campo("instrumento", "instrumento", "ex.: BTC")}
+      ${campo("conta", "conta", "", (estado.dados?.configuracao?.contas ?? []).map((x) => x.nome))}
+      ${campo("relogio", "relógio", "ex.: 30m")}
+    </div>
     <div class="mini fraco" style="padding:2px 0">a forma vem da ficha do setup «${escapar(campos.setup ?? "")}»
       — a tela não inventa esquemas; quem julga o candidato é o conferidor do portão</div>
     ${linhaDoCandidato(composto)}

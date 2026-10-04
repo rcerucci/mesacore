@@ -31,9 +31,11 @@ import { join, dirname, isAbsolute, basename } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { buracosDeHistorico } from "./buracos.ts";
-// O QUE TRAVA UM PAR — `travado` e' uma abstencao que JA' DUROU MAIS DE UMA BARRA do proprio par, e nao uma volta
-// sem acao (ver `travado.ts`, e a medicao de 04/10/2026 que o obrigou).
-import { oQueTrava as oQueTravaDeVerdade } from "./travado.ts";
+// O QUE TRAVA UM PAR — a NATUREZA do motivo (espera x atencao) decide a palavra «travado» (ver `travado.ts`, e a
+// medicao de 04/10/2026 que o obrigou: o par que operava aparecia travado).
+import { oQueTrava } from "./travado.ts";
+// A POSICAO E A ORDEM QUE A ABRIU — a marca de posse ligada ao desfecho (ver `desfechos.ts`).
+import { marcadorDosDesfechos, ordemDaPosicao } from "./desfechos.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..");
 const argv = process.argv.slice(2);
@@ -193,6 +195,12 @@ function lerLogDoOperador(caminho: string): any[] {
 function ficheirosDe(dirCorrida: string, prefixo: string): string[] {
   if (!existsSync(dirCorrida)) return [];
   return readdirSync(dirCorrida).filter((n) => n.startsWith(prefixo) && n.endsWith(".jsonl"));
+}
+
+/** O MAPA DAS MARCAS da corrida — lê os `desfechos-<conta>.jsonl` e entrega as linhas ao módulo puro
+ *  (`desfechos.ts`), onde a regra vive e se prova. Aqui só se lê o ficheiro. */
+function mapaDasMarcas(dirCorrida: string): Map<number, any> {
+  return marcadorDosDesfechos(ficheirosDe(dirCorrida, "desfechos-").map((n) => lerJsonl(join(dirCorrida, n))));
 }
 
 // ---------------------------------------------------------------- as fichas do dono e os manifestos dos setups
@@ -422,13 +430,10 @@ function oQueOSetupDisse(logDoOperador: any[], instrumento: string) {
  * motivo o trava".
  *
  * A decisao da mesa escreve uma linha por ciclo (`acao` + `motivo`). O que interessa a quem abre a tela nao e' a
- * contagem de 885 linhas de `proposta_sem_lado_a_executar`: e' o VERBO que trava, e HA' QUANTO TEMPO. Aqui le'-se
- * a CORRENTE FINAL de ciclos `nada` — do ultimo para tras enquanto o motivo se mantiver — e devolve-se um resumo:
- * o motivo dominante, o instante em que a corrida comecou, e quantos ciclos leva.
+ * contagem de 885 linhas de `proposta_sem_lado_a_executar`: e' o VERBO que trava, a sua NATUREZA (espera ou atencao)
+ * e HA' QUANTO TEMPO. A regra vive em `travado.ts` — modulo puro, provado por `prova-do-travado.ts` —, e aqui so'
+ * se chama.
  */
-function oQueTrava(meusCiclos: any[], relogio: string | null | undefined) {
-  return oQueTravaDeVerdade(meusCiclos, relogio);
-}
 
 // ---------------------------------------------------------------- montar UMA instalacao (mesa)
 
@@ -558,6 +563,9 @@ async function montarMesa(dirCorrida: string): Promise<any> {
       valores_resolvidos: v.template ?? null,
       parametros: constantes,
       leitura,
+      // A ORDEM QUE ABRIU A POSICAO — a marca de posse ligada ao desfecho que a enviou (referencia, `oid`, `cloid`,
+      // preco medio). E' o que deixa comparar a tela com o UI do venue linha a linha; ver `ordemDaPosicao`.
+      ordem_da_posicao: ordemDaPosicao(mapaDasMarcas(dirCorrida), leitura?.posicao),
       // O QUE SE DESENHA, em duas pontas separadas e ditadas: as VELAS (o mercado, do venue) e a SERIE (a leitura
       // do indicador, do setup). A tela desenha-as juntas e nunca as confunde: uma e' o que aconteceu, a outra e'
       // o que o motor viu.
@@ -583,9 +591,9 @@ async function montarMesa(dirCorrida: string): Promise<any> {
       proposta: v.proposta ?? null,
       ultima_decisao: ultimoCiclo,
       decisao_contagem: contagem(meusCiclos, (c) => `${c.acao}:${c.motivo}`),
-      // O QUE TRAVA ESTE PAR — o motivo da corrente final de ciclos `nada`, com o desde-quando e o quantos.
-      // O `relogio` da ficha entra aqui: e' ele que diz quantos ciclos fazem uma barra deste par (ver `oQueTrava`).
-      parado: oQueTrava(meusCiclos, relogio),
+      // O QUE TRAVA ESTE PAR — o motivo da corrente final de ciclos `nada`, a sua NATUREZA (espera ou atenção), o
+      // desde-quando e o quantos (ver `travado.ts`; a régua é a natureza do motivo, não o tempo).
+      parado: oQueTrava(meusCiclos),
       // ONDE A MESA DECIDIU ABRIR — os instantes das decisoes de `abrir` deste par, lidos do registo. Vao para o
       // grafico como marca propria, e NAO se misturam com a virada do indicador: uma e' a regra a virar, a outra
       // e' a mesa a decidir — e no dia em que nao coincidirem, tem de se ver que nao coincidiram.
@@ -671,9 +679,12 @@ for (const m of mesas) {
   for (const i of m.__instrumentos) {
     const base = { instalacao: m.instalacao, conta: i.conta, instrumento: i.instrumento, setup: i.ficha?.setup ?? null };
     const pos = i.leitura?.posicao;
-    if (pos) geral.posicoes.push({ ...base, ...pos });
+    // COM A ORDEM QUE A ABRIU: a posicao sozinha nao diz de que ordem dela veio (ver `ordemDaPosicao`).
+    if (pos) geral.posicoes.push({ ...base, ...pos, ordem_que_a_abriu: i.ordem_da_posicao ?? null });
     for (const o of i.leitura?.ordens_abertas ?? []) geral.ordens_vivas.push({ ...base, ...o });
-    if (i.parado?.travado) geral.parados.push({ ...base, porque: i.parado.porque, desde_ms: i.parado.desde_ms, ciclos: i.parado.ciclos, estado_da_mesa: m.estado_da_mesa });
+    // TODOS OS QUE NÃO AGIRAM (espera E atenção), cada um com a sua CLASSE: a fita e a matriz contam-nos em separado,
+    // e é a natureza do motivo — não o tempo — que decide a palavra (ver `travado.ts`).
+    if ((i.parado?.ciclos ?? 0) > 0) geral.parados.push({ ...base, classe: i.parado.classe, travado: i.parado.travado, porque: i.parado.porque, desde_ms: i.parado.desde_ms, ciclos: i.parado.ciclos, estado_da_mesa: m.estado_da_mesa });
   }
 }
 for (const m of mesas) delete m.__instrumentos;
