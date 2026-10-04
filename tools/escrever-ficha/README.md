@@ -38,9 +38,30 @@ bun run tools/escrever-ficha/escrever-ficha.ts --ficha … --mudar … --visto <
   conferidor confere a *forma* e não o valor contra a banda — quem confere o valor é a mesa, na boleta —, e uma
   ficha escrita fora da banda deixa o par a ser recusado em tempo de execução, **em silêncio**. A recusa diz os
   números da banda;
-- **um caminho fora de `fichas/`**: esta porta existe para fichas, e uma porta que serve para tudo não é uma porta;
+- **um caminho fora de `fichas/`** (no `escrever`) e fora de `fichas/`+`config/contas/` (no `criar`): esta porta
+  existe para estas famílias, e uma porta que serve para tudo não é uma porta, é um buraco;
 - **uma ficha que mudou desde que foi lida** (a impressão não bate);
-- **um valor igual ao que já lá está** (não há nada para escrever).
+- **um valor igual ao que já lá está** (não há nada para escrever);
+- **criar por cima do que existe**: `criar` recusa um caminho que já exista — criar não é sobrepor.
+
+## CRIAR: a outra operação (o que ainda não existe)
+
+`escrever` exige um ficheiro que exista (precisa de um «antes» e de uma impressão). `criar` parte de um CANDIDATO,
+e a guarda que substitui a impressão é outra: **o ficheiro não existir**. Cria duas famílias, e só duas:
+
+```
+fichas/<setup>/<PAR>-<CONTA>.json     ← conferidor: tools/verificar-setup/fichas.py <pasta>
+config/contas/<nome>.json             ← conferidor: tools/verificar-config/conferir-config.ts <ficheiro>
+```
+
+**Cada família tem o SEU conferidor** — e usar o das fichas para uma conta daria um «veredicto» que não existe, a
+pior espécie de aprovação. O candidato é escrito numa **cópia temporária** da família e é o conferidor que decide;
+se reprovar, nada é criado. O registo leva `"criado": true`.
+
+Chamada pela linha de comando (a partir de um ficheiro JSON com o documento inteiro) e pela porta do painel
+(`POST /api/ficha` com `{"criar": true, "conteudo": {...}}`). Na tela, o formulário **compõe o candidato a partir
+do que existe** (uma ficha nova clona a ficha do mesmo setup, troca a identidade e desarma `run`/`enviar`; uma conta
+nova clona a conta que existe) — a tela não reimplementa esquemas, e quem julga é o conferidor.
 
 ## O registo
 

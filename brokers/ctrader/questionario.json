@@ -1,0 +1,190 @@
+{
+  "plugin": "ctrader",
+  "tipo": "conector",
+  "versao_do_questionario": "1.0.0",
+  "preenche_sempre": {
+    "nota": "Verdade do PLUGIN, nao pergunta ao dono: quem sabe que software corre e o plugin. O script grava isto antes da primeira pergunta.",
+    "conta.corretora": "ctrader",
+    "conta.conectores": [
+      "ctrader"
+    ]
+  },
+  "perguntas": [
+    {
+      "id": "nome_da_conta",
+      "chave": "(nome do ficheiro)",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Que nome quer dar a esta conta? (ex.: ctrader-demo-a)",
+      "explicacao": "E so para voce a reconhecer: vira o nome do ficheiro em config/contas/<nome>.json. Ao contrario da Hyperliquid, aqui a chave NAO se chama <nome-do-ficheiro>.key: os quatro valores deste venue sao da APLICACAO (`ctrader_mesa`) e vivem em ctrader_mesa_<campo>.key — um conjunto de credenciais serve contas de demonstracao E contas reais.",
+      "omissao": "ctrader-demo-a"
+    },
+    {
+      "id": "identificador",
+      "chave": "conta.identificador",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Qual o ID da conta no cTrader (ctidTraderAccountId)?",
+      "explicacao": "E o numero da conta no venue — nao e segredo, e e contra ele que a porta da identidade compara o que o venue devolve depois do ApplicationAuth (FR-049). Com o numero errado o conector NAO arranca: ele pergunta ao venue a lista de contas do token e nao encontra esta. A lista de contas vem DO TOKEN (os tokens deste venue sao do utilizador, o cTID), e por isso um conjunto de credenciais serve varias contas.",
+      "exemplo": "12345678"
+    },
+    {
+      "id": "ambiente",
+      "chave": "conexao.ambiente",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "pergunta": "Ambiente: demonstracao ou real?",
+      "explicacao": "Demonstracao primeiro, sempre. O ambiente declarado e a REDE apontada pelo endereco nao podem discordar: a ficha RECUSA (`ambiente_e_rede_incoerentes`) — e' assim que um ensaio passa a operar a serio sem ninguem dar por isso.",
+      "opcoes": [
+        "demonstracao",
+        "real"
+      ],
+      "omissao": "demonstracao"
+    },
+    {
+      "id": "url_da_api",
+      "chave": "conexao.url_da_api",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Endereco do venue para este ambiente (Enter aceita o de demonstracao)",
+      "explicacao": "Nao e segredo e ja vem preenchido: demonstracao e demo.ctraderapi.com:5035 e real e live.ctraderapi.com:5035. O endereco vem da ficha, NUNCA do codigo do conector.",
+      "omissao": "demo.ctraderapi.com:5035"
+    },
+    {
+      "id": "credencial",
+      "chave": "conta.credencial",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "Nome da credencial",
+      "explicacao": "E o NOME, nunca o valor. Aqui o nome e o da APLICACAO registada no portal do cTrader (ex.: ctrader_mesa), porque os tokens deste venue sao do utilizador e nao da conta. Sem chaves neste ficheiro: o que viaja e so o nome (RN-E14).",
+      "omissao": "ctrader_mesa"
+    },
+    {
+      "id": "client_id",
+      "chave": "conexao.credencial.arquivos.client_id",
+      "tipo": "texto",
+      "sensivel": true,
+      "obrigatorio": true,
+      "pergunta": "ONDE vive o client_id (o valor nao se escreve aqui)",
+      "explicacao": "O valor do client_id NAO entra neste ficheiro nem em nenhum ficheiro do repositorio: aqui fica so o CAMINHO para ele. Ponha o valor com `bash tools/guardar-credencial.sh gravar client_id` (le do teclado, escreve modo 600, e nunca passa pela linha de comando). Aceita-se `ficheiro:/caminho/fora/do/repo.key` (modo 600) ou `env:NOME_DA_VARIAVEL`.",
+      "omissao": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_client_id.key"
+    },
+    {
+      "id": "client_secret",
+      "chave": "conexao.credencial.arquivos.client_secret",
+      "tipo": "texto",
+      "sensivel": true,
+      "obrigatorio": true,
+      "pergunta": "ONDE vive o client_secret (o valor nao se escreve aqui)",
+      "explicacao": "Segredo: o valor vive fora do repositorio, em modo 600, e o carregador RECUSA se o ficheiro for legivel por outros ou se o valor aparecer num ficheiro versionado. Ponha-o com `bash tools/guardar-credencial.sh gravar client_secret`.",
+      "omissao": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_client_secret.key"
+    },
+    {
+      "id": "access_token",
+      "chave": "conexao.credencial.arquivos.access_token",
+      "tipo": "texto",
+      "sensivel": true,
+      "obrigatorio": true,
+      "pergunta": "ONDE vive o access_token (o valor nao se escreve aqui)",
+      "explicacao": "O venue RODA o par de tokens e reescreve este ficheiro — e por isso que cada valor vive no seu proprio `.key`, e nao todos num so (a rotacao passaria por cima do client_secret da aplicacao). Ponha-o com `bash tools/guardar-credencial.sh gravar access_token`.",
+      "omissao": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_access_token.key"
+    },
+    {
+      "id": "refresh_token",
+      "chave": "conexao.credencial.arquivos.refresh_token",
+      "tipo": "texto",
+      "sensivel": true,
+      "obrigatorio": true,
+      "pergunta": "ONDE vive o refresh_token (o valor nao se escreve aqui)",
+      "explicacao": "Segredo, e o outro dos dois que o venue reescreve quando roda os tokens. Ponha-o com `bash tools/guardar-credencial.sh gravar refresh_token`, e confira os quatro sem mostrar valor nenhum com `bash tools/guardar-credencial.sh conferir`.",
+      "omissao": "ficheiro:~/.config/mesacore/credenciais/ctrader_mesa_refresh_token.key"
+    },
+    {
+      "id": "perda_maxima_pct",
+      "chave": "conta.perda_maxima_pct",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "omissao": "5",
+      "pergunta": "Perda maxima da conta em %, por corrida",
+      "explicacao": "O circuit breaker da sessao. Se a corrida perder isto, a mesa para e exige decisao sua para voltar."
+    },
+    {
+      "id": "perda_maxima_janela",
+      "chave": "conta.perda_maxima_janela",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "opcoes": [
+        "corrida_da_mesa",
+        "dia_de_calendario"
+      ],
+      "omissao": "corrida_da_mesa",
+      "pergunta": "A janela da perda maxima",
+      "explicacao": "corrida_da_mesa conta desde que a mesa arrancou; dia_de_calendario reinicia todos os dias."
+    },
+    {
+      "id": "margem_total_maxima_pct",
+      "chave": "conta.margem_total_maxima_pct",
+      "tipo": "decimal",
+      "obrigatorio": true,
+      "omissao": "100",
+      "pergunta": "Margem total maxima da conta em %",
+      "explicacao": "Teto de margem somada de todas as fichas. Uma ficha nao ve as outras — e aqui que se impede que tres instrumentos a 50% do saldo tentem caber ao mesmo tempo."
+    },
+    {
+      "id": "contencao",
+      "chave": "conta.contencao",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "opcoes": [
+        "recusar",
+        "espera"
+      ],
+      "omissao": "recusar",
+      "pergunta": "Politica de contencao de margem: recusar ou espera?",
+      "explicacao": "O que a mesa faz quando a margem apertaria o teto: `recusar` nao manda a ordem (e diz por que), `espera` poe a ordem a espera de folga."
+    },
+    {
+      "id": "arranque_apos_cb",
+      "chave": "conta.arranque_apos_cb",
+      "tipo": "enum",
+      "obrigatorio": true,
+      "opcoes": [
+        "exige_decisao"
+      ],
+      "omissao": "exige_decisao",
+      "pergunta": "Depois de um circuit breaker, quem decide voltar?",
+      "explicacao": "Hoje ha um valor so, e e de proposito: `exige_decisao` — a mesa para e espera por voce."
+    },
+    {
+      "id": "eventos_que_avisam",
+      "chave": "conta.eventos_que_avisam",
+      "tipo": "lista",
+      "obrigatorio": true,
+      "omissao": "cb, encerramento, desconhecido, recusa, divergencia, falha_de_leitura, contenda",
+      "pergunta": "Que eventos da mesa devem virar aviso para voce?",
+      "explicacao": "Enter aceita a lista completa. Sem esta chave a mesa GRITA a cada evento — melhor gritar do que morrer em silencio."
+    },
+    {
+      "id": "retencao_dias_integral",
+      "chave": "conta.retencao_ledger.dias_integral",
+      "tipo": "inteiro",
+      "obrigatorio": true,
+      "pergunta": "Quantos dias do ledger ficam integrais?",
+      "explicacao": "O ledger e o registo de tudo o que a conta fez. Dentro desta janela guarda-se tudo; depois disso, a politica que responder a seguir decide o que fica."
+    },
+    {
+      "id": "retencao_depois",
+      "chave": "conta.retencao_ledger.depois",
+      "tipo": "texto",
+      "obrigatorio": true,
+      "pergunta": "E depois desses dias, o que fica do ledger? (ex.: resumo_diario)",
+      "explicacao": "Ainda nao ha leitor para esta chave na mesa (RN-L6 nao implementada) — mas a decisao fica declarada agora."
+    }
+  ],
+  "escreve_em": "conta",
+  "nota_de_fronteira": "Este questionario configura a CONTA no venue e mais nada. A ficha do instrumento (saldo %, alavancagem, stop, tp, desvio, prazo da passiva, versao do mandato) NAO se pergunta aqui: ela e por instrumento, e quem a cria e o fluxo do plugin de SETUP. O conector sobe sem ficha nenhuma.",
+  "conta_de_exemplo": "ctrader-demo-a",
+  "fichas": "vazio — o conector sobe com a conta; as fichas entram pelo fluxo do setup",
+  "instrumentos": "NAO se perguntam: o venue responde por pedido (a sonda le o universo do venue e publica o manifesto). Nada disto e preciso para a ligacao subir.",
+  "segredos": "Os QUATRO valores do cTrader (client_id, client_secret, access_token, refresh_token) vivem em ficheiros `.key` fora do repositorio, em modo 600, com o nome da APLICACAO — e o valor nunca entra neste ficheiro. Aqui declara-se so ONDE cada um vive (conexao.credencial.arquivos), e o carregador recusa se o valor aparecer num ficheiro versionado (RN-E14, RN-C20)."
+}

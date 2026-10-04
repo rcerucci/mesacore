@@ -8,6 +8,11 @@ Cada conector entrega:
   unidades (mínimo, passo, tick), tipos de ordem, política de parcial, desvio máximo, reduce-only
   nativo ou não, stop anexo ou não, profundidade de livro, funding, relógio de fecho de barra,
   idempotência (RN-C1);
+- o **`questionario.json`** — os campos da CONTA deste venue, declarados pelo próprio conector: id, chave, tipo,
+  se é obrigatório, o que aceita (opções), a omissão e a explicação. É a fonte da entrevista de linha de comando
+  (`tools/preparar-contas`) **e** do formulário de criar conta da tela — acrescentar um conector é acrescentar um
+  ficheiro, sem se tocar na tela. Um campo de tipo `segredo` declara só o campo (o valor vive fora do repositório,
+  em ficheiro protegido); um campo `sensivel: true` é um CAMINHO para esse valor (a declaração viaja, o valor não);
 - a **tradução** da boleta e o **transporte**: a mesa manda percentagem do saldo, alavancagem e
   percentagens de movimento; o conector resolve em quantidade da sua unidade, atende à especificação
   de ordem da sua corretora e cuida dos cálculos dela (RN-C9);

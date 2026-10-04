@@ -1,0 +1,634 @@
+/* ============================================================================================
+ * A CONFIGURAÇÃO — em vista (o documento) e em diálogo (os itens da ficha), e o caminho de ESCRITA.
+ *
+ * PORQUE É UMA VISTA E NÃO UM DIÁLOGO. O que muda um interruptor é diálogo; o que muda um DOCUMENTO é
+ * vista. A ficha tem regras de identidade, tipos, bandas e um veredicto de um conferidor que NÃO é esta
+ * tela: isso cabe numa vista, cresce com cada plugin e não cabe numa caixa.
+ *
+ * O QUE ELA NÃO FAZ: NÃO ESCREVE NADA por si e NÃO JULGA NADA. Copia a conta e as fichas do fio e mostra
+ * o relatório do conferidor TAL E QUAL. Onde se muda o estado hoje está escrito com o comando à vista:
+ * uma porta só, a mesma que o gesto do dono já usa (RN-E12 · RN-M2).
+ * ========================================================================================== */
+import { estado, escapar, hora, instrumentoAtual, aplicarOsEstadosDeRecolher, ligarOsBotoesDeRecolher, redesenho } from "./nucleo.js";
+
+/* ========================= A CONFIGURAÇÃO, EM DIÁLOGO =================== *
+ * A configuração de um par é o que MENOS se olha e o que mais explica o resto — e estava a ocupar um
+ * terço da coluna da direita com dezassete campos que se lêem de vez em quando. Passou a um diálogo,
+ * aberto pelo botão ao lado do símbolo no título do gráfico. Os itens continuam a sair do TEMPLATE do
+ * próprio setup (RN-S4) — a tela não conhece um item por nome — e continuam somente leitura.
+ */
+export function conteudoDaConfiguracao(i) {
+  const descritores = i.template ?? {};
+  const valores = { ...(i.valores_resolvidos ?? {}), ...(i.parametros ?? {}) };
+  const itens = Object.entries(descritores).map(([nome, d]) => {
+    const valor = valores[nome] ?? d.omissao;
+    // SEM `input` NEM `select`, mesmo desactivados: um controle desactivado FINGE. Num campo somente-leitura
+    // o valor é TEXTO, e ao lado dele vão as opções que existem.
+    const naoDeclarado = valor === undefined || valor === null || valor === "";
+    const mostra = d.tipo === "booleano" ? (valor ? "sim" : "não") : (naoDeclarado ? "(não declarado)" : String(valor));
+    const escolhas = d.tipo === "escolha" && Array.isArray(d.opcoes)
+      ? `<small class="opcoes">opções: ${d.opcoes.map((o) => escapar(o)).join(" · ")}</small>`
+      : "";
+    return `<div class="item-de-config">
+        <span class="nome-do-item mono">${escapar(nome)}<small>${escapar(d.tipo ?? "")}${d.unidade ? " · " + escapar(d.unidade) : ""}${d.nota ? " · " + escapar(d.nota) : ""}</small></span>
+        <span class="valor mono"><b class="${naoDeclarado ? "fraco" : ""}">${escapar(mostra)}</b>${escolhas}</span>
+      </div>`;
+  }).join("");
+
+  const f = i.ficha ?? {};
+  return `
+    <div class="secao">
+      <h3>Os itens do setup · ${Object.keys(descritores).length} · a partir do template</h3>
+      <div class="dentro-da-secao">
+        ${itens || "<span class='fraco'>o setup não publica template — sem ele não há item nenhum a mostrar</span>"}
+      </div>
+    </div>
+
+    <div class="secao">
+      <h3>De onde vem esta configuração</h3>
+      <div class="dentro-da-secao">
+        <dl class="pares mono">
+          <dt>ficha</dt><dd>${escapar(f.caminho ?? "—")}</dd>
+          <dt>conta</dt><dd>${escapar(i.conta ?? "—")}</dd>
+          <dt>setup</dt><dd>${escapar(f.setup ?? "—")} ${escapar(f.versao_do_setup ?? "")} ${f.linguagem ? `(${escapar(f.linguagem)})` : ""}</dd>
+          <dt>relógio</dt><dd>${escapar(f.relogio ?? "—")} <span class="fraco">(é da ficha, não do setup)</span></dd>
+          <dt>ao desligar</dt><dd>${escapar(f.ao_desligar ?? "—")}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="secao">
+      <h3>Os dois interruptores</h3>
+      <div class="dentro-da-secao">
+        <dl class="pares mono">
+          <dt>rodar (o par está na operação)</dt><dd class="${f.run ? "sig-compra" : "fraco"}">${f.run === true ? "sim" : f.run === false ? "não" : "não declarado"}</dd>
+          <dt>enviar (a mesa pode mandar ao venue)</dt><dd class="${f.enviar ? "sig-venda" : "fraco"}">${f.enviar === true ? "sim" : f.enviar === false ? "não" : "não declarado"}</dd>
+        </dl>
+        <div class="nota fraco" style="margin-top:8px">
+          Somente leitura nesta fatia — a escrita pela tela exige validação e assinatura (RN-E12, RN-M2). O passo
+          que muda o estado é este, por par:
+        </div>
+        <code class="comando mono">bash tools/ligar-par.sh ${escapar(i.instrumento)} ${f.run ? "nao" : "sim"}</code>
+        <code class="comando mono"># e o gatilho, na ficha: "enviar": ${f.enviar ? "false" : "true"}</code>
+      </div>
+    </div>`;
+}
+
+let ultimoFocoAntesDoDialogo = null;
+
+export function abrirConfiguracao() {
+  const i = instrumentoAtual();
+  if (!i) return;
+  document.getElementById("dialogo-titulo").textContent = `configuração · ${i.instrumento} · ${i.ficha?.setup ?? "?"} ${i.ficha?.versao_do_setup ?? ""}`;
+  document.getElementById("dialogo-corpo").innerHTML = conteudoDaConfiguracao(i);
+  ultimoFocoAntesDoDialogo = document.activeElement;
+  document.getElementById("veu").hidden = false;
+  document.getElementById("dialogo").hidden = false;
+  // Travar a rolagem do fundo: num telefone, o dedo que rola dentro de uma folha acaba a mexer na página de trás.
+  document.body.style.overflow = "hidden";
+  document.getElementById("fechar-dialogo").focus();
+}
+
+export function fecharConfiguracao() {
+  document.getElementById("dialogo").hidden = true;
+  document.getElementById("veu").hidden = true;
+  document.body.style.overflow = "";
+  // O foco volta a quem abriu. Quando o que estava focado era o `body`, volta ao botão que abre — nunca a nada.
+  const alvo = ultimoFocoAntesDoDialogo && ultimoFocoAntesDoDialogo !== document.body ? ultimoFocoAntesDoDialogo : document.getElementById("bt-config");
+  if (alvo && alvo.focus) alvo.focus();
+  ultimoFocoAntesDoDialogo = null;
+}
+
+/** Os três gestos de fechar, ligados uma só vez. */
+export function ligarODialogo() {
+  document.getElementById("fechar-dialogo").onclick = fecharConfiguracao;
+  document.getElementById("veu").onclick = fecharConfiguracao;
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.getElementById("dialogo").hidden) fecharConfiguracao(); });
+}
+
+/* ---- A ESCRITA: compor, VALIDAR, e só então escrever (RN-E12 · RN-M2) ----------------------------------
+ * O CAMINHO É SEMPRE O MESMO: **compor** → **validar** (o conferidor do portão corre sobre o CANDIDATO,
+ * numa cópia da árvore das fichas) → **escrever** (o mesmo escritor, com a impressão do ficheiro que se
+ * viu). A COMPOSIÇÃO VIVE NUMA VARIÁVEL, e não no DOM: o retrato renova a cada minuto e o desenho é
+ * refeito — um campo que só existisse no DOM perdia o que o dono escreveu.
+ */
+let fichaEmComposicao = null;
+/** A ficha EM VISTA na configuração — a escolhida na lista da esquerda (nunca «nenhuma» com a lista cheia). */
+let fichaEscolhida = null;
+const composicao = new Map(); // caminho -> { chave: valor que o dono escreveu }
+const respostas = new Map();  // caminho -> a última resposta do escritor
+
+function valorNoCaminho(o, chave) {
+  let atual = o;
+  for (const parte of chave.split(".")) {
+    if (atual === null || typeof atual !== "object" || !(parte in atual)) return undefined;
+    atual = atual[parte];
+  }
+  return atual;
+}
+function valorComposto(caminho, chave, seNaoHouver) {
+  const c = composicao.get(caminho);
+  return c !== undefined && Object.prototype.hasOwnProperty.call(c, chave) ? c[chave] : seNaoHouver;
+}
+/** As mudanças que o dono compôs — e só o que DIFERE do que está na ficha: o resto não viaja. */
+function asMudancas(caminho) {
+  const f = (estado.dados?.configuracao?.fichas ?? []).find((x) => x.caminho === caminho);
+  if (!f) return {};
+  const mudancas = {};
+  for (const [chave, bruto] of Object.entries(composicao.get(caminho) ?? {})) {
+    const atual = valorNoCaminho(f, chave);
+    // O TIPO É O DA FICHA: um booleano fica booleano, um inteiro fica inteiro, e um decimal fica TEXTO (D4).
+    const novo = typeof atual === "boolean" ? bruto === true || bruto === "true" : typeof atual === "number" ? Number(bruto) : bruto;
+    if (JSON.stringify(novo) !== JSON.stringify(atual)) mudancas[chave] = novo;
+  }
+  return mudancas;
+}
+
+async function falarComOEscritor(corpo) {
+  try {
+    const r = await fetch("/api/ficha", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-mesacore": "1" },
+      body: JSON.stringify(corpo),
+    });
+    return await r.json();
+  } catch (e) {
+    return { ok: false, porque: `não se conseguiu falar com o escritor (${e instanceof Error ? e.message : String(e)})` };
+  }
+}
+
+/** O que o escritor respondeu, à vista: o que muda, o veredicto, o relatório dele e o que se fez. */
+function blocoDaResposta(r) {
+  const dif = (r.diferencas ?? []).map((d) => `<div class="item-de-config"><span class="nome-do-item">${escapar(d.chave)}</span>
+    <span class="valor mono">${escapar(String(d.de))} <span class="fraco">→</span> <b>${escapar(String(d.para))}</b></span></div>`).join("");
+  const v = r.veredicto ?? null;
+  const veredicto = v === null ? "" : `<div class="nota fraco" style="margin-top:6px">conferidor do portão: ${
+      v.correu ? `código ${v.codigo}` : "não correu"
+    } · ${v.estaFichaAprovou === true ? "esta ficha passou" : v.estaFichaAprovou === false ? "<b>esta ficha REPROVOU</b>" : "sem veredicto desta ficha"}</div>
+    <details class="relatorio"><summary>o que ele disse</summary><pre class="relatorio-do-conferidor">${escapar(v.saida ?? "")}</pre></details>`;
+  return `<div class="resultado ${r.ok ? "bom" : "mau"}">
+    <div class="mini"><b>${r.escrito ? "ESCRITO — e registado" : r.ok ? "validado: nada foi escrito" : "RECUSADO"}</b>${r.porque ? ` — ${escapar(r.porque)}` : ""}</div>
+    ${dif}
+    ${veredicto}
+  </div>`;
+}
+
+/** O que cada botão faz. A tela PEDE; quem decide é o escritor. */
+async function agirNaFicha(acao, caminho) {
+  if (acao === "compor") { fichaEmComposicao = caminho; respostas.delete(caminho); desenharAConfiguracao(); return; }
+  if (acao === "cancelar") { fichaEmComposicao = null; composicao.delete(caminho); respostas.delete(caminho); desenharAConfiguracao(); return; }
+
+  const mudancas = asMudancas(caminho);
+  if (Object.keys(mudancas).length === 0) {
+    respostas.set(caminho, { ok: false, porque: "não mudaste nada ainda (os campos estão iguais aos da ficha)" });
+    desenharAConfiguracao();
+    return;
+  }
+  const f = (estado.dados?.configuracao?.fichas ?? []).find((x) => x.caminho === caminho);
+  if (acao === "validar") {
+    respostas.set(caminho, { aviso: "a validar…" });
+    desenharAConfiguracao();
+    respostas.set(caminho, await falarComOEscritor({ ficha: caminho, mudancas, visto: f?.hash ?? null, simular: true }));
+    desenharAConfiguracao();
+    return;
+  }
+  if (acao === "escrever") {
+    // A IMPRESSÃO VAI SEMPRE: se a ficha mudou desde que a página a leu, o escritor recusa e diz porquê.
+    const r = await falarComOEscritor({ ficha: caminho, mudancas, visto: f?.hash ?? null, simular: false });
+    respostas.set(caminho, r);
+    if (r.ok === true) { fichaEmComposicao = null; composicao.delete(caminho); }
+    desenharAConfiguracao();
+    if (r.ok === true) redesenho.recarregar(); // o retrato novo mostra a ficha como ela ficou
+  }
+}
+
+/** Um objecto qualquer (a conta, o cabeçalho) como LINHAS de uma tabela densa: `chave | valor`. Em composição o
+ *  valor vira CAMPO — menos as três chaves de identidade (`conta`, `instrumento`, `setup`), que não se editam:
+ *  mudá-las não é editar a ficha, é RENOMEAR o ficheiro. */
+const CHAVES_DE_IDENTIDADE = ["cabecalho.conta", "cabecalho.instrumento", "cabecalho.setup"];
+function linhasDoObjeto(o, prefixo = "", compor = false, f = null) {
+  return Object.entries(o).map(([k, v]) => {
+    const chave = prefixo === "" ? k : `${prefixo}.${k}`;
+    if (v !== null && typeof v === "object" && !Array.isArray(v)) return linhasDoObjeto(v, chave, compor, f);
+    const podeEditar = compor && !CHAVES_DE_IDENTIDADE.includes(chave);
+    const valorDeVerdade = v;
+    const mostrado = podeEditar && f !== null ? valorComposto(f.caminho, chave, valorDeVerdade) : valorDeVerdade;
+    const bruto = Array.isArray(mostrado) ? mostrado.join(" · ") : mostrado === true ? "sim" : mostrado === false ? "não" : String(mostrado);
+    // O VAZIO É DITO: um valor declarado e vazio mostra `(vazio)`, não um buraco silencioso (quem lê não sabe se
+    // o campo não existe ou se está em branco).
+    const valor = bruto.trim() === "" ? "(vazio)" : bruto;
+    // O valor que o leitor escondeu por parecer segredo aparece DITO, não em branco.
+    const escondido = valor === "(nao se mostra)";
+    const campo = !podeEditar
+      ? `<span class="mono ${escondido ? "aviso" : ""}">${escapar(escondido ? "(escondido: parece segredo)" : valor)}${compor && CHAVES_DE_IDENTIDADE.includes(chave) ? ` <span class="fraco">· identidade, não se edita</span>` : ""}</span>`
+      : typeof valorDeVerdade === "boolean" || chave === "cabecalho.ao_desligar"
+        ? `<select data-chave="${escapar(chave)}">${
+            (chave === "cabecalho.ao_desligar" ? ["fechar", "manter"] : ["true", "false"])
+              .map((op) => `<option value="${op}" ${String(mostrado) === op ? "selected" : ""}>${
+                op === "true" ? "sim" : op === "false" ? "não" : op}</option>`).join("")
+          }</select>`
+        : `<input type="text" inputmode="decimal" data-chave="${escapar(chave)}" value="${escapar(String(mostrado))}">`;
+    return `<tr class="${podeEditar ? "composto" : ""}"><td class="fraco">${escapar(chave)}</td><td class="n">${campo}</td></tr>`;
+  }).join("");
+}
+
+/** Onde a config foi buscar cada coisa — e o que ela NÃO abre (o segredo aponta-se por caminho).
+ *  AS CHAVES SÃO LIDAS DO SÍTIO ONDE ELAS VIVEM (`cabecalho.…`): escritas na raiz, três linhas desta tabela
+ *  apareciam a «—» com o valor à vista na tabela de cima — duas respostas para a mesma pergunta. */
+function procedencias(i, f, c) {
+  const cab = f.cabecalho ?? {};
+  return `<table class="tab"><tbody>
+    <tr><td class="fraco">ficha</td><td class="n">${escapar(f.caminho ?? "—")}</td></tr>
+    <tr><td class="fraco">conta</td><td class="n">${escapar(cab.conta ?? "—")}</td></tr>
+    <tr><td class="fraco">setup</td><td class="n">${escapar(cab.setup ?? "—")} ${escapar(f.versao_do_setup ?? "")} ${f.linguagem ? `· ${escapar(f.linguagem)}` : ""}</td></tr>
+    <tr><td class="fraco" title="o relógio é da FICHA, não do setup">relógio</td><td class="n">${escapar(cab.relogio ?? "—")}</td></tr>
+    <tr><td class="fraco">ao desligar</td><td class="n">${escapar(cab.ao_desligar ?? "—")}</td></tr>
+    <tr><td class="fraco" title="o segredo não passa por aqui: a conta aponta para ele por caminho e esta tela não abre o ficheiro${c.segredos_escondidos > 0 ? ` · ${c.segredos_escondidos} valor(es) escondido(s) por parecerem segredo` : ""}">segredo</td><td class="n fantasma">por caminho · não se abre</td></tr>
+  </tbody></table>`;
+}
+
+/* ========================= CRIAR: compor → validar → criar, e SÓ cria o que ainda não existe ==============
+ * O que se cria: uma FICHA DE PAR (`fichas/<setup>/<PAR>-<conta>.json`) e uma CONTA (`config/contas/<nome>.json`).
+ * O que NÃO se cria aqui: um SETUP — um setup é um PLUGIN (manifesto + código + `setup.json`), e um formulário que
+ * fingisse criá-lo seria pior do que não ter nada. A tela diz o que ele é e onde vive; quem o escreve é quem
+ * programa.
+ *
+ * A FORMA VEM DO QUE EXISTE, nunca de um esquema reimplementado na tela: uma ficha nova clona a ficha do MESMO
+ * setup (e troca a identidade, o relógio e desarma os dois interruptores — um par novo não nasce armado); uma
+ * conta nova clona a conta que existe. Quem julga é o conferidor do portão, e a recusa dele é a resposta.
+ */
+let modoDeCriacao = null;      // null | { tipo: "ficha" | "conta" | "setup"; conector?: string; campos: Record<string,string> }
+const criacao = new Map();     // caminho pedido -> a última resposta do escritor
+
+function fichaModelo(setup) {
+  return (estado.dados?.configuracao?.fichas ?? []).find((f) => f.cabecalho?.setup === setup) ?? null;
+}
+/** Os setups conhecidos — do que corre (o fio) e do modelo de ficha que existe no repositório. */
+function setupsConhecidos() {
+  const doFio = (estado.dados?.plugins ?? []).map((p) => p.nome);
+  const dasFichas = (estado.dados?.configuracao?.fichas ?? []).map((f) => f.cabecalho?.setup).filter(Boolean);
+  return [...new Set([...doFio, ...dasFichas])];
+}
+
+/* ============ A CONTA NASCE DO QUE O CONECTOR DECLARA (nunca de um formulário fixo nesta tela) ============
+ * O `questionario.json` de cada plugin é a fonte dos campos — o MESMO ficheiro que a entrevista de linha de
+ * comando segue (`tools/preparar-contas`). O fio publica-o no `catalogo`, e esta vista só o segue: um conector
+ * novo entra com um ficheiro novo, sem se tocar aqui. O que a tela NÃO faz: presumir um valor que o conector não
+ * declarou. Campo obrigatório em falta RECUSA — com o nome dele — em vez de inventar um vazio.
+ */
+function conectoresQueCriamConta() {
+  return (estado.dados?.catalogo?.conectores ?? []).filter((c) => (c.escreve_em ?? "conta") === "conta");
+}
+function oConector() {
+  const cs = conectoresQueCriamConta();
+  return cs.find((c) => c.plugin === modoDeCriacao?.conector) ?? cs[0] ?? null;
+}
+/** Um campo que a tela NÃO deixa digitar: o valor de um segredo vive fora (num ficheiro protegido), e o que
+ *  viaja é o NOME da credencial ou o CAMINHO para o valor. */
+const ehSensivel = (q) => q.sensivel === true || q.tipo === "segredo";
+/** O que a pergunta responde: o que o dono escreveu, ou a omissão DECLARADA pelo conector (com `{{conta}}`). */
+function valorDaPergunta(q, campos, nome) {
+  if (Object.prototype.hasOwnProperty.call(campos, q.id)) return campos[q.id];
+  const o = q.omissao;
+  return typeof o === "string" ? o.replace(/\{\{conta\}\}/g, nome ?? "") : o;
+}
+/** O tipo do valor é o que o CONECTOR declara (D4: o número viaja em TEXTO; uma lista vira lista). */
+function valorTipado(q, bruto) {
+  if (q.tipo === "lista") return String(bruto).split(",").map((x) => x.trim()).filter((x) => x !== "");
+  if (q.tipo === "inteiro" || q.tipo === "decimal") return String(bruto).trim();
+  return String(bruto);
+}
+function porCaminhoPontuado(doc, chave, valor) {
+  const partes = String(chave).split(".");
+  let atual = doc;
+  for (const p of partes.slice(0, -1)) { if (atual[p] === undefined || typeof atual[p] !== "object") atual[p] = {}; atual = atual[p]; }
+  atual[partes[partes.length - 1]] = valor;
+}
+/** O candidato de uma CONTA, composto a partir da declaração do conector escolhido. */
+function contaAPartirDaDeclaracao(campos) {
+  const conector = oConector();
+  if (conector === null) return { caminho: null, documento: null, porque: "nenhum conector publica um questionário de conta — não há campos que esta tela possa seguir" };
+  const nome = String(campos.nome ?? "").trim();
+  if (nome === "") return { caminho: null, documento: null, porque: "dê o nome do ficheiro da conta (é a pergunta «nome_da_conta» do conector)" };
+  const doc = {};
+  for (const [k, v] of Object.entries(conector.preenche_sempre ?? {})) if (k !== "nota") porCaminhoPontuado(doc, k, v);
+  const faltam = [];
+  for (const q of conector.perguntas ?? []) {
+    if (q.id === "nome_da_conta" || q.chave === "(nome do ficheiro)") continue;
+    if (q.tipo === "segredo") {
+      // O VALOR DE UM SEGREDO NUNCA ENTRA AQUI. O que o documento leva é a REFERÊNCIA ao ficheiro protegido —
+      // a MESMA regra da entrevista de linha de comando (`preparar-contas.sh`: `ficheiro:$CREDENCIAIS/<conta>.key`),
+      // com o valor a ser posto por `tools/guardar-credencial.sh` (fora do repositório, modo 600, RN-E14).
+      porCaminhoPontuado(doc, q.chave, `ficheiro:~/.config/mesacore/credenciais/${nome}.key`);
+      continue;
+    }
+    const bruto = valorDaPergunta(q, campos, nome);
+    if (bruto === null || bruto === undefined || String(bruto).trim() === "") {
+      if (q.obrigatorio) faltam.push(q.pergunta ?? q.chave);   // a casa NÃO presume: em falta, RECUSA com nome
+      continue;
+    }
+    porCaminhoPontuado(doc, q.chave, valorTipado(q, bruto));
+  }
+  if (faltam.length > 0) {
+    return { caminho: null, documento: null, porque: `campo(s) obrigatório(s) em falta — ${faltam.join(" · ")} (o conector ${conector.plugin} recusa sem eles)` };
+  }
+  return { caminho: `config/contas/${nome}.json`, documento: doc, conector: conector.plugin, porque: null };
+}
+
+/** O candidato COMPOSTO a partir do modelo — o que vai ser validado (e o que se mostra, para não haver surpresa). */
+function candidatoComposto() {
+  if (modoDeCriacao === null) return { caminho: null, documento: null, porque: null };
+  const c = modoDeCriacao.campos;
+  if (modoDeCriacao.tipo === "ficha") {
+    const modelo = fichaModelo(c.setup);
+    if (modelo === null) return { caminho: null, documento: null, porque: `não há nenhuma ficha do setup «${c.setup ?? "?"}» para servir de modelo — a forma da ficha vem do que existe` };
+    if (!c.instrumento || !c.conta) return { caminho: null, documento: null, porque: "diga o instrumento e a conta" };
+    const cabecalho = { ...modelo.cabecalho, conta: c.conta, instrumento: c.instrumento, setup: c.setup, relogio: c.relogio || modelo.cabecalho?.relogio, run: false, enviar: false };
+    const documento = { cabecalho, constantes: { ...modelo.constantes } };
+    return { caminho: `fichas/${c.setup}/${c.instrumento}-${c.conta}.json`, documento, porque: null };
+  }
+  if (modoDeCriacao.tipo === "conta") return contaAPartirDaDeclaracao(c);
+  return { caminho: null, documento: null, porque: null };
+}
+
+function formularioDeCriacao() {
+  const campos = modoDeCriacao.campos;
+  const campo = (nome, rotulo, dica = "", opcoes = null) => `<tr><td class="fraco">${escapar(rotulo)}</td><td class="n">${
+    opcoes
+      ? `<select data-novo="${escapar(nome)}">${opcoes.map((o) => `<option value="${escapar(o)}" ${campos[nome] === o ? "selected" : ""}>${escapar(o)}</option>`).join("")}</select>`
+      : `<input type="text" data-novo="${escapar(nome)}" value="${escapar(campos[nome] ?? "")}" placeholder="${escapar(dica)}">`}</td></tr>`;
+
+  if (modoDeCriacao.tipo === "setup") {
+    return `<div class="aviso">um setup não é um documento — é um PLUGIN: um <b>manifesto</b> (<code>setups/&lt;nome&gt;/setup.json</code>),
+      o <b>código</b> que publica a série e a proposta, e a entrada no <code>setup.json</code> do repositório. Um formulário aqui
+      fingiria criá-lo. O que a tela pode fazer é apontar o sítio: <code>setups/</code> · <code>setups/O-QUE-UM-SETUP-RECEBE-E-ENTREGA.md</code>
+      · e a ficha de um par novo (o botão <b>+ ficha de par</b>) já compõe a configuração a partir do template dele.</div>`;
+  }
+
+  if (modoDeCriacao.tipo === "conta") {
+    const conector = oConector();
+    const composto = candidatoComposto();
+    const resposta = composto.caminho === null ? null : (criacao.get(composto.caminho) ?? null);
+    if (conector === null) {
+      return `<div class="aviso">nenhum conector publica um questionário (<code>brokers/&lt;venue&gt;/questionario.json</code>) — sem essa declaração
+        esta tela não sabe que campos pedir, e não os inventa. O que se cria mesmo assim: uma ficha de par (o botão <b>+ ficha de par</b>).</div>`;
+    }
+    const escolha = `<select data-novo="__conector">${conectoresQueCriamConta().map((c) => `<option value="${escapar(c.plugin)}" ${c.plugin === conector.plugin ? "selected" : ""}>${escapar(c.plugin)} · ${c.perguntas.length} campos</option>`).join("")}</select>`;
+    const linhas = (conector.perguntas ?? []).map((q) => {
+      if (q.id === "nome_da_conta" || q.chave === "(nome do ficheiro)") return "";
+      const valor = valorDaPergunta(q, campos, campos.nome ?? "");
+      const marca = q.obrigatorio ? `<b title="obrigatório: sem ele o conector recusa">*</b>` : `<span class="fraco">·</span>`;
+      const tipo = `${escapar(q.tipo)}${q.obrigatorio ? " · obrigatório" : " · opcional"}`;
+      const nota = `<small class="opcoes">${escapar(q.pergunta ?? q.id)} <i>${tipo}</i></small>`;
+      let controle;
+      if (q.tipo === "segredo") {
+        // O VALOR DE UM SEGREDO NÃO ENTRA AQUI: nem o campo, nem a omissão. O que se diz é o comando que o põe.
+        controle = `<span class="mono aviso">(o valor não passa por esta tela)</span>
+          <code class="comando mono">bash tools/guardar-credencial.sh gravar ${escapar(q.id)}</code>`;
+      } else if (q.tipo === "enum" && Array.isArray(q.opcoes)) {
+        controle = `<select data-novo="${escapar(q.id)}">${q.opcoes.map((o) => `<option value="${escapar(o)}" ${String(valor) === o ? "selected" : ""}>${escapar(o)}</option>`).join("")}</select>`;
+      } else {
+        controle = `<input type="text" data-novo="${escapar(q.id)}" value="${escapar(valor ?? "")}" placeholder="${escapar(q.exemplo ?? "")}"
+          title="${escapar(q.explicacao ?? "")}"${ehSensivel(q) ? ' class="sensivel"' : ""}>${ehSensivel(q) ? `<span class="fraco mono" style="font-size:10px">só o caminho viaja · o valor vive fora</span>` : ""}`;
+      }
+      return `<tr><td class="fraco" title="${escapar(q.explicacao ?? "")}">${marca} ${escapar(q.pergunta ?? q.id)}<small>${tipo}</small><small class="fraco mono">${escapar(q.chave ?? "")}</small></td><td class="n">${controle}${nota}</td></tr>`;
+    }).join("");
+    const mostraDoc = composto.documento === null ? "" : `
+      <div class="mini fraco" style="margin-top:4px">o que vai ser escrito${composto.caminho ? ` em <b class="mono">${escapar(composto.caminho)}</b>` : ""}:</div>
+      <table class="tab"><tbody>${Object.entries(composto.documento.conexao ?? {}).map(([k, v]) => `<tr><td class="fraco">conexao.${escapar(k)}</td><td class="n mono">${escapar(v !== null && typeof v === "object" ? JSON.stringify(v) : String(v))}</td></tr>`).join("")}
+        ${Object.entries(composto.documento.conta ?? {}).map(([k, v]) => `<tr><td class="fraco">conta.${escapar(k)}</td><td class="n mono">${escapar(Array.isArray(v) ? v.join(" · ") : String(v))}</td></tr>`).join("")}</tbody></table>
+      <div class="botoes-da-ficha">
+        <button class="botao" data-acao="validar-criacao">validar o candidato</button>
+        <button class="botao escreve" data-acao="criar">criar o documento</button>
+        <button class="botao" data-acao="fechar-criacao">desistir</button>
+      </div>
+      ${resposta ? blocoDaResposta(resposta) : ""}`;
+    return `
+      <table class="tab"><tbody>
+        <tr><td class="fraco">conector</td><td class="n">${escolha}</td></tr>
+        ${campo("nome", "nome do ficheiro", "ex.: " + (conector.conta_de_exemplo ?? "conta"))}
+      </tbody></table>
+      <div class="mini fraco" style="padding:2px 0">os campos vêm do que o <b>conector declara</b> ·
+        <code class="mono">${escapar(conector.ficheiro)}</code> · ${(conector.perguntas ?? []).length} campo(s)
+        ${conector.tem_segredos ? ` · ${(conector.perguntas ?? []).filter((q) => ehSensivel(q)).length} sensível(is): o valor nunca entra aqui` : ""}</div>
+      <table class="tab"><tbody>${linhas}</tbody></table>
+      ${composto.porque !== null ? `<div class="aviso" id="aviso-do-candidato">${escapar(composto.porque)}</div>` : ""}
+      ${mostraDoc}
+      ${composto.documento !== null ? "" : `<div class="botoes-da-ficha"><button class="botao" data-acao="fechar-criacao">desistir</button></div>`}
+      <div class="mini fraco" style="margin-top:4px">a criação passa pela MESMA porta: o candidato é conferido pelo mesmo conferidor,
+        escreve-se atómico, e o registo leva a origem e a hora. Um ficheiro que já exista é RECUSADO — criar não é sobrepor.</div>`;
+  }
+
+  // A FICHA DE PAR: a forma vem do que existe (a ficha do mesmo setup) — um esquema aqui seria uma segunda conta.
+  const composto = candidatoComposto();
+  const resposta = composto.caminho === null ? null : (criacao.get(composto.caminho) ?? null);
+  return `
+    <table class="tab"><tbody>
+      ${campo("setup", "setup", "", setupsConhecidos()) + campo("instrumento", "instrumento", "ex.: BTC") + campo("conta", "conta", "", (estado.dados?.configuracao?.contas ?? []).map((x) => x.nome)) + campo("relogio", "relógio", "ex.: 30m")}
+    </tbody></table>
+    <div class="mini fraco" style="padding:2px 0">a forma vem da ficha do setup «${escapar(campos.setup ?? "")}»
+      — a tela não inventa esquemas; quem julga o candidato é o conferidor do portão</div>
+    ${composto.porque !== null ? `<div class="aviso" id="aviso-do-candidato">${escapar(composto.porque)}</div>` : ""}
+    ${composto.documento === null ? "" : `
+      <div class="mini fraco" style="margin-top:4px">o que vai ser escrito${composto.caminho ? ` em <b class="mono">${escapar(composto.caminho)}</b>` : ""}:</div>
+      <table class="tab"><tbody>${Object.entries({ ...(composto.documento.cabecalho ?? {}) }).map(([k, v]) => `<tr><td class="fraco">${escapar(k)}</td><td class="n mono">${escapar(Array.isArray(v) ? v.join(" · ") : v !== null && typeof v === "object" ? JSON.stringify(v) : String(v))}</td></tr>`).join("")}</tbody></table>
+      <div class="botoes-da-ficha">
+        <button class="botao" data-acao="validar-criacao">validar o candidato</button>
+        <button class="botao escreve" data-acao="criar">criar o documento</button>
+        <button class="botao" data-acao="fechar-criacao">desistir</button>
+      </div>
+      ${resposta ? blocoDaResposta(resposta) : ""}`}
+    ${composto.documento !== null ? "" : `<div class="botoes-da-ficha"><button class="botao" data-acao="fechar-criacao">desistir</button></div>`}
+    <div class="mini fraco" style="margin-top:4px">a criação passa pela MESMA porta: o candidato é conferido pelo mesmo conferidor,
+      escreve-se atómico, e o registo leva a origem e a hora. Um ficheiro que já exista é RECUSADO — criar não é sobrepor.</div>`;
+}
+
+/** Os gestos do formulário de criação (campos + os três botões). */
+function ligarOFormularioDeCriacao(caixa) {
+  for (const campo of caixa.querySelectorAll("[data-novo]")) {
+    campo.oninput = campo.onchange = () => {
+      if (campo.dataset.novo === "__conector") {
+        // TROCAR DE CONECTOR REINICIA AS RESPOSTAS: os campos são OUTROS (o cTrader tem quatro caminhos de
+        // credencial, o Hyperliquid tem uma chave). Guardar o que estava escrito misturava duas declarações — e o
+        // nome do ficheiro, esse, é o pior: ficava o do conector anterior (MEDIDO na prova do catálogo: um
+        // formulário trocado para outro conector criava um ficheiro com o nome de exemplo do PRIMEIRO).
+        modoDeCriacao.conector = campo.value;
+        const novo = conectoresQueCriamConta().find((c) => c.plugin === campo.value);
+        modoDeCriacao.campos = { nome: novo?.conta_de_exemplo ?? "" };
+      } else {
+        modoDeCriacao.campos[campo.dataset.novo] = campo.value;
+      }
+      desenharAConfiguracao();
+    };
+  }
+  for (const b of caixa.querySelectorAll("[data-acao='validar-criacao'], [data-acao='criar'], [data-acao='fechar-criacao']")) {
+    b.onclick = () => void agirNaCriacao(b.dataset.acao);
+  }
+}
+
+function abrirACriacao(tipo) {
+  const contas = (estado.dados?.configuracao?.contas ?? []).map((c) => c.nome);
+  const fichas = estado.dados?.configuracao?.fichas ?? [];
+  // OS CAMPOS DE ESCOLHA NASCEM PREENCHIDOS com o que existe: um formulário que abre com um `<select>` por
+  // escolher deixa o candidato incompleto e o botão de criar nunca aparece — «diga o instrumento e a conta» é uma
+  // resposta honesta, mas um formulário que já tem a conta certa poupa o gesto.
+  // Na CONTA, o campo de partida é o `nome_da_conta` que o CONECTOR declara como exemplo — e o conector escolhido
+  // é o primeiro que publica um questionário de conta.
+  const primeiro = conectoresQueCriamConta()[0] ?? null;
+  modoDeCriacao = {
+    tipo,
+    conector: tipo === "conta" ? (primeiro?.plugin ?? null) : undefined,
+    campos: tipo === "ficha"
+      ? { setup: setupsConhecidos()[0] ?? "", conta: contas[0] ?? "", relogio: fichas[0]?.cabecalho?.relogio ?? "" }
+      : tipo === "conta"
+        ? { nome: primeiro?.conta_de_exemplo ?? "" }
+        : {},
+  };
+  desenharAConfiguracao();
+}
+
+async function agirNaCriacao(acao) {
+  if (acao === "fechar-criacao") { modoDeCriacao = null; desenharAConfiguracao(); return; }
+  const composto = candidatoComposto();
+  if (composto.caminho === null || composto.documento === null) return;
+  const simular = acao === "validar-criacao";
+  criacao.set(composto.caminho, { aviso: simular ? "a validar…" : "a criar…" });
+  desenharAConfiguracao();
+  const r = await falarComOEscritor({ ficha: composto.caminho, conteudo: composto.documento, criar: true, simular });
+  criacao.set(composto.caminho, r);
+  if (r.ok === true && r.escrito === true) modoDeCriacao = null; // criado: volta à vista da ficha
+  desenharAConfiguracao();
+  if (r.ok === true && r.escrito === true) redesenho.recarregar();
+}
+
+export function desenharAConfiguracao() {
+  const c = estado.dados?.configuracao ?? null;
+  const caixa = document.getElementById("config-corpo");
+  document.getElementById("config-do-retrato").textContent = `do retrato de ${hora(estado.dados?.retrato?.gerado_em_ms)}`;
+  if (c === null) {
+    caixa.innerHTML = `<div class="aviso">o retrato não traz a configuração: não há conta nem fichas para mostrar</div>`;
+    return;
+  }
+  const contas = c.contas ?? [];
+  const fichas = c.fichas ?? [];
+  // A FICHA EM VISTA: a escolhida, ou a primeira. Nunca «nenhuma» com a lista cheia — uma vista sem escolha é uma
+  // vista que não mostra nada.
+  if (fichaEscolhida === null || !fichas.some((x) => x.caminho === fichaEscolhida)) fichaEscolhida = fichas[0]?.caminho ?? null;
+  const f = fichas.find((x) => x.caminho === fichaEscolhida) ?? null;
+  const compor = f !== null && fichaEmComposicao === f.caminho;
+  const resposta = f ? (respostas.get(f.caminho) ?? null) : null;
+  const veredicto = c.conferidor?.correu
+    ? (c.conferidor.codigo === 0 ? { classe: "vivo", texto: "aprovou" } : { classe: "teste", texto: `reprovou (${c.conferidor.codigo})` })
+    : { classe: "teste", texto: "não correu" };
+
+  const linhasDaLista = `
+    <div class="lh grupo">Fichas · ${fichas.length}</div>    ${fichas.map((x) => `<div class="lr" role="option" tabindex="0" data-ficha="${escapar(x.caminho)}" aria-selected="${x.caminho === fichaEscolhida}">
+      <span class="par">${escapar(x.cabecalho?.instrumento ?? "?")}<span class="fraco" style="font-size:10px">${escapar(x.cabecalho?.setup ?? "")}</span></span>
+      <span class="estado mono ${x.cabecalho?.run ? "compra-txt" : "fraco"}" title="rodar / enviar">${x.cabecalho?.run ? "R" : "·"}${x.cabecalho?.enviar ? "E" : "·"}</span>
+    </div>`).join("")}
+    <div class="lh grupo">Contas · ${contas.length}</div>
+    ${contas.map((conta) => `<div class="lr" data-conta="${escapar(conta.caminho)}">
+      <span class="par">${escapar(conta.nome ?? "?")}</span>
+      <span class="estado mono ${conta.existe === true ? "" : "venda-txt"}" title="${escapar(conta.caminho)}${conta.existe === true ? "" : " · o ficheiro não existe neste repositório"}">${conta.existe === true ? "ok" : "falta"}</span>
+    </div>`).join("")}`;
+
+  const corpoDaFicha = f === null
+    ? `<div class="aviso">nenhuma ficha no repositório — um par sem ficha não entra na operação</div>`
+    : `
+      <table class="tab"><tbody>${linhasDoObjeto(f.cabecalho ?? {}, "cabecalho", compor, f)}</tbody></table>
+      <table class="tab">
+        <thead><tr><th>constantes · as do indicador, e as únicas que vão ao setup</th><th class="n">valor</th></tr></thead>
+        <tbody>${linhasDoObjeto(f.constantes ?? {}, "constantes", compor, f)}</tbody>
+      </table>
+      <table class="tab"><tbody>${procedencias(instrumentoDoCaminho(f.caminho), f, c)}</tbody></table>
+      <div class="botoes-da-ficha">
+        ${compor
+          ? `<button class="botao" data-acao="validar" data-ficha="${escapar(f.caminho)}">validar a mudança</button>
+             <button class="botao" data-acao="cancelar" data-ficha="${escapar(f.caminho)}">deixar como estava</button>
+             ${resposta?.ok && !resposta.escrito ? `<button class="botao escreve" data-acao="escrever" data-ficha="${escapar(f.caminho)}">escrever a ficha</button>` : ""}`
+          : `<button class="botao" data-acao="compor" data-ficha="${escapar(f.caminho)}">mudar esta ficha</button>
+             ${resposta?.escrito ? `<span class="selo vivo sem-ponto">escrita — e registada</span>` : ""}`}
+      </div>
+      ${resposta ? blocoDaResposta(resposta) : ""}`;
+
+  caixa.innerHTML = `
+    <div class="config-grade">
+      <aside class="col">
+        <header class="cabeca-da-col"><span class="rot">O que existe</span></header>
+        <div class="corpo-rolavel"><div class="matriz solta" id="lista-de-fichas" role="listbox" aria-label="fichas e contas">${linhasDaLista}</div></div>
+        <div class="nova-linha">
+          <button class="botao" data-nova="ficha" title="cria fichas/<setup>/<PAR>-<conta>.json a partir do template do setup">+ ficha de par</button>
+          <button class="botao" data-nova="conta" title="cria config/contas/<nome>.json a partir da forma da conta que existe">+ conta</button>
+          <button class="botao" data-nova="setup" title="um setup é um plugin (manifesto + código) — não se cria num formulário">+ setup</button>
+        </div>
+      </aside>
+
+      <section class="col">
+        <header class="cabeca-da-col">
+          <span class="rot">${modoDeCriacao === null ? "A ficha" : `Criar · ${modoDeCriacao.tipo === "ficha" ? "ficha de par" : modoDeCriacao.tipo === "conta" ? "conta" : "setup"}`}</span>
+          ${modoDeCriacao === null && f ? `<b class="mono">${escapar(f.cabecalho?.instrumento ?? "?")} · ${escapar(f.cabecalho?.setup ?? "?")}</b>` : ""}
+          <span class="contagem">${modoDeCriacao !== null ? "novo documento" : compor ? "a compor" : "campos · só leitura"}</span>
+        </header>
+        <div class="corpo-rolavel" id="corpo-da-ficha">${modoDeCriacao !== null ? formularioDeCriacao() : corpoDaFicha}</div>
+      </section>
+
+      <aside class="col">
+        <header class="cabeca-da-col">
+          <span class="rot">Conferidor e escrita</span>
+          <span class="contagem"><span class="selo ${veredicto.classe} sem-ponto">${escapar(veredicto.texto)}</span></span>
+        </header>
+        <div class="corpo-rolavel">
+          <details class="relatorio"><summary>o relatório dele (${(c.conferidor?.saida ?? "").split("\n").length} linhas) — o mesmo conferidor do portão, sem reimplementar nada</summary>
+            <pre class="relatorio-do-conferidor" title="tools/verificar-setup/fichas.py: esta tela não reimplementa as regras dele">${escapar(c.conferidor?.saida ?? "")}</pre>
+          </details>
+          <table class="tab"><tbody>
+            <tr><td class="fraco" title="${escapar(c.porta_que_escreve ?? "")}">porta</td><td class="n mono">${f !== null ? `bash tools/ligar-par.sh ${escapar(f.cabecalho?.instrumento ?? "")} ${f.cabecalho?.run ? "nao" : "sim"}` : escapar(c.porta_que_escreve ?? "—")}</td></tr>
+            <tr><td class="fraco" title="a validação antes de aplicar · a impressão do ficheiro que se viu · o pedido só é aceite vindo desta tela">guardas</td><td class="n">validação · impressão · origem</td></tr>
+          </tbody></table>
+        </div>
+      </aside>
+    </div>
+
+    <div class="acoes-grade" id="acoes"></div>`;
+
+  // Os botões desta vista nascem agora: ligam-se no mesmo sítio que os da bancada.
+  aplicarOsEstadosDeRecolher();
+  ligarOsBotoesDeRecolher();
+  // A ESCOLHA DE UMA FICHA redesenha só esta vista.
+  for (const linha of caixa.querySelectorAll("#lista-de-fichas .lr[data-ficha]")) {
+    const escolher = () => { fichaEscolhida = linha.dataset.ficha; desenharAConfiguracao(); };
+    linha.onclick = escolher;
+    linha.onkeydown = (e) => { if (e.target === linha && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); escolher(); } };
+  }
+  // OS CAMPOS E OS BOTÕES DA ESCRITA, ligados DEPOIS de desenhar: o desenho reescreve o HTML todo e um campo
+  // novo nasceria sem gesto.
+  for (const campo of caixa.querySelectorAll("[data-chave]")) {
+    campo.oninput = campo.onchange = () => {
+      const ficha = campo.closest("[data-chave]") !== null ? fichaEscolhida : null;
+      if (ficha === null) return;
+      const c2 = composicao.get(ficha) ?? {};
+      c2[campo.dataset.chave] = campo.value;
+      composicao.set(ficha, c2);
+      // MEXER NUMA CHAVE INVALIDA O VEREDICTO ANTERIOR — e o botão de escrever sai no mesmo gesto.
+      respostas.delete(ficha);
+      for (const b of caixa.querySelectorAll(`[data-acao="escrever"][data-ficha="${CSS.escape(ficha)}"]`)) b.remove();
+    };
+  }
+  for (const b of caixa.querySelectorAll("[data-acao]")) {
+    b.onclick = () => { void agirNaFicha(b.dataset.acao ?? "", b.dataset.ficha ?? ""); };
+  }
+  for (const b of caixa.querySelectorAll("[data-nova]")) b.onclick = () => abrirACriacao(b.dataset.nova);
+  ligarOFormularioDeCriacao(caixa);
+  desenharAcoes(); // a faixa dos comandos, com o estado que vem do fio
+}
+
+/** O instrumento de uma ficha, pelo caminho dela — o fio dá-nos o caminho e o cabeçalho, e o painel usa o que tem. */
+function instrumentoDoCaminho(caminho) {
+  const f = (estado.dados?.configuracao?.fichas ?? []).find((x) => x.caminho === caminho);
+  return { conta: f?.cabecalho?.conta ?? null, instrumento: f?.cabecalho?.instrumento ?? null };
+}
+
+/** A faixa dos comandos: quem PEDE, quem executa, e o que está à espera. */
+let desenharAcoes = () => {};
+export function ligarAsAcoes(fn) { desenharAcoes = fn; }
+export const fichaEmVista = () => fichaEscolhida;

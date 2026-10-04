@@ -120,6 +120,21 @@ declarar "fichas (cabecalho, tipos, lixo)" python3 tools/verificar-setup/fichas.
 # As bancadas da camada de OPERACAO (003): correm processos a serio (vigia + mesa), por isso ficam na porta
 # completa - a `--rapido` e a que se corre a cada passo.
 if [ "$RAPIDO" -eq 0 ]; then
+  # AS PROVAS DA TELA (o painel). Nao sao `grep` ao CSS nem a um formulario: abrem o painel num Chrome headless
+  # (o mesmo motor do dono) e medem o DOM — e a prova da escrita e da criacao falam com o `servidor.ts` A SERIO
+  # (`POST /api/ficha`), que e' a porta que o gesto do dono usa. Ficam na porta COMPLETA porque cada uma sobe um
+  # Chrome (~5 s) e a da escrita cria e apaga uma ficha de bancada.
+  declarar "painel: o recolhido conserva o botao"  bun run tools/painel/prova-do-recolhido.ts
+  declarar "painel: o catalogo dos conectores"     bun run tools/painel/prova-do-catalogo.ts
+  declarar "painel: escrever ficha pela tela"      bun run tools/painel/prova-da-escrita.ts
+  # A FONTE UNICA: o que a tela serve E' o que o repositorio tem, byte a byte, e ha' UMA pasta servida. Era aqui
+  # que a 8788 servia uma COPIA a mao (`scratch/painel-v2`) sem as correccoes — medido a 03/10/2026.
+  declarar "painel: uma so' pasta servida (a fonte)" bun run tools/painel/prova-da-fonte.ts
+  # O VIVO: o painel diz o que esta' vivo, o que esta' parado e porque, com horas — medido no DOM.
+  declarar "painel: o que esta' vivo e o que esta' parado" bun run tools/painel/prova-do-vivo.ts
+  # O LOG MISTO: o `operador.log` tem prosa (o conector) e JSON (o operador); a prosa nao e' falta, e um `{` que
+  # nao fecha e'. E a costura do buffer nao parte linhas a meio.
+  declarar "painel: o log misto (prosa x truncagem)" bun run tools/painel/prova-do-log.ts
   declarar "vigia + mesa (--arranque)"     bash tools/verificar-maquina/vigia.sh --arranque
   declarar "vigia: orfandade (--orfandade)" bash tools/verificar-maquina/vigia.sh --orfandade
   declarar "encerramento (--encerramento)" bash tools/verificar-maquina/vigia.sh --encerramento

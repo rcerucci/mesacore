@@ -64,6 +64,11 @@ function dizer(o: unknown): void {
   console.log(JSON.stringify(o));
 }
 
+// As linhas inteiras de um fluxo vivem num módulo próprio (`linhas.ts`), puro e sem efeitos ao carregar — é o que
+// permite à bancada `tools/painel/prova-do-log.ts` provar a costura do buffer sem arrancar o operador.
+import { linhasInteiras } from "./linhas.ts";
+export { linhasInteiras };
+
 const nomeDaConta = arg("--conta") ?? morrer("falta `--conta <nome da conta>` (as fichas vivem em fichas/<nome>/)");
 const para = arg("--para") ?? morrer("falta `--para <ficheiro de operacao>`");
 const soOPar = arg("--par") ?? null; // opcional: sem ele, percorre TODAS as fichas ligadas da conta
@@ -821,8 +826,17 @@ async function main(): Promise<void> {
 
   // AS PORTAS DO ARRANQUE: o operador recolhe o desfecho delas e grava-o onde a mesa o vai ler. Sem este
   // ficheiro a mesa RECUSA o `start` (nomeando `nao conferidas`) — e faz bem.
+  //
+  // COM BUFFER, e com o seu PROPRIO decodificador: o `data` entrega pedaços, e a fronteira cai a meio de uma
+  // linha. Sem guardar o resíduo, uma linha JSON partida em duas produzia DUAS linhas que já não eram JSON — e o
+  // `retrato` contava-as como «linha ilegível». Era o eco do operador a partir as linhas do conector, medido no
+  // `operador.log` da corrida de risco. Uma linha só se processa quando está inteira.
+  const decErr = new TextDecoder();
+  let bufferErr = "";
   conector.stderr.on("data", (b) => {
-    for (const l of dec.decode(b).split("\n")) {
+    const { linhas, residuo } = linhasInteiras(bufferErr, decErr.decode(b));
+    bufferErr = residuo;
+    for (const l of linhas) {
       if (l.trim() === "") continue;
       try {
         const o = JSON.parse(l);

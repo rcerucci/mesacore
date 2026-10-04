@@ -4,457 +4,411 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<!-- A cor da barra do navegador também é paleta: sai do mesmo ficheiro de tokens, não de um hex solto. -->
 <meta name="theme-color" content="#0f1a1f">
+<link rel="icon" href="data:,">
 <title>MesaCore · painel</title>
-<!-- UM SÓ SÍTIO DE VERDADE PARA A COR. O canvas não lê custom properties: quem desenha lê-as do documento
-     (função `cor()`), e é por isso que o gráfico segue a paleta em vez de ter a sua. -->
 <link rel="stylesheet" href="tema.css">
 <style>
-  /* Sem fonte de fora: zero pedido externo (o painel abre no telefone em rede fechada). */
+  /* ==========================================================================================
+   * UM TERMINAL, NÃO UMA PÁGINA.
+   *
+   * A regra é DENSIDADE: linha de 20-22 px, padding de 2 a 6 px, número tabular alinhado à
+   * direita, e zero parágrafos. O que era um parágrafo virou COLUNA (o motivo que trava é um
+   * código em `TRAVA`, com o texto no `title`); o que era cabeçalho de secção com slogan morreu,
+   * porque um cabeçalho que não transporta dados é espaço roubado aos dados.
+   *
+   * E o ecrã é UM: barra de estado (o que muda depressa) · área de trabalho (pares | gráfico |
+   * posições) · rodapé (a matriz de estado, a leitura, o ledger). Sem rolagem de página no
+   * computador — quem rola é o interior de cada coluna.
+   * ========================================================================================== */
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--fundo);
-    color: var(--tinta);
-    font-family: var(--fonte-da-tela);
-    font-size: 13px;
-    line-height: 1.45;
-    -webkit-font-smoothing: antialiased;
+    background: var(--fundo); color: var(--tinta); font-family: var(--fonte-da-tela);
+    font-size: 12px; line-height: 1.35; -webkit-font-smoothing: antialiased;
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100vh; overflow: hidden;
   }
   .mono { font-family: var(--fonte); font-variant-numeric: tabular-nums; }
   .fraco { color: var(--tinta-fraca); }
   .fantasma { color: var(--tinta-fantasma); }
-  .mini { font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; }
-  h1 { font-size: 13px; margin: 0; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+  .rot { color: var(--tinta-fraca); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+  /* A FONTE E A IDADE DE CADA BLOCO: uma linha pequena na cabeça, com o caminho e há quanto tempo o ficheiro foi
+     escrito. Escrita pequena porque é contexto, e VERMELHA quando o dado envelhece — um número sem a fonte e sem a
+     hora não serve para decidir (medido: «lido há 7,6 h» sem dizer de que corrida nem de que ficheiro). */
+  .fonte { font-size: 9.5px; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; max-width: 100%; }
   a { color: var(--compra-suave); }
+  h1, h2, h3, h4 { margin: 0; font-size: 12px; font-weight: 600; }
 
-  /* ---------- a estrutura: três colunas no computador, uma no telefone ---------- */
-  .bancada {
-    display: grid;
-    grid-template-columns: 258px minmax(0, 1fr) 322px;
-    gap: 10px;
-    padding: 10px;
-    align-items: start;
-  }
-  /* ---------- no telefone: o GRÁFICO primeiro ----------
-     A ordem importa: no computador os três painéis cabem lado a lado, mas num ecrã de 844 px uma lista de pares
-     antes do gráfico empurra-o para fora (medido: sobravam ~180 px de gráfico, o resto atrás da barra fixa).
-     No telefone os pares passam a uma FAIXA horizontal — escolhe-se o par com o polegar e o gráfico fica à
-     vista —, e as linhas de detalhe de cada cartão saem: quem as mostra é o painel «lado de dentro».
-     O bloco do telefone está no FIM do ficheiro, e não aqui: com a mesma especificidade, quem ganha é a regra
-     que vem DEPOIS — escrito aqui, era sobreposto pela regra base mais abaixo e não pegava (medido: a tabela da
-     leitura continuava a transbordar com a regra "aplicada"). */
-  .bloco {
-    background: var(--painel-baixo);
-    border: 1px solid var(--borda);
-    border-radius: var(--raio);
-    overflow: hidden;
-  }
-  .bloco > header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 10px;
-    background: var(--painel-alto);
-    border-bottom: 1px solid var(--borda);
-    color: var(--tinta-fraca);
-  }
-  .bloco > header .contagem { margin-left: auto; color: var(--tinta-fraca); }
-  .bloco .corpo { padding: 10px; }
-
-  /* ---------- a vista de configuração ---------- *
-   * Uma vista, não um diálogo: as fichas são documentos (com regras, veredicto e relatório) e um documento não
-   * cabe numa caixa. Aqui tudo é LEITURA — o valor é TEXTO, como no diálogo da configuração, pela mesma razão:
-   * um campo desactivado finge que se muda ali. */
-  .vista-de-config { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-  /* A VISTA É ESCOLHIDA NO `body`, E NÃO COM O ATRIBUTO `hidden` — e isto é uma armadilha concreta, não um gosto:
-     o `hidden` esconde pelo estilo do browser (`display: none`), e qualquer regra de classe ganha-lhe
-     (`.bancada { display: grid }`, `.barra-do-telefone { display: flex }` no telefone) — a barra do telefone
-     voltava a aparecer POR CIMA da configuração. Com o atributo no `body` a regra é explícita e ganha. */
-  body[data-vista="configuracao"] #bancada,
-  body[data-vista="configuracao"] #bloco-registo,
-  body[data-vista="configuracao"] #faltas,
-  body[data-vista="configuracao"] .barra-do-telefone { display: none; }
-  body[data-vista="configuracao"] .vista-de-config { display: flex; }
-  .cabeca-da-vista { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .cabeca-da-vista h1 { margin: 0; }
-  .cabeca-da-vista .botao { margin-left: auto; }
-  .vista-de-config .item-de-config { grid-template-columns: minmax(150px, 300px) 1fr; }
-  .vista-de-config .valor { text-align: left; overflow-wrap: anywhere; }
-  .relatorio-do-conferidor {
-    margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
-    font-family: var(--fonte); font-size: 11.5px; line-height: 1.5;
-    max-height: 320px; overflow: auto; padding: 8px 10px;
-    background: var(--painel); border-radius: var(--raio-pequeno);
-  }
-  .caminho-da-ficha { color: var(--tinta-fraca); font-size: 11px; }
-
-  /* ---------- compor e escrever uma ficha ---------- */
-  /* O CAMPO É UM CAMPO: fundo do painel, contorno visível (o tom com alfa, que se vê sobre o painel — o tom cheio
-     de `--borda` é o mesmo do fundo e não se vê), e um foco que se nota no teclado e no toque. */
-  .vista-de-config input[type="text"], .vista-de-config select {
-    width: 100%; min-height: 30px; padding: 3px 6px;
-    background: var(--fundo); color: var(--tinta);
-    border: 1px solid var(--tinta-fantasma); border-radius: var(--raio-pequeno);
-    font: inherit;
-  }
-  .vista-de-config input[type="text"]:focus, .vista-de-config select:focus { outline: 2px solid var(--compra-suave); outline-offset: 1px; }
-  .item-de-config.composto .nome-do-item { color: var(--tinta); }
-  .botoes-da-ficha { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
-  .botao.escreve { background: var(--compra-suave); color: var(--tinta-no-acento); border-color: var(--compra); font-weight: 600; }
-  .resultado { margin-top: 10px; padding: 8px 10px; border-radius: var(--raio-pequeno); border: 1px solid var(--borda); }
-  .resultado.bom { border-color: var(--compra-suave); }
-  .resultado.mau { border-color: var(--venda); }
-  .resultado .item-de-config { border-bottom: 0; padding: 2px 0; }
-  .relatorio { margin-top: 6px; }
-  .relatorio summary { cursor: pointer; color: var(--tinta-fraca); }
-
-  /* ---------- a fita: o que está vivo, sempre à vista ---------- */
-  .fita {
-    position: sticky; top: 0; z-index: 20;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
-    padding: 8px 12px;
-    background: color-mix(in srgb, var(--fundo) 88%, transparent);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--borda);
-  }
-  .fita .marca { display: flex; align-items: baseline; gap: 8px; }
-  .fita .marca b { color: var(--titulo); font-size: 14px; letter-spacing: .02em; }
+  /* ---------- selo e lado: pílulas de 16 px, sem cerimónia ---------- */
   .selo {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 2px 8px; border-radius: 999px;
-    border: 1px solid var(--borda); background: var(--painel-alto);
-    color: var(--tinta-fraca); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    padding: 0 5px; border-radius: 2px; border: 1px solid var(--borda); background: var(--painel);
+    color: var(--tinta-fraca); font-size: 10px; letter-spacing: .03em; text-transform: uppercase;
   }
-  .selo.teste { color: var(--venda); border-color: color-mix(in srgb, var(--venda) 40%, transparent); }
-  .selo.vivo { color: var(--compra-suave); border-color: color-mix(in srgb, var(--compra-suave) 40%, transparent); }
+  .selo.vivo { color: var(--compra-suave); border-color: color-mix(in srgb, var(--compra-suave) 45%, transparent); }
+  .selo.teste { color: var(--venda); border-color: color-mix(in srgb, var(--venda) 45%, transparent); }
   .selo.parado { color: var(--neutro); }
-  /* o ponto do estado: um glifo com casa própria, para a fila alinhar */
-  .selo::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+  .selo::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
   .selo.sem-ponto::before { display: none; }
-  .numeros-da-fita { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-left: auto; align-items: center; }
-  .numero { display: flex; flex-direction: column; line-height: 1.2; }
-  .numero .rot { color: var(--tinta-fraca); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
-  .numero .val { color: var(--tinta); font-size: 13px; }
-  .botao {
-    min-height: 32px; padding: 6px 12px;
-    background: var(--painel-alto); color: var(--tinta);
-    border: 1px solid var(--borda); border-radius: var(--raio-pequeno);
-    font: inherit; cursor: pointer;
-  }
-  .botao:hover { border-color: var(--tinta-fraca); }
-  @media (max-width: 1080px) { .botao { min-height: 44px; } }
-
-  /* ---------- os pares ---------- */
-  .par {
-    display: block; width: 100%; text-align: left;
-    padding: 9px 10px; background: transparent; color: inherit;
-    border: 0; border-bottom: 1px solid var(--divisor);
-    font: inherit; cursor: pointer;
-  }
-  .par:last-child { border-bottom: 0; }
-  .par:hover { background: var(--painel); }
-  .par[aria-selected=true] { background: var(--painel); box-shadow: inset 2px 0 0 var(--compra-suave); }
-  .par .linha-de-cima { display: flex; align-items: center; gap: 8px; }
-  .par .nome { color: var(--titulo); font-weight: 600; font-size: 14px; }
-  .par .linha-de-cima .preco { margin-left: auto; }
-  .par .grelha { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin-top: 4px; }
-  .par .grelha .rot { color: var(--tinta-fraca); }
-  .par .grelha .val { text-align: right; overflow-wrap: anywhere; }
-  /* A LINHA PRINCIPAL — a que fica quando o cartão está recolhido. Os três pedaços separam-se por pontos, e não
-     por uma grelha de rótulos: é a leitura de relance, não uma ficha. */
-  .par .principal {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
-    margin-top: 5px;
-  }
-  .par .principal .mono { font-size: 11.5px; color: var(--tinta-fraca); }
-  /* RECOLHIDO: o detalhe sai, e o cartão fica só com o principal. */
-  .par.recolhido .grelha { display: none; }
-  /* UM PAINEL RECOLHIDO GUARDA A BARRA DE TÍTULO, e mais nada.
-     A regra é SÓ dos painéis (`.bloco`), e isto é uma correcção medida: escrita para todo o `[data-recolhivel]`,
-     ela apanhava também o cartão de um par e a secção de dentro — o cartão ficava com 18 px (escondia-lhe o
-     nome e o preço, porque nenhum desses filhos é `header`) e o `h3` da secção desaparecia, deixando a secção
-     sem nada onde carregar. Cada forma tem a sua regra; o estado, esse, é um só. */
-  .bloco[data-recolhivel].recolhido > :not(header):not(.cabecalho) { display: none; }
-  /* Nas secções de dentro do painel, o cabeçalho é o `h3`. */
-  .secao[data-recolhivel].recolhido > :not(h3) { display: none; }
-  /* O BOTÃO DE ABRIR/RECOLHER — alvo pequeno mas com casa própria; no telefone cresce para 44 px. */
-  .abre-o-card {
-    margin-left: auto; flex: none;
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px; padding: 0;
-    background: transparent; color: var(--tinta-fraca);
-    border: 1px solid var(--borda); border-radius: var(--raio-pequeno);
-    cursor: pointer;
-  }
-  .abre-o-card:hover { color: var(--tinta); border-color: var(--tinta-fraca); }
-  /* NOS CABEÇALHOS O CONTORNO TINHA A COR DO FUNDO — `--borda` é o mesmo tom de `--painel-alto`, que é o fundo
-     destas barras: o botão existia, lá estava, e não se lia como botão (foi uma captura que o apanhou, com a
-     pergunta «há seta à direita?» a responder «quase invisível»). Medido sobre `--painel-alto` (#273035): o glifo
-     em `--tinta-fraca` dá 5,22:1 — passa, mas lê-se como enfeite; em `--tinta` dá 13,15:1. Com o contorno em
-     `--tinta-fantasma` (o tom com alfa, que se vê sobre o painel) o controle passa a ler-se como controle. */
-  .bloco > header .abre-o-card,
-  .leitura-do-setup > header .abre-o-card,
-  .secao > h3 .abre-o-card { color: var(--tinta); border-color: var(--tinta-fantasma); }
-  /* O chevron é um glifo com casa de 10×10, como os outros da fila: o avanço não muda com a rotação. */
-  .glifo.chevron { width: 10px; height: 10px; background: currentColor; clip-path: polygon(50% 62%, 4% 20%, 4% 40%, 50% 82%, 96% 40%, 96% 20%); }
-  .glifo.chevron.aberto { clip-path: polygon(50% 38%, 4% 80%, 4% 60%, 50% 18%, 96% 60%, 96% 80%); }
-  /* O botão «abrir/recolher todos», na barra da secção. */
-  .botao-mini {
-    margin-left: 8px; padding: 1px 7px;
-    background: transparent; color: var(--tinta-fraca);
-    border: 1px solid var(--borda); border-radius: 999px;
-    font: inherit; font-size: 10px; letter-spacing: .04em;
-    cursor: pointer;
-  }
-  .botao-mini:hover { color: var(--tinta); border-color: var(--tinta-fraca); }
   .lado {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 1px 7px; border-radius: 999px; font-size: 10.5px;
-    letter-spacing: .04em; text-transform: uppercase; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; min-width: 32px; padding: 0 4px;
+    border-radius: 2px; font-size: 9.5px; letter-spacing: .03em; text-transform: uppercase; font-weight: 700;
   }
-  .lado.compra { background: var(--compra); color: var(--tinta-no-acento); }
-  .lado.venda { background: var(--venda); color: var(--tinta-no-acento); }
+  .lado.compra { background: color-mix(in srgb, var(--compra) 85%, transparent); color: var(--tinta-no-acento); }
+  .lado.venda { background: color-mix(in srgb, var(--venda) 85%, transparent); color: var(--tinta-no-acento); }
   .lado.neutro { background: var(--painel-alto); color: var(--neutro); }
-  /* cada glifo na mesma casa (10px): a fila alinha pelo avanço, não pela largura da forma */
-  .glifo { display: inline-block; width: 10px; height: 10px; flex: none; }
+  .compra-txt { color: var(--compra-suave); }
+  .venda-txt { color: var(--venda); }
+  .glifo { display: inline-block; width: 9px; height: 9px; flex: none; }
   .glifo.tri-cima { clip-path: polygon(50% 0, 100% 100%, 0 100%); background: var(--compra); }
   .glifo.tri-baixo { clip-path: polygon(50% 100%, 100% 0, 0 0); background: var(--venda); }
-  .glifo.barra { background: linear-gradient(var(--tinta-fraca), var(--tinta-fraca)); background-size: 100% 2px; background-position: 0 50%; background-repeat: no-repeat; }
-  .legenda-do-grafico > span > .glifo { margin-right: 5px; }
+  .glifo.chevron { width: 9px; height: 9px; background: currentColor; clip-path: polygon(50% 62%, 4% 20%, 4% 40%, 50% 82%, 96% 40%, 96% 20%); }
+  .glifo.chevron.aberto { clip-path: polygon(50% 38%, 4% 80%, 4% 60%, 50% 18%, 96% 60%, 96% 80%); }
+
+  /* ======================= A BARRA DE ESTADO (uma faixa, o que muda depressa) ============== */
+  /* DUAS LINHAS, DECIDIDAS: a primeira é a IDENTIDADE (produto · corrida · ambiente · estado · atenção), a
+     segunda são os NÚMEROS. As duas começam à esquerda e ocupam a largura toda — sem `margin-left:auto`, que
+     é o que produzia uma linha 2 a começar a meio (medido: 417 px de vazio à esquerda) e fazia a faixa parecer
+     um painel sem nome. Nada de rótulos órfãos: o plugin saiu daqui (vive no cabeçalho do gráfico). */
+  .fita {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 1px 12px; padding: 3px 10px;
+    background: var(--painel-alto); border-bottom: 1px solid var(--borda);
+  }
+  .fita .marca { display: flex; align-items: baseline; gap: 7px; flex: 1 1 100%; min-width: 0; }
+  .fita .marca b { color: var(--titulo); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  /* A CORRIDA É O TÍTULO: a primeira pergunta do dono é «de que corrida é isto?», e por isso é ela que
+     manda na hierarquia — o nome do produto encolheu para uma etiqueta. */
+  .fita .marca b.corrida { font-size: 13.5px; letter-spacing: .01em; text-transform: none; white-space: nowrap; }
+  .numeros-da-fita { display: flex; flex-wrap: wrap; gap: 1px 12px; flex: 1 1 100%; align-items: baseline; min-width: 0; }
+  .numero { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+  .numero .rot { font-size: 9.5px; }
+  .numero .val { color: var(--tinta); font-size: 12.5px; font-family: var(--fonte); font-variant-numeric: tabular-nums; }
+  .numero.seletor select {
+    max-width: 250px; padding: 0 4px; min-height: 21px;
+    background: var(--painel); color: var(--tinta);
+    border: 1px solid var(--borda); border-radius: 2px; font: inherit; font-size: 11.5px;
+  }
+  .botao {
+    min-height: 21px; padding: 0 8px; background: var(--painel); color: var(--tinta);
+    border: 1px solid var(--borda); border-radius: 2px; font: inherit; font-size: 11px; cursor: pointer;
+  }
+  .botao:hover { border-color: var(--tinta-fraca); }
+
+  /* ======================= A ÁREA DE TRABALHO (três colunas, 1 px de separador) =========== */
+  .area {
+    display: grid; grid-template-columns: 190px minmax(0, 1fr) 306px;
+    gap: 1px; background: var(--borda); min-height: 0; overflow: hidden;
+  }
+  .col { background: var(--fundo); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .cabeca-da-col {
+    display: flex; align-items: center; gap: 6px; flex: none; flex-wrap: wrap;
+    padding: 1px 8px; min-height: 19px;
+    background: var(--painel); border-bottom: 1px solid var(--divisor);
+  }
+  .cabeca-da-col .contagem { margin-left: auto; color: var(--tinta-fraca); font-size: 10px; text-transform: none; letter-spacing: 0; }
+  .corpo-rolavel { overflow: auto; min-height: 0; }
+
+  /* ---------- a matriz de pares ---------- */
+  .matriz .lh, .matriz .lr { display: grid; grid-template-columns: 1fr 62px 34px; align-items: center; gap: 4px; padding: 2px 8px; }
+  .matriz .lh { border-bottom: 1px solid var(--divisor); }
+  .matriz .lr { border-bottom: 1px solid var(--divisor); cursor: pointer; min-height: 21px; }
+  .matriz .lr:hover { background: var(--painel); }
+  .matriz .lr[aria-selected="true"] { background: var(--painel); box-shadow: inset 2px 0 0 var(--compra-suave); }
+  .matriz .lr .par { color: var(--titulo); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .matriz .lr .preco { text-align: right; font-family: var(--fonte); font-variant-numeric: tabular-nums; }
+  .matriz .lr .estado { text-align: center; }
 
   /* ---------- o gráfico ---------- */
-  .grafico .cabecalho {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
-    padding: 8px 10px; border-bottom: 1px solid var(--divisor);
+  .col-grafico .cabecalho {
+    display: flex; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; flex: none;
+    padding: 3px 10px; border-bottom: 1px solid var(--divisor);
   }
-  .grafico .cabecalho .titulo { color: var(--titulo); font-size: 15px; font-weight: 600; }
-  .palco { height: min(58vh, 560px); min-height: 340px; }
-  @media (max-width: 1080px) { .palco { height: 62vh; min-height: 320px; } }
+  .col-grafico .cabecalho .titulo { color: var(--titulo); font-size: 14px; font-weight: 700; }
+  .col-grafico .palco { flex: 1; min-height: 0; }
   .legenda-do-grafico {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
-    padding: 7px 10px; border-top: 1px solid var(--divisor); color: var(--tinta-fraca);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 3px 14px; flex: none;
+    padding: 2px 10px; border-top: 1px solid var(--divisor); color: var(--tinta-fraca); font-size: 10.5px;
   }
-  .legenda-do-grafico > span { display: inline-flex; align-items: center; }
-  .alternar { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--tinta-fraca); }
-  .alternar input { accent-color: var(--compra-suave); width: 14px; height: 14px; }
-  /* O CARD DA LEITURA tem cabeça própria e recolhe como os outros — e a cabeça serve para alguma coisa quando ele
-     está recolhido: leva o resumo do que está lá dentro (quantas barras, que sinal, e se a medição que o setup
-     deixou escrita concorda com a série que o motor calcula agora). Sem esse resumo, recolher seria esconder. */
-  .leitura-do-setup { border-top: 1px solid var(--divisor); }
-  .leitura-do-setup > header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 10px; background: var(--painel-alto); color: var(--tinta-fraca);
+  .legenda-do-grafico > span { display: inline-flex; align-items: center; gap: 4px; }
+  .alternar { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--tinta-fraca); }
+  .alternar input { accent-color: var(--compra-suave); width: 12px; height: 12px; }
+
+  /* ---------- tabelas densas ---------- */
+  table.tab { width: 100%; border-collapse: collapse; font-family: var(--fonte); font-variant-numeric: tabular-nums; }
+  table.tab th {
+    text-align: left; font-weight: 500; color: var(--tinta-fraca);
+    font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase;
+    padding: 1px 8px; border-bottom: 1px solid var(--divisor); white-space: nowrap;
   }
-  .leitura-do-setup > header .contagem { margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* O título não parte: no telefone «A LEITURA DO SETUP» partia em duas linhas e a cabeça ia a 60 px por causa
-     disso. Partido fica pior do que o resumo encolhido — e o resumo já tem o corte por reticências. */
-  .leitura-do-setup > header .mini:first-child { white-space: nowrap; }
-  #corpo-da-leitura { padding: 8px 10px; }
-  .leitura-do-setup[data-recolhivel].recolhido > :not(header) { display: none; }
-  /* Uma grelha de colunas FIXAS, com a linha inteira a não partir: é uma tabela de números, e uma tabela de
-     números que quebra linha deixa de se poder ler de cima a baixo. O que não couber, rola na horizontal. */
-  .tabela-de-barras { overflow-x: auto; margin-top: 5px; }
-  .tabela-de-barras .linha {
-    display: grid; grid-template-columns: 92px repeat(5, minmax(74px, 1fr));
-    gap: 0 10px; white-space: nowrap; padding: 1px 0;
+  table.tab td { padding: 2px 8px; border-bottom: 1px solid var(--divisor); white-space: nowrap; }
+  /* UMA CÉLULA QUE PODE QUEBRAR: os motivos (`nada:proposta_ausente_tratada_como_hold`) são longos e, com
+     `nowrap`, empurravam a tabela para fora da coluna (medido: 351 > 306 px). */
+  table.tab td.quebra { white-space: normal; overflow-wrap: anywhere; }
+  table.tab td.n, table.tab th.n { text-align: right; }
+  table.tab tr:last-child td { border-bottom: 0; }
+  table.tab tr.vazio td { color: var(--tinta-fantasma); }
+  table.tab tr.parado td { box-shadow: inset 2px 0 0 var(--venda); }
+
+  /* ---------- o rodapé ---------- */
+  .rodape {
+    display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1px; background: var(--borda); border-top: 1px solid var(--borda);
+    max-height: 40vh; overflow: hidden;
   }
-  .tabela-de-barras .linha.cabeca { color: var(--tinta-fraca); border-bottom: 1px solid var(--divisor); position: sticky; top: 0; background: var(--painel-baixo); }
-  .tabela-de-barras .linha > span:not(:first-child) { text-align: right; }
-  .sig-compra { color: var(--compra-suave); }
-  .sig-venda { color: var(--venda); }
-  .dito { margin-top: 7px; padding: 6px 8px; border-left: 2px solid var(--borda); background: var(--painel); color: var(--tinta-fraca); }
-  .aviso { padding: 8px 10px; border-left: 2px solid var(--venda); background: color-mix(in srgb, var(--venda) 8%, transparent); color: var(--tinta); }
-
-  /* ---------- o lado de dentro ---------- */
-  .dentro .corpo { padding: 0; }
-  .secao { border-bottom: 1px solid var(--divisor); }
-  .secao:last-child { border-bottom: 0; }
-  .secao > h3 {
-    margin: 0; padding: 7px 10px; font-size: 10.5px; font-weight: 600;
-    letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-fraca);
-    background: var(--painel);
-    display: flex; align-items: center; gap: 8px;
+  .rodape > div { background: var(--fundo); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .rodape h4 {
+    display: flex; align-items: center; gap: 6px; flex: none; flex-wrap: wrap;
+    padding: 1px 8px; min-height: 19px; background: var(--painel); border-bottom: 1px solid var(--divisor);
+    color: var(--tinta-fraca); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; font-weight: 500;
   }
-  .secao > h3 > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .secao > h3 .abre-o-card { margin-left: auto; width: 22px; height: 22px; }
-  .secao > .dentro-da-secao { padding: 8px 10px; }
-  dl.pares { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; }
-  dl.pares dt { color: var(--tinta-fraca); }
-  dl.pares dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
-  .item-de-config { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 4px 0; border-bottom: 1px solid var(--divisor); }
-  .item-de-config:last-child { border-bottom: 0; }
-  .item-de-config .nome-do-item { color: var(--tinta-fraca); }
-  .item-de-config .nome-do-item small { display: block; color: var(--tinta-fantasma); font-size: 10px; }
-  .item-de-config .valor { text-align: right; }
-  .item-de-config .valor b { color: var(--tinta); font-weight: 600; }
-  .item-de-config .valor b.fraco { color: var(--tinta-fraca); font-weight: 400; }
-  .item-de-config .valor .opcoes { display: block; color: var(--tinta-fantasma); font-size: 10px; }
-  .comando { display: block; margin-top: 6px; padding: 6px 8px; background: var(--fundo); border: 1px solid var(--borda); border-radius: var(--raio-pequeno); color: var(--compra-suave); overflow-wrap: anywhere; }
-  ul.lista { list-style: none; margin: 0; padding: 0; }
-  ul.lista li { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--divisor); }
-  ul.lista li:last-child { border-bottom: 0; }
-  ul.lista .quando { color: var(--tinta-fantasma); flex: none; }
-  ul.lista .o-que { margin-left: auto; text-align: right; }
+  .rodape h4 .contagem { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 10px; }
+  .rodape .dentro-do-bloco { overflow: auto; min-height: 0; }
+  .faltas .falta { display: flex; gap: 8px; padding: 2px 8px; border-bottom: 1px solid var(--divisor); }
+  .faltas .falta b { color: var(--venda); font-weight: 600; white-space: nowrap; }
 
-  /* ---------- o registo ---------- */
-  .registo { margin: 0 10px 16px; }
-  .registo .colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 18px; }
-  .registo h4 { margin: 8px 0 4px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-fraca); }
-
-  /* ---------- as faltas: ditas, nunca escondidas ---------- */
-  .faltas { margin: 0 10px 24px; }
-  .faltas .falta { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--divisor); }
-  .faltas .falta b { color: var(--venda); font-weight: 600; }
-
-  /* ---------- a barra fixa do telefone: o gesto que muda o estado, sem rolagem ---------- */
-  .barra-do-telefone { display: none; }
-  @media (max-width: 1080px) {
-    .barra-do-telefone {
-      display: flex; gap: 8px; align-items: center;
-      position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-      background: var(--painel-alto); border-top: 1px solid var(--borda);
-    }
-    .barra-do-telefone .quem { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .barra-do-telefone .botao { flex: none; }
+  .abre-o-card {
+    margin-left: auto; flex: none; display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; padding: 0; background: transparent; color: var(--tinta-fraca);
+    border: 1px solid var(--borda); border-radius: 2px; cursor: pointer;
   }
+  .abre-o-card:hover { color: var(--tinta); border-color: var(--tinta-fraca); }
+  /* RECOLHIDO: só a cabeça do bloco fica. A CABEÇA DECLARA-SE com a classe `.cabeca` — não se adivinha pela tag.
+     A regra antiga conservava `<header>`/`<h4>` e escondia tudo o resto; as três secções do «lado de dentro»
+     nascem com `<h3>`, logo recolhiam e DESAPARECIAM INTEIRAS — com o botão de abrir dentro da cabeça escondida
+     (medido a 03/10/2026: o dono recolheu e perdeu a tela, sem forma de a reabrir).
+     INVARIANTE: quem escreve uma secção recolhível põe `.cabeca` na cabeça, e o botão DENTRO dela. */
+  [data-recolhivel].recolhido > :not(.cabeca):not(header):not(h4) { display: none; }
 
-  /* ---------- o botão da configuração, ao lado do nome do símbolo ----------
-     Um botão de verdade (`<button>`), e não um `<p>` com role: o teclado e o leitor de ecrã vêm de graça, e não
-     custa nada. O glifo é um SVG inline em `currentColor` — não depende de fonte nenhuma e segue o tema. */
-  .botao-config {
-    display: inline-flex; align-items: center;
-    padding: 4px 9px; margin-right: 2px;
-    background: var(--painel-alto); color: var(--tinta-fraca);
-    border: 1px solid var(--borda); border-radius: 999px;
-    font: inherit; font-size: 11px; letter-spacing: .03em;
-    cursor: pointer;
-  }
-  .botao-config:hover { color: var(--tinta); border-color: var(--tinta-fraca); }
-
-  /* ---------- o diálogo: uma folha por cima, e nada por baixo a mexer ---------- */
+  /* ---------- o que fica por cima (diálogo) e a vista ---------- */
   .veu { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, #0b0d10 62%, transparent); }
   .dialogo {
     position: fixed; z-index: 41; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    display: flex; flex-direction: column;
-    width: min(720px, calc(100vw - 24px)); max-height: min(82vh, 760px);
-    background: var(--painel-baixo); border: 1px solid var(--borda); border-radius: var(--raio-grande);
-    box-shadow: 0 20px 60px var(--sombra);
+    display: flex; flex-direction: column; width: min(760px, calc(100vw - 20px)); max-height: min(84vh, 780px);
+    background: var(--painel-baixo); border: 1px solid var(--borda); border-radius: 3px; box-shadow: 0 18px 50px var(--sombra);
   }
   .veu[hidden], .dialogo[hidden] { display: none; }
   .cabeca-do-dialogo {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 12px; background: var(--painel-alto);
-    border-bottom: 1px solid var(--borda);
-    border-radius: var(--raio-grande) var(--raio-grande) 0 0;
+    display: flex; align-items: center; gap: 10px; padding: 4px 10px;
+    background: var(--painel-alto); border-bottom: 1px solid var(--borda);
+    color: var(--titulo); font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
   }
-  .cabeca-do-dialogo > span {
-    color: var(--titulo); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .cabeca-do-dialogo .botao { margin-left: auto; flex: none; }
-  .corpo-do-dialogo { overflow: auto; padding: 12px; }
-  .corpo-do-dialogo .secao:first-child > h3 { border-radius: 0; }
+  .cabeca-do-dialogo .botao { margin-left: auto; }
+  .corpo-do-dialogo { overflow: auto; padding: 8px 10px; }
 
-  /* ---------- O BLOCO DO TELEFONE, no fim de propósito ----------
-     Tudo o que muda de forma num ecrã estreito vive AQUI, depois das regras base: com a mesma especificidade,
-     quem ganha é a última — a mesma regra escrita mais acima era sobreposta sem dar erro nenhum, e o defeito
-     aparecia só no aparelho. */
+  .vista-de-config { padding: 8px; display: flex; flex-direction: column; gap: 6px; grid-row: 2 / 4; overflow: hidden; }
+  /* A FAIXA DOS COMANDOS TEM DE ESTAR NO ECRÃ, não abaixo da dobra: o `#config-corpo` é uma grelha de duas
+     linhas (o painel · as ações) e é a primeira que encolhe. Sem isto, a faixa existia no DOM e não se via —
+     medido: `acoes: 3` elementos presentes e nenhum visível na captura. */
+  #config-corpo { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 1px; flex: 1 1 auto; min-height: 0; }
+  .config-grade { min-height: 0; }
+  .relatorio-do-conferidor { max-height: 16vh; }
+  /* O `hidden` NÃO ESCONDE SOZINHO: a regra de classe (`display:flex`) ganha-lhe, e o resultado era um painel
+     INVISÍVEL de 1440x16 logo abaixo da barra — presente no ecrã, impossível de identificar, e a roubar uma
+     linha da grelha. Medido: `hidden:true, display:flex, y:53, h:16`. */
+  .vista-de-config[hidden] { display: none; }
+
+  /* ---------------- A VISTA DE CONFIGURAÇÃO É UM DASH, NÃO UM DOCUMENTO ----------------
+     A mesma medicina do terminal: uma grelha com três colunas (as fichas · a ficha escolhida · o conferidor e a
+     escrita) e uma faixa de AÇÕES por baixo. Nenhum parágrafo: o que era explicação virou `title`, coluna ou
+     saiu — «o segredo não passa por aqui» custava três linhas para dizer uma coisa que a linha `segredo` já diz. */
+  .config-grade { display: grid; grid-template-columns: 208px minmax(0, 1fr) 330px; gap: 1px; background: var(--borda); min-height: 0; }
+  .config-grade > .col { min-width: 0; }
+  /* a lista da esquerda: a MESMA matriz dos pares, com duas colunas em vez de três */
+  .matriz.solta .lh, .matriz.solta .lr { grid-template-columns: 1fr auto; }
+  .matriz.solta .lr .grupo { grid-column: 1 / -1; }
+  .matriz .lh.grupo { color: var(--tinta-fantasma); }
+  .acoes-grade { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: var(--borda); flex: none; }
+  .acoes-grade > div { background: var(--fundo); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .acoes-grade h4 { padding: 1px 8px; min-height: 19px; background: var(--painel); border-bottom: 1px solid var(--divisor); color: var(--tinta-fraca); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .acoes-grade h4 .contagem { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 10px; }
+  .acoes-grade .dentro { padding: 3px 8px 5px; overflow: auto; max-height: 22vh; }
+  .linha-de-acao { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+  .linha-de-acao .quem { color: var(--titulo); font-weight: 600; min-width: 62px; }
+  .linha-de-acao .com { flex: 1; min-width: 0; color: var(--tinta-fraca); font-family: var(--fonte); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* os botões de CRIAR vivem no fundo da coluna do inventário: é ali que a pergunta nasce («falta uma ficha») */
+  .nova-linha { display: flex; gap: 4px; flex-wrap: wrap; padding: 3px 8px; border-top: 1px solid var(--divisor); flex: none; }
+  .nova-linha .botao { font-size: 10.5px; padding: 0 6px; }
+  .pedido { display: flex; align-items: baseline; gap: 6px; padding: 1px 0; border-bottom: 1px solid var(--divisor); }
+  .pedido .quando { color: var(--tinta-fantasma); }
+  .pedido .oque { flex: 1; min-width: 0; }
+  .pendente { border-left: 2px solid var(--neutro); background: color-mix(in srgb, var(--neutro) 7%, transparent); }
+  body[data-vista="configuracao"] .fita,
+  body[data-vista="configuracao"] .area,
+  body[data-vista="configuracao"] .rodape,
+  body[data-vista="configuracao"] .faltas,
+  body[data-vista="configuracao"] .barra-do-telefone { display: none; }
+  .cabeca-da-vista { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .cabeca-da-vista h1 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+  .cabeca-da-vista .botao { margin-left: auto; }
+  .item-de-config { display: grid; grid-template-columns: minmax(140px, 320px) 1fr; gap: 0 10px; padding: 1px 0; border-bottom: 1px solid var(--divisor); }
+  .item-de-config .nome-do-item { color: var(--tinta-fraca); }
+  .item-de-config .nome-do-item small { display: block; color: var(--tinta-fantasma); font-size: 10px; }
+  .item-de-config .valor { text-align: right; overflow-wrap: anywhere; }
+  .item-de-config .valor b { color: var(--tinta); font-weight: 600; }
+  .item-de-config .valor b.fraco { color: var(--tinta-fraca); font-weight: 400; }
+  .item-de-config .valor .opcoes { display: block; color: var(--tinta-fantasma); font-size: 10px; }
+  .vista-de-config input[type="text"], .vista-de-config select {
+    width: 100%; min-height: 24px; padding: 2px 5px; background: var(--fundo); color: var(--tinta);
+    border: 1px solid var(--tinta-fantasma); border-radius: 2px; font: inherit;
+  }
+  .vista-de-config input[type="text"]:focus, .vista-de-config select:focus { outline: 2px solid var(--compra-suave); outline-offset: 1px; }
+  .botoes-da-ficha { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+  .botao.escreve { background: var(--compra-suave); color: var(--tinta-no-acento); border-color: var(--compra); font-weight: 600; }
+  .resultado { margin-top: 6px; padding: 6px 8px; border: 1px solid var(--borda); border-radius: 2px; }
+  .resultado.bom { border-color: var(--compra-suave); }
+  .resultado.mau { border-color: var(--venda); }
+  .resultado .item-de-config { border-bottom: 0; }
+  .relatorio { margin-top: 4px; }
+  .relatorio summary { cursor: pointer; color: var(--tinta-fraca); }
+  .comando { display: block; margin-top: 4px; padding: 4px 6px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 2px; color: var(--compra-suave); overflow-wrap: anywhere; }
+  .relatorio-do-conferidor {
+    margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--fonte);
+    font-size: 11px; line-height: 1.45; max-height: 300px; overflow: auto; padding: 6px 8px;
+    background: var(--painel); border-radius: 2px;
+  }
+  .caminho-da-ficha { color: var(--tinta-fraca); font-size: 10px; }
+  .aviso { padding: 4px 8px; border-left: 2px solid var(--venda); background: color-mix(in srgb, var(--venda) 8%, transparent); }
+  .mini { font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; }
+  .nota { font-size: 11px; line-height: 1.45; }
+  .dito { padding: 2px 8px; border-left: 2px solid var(--borda); background: var(--painel); color: var(--tinta-fraca); }
+  dl.pares { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; margin: 0; padding: 2px 8px 6px; }
+  dl.pares dt { color: var(--tinta-fraca); }
+  dl.pares dd { margin: 0; text-align: right; overflow-wrap: anywhere; font-family: var(--fonte); font-variant-numeric: tabular-nums; }
+  .secao { border-bottom: 1px solid var(--divisor); }
+  .secao > h3 { padding: 2px 8px; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--tinta-fraca); background: var(--painel); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .secao > h3 > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .secao > .dentro-da-secao { padding: 3px 8px 6px; }
+
+  /* ---------- a coluna da direita: duas gavetas ---------- */
+  #col-lado > .bloco { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
+  #vivas .corpo-rolavel { max-height: 46vh; }
+  #dentro { flex: 1 1 auto; }
+  /* A COLUNA DA DIREITA É ESTREITA (306 px): a tabela respira menos, e é isso que faz as cinco colunas caberem
+     sem o cabeçalho sair cortado. Medido antes: seis colunas com padding de 8 px davam «DECIS?». */
+  #vivas-corpo table.tab td, #vivas-corpo table.tab th { padding: 2px 4px; font-size: 11px; }
+  #vivas-corpo table.tab td:first-child, #vivas-corpo table.tab th:first-child { padding-left: 8px; }
+
+  /* ============================ O TELEFONE ================================================ */
+  .barra-do-telefone { display: none; }
   @media (max-width: 1080px) {
-    .bancada { grid-template-columns: 1fr; padding: 8px 8px 0; }
-    #lista-de-pares { display: flex; overflow-x: auto; scroll-snap-type: x proximity; }
-    .par { min-width: 208px; border-bottom: 0; border-right: 1px solid var(--divisor); scroll-snap-align: start; }
-    /* No telefone o botão de abrir/recolher tem de ser tocável: 44 px, como os outros. */
-    .abre-o-card { width: 44px; height: 44px; }
-    .botao-mini { min-height: 32px; padding: 4px 10px; }
-    /* MAS NO TELEFONE O CARTÃO DE UM PAR NÃO ABRE — e isto é medição, não gosto: com um cartão aberto a faixa dos
-       pares ia a 224 px e empurrava o gráfico 21 px para trás da barra fixa. Aqui o detalhe vive no painel «lado
-       de dentro» (logo abaixo do gráfico), a faixa fica baixinha (~68 px), e o botão do CARTÃO e o «abrir todos»
-       SAEM: um controle que não muda nada visível é ruído.
-       Atenção ao alcance disto: tem de ser `.par .abre-o-card`, e não `.abre-o-card` — escrito sem o `.par`,
-       apagava TAMBÉM os botões dos painéis e das secções, e no telefone deixava de haver como recolher o
-       gráfico (medido: com todos os botões escondidos, o gesto só existia pelo teclado). */
-    .par .grelha { display: none; }
-    .par .abre-o-card { display: none; }
-    .botao-mini { display: none; }
-    /* Os botões dos painéis e das secções, esses, ficam — e com alvo de 44 px. */
-    .bloco > header .abre-o-card,
-    .leitura-do-setup > header .abre-o-card,
-    .secao > h3 .abre-o-card { width: 44px; height: 44px; }
-    .secao > h3 { padding: 0 10px; }
-    /* Na vista de configuração a chave fica por cima do valor: uma chave de 150 px num ecrã de 390 deixa 200 px
-       ao valor, e há aqui valores longos (o caminho da credencial, o endereço da conta). */
-    .vista-de-config .item-de-config { grid-template-columns: 1fr; }
-    .vista-de-config .valor { text-align: left; }
-    /* No telefone, campo e botão com alvo de dedo: um campo de 30 px de altura é um campo que se erra a escrever. */
-    .vista-de-config input[type="text"], .vista-de-config select { min-height: 44px; }
-    .botoes-da-ficha .botao { min-height: 44px; }
-    /* A altura real do gráfico é calculada em JS (viewport − topo − barra); este valor é só o ponto de partida. */
-    .palco { height: 46vh; min-height: 240px; }
-    /* A tabela da leitura cabe inteira num ecrã de 390 px: 58 + 5×50 + 5×4 = 328 ≤ 352 (a largura útil medida). */
-    .tabela-de-barras .linha { grid-template-columns: 58px repeat(5, minmax(50px, 1fr)); gap: 0 4px; font-size: 11.5px; }
-    .registo, .faltas { margin-bottom: 0; }
-    .faltas { padding-bottom: 100px; }   /* a barra fixa não tapa as faltas nem o registo */
-
-    /* NO TELEFONE O DIÁLOGO É UMA FOLHA DE BAIXO: no centro do ecrã fica longe do polegar e o teclado tapa-o. */
+    /* A BARRA NO TELEFONE: menos pedaços, e mais pequenos. Saem os que já estão noutro sítio do ecrã (o
+       plugin, os ciclos e os pares), e o rótulo do seletor — o select já mostra a corrida. Medido antes:
+       cinco linhas de barra empurravam o gráfico para o fundo da dobra. */
+    .fita { padding: 2px 8px; gap: 2px 10px; min-height: 0; }
+    /* A MARCA PARTE-SE POR LINHAS INTEIRAS: a corrida e os selos cabem na primeira, e a ATENÇÃO — que é a mais
+       longa («sem dados há 3,4 h») — ganha a sua própria linha, em vez de espremer o nome da corrida até o
+       partir a meio (medido antes: «teste-de-» / «auditoria»). */
+    .fita .marca { flex-wrap: wrap; gap: 3px 7px; }
+    .fita .marca .selo.atencao { flex: 1 1 100%; }
+    .fita .marca .plugin, .fita .numero.ciclos, .fita .numero.pares, .fita .numero.agora, label.numero.seletor .rot { display: none; }
+    .numeros-da-fita { gap: 1px 10px; }
+    .numero .rot { font-size: 8.5px; letter-spacing: .02em; }
+    .numero .val { font-size: 11.5px; }
+    body { display: block; height: auto; min-height: 100vh; overflow: visible; }
+    /* A VISTA DE CONFIGURAÇÃO, NO TELEFONE: uma coluna. A grelha de três colunas dá 540 px num ecrã de 390, e
+       o que transborda não se lê — medido: `config-grade 540>374`, e as linhas de ação a 171>124. */
+    .config-grade { grid-template-columns: 1fr; }
+    .config-grade > .col { max-height: none; }
+    .acoes-grade { grid-template-columns: 1fr; }
+    .acoes-grade .dentro { max-height: none; }
+    .linha-de-acao .com { display: none; }
+    .config-grade .matriz .lr { min-height: 30px; }
+    .area { grid-template-columns: 1fr; height: auto; overflow: visible; }
+    .col { height: auto; }
+    .col-grafico .palco { height: 52vh; min-height: 250px; }
+    .rodape { grid-template-columns: 1fr; max-height: none; overflow: visible; }
+    /* O CONTEÚDO CONTINUA A ROLAR DENTRO DO BLOCO, mesmo no telefone: a tabela da leitura tem 7 colunas
+       `nowrap` (~620 px) e, com `overflow: visible`, empurrava a PÁGINA inteira (medido: doc 624 > 500). */
+    .rodape .dentro-do-bloco { max-height: none; }
+    #vivas .corpo-rolavel { max-height: none; }
+    /* no telefone o bloco dos pares é uma faixa horizontal — escolhe-se com o polegar */
+    #col-pares .corpo-rolavel { overflow-x: auto; }
+    .matriz { flex-direction: row; }
+    .matriz .lh { display: none; }
+    .matriz .lr { grid-template-columns: auto auto 34px; min-width: 150px; min-height: 32px; border-right: 1px solid var(--divisor); border-bottom: 0; }
+    table.tab td, table.tab th { padding: 4px 8px; }
+    .botao { min-height: 30px; }
+    .numero.seletor select { min-height: 30px; max-width: 46%; }
+    /* um alvo de toque com 12 px não é um alvo: a caixa cresce, o rótulo cresce, o gesto acerta. */
+    .alternar { min-height: 30px; }
+    .alternar input { width: 16px; height: 16px; }
+    .abre-o-card { width: 30px; height: 30px; }
+    .barra-do-telefone {
+      display: flex; gap: 6px; align-items: center; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+      padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+      background: var(--painel-alto); border-top: 1px solid var(--borda);
+    }
+    .barra-do-telefone .quem { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+    .barra-do-telefone .botao { flex: none; }
+    .faltas { padding-bottom: 60px; }
     .dialogo {
       left: 0; right: 0; top: auto; bottom: 0; transform: none;
-      width: 100%; max-height: 88vh;
-      border-radius: var(--raio-grande) var(--raio-grande) 0 0;
-      padding-bottom: env(safe-area-inset-bottom);
+      width: 100%; max-height: 88vh; border-radius: 3px 3px 0 0; padding-bottom: env(safe-area-inset-bottom);
     }
-    .cabeca-do-dialogo { border-radius: var(--raio-grande) var(--raio-grande) 0 0; position: sticky; top: 0; z-index: 1; }
-    /* ALVO DE 44 px, como o resto dos controles do telefone: eu tinha-o deixado em 32 px e a medição apanhou-o. */
-    .botao-config { min-height: 44px; padding: 8px 12px; }
-    .corpo-do-dialogo .item-de-config { grid-template-columns: 1fr; }
-    .corpo-do-dialogo .item-de-config .valor { text-align: left; }
-    .corpo-do-dialogo .item-de-config .valor .opcoes { text-align: left; }
+    .cabeca-do-dialogo { position: sticky; top: 0; z-index: 1; }
+    .item-de-config { grid-template-columns: 1fr; }
+    .item-de-config .valor { text-align: left; }
   }
 </style>
 </head>
 <body>
 
+<!-- A BARRA DE ESTADO: o que muda depressa, numa faixa. Sem slogans. -->
 <header class="fita" id="fita"></header>
 
-<main class="bancada" id="bancada">
-  <aside class="bloco pares" data-recolhivel="bloco:pares">
-    <header><span class="mini">Pares</span><span class="contagem mini" id="contagem-de-pares"></span>
-      <button type="button" class="abre-o-card" data-alternar="bloco:pares" aria-expanded="true" aria-label="pares: recolher"><i class="glifo chevron aberto"></i></button></header>
-    <div class="corpo" style="padding:0" id="lista-de-pares" role="listbox" aria-label="pares em negociação"></div>
+<!-- A ÁREA DE TRABALHO: pares | gráfico (dominante) | posições · ordens · mercado. -->
+<main class="area">
+  <aside class="col" id="col-pares">
+    <header class="cabeca-da-col"><span class="rot">Pares</span><span class="contagem" id="contagem-de-pares"></span></header>
+    <div class="corpo-rolavel"><div class="matriz" id="lista-de-pares" role="listbox" aria-label="pares em negociação"></div></div>
   </aside>
 
-  <section class="bloco grafico" data-recolhivel="bloco:grafico">
+  <section class="col col-grafico">
     <div class="cabecalho" id="cabecalho-do-grafico"></div>
     <div class="palco" id="palco"></div>
     <div class="legenda-do-grafico" id="legenda"></div>
-    <div class="leitura-do-setup" id="leitura-do-setup" data-recolhivel="bloco:leitura">
-      <header>
-        <span class="mini">A leitura do setup</span>
-        <span class="contagem mini" id="resumo-da-leitura"></span>
-        <button type="button" class="abre-o-card" data-alternar="bloco:leitura" aria-expanded="false" aria-label="a leitura do setup: abrir"><i class="glifo chevron"></i></button>
-      </header>
-      <div id="corpo-da-leitura"></div>
-    </div>
   </section>
 
-  <aside class="bloco dentro" data-recolhivel="bloco:dentro">
-    <header><span class="mini">O lado de dentro</span>
-      <button type="button" class="abre-o-card" data-alternar="bloco:dentro" aria-expanded="true" aria-label="o lado de dentro: recolher"><i class="glifo chevron aberto"></i></button></header>
-    <div class="corpo" id="dentro"></div>
+  <aside class="col" id="col-lado">
+    <div class="bloco" data-recolhivel="vivas" id="vivas">
+      <header class="cabeca-da-col">
+        <span class="rot">Posições vivas</span><span class="contagem" id="contagem-das-vivas"></span>
+        <span class="fonte" id="fonte-das-vivas"></span>
+        <button type="button" class="abre-o-card" data-alternar="vivas" aria-expanded="true" aria-label="posições vivas: recolher"><i class="glifo chevron aberto"></i></button>
+      </header>
+      <div class="corpo-rolavel" id="vivas-corpo"></div>
+    </div>
+    <div class="corpo-rolavel" id="dentro"></div>
   </aside>
 </main>
 
-<section class="bloco registo" id="bloco-registo" data-recolhivel="bloco:registo">
-  <header><span class="mini">Registo · o ledger da mesa</span><span class="contagem mini" id="contagem-do-registo"></span>
-    <button type="button" class="abre-o-card" data-alternar="bloco:registo" aria-expanded="true" aria-label="o registo: recolher"><i class="glifo chevron aberto"></i></button></header>
-  <div class="corpo"><div class="colunas" id="registo"></div></div>
-</section>
+<!-- O RODAPÉ: a matriz de estado (em vez de frases), a leitura do setup, o ledger. -->
+<footer class="rodape">
+  <div class="bloco" data-recolhivel="matriz">
+    <h4>Estado por par <span class="contagem" id="contagem-da-matriz"></span>
+      <span class="fonte" id="fonte-da-matriz"></span>
+      <button type="button" class="abre-o-card" data-alternar="matriz" aria-expanded="true" aria-label="a matriz de estado: recolher"><i class="glifo chevron aberto"></i></button></h4>
+    <div class="dentro-do-bloco" id="matriz"></div>
+  </div>
+  <div class="bloco" data-recolhivel="leitura">
+    <h4>A leitura do setup <span class="contagem" id="resumo-da-leitura"></span>
+      <span class="fonte" id="fonte-da-leitura"></span>
+      <button type="button" class="abre-o-card" data-alternar="leitura" aria-expanded="true" aria-label="a leitura do setup: recolher"><i class="glifo chevron aberto"></i></button></h4>
+    <div class="dentro-do-bloco" id="corpo-da-leitura"></div>
+  </div>
+  <div class="bloco" data-recolhivel="registo">
+    <h4>Registo · mandato · carteiro <span class="contagem" id="contagem-do-registo"></span>
+      <span class="fonte" id="fonte-do-registo"></span>
+      <button type="button" class="abre-o-card" data-alternar="registo" aria-expanded="true" aria-label="o registo: recolher"><i class="glifo chevron aberto"></i></button></h4>
+    <div class="dentro-do-bloco" id="registo"></div>
+  </div>
+</footer>
 
-<!-- A VISTA DE CONFIGURAÇÃO — uma vista da própria tela, com endereço próprio (`#configuracao`), e NÃO um diálogo.
-     Ver o porquê em `docs/INTERFACE-DE-CONTROLO.md` §11: o que muda um interruptor é diálogo; o que muda um
-     DOCUMENTO (a ficha) é vista — porque o documento tem regras, um veredicto e um relatório, e isso não cabe
-     numa caixa. O endereço próprio dá o que o diálogo não dá: o «voltar» do telefone funciona e um recarregamento
-     não perde o sítio onde se estava. -->
+<section class="faltas" id="faltas"></section>
+
+<!-- A VISTA DE CONFIGURAÇÃO — um documento tem vista própria (endereço `#configuracao`), não uma caixa. -->
 <section class="vista-de-config" id="vista-de-config" hidden>
   <header class="cabeca-da-vista">
     <h1>Configuração</h1>
@@ -464,12 +418,8 @@
   <div id="config-corpo"></div>
 </section>
 
-<section class="faltas" id="faltas"></section>
-
 <div class="barra-do-telefone" id="barra-do-telefone"></div>
 
-<!-- O DIÁLOGO DA CONFIGURAÇÃO — está no HTML estático, e não criado pelo JavaScript, para os `id` existirem
-     sempre (uma referência morta só rebenta no gesto de quem abre). O conteúdo entra quando se abre. -->
 <div class="veu" id="veu" hidden></div>
 <div class="dialogo" id="dialogo" role="dialog" aria-modal="true" aria-labelledby="dialogo-titulo" hidden>
   <header class="cabeca-do-dialogo">
@@ -479,1306 +429,9 @@
   <div class="corpo-do-dialogo" id="dialogo-corpo"></div>
 </div>
 
+<!-- A BIBLIOTECA DO GRÁFICO vem antes dos módulos: um `<script>` clássico corre durante a análise, e os
+     módulos (diferidos) correm depois — `LightweightCharts` existe quando `js/grafico.js` o lê. -->
 <script src="lightweight-charts.standalone.production.js"></script>
-<script>
-"use strict";
-const L = LightweightCharts;
-
-/* ---------------------------------------------------------------------------
- * A COR VEM DO DOCUMENTO, NÃO DO JAVASCRIPT.
- *
- * Um canvas não lê custom properties: se o gráfico tivesse os seus hexes, o tema
- * passaria a ter duas paletas e uma delas não mudava. `cor()` resolve a variável
- * ATRAVÉS do motor de estilo (escreve-a num `color` e lê o resultado), e é assim
- * que os derivados por `color-mix(...)` também chegam ao gráfico.
- *
- * MAS O QUE O MOTOR DEVOLVE NÃO SERVE A TODA A GENTE — e isto foi medido, com o
- * preço de uma tela inteira em branco: para um `color-mix` o `getComputedStyle`
- * devolve a forma moderna `color(srgb 0.31 0.82 0.75 / 0.5)`, e a biblioteca do
- * gráfico (que valida cor com uma expressão regular de `rgb()/rgba()`) RECUSA-A —
- * `Failed to parse color: color(srgb …)`. A excepção rebentava dentro do desenho,
- * a meio, e o painel mostrava o rectângulo vazio com a legenda por baixo: o
- * sintoma era "sem dados", a causa era uma COR.
- *
- * (Tentou-se primeiro normalizar pelo próprio canvas — `fillStyle` — e NÃO serve:
- * esta versão do browser aceita a forma moderna e devolve-a tal e qual. Um regex
- * explícito é o que resta, e fica testável: a conversão é aritmética, não fé.)
- * ------------------------------------------------------------------------- */
-const sonda = document.createElement("span");
-sonda.style.display = "none";
-document.body.appendChild(sonda);
-/** `color(srgb r g b [/ a])` -> `rgb()/rgba()`. O resto (`rgb`, `rgba`, `#hex`) já vem na forma que a lib lê. */
-function normalizarCor(bruto) {
-  const m = /^color\(srgb\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)(?:\s*\/\s*([0-9.]+))?\s*\)$/.exec(String(bruto).trim());
-  if (m === null) return bruto;
-  const [r, g, b] = [m[1], m[2], m[3]].map((x) => Math.round(Number(x) * 255));
-  return m[4] === undefined ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${Number(m[4])})`;
-}
-function cor(nome) {
-  sonda.style.color = `var(${nome})`;
-  return normalizarCor(getComputedStyle(sonda).color);
-}
-
-/**
- * OS ERROS DO PRÓPRIO GESTO, APANHADOS ONDE ELES ACONTECEM.
- *
- * Uma excepção dentro de um `listener` não sobe para quem chamou: fica na consola e o ecrã mostra só a metade
- * que correu. Foi assim que uma fatia inteira desta tela pareceu "sem dados" quando o problema era uma linha a
- * estourar a meio do desenho. Este ouvinte guarda os erros em `window.__erros` — e a barra do rodapé mostra-os
- * quando existem, em vez de a tela ficar calada sobre o que falhou.
- */
-window.__erros = [];
-addEventListener("error", (e) => window.__erros.push(`${e.message} @ ${e.filename}:${e.lineno}:${e.colno}`));
-addEventListener("unhandledrejection", (e) => window.__erros.push(`promessa recusada: ${e.reason && e.reason.message ? e.reason.message : String(e.reason)}`));
-
-const escapar = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const n = (x) => (x === null || x === undefined || x === "" ? null : Number(x));
-const dinheiro = (x, casas = 2) => (n(x) === null ? "—" : n(x).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas }));
-/** O preço vai como o venue o publicou (texto). Arredondar aqui era perder o algarismo que decide. */
-const comoVeio = (x) => (x === null || x === undefined || x === "" ? "—" : String(x));
-const hora = (ms) => (ms === null || ms === undefined ? "—" : new Date(Number(ms)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-const diaEHora = (ms) => (ms === null || ms === undefined ? "—" : new Date(Number(ms)).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }));
-const idade = (ms) => (ms === null || ms === undefined ? "—" : `${(Number(ms) / 1000).toFixed(1)} s`);
-const desde = (ms) => {
-  const s = Math.max(0, (Date.now() - Number(ms)) / 1000);
-  if (s < 90) return `${s.toFixed(0)} s`;
-  if (s < 5400) return `${(s / 60).toFixed(0)} min`;
-  if (s < 172800) return `${(s / 3600).toFixed(1)} h`;
-  return `${(s / 86400).toFixed(1)} dias`;
-};
-const ladoDoSig = (sig) => (sig === 1 ? "compra" : sig === -1 ? "venda" : "neutro");
-
-let dados = null;
-let selecionado = null;
-let grafico = null;
-const series = {};      // as séries do gráfico, por nome
-let marcas = null;      // o gestor de marcadores (v5: createSeriesMarkers)
-// O CICLO VIVO ACTUALIZA A ÚLTIMA BARRA, e precisa de duas guardas para não estragar o gráfico: `ultimoTempoNoGrafico`
-// diz se PODE (um `update` com tempo ANTERIOR rebenta, e com tempo muito posterior — outro instrumento — desenharia
-// uma barra solta no fim); `linhaDoPreco` é a linha do último preço, criada uma vez e depois só deslocada.
-let ultimoTempoNoGrafico = null;
-let linhaDoPreco = null;
-
-/* ============================ A FITA ==================================== */
-function desenharFita() {
-  const mesa = dados.mesas[0];
-  const conta = mesa.contas[0];
-  const ambiente = (conta.instrumentos.find((i) => i.leitura)?.ficha?.caminho || "").includes("teste") ? "TESTE" : null;
-  const estado = mesa.estado_da_mesa;
-  const classeDoEstado = estado === "em_operacao" ? "vivo" : estado === "parada" ? "parado" : "";
-  const armados = conta.instrumentos.filter((i) => i.ficha?.enviar === true).length;
-  const ligados = conta.instrumentos.filter((i) => i.ficha?.run === true).length;
-
-  document.getElementById("fita").innerHTML = `
-    <div class="marca">
-      <b>MesaCore</b>
-      <span class="fraco mono">${escapar(mesa.identidade ?? "—")}</span>
-      ${ambiente ? `<span class="selo teste sem-ponto">ambiente ${ambiente}</span>` : ""}
-      <span class="selo ${classeDoEstado}">${escapar(estado ?? "—")}</span>
-    </div>
-    <div class="numeros-da-fita">
-      <div class="numero"><span class="rot">Equity</span><span class="val mono">${dinheiro(conta.equity)} USDC</span></div>
-      <div class="numero"><span class="rot">Ciclos</span><span class="val mono">${mesa.registo.ciclos}</span></div>
-      <div class="numero"><span class="rot">Ligação</span><span class="val mono">${escapar(mesa.ligacao ?? "—")}</span></div>
-      <div class="numero"><span class="rot">Pares ligados / armados</span><span class="val mono">${ligados} / ${armados}</span></div>
-      <div class="numero"><span class="rot">Retrato</span><span class="val mono">${hora(dados.retrato.gerado_em_ms)} <span class="fraco">(há ${desde(dados.retrato.gerado_em_ms)})</span></span></div>
-      ${dados.agora ? `<div class="numero"><span class="rot">Agora</span><span class="val mono">${desde(dados.agora.gerado_em_ms)}</span></div>` : ""}
-      <button class="botao" id="recarregar">Recarregar</button>
-      <a class="botao" id="botao-config" href="#configuracao">Configuração</a>
-    </div>`;
-  document.getElementById("recarregar").onclick = carregar;
-}
-
-/* ============================ OS PARES ================================== *
- *
- * OS CARTÕES RECOLHEM (pedido do dono, 01/10/2026). Cada cartão tem DUAS camadas, e a linha entre elas é
- * desenhada de propósito:
- *
- *   * O PRINCIPAL, sempre à vista: o símbolo, o setup e o relógio, o preço, o LADO VIGENTE e os dois
- *     interruptores. É o que se lê de relance quando há muitos pares.
- *   * O DETALHE, só quando se abre: posição, última decisão e risco.
- *
- * Por omissão vêm RECOLHIDOS (é o que se pediu: só o principal exposto). A escolha de cada par fica gravada no
- * `localStorage` e sobrevive ao recarregamento — inclusive à renovação do retrato, que redesenha a lista a cada
- * minuto: por isso o estado vive numa variável, e não no DOM, que é reescrito.
- */
-/* ================== O QUE RECOLHE, E POR QUÊ (um só estado) ============= *
- *
- * TUDO RECOLHE (pedido do dono, 01/10/2026), e o estado é UM SÓ — um conjunto de chaves no `localStorage`, com
- * o prefixo a dizer que espécie de coisa cada chave é (`par:BTC`, `bloco:grafico`, `secao:dentro:risco`). O que
- * "recolhido" esconde é que muda de forma para forma (o cartão de um par esconde o detalhe; um painel esconde o
- * corpo), e cada forma tem a sua regra declarada no CSS — mas quem guarda a escolha é o mesmo sítio.
- *
- * A OMISSÃO É GRAVADA, E NÃO DEDUZIDA — e isto é uma correcção medida, não um gosto. A primeira versão tratava
- * "não há chave gravada" como "está recolhido" e "há chave" como "está aberto": ao recolher UM par, a chave
- * passava a existir e TODOS OS OUTROS abriam — mexer num cartão mexia na lista inteira. Aqui o estado é
- * explícito desde o primeiro desenho: na primeira vez grava-se o conjunto com as omissões, e a partir daí o
- * conjunto É a verdade.
- *
- * AS OMISSÕES, e são uma decisão de desenho dita em voz alta:
- *   * os cartões dos pares começam RECOLHIDOS (só o principal exposto);
- *   * o GRÁFICO começa MAXIMIZADO, por pedido expresso — é o que se olha;
- *   * o card da LEITURA do setup (abaixo do gráfico) começa RECOLHIDO, e a cabeça dele leva o resumo — recolher
- *     não pode ser esconder;
- *   * os painéis e as secções começam abertos.
- */
-const CHAVE_DO_RECOLHIDO = "mesacore.painel.recolhidos.v2";
-const OMISSOES = { "bloco:grafico": false, "bloco:pares": false, "bloco:dentro": false, "bloco:registo": false, "bloco:leitura": true };
-function lerRecolhidos() {
-  try {
-    const guardado = JSON.parse(localStorage.getItem(CHAVE_DO_RECOLHIDO) ?? "null");
-    return { conjunto: new Set(Array.isArray(guardado) ? guardado : []), jaGravado: Array.isArray(guardado) };
-  } catch {
-    return { conjunto: new Set(), jaGravado: false };
-  }
-}
-const doStorage = lerRecolhidos();
-const recolhidos = doStorage.conjunto;
-function gravarRecolhidos() {
-  try { localStorage.setItem(CHAVE_DO_RECOLHIDO, JSON.stringify([...recolhidos])); } catch { /* sem storage, segue sem gravar */ }
-}
-let omissaoJaAplicada = doStorage.jaGravado;
-function aplicarAsOmissoes(instrumentos) {
-  if (omissaoJaAplicada) return;
-  for (const [chave, fechado] of Object.entries(OMISSOES)) if (fechado) recolhidos.add(chave);
-  for (const i of instrumentos) recolhidos.add(`par:${i.instrumento}`); // os cartões nascem recolhidos
-  gravarRecolhidos();
-  omissaoJaAplicada = true;
-}
-const estaRecolhido = (chave) => recolhidos.has(chave);
-/** O gesto: uma chave, e o estado dela. Uma só função para todos os botões da tela. */
-function alternarRecolhido(chave) {
-  const eraGrafico = chave === "bloco:grafico";
-  if (recolhidos.has(chave)) recolhidos.delete(chave); else recolhidos.add(chave);
-  gravarRecolhidos();
-  aplicarOsEstadosDeRecolher();
-  if (eraGrafico && !estaRecolhido(chave)) repintarOGrafico();
-  reencaixarEmBreve(); // a altura do que está por cima do gráfico pode ter mudado: mede-se de novo
-}
-
-/**
- * O GRÁFICO NÃO SE REPINTA SOZINHO DEPOIS DE VOLTAR DE `display: none` — e isto é medido, não suposto.
- *
- * Enquanto recolhido, o contentor tem altura 0; a biblioteca fica com um tamanho inválido em memória e o canvas
- * volta com o bitmap de omissão (300×150) e **sem um pixel desenhado** — o gráfico aparece vazio depois de
- * reabrir, que é o pior defeito possível nesta tela (parece "sem dados"). Reaplicar o tamanho não bastou.
- *
- * O que repinta de forma determinística é RECONSTRUIR: a mesma função que montou o gráfico na primeira vez
- * (a criação é o caminho já provado). Custa reescrever 505 barras de série, que é instantâneo, e evita a
- * ginástica de forçar um tamanho falso só para acordar o desenho.
- */
-function repintarOGrafico() {
-  if (!grafico) return;
-  requestAnimationFrame(() => {
-    try { grafico.remove(); } catch { /* já não havia nada para remover */ }
-    grafico = null;
-    for (const k of Object.keys(series)) delete series[k];
-    marcas = null;
-    desenharGrafico();
-    // O desenho reescreveu a cabeça e a matéria da leitura: os botões novos nasceriam mortos.
-    aplicarOsEstadosDeRecolher();
-    ligarOsBotoesDeRecolher();
-  });
-}
-/** Põe o estado guardado em cada contentor que se recolhe (a classe é o que o CSS lê). */
-function aplicarOsEstadosDeRecolher() {
-  for (const el of document.querySelectorAll("[data-recolhivel]")) {
-    el.classList.toggle("recolhido", estaRecolhido(el.dataset.recolhivel));
-    for (const b of el.querySelectorAll("[data-alternar='" + el.dataset.recolhivel + "']")) {
-      b.setAttribute("aria-expanded", String(!estaRecolhido(el.dataset.recolhivel)));
-      b.title = estaRecolhido(el.dataset.recolhivel) ? "abrir" : "recolher (deixar só o principal)";
-      const g = b.querySelector(".glifo.chevron");
-      if (g) g.classList.toggle("aberto", !estaRecolhido(el.dataset.recolhivel));
-    }
-  }
-}
-/**
- * O BOTÃO DE RECOLHER, um só construtor para todos os sítios.
- * O `stopPropagation` é essencial no cartão de um par (que é clicável por inteiro): sem ele, recolher o cartão
- * escolhia o par. Nos painéis não faz mal nenhum, e a regra é a mesma em todo o lado — uma regra, um dono.
- */
-function botaoDeRecolher(chave, rotulo) {
-  const fechado = estaRecolhido(chave);
-  return `<button type="button" class="abre-o-card" data-alternar="${escapar(chave)}" aria-expanded="${!fechado}"
-    title="${fechado ? "abrir" : "recolher"}" aria-label="${escapar(rotulo)}: ${fechado ? "abrir" : "recolher"}">
-    <i class="glifo chevron ${fechado ? "" : "aberto"}"></i>
-  </button>`;
-}
-/**
- * QUANDO A ABA VOLTA (o dono troca de app no telefone e volta ao painel), O GRÁFICO PODE VOLTAR VAZIO.
- *
- * Com a aba escondida o `requestAnimationFrame` não corre — medido: **0 frames em 1,2 s** e o canvas parado no
- * bitmap de omissão (300×150), sem um pixel desenhado. Um desenho que tivesse ficado à espera nunca chega a
- * acontecer, e o gráfico aparece vazio, que é o pior defeito possível nesta tela: parece «sem dados» quando os
- * dados estão lá. Aqui a volta da aba é tratada como o que ela é — um pedido de desenho — e só se reconstrói
- * quando é mesmo preciso (o canvas ainda no tamanho de omissão), para não desmontar o gráfico de quem só
- * voltou a olhar.
- *
- * O 300×150 é o tamanho de omissão do `<canvas>` do HTML: nesta tela o palco nunca é assim tão pequeno (o
- * mínimo medido é 240×220), por isso vê-lo é sinal seguro de que o gráfico nunca chegou a desenhar.
- */
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) return;
-  const c = document.querySelector("#palco canvas");
-  if (!c || (c.width === 300 && c.height === 150)) repintarOGrafico();
-  reencaixarEmBreve();
-});
-
-function ligarOsBotoesDeRecolher() {
-  for (const b of document.querySelectorAll("[data-alternar]")) {
-    b.onclick = (e) => { e.stopPropagation(); alternarRecolhido(b.dataset.alternar); };
-  }
-}
-
-function desenharPares() {
-  const conta = dados.mesas[0].contas[0];
-  aplicarAsOmissoes(conta.instrumentos); // na primeira volta, os cartões nascem recolhidos — e isso fica gravado
-  const caixa = document.getElementById("lista-de-pares");
-  document.getElementById("contagem-de-pares").innerHTML =
-    `${conta.instrumentos.length} em negociação <button class="botao-mini" id="alternar-todos">${
-      conta.instrumentos.every((i) => estaRecolhido(`par:${i.instrumento}`)) ? "abrir todos" : "recolher todos"
-    }</button>`;
-
-  caixa.innerHTML = conta.instrumentos.map((i) => {
-    const l = i.leitura ?? {};
-    const pos = l.posicao;
-    const ultimoPonto = i.serie_do_setup[i.serie_do_setup.length - 1] ?? null;
-    // O LADO VIGENTE VEM DA SÉRIE — que é a conta do PRÓPRIO setup sobre a barra que decidiu —, e não de um
-    // número arrancado de um log que pode ser de uma volta antiga.
-    const sig = ultimoPonto?.sig ?? null;
-    const virou = ultimoPonto?.virada ? ultimoPonto.virada : 0;
-    const decidiu = i.ultima_decisao;
-    const recolhido = estaRecolhido(`par:${i.instrumento}`);
-    return `
-    <div class="par ${recolhido ? "recolhido" : ""}" data-recolhivel="par:${escapar(i.instrumento)}" role="option" data-par="${escapar(i.instrumento)}" aria-selected="${i.instrumento === selecionado}" tabindex="0">
-      <span class="linha-de-cima">
-        <span class="nome">${escapar(i.instrumento)}</span>
-        <span class="fraco mono" style="font-size:11px">${escapar(i.ficha?.setup ?? "?")} ${escapar(i.ficha?.relogio ?? "")}</span>
-        ${virou !== 0 ? `<span class="glifo ${virou === 1 ? "tri-cima" : "tri-baixo"}" title="virou nesta barra"></span>` : ""}
-        <span class="preco mono">${comoVeio(l.ultimo ?? l.bid)}</span>
-        ${botaoDeRecolher(`par:${i.instrumento}`, `o cartão de ${i.instrumento}`)}
-      </span>
-
-      <!-- O PRINCIPAL: fica sempre. -->
-      <span class="principal">
-        <span class="lado ${ladoDoSig(sig)}">${sig === 1 ? "comprado" : sig === -1 ? "vendido" : "sem lado"}</span>
-        <span class="mono ${i.ficha?.run ? "" : "fraco"}">rodar: ${i.ficha?.run ? "sim" : "não"}</span>
-        <span class="mono ${i.ficha?.enviar ? "" : "fraco"}">enviar: ${i.ficha?.enviar ? "sim" : "não"}</span>
-      </span>
-
-      <!-- O DETALHE: só com o cartão aberto. -->
-      <span class="grelha">
-        <span class="rot">posição</span><span class="val mono">${pos ? `${escapar(pos.lado)} ${comoVeio(pos.unidades)} @ ${comoVeio(pos.preco_medio)}` : "nenhuma"}</span>
-        <span class="rot">última decisão</span><span class="val mono fraco">${decidiu ? `${escapar(decidiu.acao)} · ${escapar(decidiu.motivo)}` : "—"}</span>
-        <span class="rot">risco</span><span class="val mono fraco">${escapar(i.risco?.saldo_pct ?? "?")}% × ${escapar(i.risco?.alavancagem ?? "?")}</span>
-        ${i.falhas && (i.falhas.leitura === false && i.falhas.setup_respondeu === true) ? "" : `<span class="rot">falhas</span><span class="val mono fraco">${escapar(JSON.stringify(i.falhas ?? {}))}</span>`}
-      </span>
-    </div>`;
-  }).join("");
-
-  for (const b of caixa.querySelectorAll(".par")) {
-    const escolher = () => { selecionado = b.dataset.par; desenharPares(); desenharGrafico(); desenharODentro(); desenharRegistoEFaltas(); desenharBarraDoTelefone(); };
-    b.onclick = escolher;
-    // O TECLADO SÓ ESCOLHE QUANDO O FOCO ESTÁ NO CARTÃO. Sem este teste, o `Enter` no botão de abrir subia ao
-    // cartão e escolhia o par — dois efeitos num gesto.
-    b.onkeydown = (e) => { if (e.target === b && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); escolher(); } };
-  }
-  // O GESTO DE ABRIR/RECOLHER não pode chegar ao cartão (senão escolhia o par ao mesmo tempo): a ligação é
-  // partilhada com todos os outros botões da tela (`ligarOsBotoesDeRecolher`), e ela já faz `stopPropagation`.
-  ligarOsBotoesDeRecolher();
-  document.getElementById("alternar-todos").onclick = (e) => {
-    e.stopPropagation();
-    const todos = conta.instrumentos.map((i) => `par:${i.instrumento}`);
-    const todosRecolhidos = todos.every((c) => estaRecolhido(c));
-    for (const c of todos) { if (todosRecolhidos) recolhidos.delete(c); else recolhidos.add(c); }
-    gravarRecolhidos();
-    aplicarOsEstadosDeRecolher();
-    reencaixarEmBreve();
-  };
-}
-
-/* ============================ O GRÁFICO ================================= */
-const instrumentoAtual = () => dados.mesas[0].contas[0].instrumentos.find((i) => i.instrumento === selecionado) ?? dados.mesas[0].contas[0].instrumentos[0];
-
-/**
- * O TAMANHO DO GRÁFICO É MEDIDO, NÃO DELEGADO.
- *
- * A primeira versão usava `autoSize: true` — a biblioteca mede o contentor por `ResizeObserver`. Medido no
- * browser: os canvas ficavam com o tamanho de CSS certo e o BITMAP no valor de omissão (300×150), ou seja, o
- * gráfico nunca pintava, e a página mostrava um rectângulo vazio com a legenda por baixo. Não é um defeito de
- * dados (as 505 velas estavam lá): é o tamanho a chegar depois da primeira pintura.
- *
- * Aqui o tamanho é lido do contentor no momento de criar e reaplicado em cada `resize` — sem depender de um
- * observador que pode não correr antes da primeira pintura.
- */
-function medirPalco() {
-  const p = document.getElementById("palco");
-  return { width: Math.max(240, Math.floor(p.clientWidth)), height: Math.max(220, Math.floor(p.clientHeight)) };
-}
-
-function montarGrafico() {
-  const palco = document.getElementById("palco");
-  const medida = medirPalco();
-  const g = L.createChart(palco, {
-    width: medida.width,
-    height: medida.height,
-    layout: {
-      background: { type: "solid", color: cor("--fundo") },
-      textColor: cor("--tinta-fraca"),
-      fontFamily: getComputedStyle(document.body).fontFamily,
-      fontSize: 11,
-      attributionLogo: false,
-    },
-    grid: { vertLines: { color: cor("--grelha") }, horzLines: { color: cor("--grelha") } },
-    rightPriceScale: { borderColor: cor("--borda") },
-    timeScale: { borderColor: cor("--borda"), timeVisible: true, secondsVisible: false, rightOffset: 6 },
-    crosshair: {
-      mode: L.CrosshairMode.Normal,
-      vertLine: { color: cor("--tinta-fraca"), labelBackgroundColor: cor("--painel-alto"), width: 1, style: L.LineStyle.Dotted },
-      horzLine: { color: cor("--tinta-fraca"), labelBackgroundColor: cor("--painel-alto"), width: 1, style: L.LineStyle.Dotted },
-    },
-    localization: {
-      locale: "pt-BR",
-      // O eixo do tempo mostra a HORA LOCAL de quem olha — e a legenda diz o fuso, para não haver dúvida sobre
-      // qual barra é qual.
-      timeFormatter: (t) => new Date(t * 1000).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
-    },
-  });
-
-  // As velas com o tom SUAVE, não com o acento vivo: um corpo de vela é uma área grande, e a tinta clara
-  // usada como preenchimento vira a parede mais acesa do ecrã (medido: tinta sobre o acento = 1,81:1).
-  series.vela = g.addSeries(L.CandlestickSeries, {
-    upColor: cor("--compra-suave"), downColor: cor("--venda"),
-    wickUpColor: cor("--compra-suave"), wickDownColor: cor("--venda"),
-    borderVisible: false, priceLineVisible: false, lastValueVisible: true,
-  }, 0);
-
-  series.media = g.addSeries(L.LineSeries, {
-    color: cor("--media"), lineWidth: 2, priceLineVisible: false, lastValueVisible: false,
-    title: "média",
-  }, 0);
-  series.bandaAlta = g.addSeries(L.LineSeries, {
-    color: cor("--banda"), lineWidth: 1, lineStyle: L.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false,
-  }, 0);
-  series.bandaBaixa = g.addSeries(L.LineSeries, {
-    color: cor("--banda"), lineWidth: 1, lineStyle: L.LineStyle.Dashed, priceLineVisible: false, lastValueVisible: false,
-  }, 0);
-  series.extremo = g.addSeries(L.LineSeries, {
-    color: cor("--extremo"), lineWidth: 1, lineStyle: L.LineStyle.SparseDotted, lineType: L.LineType.WithSteps,
-    priceLineVisible: false, lastValueVisible: false, visible: false,
-  }, 0);
-
-  // A FAIXA DO SINAL — um painel próprio por baixo. É aqui que se lê o LADO vigente barra a barra, sem sujar o
-  // preço; é o mesmo número que o motor usou para decidir (`sig`), não uma leitura nova.
-  series.sinal = g.addSeries(L.HistogramSeries, {
-    priceFormat: { type: "price", precision: 0, minMove: 1 },
-    priceLineVisible: false, lastValueVisible: false, base: 0,
-    title: "lado",
-  }, 1);
-  marcas = L.createSeriesMarkers(series.vela, []);
-  return g;
-}
-
-function ajustarAlturaDosPainéis() {
-  if (!grafico) return;
-  // COM O PAINEL RECOLHIDO NÃO HÁ O QUE MEDIR: o contentor está escondido, a altura é 0, e sem este guarda o
-  // gráfico era redimensionado para o mínimo e desenhava uma miniatura de 172×137 que ninguém vê (medido). Ao
-  // reabrir, quem trata do desenho é o `repintarOGrafico`.
-  const painel = document.querySelector('[data-recolhivel="bloco:grafico"]');
-  if (painel !== null && painel.classList.contains("recolhido")) return;
-  const palco = document.getElementById("palco");
-  const barra = document.getElementById("barra-do-telefone");
-  const estreito = window.innerWidth <= 1080;
-  const barraVisivel = barra !== null && getComputedStyle(barra).display !== "none";
-
-  // NO TELEFONE A ALTURA É MEDIDA, NÃO ESTIMADA EM `vh`. Uma altura em `vh` ignora o que está por cima (a fita,
-  // a faixa dos pares) e o que está por baixo (a barra fixa): medido, o gráfico começava em y=415 e terminava
-  // atrás da barra — a faixa do sinal e o eixo do tempo ficavam tapados, que é precisamente onde se lê o lado
-  // vigente. Aqui calcula-se o que sobra do ecrã: viewport − topo do palco − altura da barra.
-  if (estreito && barraVisivel) {
-    const topo = palco.getBoundingClientRect().top + window.scrollY;
-    // A ALTURA DO ECRÃ É A MENOR DAS TRÊS que o browser publica. Medido: com emulação de aparelho o
-    // `window.innerHeight` (888) não é o que se vê (844), e usar o maior deixava 34 px do gráfico atrás da barra
-    // — precisamente a faixa do sinal. O menor dos três é o que nunca mente.
-    const alturaDoEcra = Math.min(
-      window.visualViewport ? window.visualViewport.height : Infinity,
-      document.documentElement.clientHeight,
-      window.innerHeight,
-    );
-    const alvo = Math.max(240, Math.round(alturaDoEcra - topo - barra.getBoundingClientRect().height - 10));
-    // Só escreve se mudou: este cálculo volta a correr a cada mudança de layout (ver o observador), e escrever
-    // sempre punha um ciclo observador→escrita→observador sem fim.
-    if (Math.abs(palco.clientHeight - alvo) > 1) palco.style.height = `${alvo}px`;
-  } else if (palco.style.height !== "") {
-    palco.style.height = ""; // no computador vale a altura do CSS (min(58vh, 560px))
-  }
-
-  const medida = medirPalco();
-  grafico.applyOptions(medida);
-  const painéis = grafico.panes();
-  if (painéis.length < 2) return;
-  painéis[1].setHeight(Math.max(54, Math.round(medida.height * 0.18)));
-}
-
-/**
- * QUANTOS PIXELS O GRÁFICO PINTA — a prova de que desenhou, sem depender do olho.
- *
- * Duas armadilhas medidas nesta fatia, e as duas davam FALSO DEFEITO:
- *   (a) medir em sincronia, logo a seguir ao `setData`, diz sempre "não pintou" — o desenho acontece no
- *       `requestAnimationFrame` seguinte. Por isso isto corre depois de um frame (e mais um `setTimeout`);
- *   (b) o PRIMEIRO canvas do contentor não é o que desenha: a biblioteca empilha vários (desenho e sobreposições)
- *       e os de sobreposição ficam com o tamanho de omissão (300×150) de propósito. O que vale é o MAIOR.
- *
- * O fundo conta-se por ALFA: um canvas ainda por pintar é transparente (0,0,0,0) e seria contado como "desenhado"
- * se a conta fosse só por cor. Pixel desenhado = alfa > 0 e cor diferente do fundo do tema (#0f1a1f).
- */
-function medirOPintado() {
-  requestAnimationFrame(() => setTimeout(() => {
-    try {
-      const cs = Array.from(document.querySelectorAll("#palco canvas"));
-      const maior = cs.reduce((a, b) => ((b.width * b.height) > (a ? a.width * a.height : 0) ? b : a), null);
-      if (!maior || maior.width === 0) { if (window.__diag) window.__diag.pintado = { erro: "sem canvas com bitmap" }; return; }
-      const px = maior.getContext("2d").getImageData(0, 0, maior.width, maior.height).data;
-      let comAlfa = 0, foraDoFundo = 0;
-      for (let i = 0; i < px.length; i += 4) {
-        if (px[i + 3] === 0) continue;
-        comAlfa++;
-        if (Math.abs(px[i] - 15) > 6 || Math.abs(px[i + 1] - 26) > 6 || Math.abs(px[i + 2] - 31) > 6) foraDoFundo++;
-      }
-      if (window.__diag) {
-        window.__diag.pintado = {
-          canvas_de_desenho: `${maior.width}x${maior.height}`,
-          canvas_no_palco: cs.length,
-          pixels_opacos: comAlfa,
-          pixels_fora_do_fundo: foraDoFundo,
-          total: maior.width * maior.height,
-        };
-      }
-    } catch (e) {
-      if (window.__diag) window.__diag.pintado = { erro: String(e) };
-    }
-  }, 400));
-}
-
-function desenharGrafico() {
-  const i = instrumentoAtual();
-  const cabecalho = document.getElementById("cabecalho-do-grafico");
-  const temSerie = (i.serie_do_setup ?? []).length > 0;
-  const últimaFechada = i.janela?.ate ?? null;
-  const dito = i.o_que_o_setup_disse ?? {};
-  const ultimoPonto = i.serie_do_setup[i.serie_do_setup.length - 1] ?? null;
-  const sig = ultimoPonto?.sig ?? null;
-  const virou = ultimoPonto?.virada ? ultimoPonto.virada : 0;
-
-  cabecalho.innerHTML = `
-  <button type="button" class="botao-config" id="bt-config" title="a configuração desta ficha">
-    <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-1px;margin-right:5px">
-      <path d="M1 3.5h12M1 7h12M1 10.5h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-      <circle cx="5" cy="3.5" r="1.9" fill="var(--painel-alto)" stroke="currentColor" stroke-width="1.4"/>
-      <circle cx="9.5" cy="7" r="1.9" fill="var(--painel-alto)" stroke="currentColor" stroke-width="1.4"/>
-      <circle cx="4" cy="10.5" r="1.9" fill="var(--painel-alto)" stroke="currentColor" stroke-width="1.4"/>
-    </svg>configuração</button>
-    <span class="titulo">${escapar(i.instrumento)}</span>
-    <span class="fraco mono">${escapar(i.ficha?.setup ?? "?")} ${escapar(i.ficha?.versao_do_setup ?? "")} · relógio ${escapar(i.ficha?.relogio ?? "?")}</span>
-    ${sig !== null ? `<span class="lado ${ladoDoSig(sig)}">${sig === 1 ? "comprado" : sig === -1 ? "vendido" : "sem lado"}</span>` : ""}
-    ${virou !== 0 ? `<span class="fraco"><span class="glifo ${virou === 1 ? "tri-cima" : "tri-baixo"}" style="vertical-align:-1px"></span> virou em ${hora(últimaFechada)}</span>` : ""}
-    <span class="fraco mono" style="margin-left:auto">
-      última barra (a que decidiu): ${diaEHora(últimaFechada)} · hora local ${new Date().toLocaleTimeString("pt-BR", { timeZoneName: "short" }).split(" ").pop()}
-    </span>
-    ${botaoDeRecolher("bloco:grafico", "o gráfico")}`;
-
-  // O botão da configuração é re-desenhado a cada volta (o cabeçalho é reescrito), e por isso a ligação é
-  // refeita aqui: um botão sem gesto é pior do que nenhum botão.
-  document.getElementById("bt-config").onclick = abrirConfiguracao;
-  // Se o diálogo estiver aberto quando os dados chegam (o retrato renova a cada minuto), o conteúdo dele é
-  // refrescado — senão mostrava valores de há dois minutos ao lado de um gráfico já novo.
-  if (!document.getElementById("dialogo").hidden) {
-    document.getElementById("dialogo-titulo").textContent = `configuração · ${i.instrumento} · ${i.ficha?.setup ?? "?"} ${i.ficha?.versao_do_setup ?? ""}`;
-    document.getElementById("dialogo-corpo").innerHTML = conteudoDaConfiguracao(i);
-  }
-
-  if (!grafico) { grafico = montarGrafico(); }
-  ajustarAlturaDosPainéis();
-
-  // --- as velas: o que o venue publicou ---
-  const barras = (i.velas ?? []).map((v) => ({
-    time: Math.floor(v.t / 1000), open: Number(v.o), high: Number(v.h), low: Number(v.l), close: Number(v.c),
-  }));
-  series.vela.setData(barras);
-  // O TEMPO DA ÚLTIMA BARRA DESENHADA — é ele que autoriza (ou não) o `update` do ciclo vivo. Ver `carregarVivo`.
-  ultimoTempoNoGrafico = barras.length > 0 ? barras[barras.length - 1].time : null;
-
-  // --- a série do setup: o que o indicador viu, barra a barra ---
-  const s = i.serie_do_setup ?? [];
-  series.media.setData(s.filter((x) => x.ma !== null).map((x) => ({ time: Math.floor(x.t / 1000), value: x.ma })));
-  series.bandaAlta.setData(s.map((x) => ({ time: Math.floor(x.t / 1000), value: (x.ma ?? 0) + (x.banda ?? 0) })));
-  series.bandaBaixa.setData(s.map((x) => ({ time: Math.floor(x.t / 1000), value: (x.ma ?? 0) - (x.banda ?? 0) })));
-  series.extremo.setData(s.filter((x) => x.extremo !== null).map((x) => ({ time: Math.floor(x.t / 1000), value: x.extremo })));
-  series.sinal.setData(s.map((x) => ({
-    time: Math.floor(x.t / 1000), value: x.sig,
-    color: x.sig === 1 ? cor("--compra-suave") : x.sig === -1 ? cor("--venda") : cor("--neutro"),
-  })));
-
-  // --- as marcas: a vIRADA da regra (seta) e a DECISÃO da mesa (círculo) ---
-  // A biblioteca só desenha circle/square/arrowUp/arrowDown — o triângulo do Pine virou SETA, e a direção dela
-  // é a do LADO (comprado/vendido), não a do preço. Está dito na legenda para ninguém ler a seta como
-  // "subiu/desceu". As nossas decisões de abrir vão no tempo da barra, como círculo, e são outra marca: uma é a
-  // regra a virar, a outra é a mesa a decidir.
-  const lista = s.filter((x) => x.virada !== 0).map((x) => ({
-    time: Math.floor(x.t / 1000),
-    position: x.virada === 1 ? "belowBar" : "aboveBar",
-    shape: x.virada === 1 ? "arrowUp" : "arrowDown",
-    color: x.virada === 1 ? cor("--compra") : cor("--venda"),
-    text: "",
-  }));
-  const tempoDasBarras = new Set(s.map((x) => x.t));
-  for (const ms of i.decisoes_de_abrir_ms ?? []) {
-    // A decisão cai numa barra: procura-se a barra que a contém (o instante cai DENTRO da barra, não na abertura
-    // dela — foi um erro medido numa bancada deste repositório).
-    const barra = s.find((x) => x.t <= ms && ms < x.t + 3600000);
-    if (barra === undefined) continue;
-    lista.push({
-      time: Math.floor(barra.t / 1000), position: "aboveBar", shape: "circle",
-      color: cor("--tinta"), text: "decisão",
-    });
-  }
-  marcas.setMarkers(lista.sort((a, b) => a.time - b.time));
-
-  // --- instrumentação mínima, para a verificação não depender do olho ---
-  // `window.__diag` diz o que o gráfico REALMENTE tem (tamanho em bitmap, barras em cada série, painéis): é por
-  // aqui que se prova que pintou, em vez de se julgar uma captura de ecrã. Não decide nada nem mostra nada.
-  try {
-    window.__diag = {
-      palco: medirPalco(),
-      painéis: grafico.panes().length,
-      velas: (i.velas ?? []).length,
-      barras_da_serie: s.length,
-      marcadores: lista.length,
-      sig_da_ultima_barra: s.length ? s[s.length - 1].sig : null,
-      faltas_do_cruzamento: i.faltas_do_cruzamento ?? null,
-      /** Preenchido a seguir à PRIMEIRA PINTURA (ver `medirOPintado`), e não agora: medir neste instante dava
-       *  sempre "não pintou" — o desenho acontece no `requestAnimationFrame` que ainda não correu. */
-      pintado: null,
-    };
-  } catch (e) {
-    window.__diag = { erro: String(e) };
-  }
-  medirOPintado();
-
-  // --- a legenda e os interruptores do desenho ---
-  document.getElementById("legenda").innerHTML = `
-    <span><i class="glifo barra" style="background:${cor("--media")}"></i>média do indicador</span>
-    <span><i class="glifo barra" style="background:${cor("--banda")}"></i>zona morta (± banda × ATR) — dentro dela a virada não acontece</span>
-    <span><i class="glifo barra" style="background:${cor("--extremo")}"></i>extremo da perna (a memória do zigzag)</span>
-    <span><span class="glifo tri-cima"></span>virou para comprado &nbsp;<span class="glifo tri-baixo"></span>virou para vendido (a seta segue o LADO, não o preço)</span>
-    <span class="alternar"><input type="checkbox" id="c-media" checked>média</span>
-    <span class="alternar"><input type="checkbox" id="c-banda" checked>zona morta</span>
-    <span class="alternar"><input type="checkbox" id="c-extremo">extremo</span>
-    <span class="alternar"><input type="checkbox" id="c-sinal" checked>faixa do sinal</span>`;
-  document.getElementById("c-media").onchange = (e) => { series.media.applyOptions({ visible: e.target.checked }); };
-  document.getElementById("c-banda").onchange = (e) => { series.bandaAlta.applyOptions({ visible: e.target.checked }); series.bandaBaixa.applyOptions({ visible: e.target.checked }); };
-  document.getElementById("c-extremo").onchange = (e) => { series.extremo.applyOptions({ visible: e.target.checked }); };
-  document.getElementById("c-sinal").onchange = (e) => { series.sinal.applyOptions({ visible: e.target.checked }); };
-
-  // --- a leitura do setup: as últimas barras, palavra por palavra dele ---
-  // O CARD TEM CABEÇA PRÓPRIA: o título e o resumo vivem no `header` (que fica quando ele está recolhido), e a
-  // matéria vive no corpo. A cabeça é o que faz recolher valer a pena — sem resumo, recolher seria esconder.
-  const caixa = document.getElementById("corpo-da-leitura");
-  if (!temSerie) {
-    document.getElementById("resumo-da-leitura").textContent = "este setup não publica série";
-    caixa.innerHTML = `<div class="aviso"><b>Este setup não publica série.</b> ${escapar(i.sobreposicao_indisponivel ?? "sem motivo declarado")}<br>
-      <span class="fraco">O gráfico mostra o mercado. A leitura do indicador não se inventa aqui — quem a sabe é o setup.</span></div>`;
-    return;
-  }
-  // AS DUAS PONTAS, À VISTA E CRUZADAS: a SÉRIE (o setup a recalcular sobre a barra que decidiu, agora) e a
-  // MEDIÇÃO que ele deixou escrita no log (datada com a volta). Se discordarem, vê-se que discordam — em vez de
-  // uma delas tapar a outra.
-  const med = dito.medicao;
-  const concordam = med === null || med === undefined || sig === null ? null : med.sig === sig;
-  const últimas = s.slice(-5);
-  // O resumo da cabeça: o que se quer saber sem abrir o card. As duas pontas do cruzamento (a série que o motor
-  // calcula agora e a medição que ele deixou escrita) aparecem aqui juntas — se discordarem, vê-se sem abrir.
-  document.getElementById("resumo-da-leitura").textContent =
-    `${últimas.length} barras · sig ${sig ?? "—"} · ` +
-    (concordam === null ? "sem medição escrita" : concordam ? "concorda" : `DIVERGE da série`);
-  caixa.innerHTML = `
-    <div class="mini fraco">as últimas barras fechadas — a barra que decidiu é a última</div>
-    <div class="tabela-de-barras mono">
-      <div class="linha cabeca"><span>barra (local)</span><span>mid</span><span>ma</span><span>mid−ma</span><span>atr</span><span>banda</span><span>sig</span></div>
-      ${últimas.map((x) => {
-        const midMenosMa = x.ma === null || x.mid === undefined ? "na" : (x.mid - x.ma).toFixed(4);
-        return `<div class="linha">
-          <span class="fraco">${diaEHora(x.t)}</span>
-          <span>${x.mid === undefined ? "—" : Number(x.mid).toFixed(4)}</span>
-          <span>${x.ma === null ? "na" : x.ma.toFixed(4)}</span>
-          <span>${midMenosMa}</span>
-          <span>${x.atr === null ? "na" : x.atr.toFixed(4)}</span>
-          <span>${x.banda === null ? "na" : x.banda.toFixed(4)}</span>
-          <span class="${x.sig === 1 ? "sig-compra" : x.sig === -1 ? "sig-venda" : ""}">${x.sig}${x.virada !== 0 ? " ⟵ virou" : ""}</span>
-        </div>`;
-      }).join("")}
-    </div>
-    ${dito.veredicto
-      ? `<div class="dito mono"><b>O setup disse</b> (volta ${escapar(dito.veredicto.volta)})${dito.veredicto.proposta_do_setup ? ` · propôs <b>${escapar(dito.veredicto.lado_da_proposta)}</b>` : " · não propôs nada"}: ${escapar(dito.veredicto.texto)}</div>`
-      : `<div class="dito fraco">o setup não falou em nenhuma volta do operador nesta corrida</div>`}
-    ${med
-      ? `<div class="mini fraco" style="margin-top:6px">
-           última medição escrita por ele: volta ${escapar(med.volta)} · sig ${escapar(med.sig)} · virada ${escapar(med.virada)} · ma ${escapar(med.ma)} · atr ${escapar(med.atr)}
-           ${concordam === null ? "" : concordam
-             ? `<span class="selo vivo sem-ponto" style="margin-left:6px">concorda com a série</span>`
-             : `<span class="selo teste sem-ponto" style="margin-left:6px">DIVERGE da série (série diz sig ${escapar(sig)})</span>`}
-         </div>`
-      : ""}`;
-}
-
-/* ============================ O LADO DE DENTRO ========================== */
-function desenharODentro() {
-  const i = instrumentoAtual();
-  const l = i.leitura ?? {};
-  const pos = l.posicao;
-  const caixa = document.getElementById("dentro");
-
-  caixa.innerHTML = `
-    <div class="secao" data-recolhivel="secao:dentro:mercado">
-      <h3><span>Posição e mercado</span>${botaoDeRecolher("secao:dentro:mercado", "posição e mercado")}</h3>
-      <div class="dentro-da-secao">
-        <dl class="pares mono">
-          <dt>bid / ask</dt><dd>${comoVeio(l.bid)} / ${comoVeio(l.ask)}</dd>
-          <dt>último</dt><dd>${comoVeio(l.ultimo)}</dd>
-          <dt>idade do dado</dt><dd>${idade(l.idade_do_dado_ms)}</dd>
-          <dt>posição</dt><dd>${pos ? `${escapar(pos.lado)} ${comoVeio(pos.unidades)} @ ${comoVeio(pos.preco_medio)}` : "nenhuma"}</dd>
-          <dt>dono da posição</dt><dd>${pos ? (pos.marca_de_posse ? `nossa (marca ${escapar(pos.marca_de_posse).slice(0, 12)}…)` : "<span class='fraco'>sem marca — a mesa trata-a como alheia</span>") : "—"}</dd>
-          <dt>ordens vivas</dt><dd>${(l.ordens_abertas ?? []).length === 0 ? "nenhuma" : (l.ordens_abertas ?? []).length}</dd>
-          <dt>marcas nossas conhecidas</dt><dd>${(i.marcas_nossas_conhecidas ?? []).length}</dd>
-        </dl>
-        <div class="mini fraco" style="margin-top:8px">
-          O LIVRO não aparece aqui, e é uma falta com nome: <code>mercado.livro</code> é opcional no contrato e a
-          leitura do operador não o publica. Enquanto não viajar na operação, o painel não o mostra — o que não
-          vem do sistema não se desenha (RN-E9).
-        </div>
-      </div>
-    </div>
-
-    <div class="secao" data-recolhivel="secao:dentro:risco">
-      <h3><span>Risco em vigor</span>${botaoDeRecolher("secao:dentro:risco", "risco em vigor")}</h3>
-      <div class="dentro-da-secao">
-        <dl class="pares mono">
-          <dt>saldo</dt><dd>${escapar(i.risco?.saldo_pct ?? "—")}%</dd>
-          <dt>alavancagem</dt><dd>${escapar(i.risco?.alavancagem ?? "—")}×</dd>
-          <dt>prazo de resposta</dt><dd>${escapar(i.risco?.prazo_de_resposta_ms ?? "—")} ms</dd>
-          ${Object.entries(i.risco?.bandas ?? {}).map(([k, b]) => `<dt>banda ${escapar(k)}</dt><dd>${escapar(b.minimo)} … ${escapar(b.maximo)}</dd>`).join("")}
-        </dl>
-      </div>
-    </div>
-
-    <div class="secao" data-recolhivel="secao:dentro:decisoes">
-      <h3><span>Decisões deste par</span>${botaoDeRecolher("secao:dentro:decisoes", "as decisões deste par")}</h3>
-      <div class="dentro-da-secao">
-        <ul class="lista mono">${Object.entries(i.decisao_contagem ?? {}).map(([m, c]) => `<li><span>${escapar(m)}</span><span class="o-que">${c}×</span></li>`).join("") || "<li class='fraco'>sem ciclos registados para este par</li>"}</ul>
-        ${i.ultima_decisao ? `<div class="mini fraco" style="margin-top:6px">última: ${escapar(i.ultima_decisao.acao)} · ${escapar(i.ultima_decisao.motivo)} · ${diaEHora(i.ultima_decisao.instante_ms)}</div>` : ""}
-        ${i.proposta ? `<div class="mini fraco" style="margin-top:4px">proposta do setup na operação: lado ${escapar(i.proposta.lado)} · barra ${diaEHora(i.proposta.barra_ms)}</div>` : `<div class="mini fraco" style="margin-top:4px">a operação não traz proposta deste par (o setup está calado)</div>`}
-        ${i.divergente ? `<div class="aviso" style="margin-top:6px">divergente: ${escapar(JSON.stringify(i.divergente))}</div>` : ""}
-        ${i.falhas && (i.falhas.leitura || !i.falhas.setup_respondeu) ? `<div class="aviso" style="margin-top:6px">falhas da leitura: ${escapar(JSON.stringify(i.falhas))}</div>` : ""}
-      </div>
-    </div>
-
-    <!-- A CONFIGURAÇÃO NÃO MORA AQUI: ela vive na ficha daquele par, e abre-se pelo botão ao lado do símbolo,
-         no título do gráfico. Este aviso existe para a porta estar à vista de quem procura — um controle que
-         existe mas ninguém encontra é um controle que não existe. -->
-    <div class="secao">
-      <div class="dentro-da-secao">
-        <div class="mini fraco">
-          A configuração desta ficha (${escapar(i.ficha?.setup ?? "?")} · ${escapar(i.ficha?.relogio ?? "?")}) abre no botão
-          <b>configuração</b>, ao lado do nome do símbolo no título do gráfico.
-        </div>
-      </div>
-    </div>`;
-}
-
-/* ========================= A CONFIGURAÇÃO, EM DIÁLOGO =================== *
- *
- * A configuração de um par é o que MENOS se olha e o que mais explica o resto — e estava a ocupar um terço da
- * coluna da direita com dezassete campos que se lêem de vez em quando. Passou a um diálogo, aberto pelo botão ao
- * lado do símbolo no título do gráfico: fica na mesma linha de vista do par que se está a olhar.
- *
- * O QUE NÃO MUDA, e é o que importa: os itens continuam a sair do TEMPLATE do próprio setup (RN-S4) — a tela não
- * conhece um item por nome —, e continuam **somente leitura** nesta fatia (a escrita exige validação e
- * assinatura, RN-E12/RN-M2). O que muda é onde eles moram no ecrã, não o que a tela sabe.
- */
-function conteudoDaConfiguracao(i) {
-  const descritores = i.template ?? {};
-  const valores = { ...(i.valores_resolvidos ?? {}), ...(i.parametros ?? {}) };
-  const itens = Object.entries(descritores).map(([nome, d]) => {
-    const valor = valores[nome] ?? d.omissao;
-    // SEM `input` NEM `select`, mesmo desactivados: um controle desactivado é um controle que FINGE — parece que
-    // se muda ali e não se muda. Num campo somente-leitura o valor é TEXTO, e ao lado dele vão as opções que
-    // existem (para se saber o que se estaria a escolher no dia em que a escrita existir).
-    const naoDeclarado = valor === undefined || valor === null || valor === "";
-    const mostra = d.tipo === "booleano" ? (valor ? "sim" : "não") : (naoDeclarado ? "(não declarado)" : String(valor));
-    const escolhas = d.tipo === "escolha" && Array.isArray(d.opcoes)
-      ? `<small class="opcoes">opções: ${d.opcoes.map((o) => escapar(o)).join(" · ")}</small>`
-      : "";
-    return `<div class="item-de-config">
-        <span class="nome-do-item mono">${escapar(nome)}<small>${escapar(d.tipo ?? "")}${d.unidade ? " · " + escapar(d.unidade) : ""}${d.nota ? " · " + escapar(d.nota) : ""}</small></span>
-        <span class="valor mono"><b class="${naoDeclarado ? "fraco" : ""}">${escapar(mostra)}</b>${escolhas}</span>
-      </div>`;
-  }).join("");
-
-  const f = i.ficha ?? {};
-  return `
-    <div class="secao">
-      <h3>Os itens do setup · ${Object.keys(descritores).length} · a partir do template</h3>
-      <div class="dentro-da-secao">
-        ${itens || "<span class='fraco'>o setup não publica template — sem ele não há item nenhum a mostrar</span>"}
-      </div>
-    </div>
-
-    <div class="secao">
-      <h3>De onde vem esta configuração</h3>
-      <div class="dentro-da-secao">
-        <dl class="pares mono">
-          <dt>ficha</dt><dd>${escapar(f.caminho ?? "—")}</dd>
-          <dt>conta</dt><dd>${escapar(i.conta ?? "—")}</dd>
-          <dt>setup</dt><dd>${escapar(f.setup ?? "—")} ${escapar(f.versao_do_setup ?? "")} ${f.linguagem ? `(${escapar(f.linguagem)})` : ""}</dd>
-          <dt>relógio</dt><dd>${escapar(f.relogio ?? "—")} <span class="fraco">(é da ficha, não do setup)</span></dd>
-          <dt>ao desligar</dt><dd>${escapar(f.ao_desligar ?? "—")}</dd>
-        </dl>
-      </div>
-    </div>
-
-    <div class="secao">
-      <h3>Os dois interruptores</h3>
-      <div class="dentro-da-secao">
-        <dl class="pares mono">
-          <dt>rodar (o par está na operação)</dt><dd class="${f.run ? "sig-compra" : "fraco"}">${f.run === true ? "sim" : f.run === false ? "não" : "não declarado"}</dd>
-          <dt>enviar (a mesa pode mandar ao venue)</dt><dd class="${f.enviar ? "sig-venda" : "fraco"}">${f.enviar === true ? "sim" : f.enviar === false ? "não" : "não declarado"}</dd>
-        </dl>
-        <div class="mini fraco" style="margin-top:8px">
-          Somente leitura nesta fatia — a escrita pela tela exige validação e assinatura (RN-E12, RN-M2). O passo
-          que muda o estado é este, por par:
-        </div>
-        <code class="comando mono">bash tools/ligar-par.sh ${escapar(i.instrumento)} ${f.run ? "nao" : "sim"}</code>
-        <code class="comando mono"># e o gatilho, na ficha: "enviar": ${f.enviar ? "false" : "true"}</code>
-      </div>
-    </div>`;
-}
-
-let ultimoFocoAntesDoDialogo = null;
-
-function abrirConfiguracao() {
-  const i = instrumentoAtual();
-  if (!i) return;
-  document.getElementById("dialogo-titulo").textContent = `configuração · ${i.instrumento} · ${i.ficha?.setup ?? "?"} ${i.ficha?.versao_do_setup ?? ""}`;
-  document.getElementById("dialogo-corpo").innerHTML = conteudoDaConfiguracao(i);
-  ultimoFocoAntesDoDialogo = document.activeElement;
-  document.getElementById("veu").hidden = false;
-  document.getElementById("dialogo").hidden = false;
-  // Travar a rolagem do fundo: num telefone, o dedo que rola dentro de uma folha acaba a mexer na página de trás.
-  document.body.style.overflow = "hidden";
-  document.getElementById("fechar-dialogo").focus();
-}
-
-function fecharConfiguracao() {
-  document.getElementById("dialogo").hidden = true;
-  document.getElementById("veu").hidden = true;
-  document.body.style.overflow = "";
-  // O foco volta a quem abriu: sem isto, quem anda de teclado cai no início da página e perde o sítio. Quando o
-  // que estava focado era o `body` (abertura por gesto indirecto), volta ao botão que abre — nunca a nada.
-  const alvo = ultimoFocoAntesDoDialogo && ultimoFocoAntesDoDialogo !== document.body ? ultimoFocoAntesDoDialogo : document.getElementById("bt-config");
-  if (alvo && alvo.focus) alvo.focus();
-  ultimoFocoAntesDoDialogo = null;
-}
-
-/* ============================ O REGISTO ================================= */
-function desenharRegistoEFaltas() {
-  const mesa = dados.mesas[0];
-  const r = mesa.registo;
-  const ciclosDoPar = instrumentoAtual();
-  document.getElementById("contagem-do-registo").textContent = `${r.linhas} linhas · ${r.ciclos} ciclos`;
-
-  const desfechos = mesa.saiu_para_o_venue?.desfechos ?? [];
-  const marc = mesa.saiu_para_o_venue?.marcas_de_posse ?? [];
-  document.getElementById("registo").innerHTML = `
-    <div>
-      <h4>Por instrumento</h4>
-      <dl class="pares mono">${Object.entries(r.por_instrumento).map(([k, v]) => `<dt>${escapar(k)}</dt><dd>${v} ciclos</dd>`).join("")}</dl>
-      <h4>Ciclos deste par · ação:motivo</h4>
-      <ul class="lista mono">${Object.entries(ciclosDoPar.decisao_contagem ?? {}).map(([m, c]) => `<li><span>${escapar(m)}</span><span class="o-que">${c}×</span></li>`).join("")}</ul>
-    </div>
-    <div>
-      <h4>Mandato (ligar/desligar a quente)</h4>
-      <ul class="lista mono">${(r.mandato ?? []).map((m) => `<li><span class="quando">${hora(m.instante_ms)}</span><span>${escapar(m.instrumento)}</span><span class="o-que fraco">${escapar(m.de)} → ${escapar(m.para)}</span></li>`).join("") || "<li class='fraco'>sem mudanças de mandato</li>"}</ul>
-      <h4>O carteiro · boletas que não saíram</h4>
-      <div class="mono fraco">${mesa.carteiro.passagens} passagem(ns)</div>
-      <ul class="lista mono">${Object.entries(mesa.carteiro.por_que_nao_saiu ?? {}).map(([m, c]) => `<li><span>${escapar(m)}</span><span class="o-que">${c}×</span></li>`).join("") || "<li class='fraco'>—</li>"}</ul>
-    </div>
-    <div>
-      <h4>O que saiu para o venue</h4>
-      ${desfechos.length === 0 ? "<div class='fraco mono'>nenhuma ordem submetida nesta corrida</div>" : desfechos.map((d) => `<div class="mono">${escapar(d.ficheiro)}: ${d.quantos}</div>`).join("")}
-      <h4>Marcas de posse</h4>
-      ${marc.length === 0 ? "<div class='fraco mono'>nenhuma marca escrita</div>" : marc.map((m) => `<div class="mono">${escapar(m.ficheiro)}: ${m.quantas}</div>`).join("")}
-      <h4>De onde vem o retrato</h4>
-      <div class="mono fraco" style="overflow-wrap:anywhere">${escapar(dados.retrato.corrida)}</div>
-      <div class="mono fraco">${escapar(dados.retrato.nota_do_registo)}</div>
-    </div>`;
-
-  const faltas = dados.faltas ?? [];
-  document.getElementById("faltas").innerHTML = faltas.length === 0
-    ? `<div class="mini fraco" style="padding:6px 0">Faltas do retrato: nenhuma — tudo o que a tela mostra foi lido do sistema.</div>`
-    : `<div class="mini" style="padding:4px 0;color:var(--tinta-fraca)">FALTAS DO RETRATO — o que não se conseguiu ler, dito e não escondido:</div>` +
-      faltas.map((f) => `<div class="falta"><b>${escapar(f.o_que)}</b><span class="fraco">${escapar(f.porque)}</span></div>`).join("");
-}
-
-/* ============================ A BARRA DO TELEFONE ======================= */
-/* ======================== A VISTA DE CONFIGURAÇÃO ======================== *
- *
- * PORQUE É UMA VISTA E NÃO UM DIÁLOGO. O que muda um interruptor é diálogo (o da configuração, na linha do par);
- * o que muda um DOCUMENTO é vista. A ficha tem regras de identidade, tipos, bandas e um veredicto de um conferidor
- * que NÃO é esta tela: isso cabe numa vista, cresce com cada plugin (o questionário é do PLUGIN, não da tela) e
- * não cabe numa caixa.
- *
- * O QUE ELA NÃO FAZ, e é a razão de estar escrita assim: NÃO ESCREVE NADA e NÃO JULGA NADA. Copia a conta e as
- * fichas do fio e mostra o relatório do conferidor TAL E QUAL — o veredicto é dele. Onde se muda o estado hoje
- * está escrito com o comando à vista: uma porta só, a mesma que o gesto do dono já usa.
- */
-/** Um objecto qualquer (a conta, o cabeçalho de uma ficha) desenhado como «chave → valor», sem formatar valores.
- *  Em modo de composição, o valor vira CAMPO — menos as três chaves de identidade (`conta`, `instrumento`, `setup`),
- *  que não se editam: mudá-las não é editar a ficha, é RENOMEAR o ficheiro, e o nome tem de bater com o cabeçalho
- *  (senão o operador recusa — é uma das três regras de identidade). */
-const CHAVES_DE_IDENTIDADE = ["cabecalho.conta", "cabecalho.instrumento", "cabecalho.setup"];
-function linhasDoObjeto(o, prefixo = "", compor = false, f = null) {
-  return Object.entries(o).map(([k, v]) => {
-    const chave = prefixo === "" ? k : `${prefixo}.${k}`;
-    if (v !== null && typeof v === "object" && !Array.isArray(v)) return linhasDoObjeto(v, chave, compor, f);
-    const podeEditar = compor && !CHAVES_DE_IDENTIDADE.includes(chave);
-    // EM COMPOSIÇÃO, O CAMPO MOSTRA O QUE O DONO ESCREVEU — e não o que está na ficha. É isto que faz sobreviver
-    // o que foi escrito a um redesenho (o retrato renova a cada minuto e o desenho é refeito): a composição vive
-    // numa variável, não no DOM.
-    const valorDeVerdade = v;
-    const mostrado = podeEditar && f !== null ? valorComposto(f.caminho, chave, valorDeVerdade) : valorDeVerdade;
-    const valor = Array.isArray(mostrado) ? mostrado.join(" · ") : mostrado === true ? "sim" : mostrado === false ? "não" : String(mostrado);
-    // O valor que o leitor escondeu por parecer segredo aparece DITO, não em branco: um buraco silencioso num
-    // painel deixa sempre a dúvida de se o campo não existe ou se foi escondido.
-    const escondido = valor === "(nao se mostra)";
-    const campo = !podeEditar
-      ? `<span class="valor mono ${escondido ? "aviso" : ""}">${escapar(escondido ? "(escondido: parece segredo)" : valor)}${
-          compor && CHAVES_DE_IDENTIDADE.includes(chave) ? ` <span class="fraco mini">(identidade — não se edita aqui)</span>` : ""
-        }</span>`
-      : typeof valorDeVerdade === "boolean" || chave === "cabecalho.ao_desligar"
-        ? `<select data-chave="${escapar(chave)}">${
-            (chave === "cabecalho.ao_desligar" ? ["fechar", "manter"] : ["true", "false"])
-              .map((op) => `<option value="${op}" ${String(mostrado) === op ? "selected" : ""}>${
-                op === "true" ? "sim" : op === "false" ? "não" : op}</option>`).join("")
-          }</select>`
-        : `<input type="text" inputmode="decimal" data-chave="${escapar(chave)}" value="${escapar(String(mostrado))}">`;
-    return `<div class="item-de-config${podeEditar ? " composto" : ""}"><span class="nome-do-item">${escapar(chave)}</span>${campo}</div>`;
-  }).join("");
-}
-
-/* ---- A ESCRITA: compor, VALIDAR, e só então escrever (RN-E12 · RN-M2) ----------------------------------
- *
- * O CAMINHO É SEMPRE O MESMO, e a ordem não se troca: **compor** (o dono mexe nos campos) → **validar** (o
- * conferidor do portão corre sobre o CANDIDATO, numa cópia da árvore das fichas) → **escrever** (o mesmo escritor,
- * a sério, com a impressão do ficheiro que se viu). Quem valida e quem escreve é o `tools/escrever-ficha` — esta
- * tela não tem uma segunda conta das regras, e não escreve nada por si: PEDE.
- *
- * A COMPOSIÇÃO VIVE NUMA VARIÁVEL, e não no DOM, pela mesma razão que o estado dos cartões: o retrato renova a
- * cada minuto e o desenho é refeito — um campo que só existisse no DOM perdia o que o dono escreveu.
- */
-let fichaEmComposicao = null;
-const composicao = new Map(); // caminho -> { chave: valor que o dono escreveu }
-const respostas = new Map();  // caminho -> a última resposta do escritor
-
-function valorNoCaminho(o, chave) {
-  let atual = o;
-  for (const parte of chave.split(".")) {
-    if (atual === null || typeof atual !== "object" || !(parte in atual)) return undefined;
-    atual = atual[parte];
-  }
-  return atual;
-}
-function valorComposto(caminho, chave, seNaoHouver) {
-  const c = composicao.get(caminho);
-  return c !== undefined && Object.prototype.hasOwnProperty.call(c, chave) ? c[chave] : seNaoHouver;
-}
-/** As mudanças que o dono compôs — e só o que DIFERE do que está na ficha: o resto não viaja. */
-function asMudancas(caminho) {
-  const f = (dados?.configuracao?.fichas ?? []).find((x) => x.caminho === caminho);
-  if (!f) return {};
-  const mudancas = {};
-  for (const [chave, bruto] of Object.entries(composicao.get(caminho) ?? {})) {
-    const atual = valorNoCaminho(f, chave);
-    // O TIPO É O DA FICHA: um booleano fica booleano, um inteiro fica inteiro, e um decimal fica TEXTO (D4).
-    const novo = typeof atual === "boolean" ? bruto === true || bruto === "true" : typeof atual === "number" ? Number(bruto) : bruto;
-    if (JSON.stringify(novo) !== JSON.stringify(atual)) mudancas[chave] = novo;
-  }
-  return mudancas;
-}
-
-async function falarComOEscritor(corpo) {
-  try {
-    const r = await fetch("/api/ficha", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-mesacore": "1" },
-      body: JSON.stringify(corpo),
-    });
-    return await r.json();
-  } catch (e) {
-    return { ok: false, porque: `não se conseguiu falar com o escritor (${e instanceof Error ? e.message : String(e)})` };
-  }
-}
-
-/** O que o escritor respondeu, à vista: o que muda, o veredicto, o relatório dele e o que se fez. */
-function blocoDaResposta(r) {
-  const dif = (r.diferencas ?? []).map((d) => `<div class="item-de-config"><span class="nome-do-item">${escapar(d.chave)}</span>
-    <span class="valor mono">${escapar(String(d.de))} <span class="fraco">→</span> <b>${escapar(String(d.para))}</b></span></div>`).join("");
-  const v = r.veredicto ?? null;
-  const veredicto = v === null ? "" : `<div class="mini fraco" style="margin-top:6px">conferidor do portão: ${
-      v.correu ? `código ${v.codigo}` : "não correu"
-    } · ${v.estaFichaAprovou === true ? "esta ficha passou" : v.estaFichaAprovou === false ? "<b>esta ficha REPROVOU</b>" : "sem veredicto desta ficha"}</div>
-    <details class="relatorio"><summary>o que ele disse</summary><pre class="relatorio-do-conferidor">${escapar(v.saida ?? "")}</pre></details>`;
-  return `<div class="resultado ${r.ok ? "bom" : "mau"}">
-    <div class="mini"><b>${r.escrito ? "ESCRITO — e registado" : r.ok ? "validado: nada foi escrito" : "RECUSADO"}</b>${r.porque ? ` — ${escapar(r.porque)}` : ""}</div>
-    ${dif}
-    ${veredicto}
-  </div>`;
-}
-
-/** O que cada botão faz. A tela PEDE; quem decide é o escritor. */
-async function agirNaFicha(acao, caminho) {
-  if (acao === "compor") { fichaEmComposicao = caminho; respostas.delete(caminho); desenharAConfiguracao(); return; }
-  if (acao === "cancelar") { fichaEmComposicao = null; composicao.delete(caminho); respostas.delete(caminho); desenharAConfiguracao(); return; }
-
-  const mudancas = asMudancas(caminho);
-  if (Object.keys(mudancas).length === 0) {
-    respostas.set(caminho, { ok: false, porque: "não mudaste nada ainda (os campos estão iguais aos da ficha)" });
-    desenharAConfiguracao();
-    return;
-  }
-  const f = (dados?.configuracao?.fichas ?? []).find((x) => x.caminho === caminho);
-  if (acao === "validar") {
-    respostas.set(caminho, { aviso: "a validar…" });
-    desenharAConfiguracao();
-    respostas.set(caminho, await falarComOEscritor({ ficha: caminho, mudancas, visto: f?.hash ?? null, simular: true }));
-    desenharAConfiguracao();
-    return;
-  }
-  if (acao === "escrever") {
-    // A IMPRESSÃO VAI SEMPRE: se a ficha mudou desde que a página a leu, o escritor recusa e diz porquê.
-    const r = await falarComOEscritor({ ficha: caminho, mudancas, visto: f?.hash ?? null, simular: false });
-    respostas.set(caminho, r);
-    if (r.ok === true) { fichaEmComposicao = null; composicao.delete(caminho); }
-    desenharAConfiguracao();
-    if (r.ok === true) carregar(); // o retrato novo mostra a ficha como ela ficou
-  }
-}
-
-function desenharAConfiguracao() {
-  const c = dados?.configuracao ?? null;
-  const caixa = document.getElementById("config-corpo");
-  document.getElementById("config-do-retrato").textContent = `do retrato de ${hora(dados?.retrato?.gerado_em_ms)}`;
-  if (c === null) {
-    caixa.innerHTML = `<div class="aviso">o retrato não traz a configuração: não há conta nem fichas para mostrar</div>`;
-    return;
-  }
-  const conta = c.conta ?? null;
-  const veredicto = c.conferidor?.correu
-    ? (c.conferidor.codigo === 0
-      ? { classe: "vivo", texto: "aprovou" }
-      : { classe: "teste", texto: `reprovou (código ${c.conferidor.codigo})` })
-    : { classe: "teste", texto: "não correu" };
-  caixa.innerHTML = `
-    <section class="bloco" data-recolhivel="config:conta">
-      <header><span class="mini">A conta</span>
-        <span class="contagem mini caminho-da-ficha">${escapar(conta?.caminho ?? "(sem conta)")}</span>
-        ${botaoDeRecolher("config:conta", "a conta")}</header>
-      <div class="corpo">
-        ${conta === null || conta?.existe !== true
-          ? `<div class="aviso">o ficheiro da conta não existe neste repositório (${escapar(conta?.caminho ?? "?")}) — a mesa corre com a conta que a operação nomear</div>`
-          : linhasDoObjeto(conta.conteudo ?? {})}
-        <div class="mini fraco" style="margin-top:8px">
-          O segredo não passa por aqui: a conta aponta para ele por <b>caminho</b>, e esta tela não abre o ficheiro
-          do segredo.${c.segredos_escondidos > 0 ? ` ${c.segredos_escondidos} valor(es) escondido(s) por parecerem segredo.` : ""}
-        </div>
-      </div>
-    </section>
-
-    <section class="bloco" data-recolhivel="config:fichas">
-      <header><span class="mini">As fichas dos pares</span><span class="contagem mini">${c.fichas.length}</span>
-        ${botaoDeRecolher("config:fichas", "as fichas dos pares")}</header>
-      <div class="corpo">
-        ${c.fichas.length === 0 ? `<div class="aviso">nenhuma ficha no repositório — um par sem ficha não entra na operação</div>` : ""}
-        ${c.fichas.map((f) => {
-          const compor = fichaEmComposicao === f.caminho;
-          const resposta = respostas.get(f.caminho) ?? null;
-          return `
-          <div class="secao" data-ficha="${escapar(f.caminho)}">
-            <h3><span>${escapar(f.cabecalho?.instrumento ?? "?")} · ${escapar(f.cabecalho?.setup ?? "?")}</span>
-              <span class="mini fraco caminho-da-ficha">${escapar(f.caminho)}</span></h3>
-            <div class="dentro-da-secao">
-              ${linhasDoObjeto(f.cabecalho ?? {}, "cabecalho", compor, f)}
-              <div class="mini fraco" style="margin:8px 0 4px">constantes — as do indicador, e as únicas que vão ao setup (com o relógio)</div>
-              ${linhasDoObjeto(f.constantes ?? {}, "constantes", compor, f)}
-              <div class="botoes-da-ficha">
-                ${compor
-                  ? `<button class="botao" data-acao="validar" data-ficha="${escapar(f.caminho)}">validar a mudança</button>
-                     <button class="botao" data-acao="cancelar" data-ficha="${escapar(f.caminho)}">deixar como estava</button>
-                     ${resposta?.ok && !resposta.escrito ? `<button class="botao escreve" data-acao="escrever" data-ficha="${escapar(f.caminho)}">escrever a ficha</button>` : ""}`
-                  : `<button class="botao" data-acao="compor" data-ficha="${escapar(f.caminho)}">mudar esta ficha</button>
-                     ${resposta?.escrito ? `<span class="selo vivo sem-ponto">escrita — e registada</span>` : ""}`}
-              </div>
-              ${resposta ? blocoDaResposta(resposta) : ""}
-            </div>
-          </div>`;
-        }).join("")}
-      </div>
-    </section>
-
-    <section class="bloco" data-recolhivel="config:conferidor">
-      <header><span class="mini">O que o conferidor diz</span>
-        <span class="contagem mini"><span class="selo ${veredicto.classe} sem-ponto">${escapar(veredicto.texto)}</span></span>
-        ${botaoDeRecolher("config:conferidor", "o conferidor")}</header>
-      <div class="corpo">
-        <div class="mini fraco">o mesmo conferidor do portão (<code>tools/verificar-setup/fichas.py</code>) — esta tela não reimplementa as regras dele</div>
-        <pre class="relatorio-do-conferidor">${escapar(c.conferidor?.saida ?? "")}</pre>
-      </div>
-    </section>
-
-    <section class="bloco" data-recolhivel="config:escrita">
-      <header><span class="mini">Como isto escreve (e o que o guarda)</span>${botaoDeRecolher("config:escrita", "a escrita")}</header>
-      <div class="corpo">
-        <div class="mini fraco">
-          Escrever uma ficha é o gesto do dono, e passa por <b>uma porta só</b>: o mesmo escritor da linha de
-          comando (<code>tools/escrever-ficha</code>), que <b>valida o candidato antes de tocar no ficheiro</b> — com
-          o conferidor do portão, sobre uma cópia da árvore — e deixa a mudança <b>registada</b> com a hora, a
-          origem, o antes e o depois (RN-E12 · RN-M2). Se o conferidor reprovar, não se escreve nada.
-        </div>
-        <code class="comando mono">${escapar(c.porta_que_escreve ?? "")}</code>
-        <div class="mini fraco">
-          Três guardas, e nenhum é enfeite: <b>a validação</b> antes de aplicar; <b>a impressão</b> do ficheiro que
-          se viu (uma página velha não passa por cima de uma mudança nova); e o pedido só é aceite <b>vindo desta
-          tela</b> — outra página aberta na rede não escreve fichas em nome de quem tem o painel aberto.
-        </div>
-        <div class="mini fraco">
-          <b>rodar</b> decide se o par é calculado; <b>enviar</b> decide se o que ele propõe chega ao venue — e é o
-          interruptor que a mesa lê a cada ciclo. <b>ao_desligar</b> decide o que acontece à posição viva de um par
-          retirado (<code>fechar</code> fecha-a; <code>manter</code> deixa-a, declaradamente). A <b>conta</b> e a
-          <b>identidade da ficha</b> (conta, instrumento, setup) não se editam aqui: mudá-las é renomear o ficheiro,
-          e o nome tem de bater com o cabeçalho — o operador recusa se não bater.
-        </div>
-      </div>
-    </section>`;
-  // Os botões desta vista nascem agora: ligam-se no mesmo sítio que os da bancada.
-  aplicarOsEstadosDeRecolher();
-  ligarOsBotoesDeRecolher();
-  // OS CAMPOS E OS BOTÕES DA ESCRITA, ligados DEPOIS de desenhar: o desenho reescreve o HTML todo e um campo novo
-  // nasceria sem gesto (é o mesmo cuidado que os botões de recolher levam).
-  for (const campo of caixa.querySelectorAll("[data-chave]")) {
-    campo.oninput = campo.onchange = () => {
-      const ficha = campo.closest("[data-ficha]")?.dataset.ficha;
-      if (ficha === undefined) return;
-      const c = composicao.get(ficha) ?? {};
-      c[campo.dataset.chave] = campo.value;
-      composicao.set(ficha, c);
-      // MEXER NUMA CHAVE INVALIDA O VEREDICTO ANTERIOR — e o botão de escrever sai no mesmo gesto. Continuar a
-      // oferecer «escrever» sobre um texto que ninguém validou seria oferecer um botão que já não corresponde ao que
-      // está composto (o escritor voltaria a validar de qualquer forma, mas o dono estaria a decidir sobre outra
-      // coisa, e essa é a pior das duas).
-      respostas.delete(ficha);
-      for (const b of caixa.querySelectorAll(`[data-acao="escrever"][data-ficha="${CSS.escape(ficha)}"]`)) b.remove();
-    };
-  }
-  for (const b of caixa.querySelectorAll("[data-acao]")) {
-    b.onclick = () => { void agirNaFicha(b.dataset.acao ?? "", b.dataset.ficha ?? ""); };
-  }
-}
-
-/** O endereço é a vista: `#configuracao` mostra a configuração, tudo o resto mostra a bancada. */
-function aplicarAVista() {
-  const naConfiguracao = location.hash === "#configuracao";
-  document.body.dataset.vista = naConfiguracao ? "configuracao" : "painel";
-  document.getElementById("vista-de-config").hidden = !naConfiguracao;
-  if (naConfiguracao) {
-    desenharAConfiguracao();
-  } else {
-    desenharBarraDoTelefone(); // ela volta a decidir por si (no computador não aparece de todo)
-    reencaixarEmBreve();
-  }
-}
-addEventListener("hashchange", aplicarAVista);
-
-function desenharBarraDoTelefone() {
-  const i = instrumentoAtual();
-  if (!i) return;
-  document.getElementById("barra-do-telefone").innerHTML = `
-    <span class="quem mono fraco">${escapar(i.instrumento)} · rodar ${i.ficha?.run ? "sim" : "não"} · enviar ${i.ficha?.enviar ? "sim" : "não"}</span>
-    <button class="botao" id="bt-par">${i.ficha?.run ? "Retirar par" : "Ligar par"}</button>
-    <button class="botao" id="bt-rec">Recarregar</button>`;
-  // O gesto está AQUI, nomeado, mas quem o executa é a linha de comando que ESPECIFICA o contrato — e a tela
-  // di-lo em vez de escrever a ficha por baixo do pano (RN-E12: a escrita exige validação e assinatura).
-  document.getElementById("bt-par").onclick = () => {
-    const cmd = `bash tools/ligar-par.sh ${i.instrumento} ${i.ficha?.run ? "nao" : "sim"}`;
-    navigator.clipboard?.writeText(cmd);
-    alert(`O gesto do dono é uma linha (copiada):\n\n${cmd}\n\nA tela ainda NÃO escreve a ficha: a edição exige validação e assinatura (RN-M2).`);
-  };
-  document.getElementById("bt-rec").onclick = carregar;
-}
-
-/* ============================ O ARRANQUE ================================ */
-async function carregar() {
-  try {
-    const r = await fetch(`painel.json?t=${Date.now()}`, { cache: "no-store" });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    dados = await r.json();
-  } catch (e) {
-    document.getElementById("fita").innerHTML =
-      `<div class="marca"><b>MesaCore</b><span class="selo teste">sem retrato</span></div>
-       <div class="fraco" style="margin-left:auto">não consegui ler <code>painel.json</code> (${escapar(e.message)}). O painel é servido pelo sistema: corra <code class="mono">bun run tools/painel/retrato.ts</code> e recarregue.</div>`;
-    return;
-  }
-  if (!selecionado || !dados.mesas[0].contas[0].instrumentos.some((i) => i.instrumento === selecionado)) {
-    selecionado = dados.mesas[0].contas[0].instrumentos[0]?.instrumento ?? null;
-  }
-  desenharFita();
-  desenharPares();
-  desenharGrafico();
-  desenharODentro();
-  desenharRegistoEFaltas();
-  desenharBarraDoTelefone();
-  // TUDO O QUE RECOLHE, no fim de desenhar: os contentores ganham o estado guardado e os botões ganham o gesto.
-  // Fica aqui, num sítio só, porque o desenho reescreve o HTML (o retrato renova a cada minuto) e os botões
-  // novos nasceriam mortos.
-  aplicarOsEstadosDeRecolher();
-  ligarOsBotoesDeRecolher();
-  reencaixarEmBreve(); // o desenho mudou a altura do que está por cima do gráfico: mede-se de novo
-  aplicarAVista();     // e a vista que o endereço pede é redesenhada com o retrato novo
-}
-
-// O desenho segue o tema: se as variáveis mudarem (outro tema no futuro), o gráfico repinta com as MESMAS
-// variáveis — nenhum hex vive neste ficheiro, e nenhum canvas fica com a paleta antiga.
-new MutationObserver(() => { if (grafico) { grafico.applyOptions({ layout: { background: { color: cor("--fundo") }, textColor: cor("--tinta-fraca") } }); } })
-  .observe(document.documentElement, { attributes: true, attributeFilter: ["data-tema", "class"] });
-addEventListener("resize", ajustarAlturaDosPainéis);
-addEventListener("orientationchange", reencaixarEmBreve);
-// OS GESTOS DO DIÁLOGO, ligados uma só vez: o botão de fechar, o veu (clicar fora fecha — é o que a mão tenta
-// primeiro) e o `Esc` (que é o que o teclado tenta primeiro).
-document.getElementById("fechar-dialogo").onclick = fecharConfiguracao;
-document.getElementById("veu").onclick = fecharConfiguracao;
-addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.getElementById("dialogo").hidden) fecharConfiguracao(); });
-// O LAYOUT ASSENTA DEPOIS DE DESENHAR, e é por isso que a altura do gráfico se mede mais de uma vez.
-//
-// Medido: uma única medição logo a seguir a desenhar pegava o topo ANTES de a fita e a faixa dos pares terem a
-// altura final (o texto que muda — "há 25 s" → "há 2 min" — parte uma linha), e o gráfico ficava 34 px atrás da
-// barra fixa, com a faixa do sinal tapada. Tentou-se um `ResizeObserver` sobre o `body`: não resolve, porque o
-// observador não é notificado das mudanças que acontecem DENTRO do próprio callback, e a correcção morria ali.
-// O que fecha o caso são três medições determinadas: um frame depois, e a 250 e a 900 ms.
-let relogiosDoReencaixe = [];
-function reencaixarEmBreve() {
-  for (const t of relogiosDoReencaixe) clearTimeout(t);
-  relogiosDoReencaixe = [
-    setTimeout(ajustarAlturaDosPainéis, 0),
-    setTimeout(ajustarAlturaDosPainéis, 250),
-    setTimeout(ajustarAlturaDosPainéis, 900),
-  ];
-}
-
-carregar();
-setInterval(carregar, 60000); // o RELATÓRIO completo (com o gráfico): a série muda por BARRA
-
-// O «AGORA», a cada 2 s — é isto que dá a sensação de vivo.
-//
-// O fio leve (`vivo.json`, ver `--sem-serie` no `retrato.ts`) NÃO traz as velas nem a série: traz o que se move a
-// cada segundo no motor (a leitura com o preço e a idade do dado, a posição, a proposta, a última decisão, o
-// risco, as faltas) e pesa 28 KB em vez de 2,7 MB. Este ciclo repinta os NÚMEROS e deixa o gráfico em paz — quem
-// o redesenha é o relatório completo, no relógio dele (a série é do fecho da barra).
-//
-// O que o vivo não traz é PRESERVADO do retrato que já está desenhado: sem isto, o `desenharGrafico` seguinte
-// encontraria um instrumento sem série e o gráfico apareceria vazio.
-const INTERVALO_VIVO_MS = 2000;
-const CAMPOS_DA_SERIE = ["velas", "serie_do_setup", "janela", "em_curso", "sobreposicao_indisponivel", "faltas_do_cruzamento"];
-async function carregarVivo() {
-  if (!dados || !Array.isArray(dados.mesas) || dados.mesas.length === 0) return; // o completo ainda não chegou
-  let vivo;
-  try {
-    const r = await fetch(`vivo.json?t=${Date.now()}`, { cache: "no-store" });
-    if (!r.ok) return; // sem vivo não se apaga nada: a tela fica com o que tem
-    vivo = await r.json();
-  } catch {
-    return;
-  }
-  for (const [mi, mesa] of (vivo.mesas ?? []).entries()) {
-    const minhaMesa = dados.mesas[mi];
-    if (!minhaMesa) continue;
-    const contas = minhaMesa.contas ?? [];
-    for (const [ci, conta] of (mesa.contas ?? []).entries()) {
-      const minhaConta = contas[ci];
-      if (!minhaConta) continue;
-      const velhos = minhaConta.instrumentos ?? [];
-      const instrumentos = (conta.instrumentos ?? []).map((inst, ii) => {
-        const velho = velhos[ii];
-        if (!velho) return inst;
-        const series = {};
-        for (const k of CAMPOS_DA_SERIE) if (k in velho) series[k] = velho[k];
-        return { ...inst, ...series };
-      });
-      Object.assign(minhaConta, conta, { instrumentos });
-    }
-    Object.assign(minhaMesa, mesa, { contas });
-  }
-  // O RETRATO DO VIVO NÃO SOBRESCREVE O DO COMPLETO: a fita mostra os dois, porque são duas coisas diferentes.
-  // O `retrato` de cima é o do fio COMPLETO (é dele que veio o gráfico que está no ecrã); o `agora` é este. Trocar
-  // um pelo outro faria a fita dizer «retrato há 2 s» com um gráfico de até um minuto atrás — uma meia-verdade.
-  if (vivo.retrato) dados.agora = vivo.retrato;
-  if (vivo.faltas) dados.faltas = vivo.faltas;
-  if (vivo.configuracao) dados.configuracao = vivo.configuracao;
-  // O GRÁFICO TAMBÉM RESPIRA — e sem se redesenhar. O que se actualiza é a ÚLTIMA barra (a que está em curso) e a
-  // linha do preço: é o caminho leve do `lightweight-charts` (`update`, não `setData`), que não repinta 500 velas
-  // para mexer numa. O dono notou que o gráfico era «a principal área que dá a impressão de fotografia» — e o
-  // remédio não é redesenhá-lo mais vezes (isso pesaria, e ele tem razão: são centenas de velas por par), é mexer
-  // só na barra que ainda está a formar-se.
-  //
-  // Toca apenas no instrumento SELECCIONADO (há um gráfico em ecrã, e só um) e só quando o tempo da barra em curso
-  // não é anterior ao que está desenhado — as duas guardas estão declaradas onde nascem (`ultimoTempoNoGrafico`).
-  // A BARRA EM CURSO só pode mexer-se quando a VELA mexer — e quem a puxa é o operador, no ritmo dele (medido:
-  // 81 s para o ETH-1m, 1173 s para o BTC-1h). O preço vivo, esse, está na LEITURA, fresca a cada segundo.
-  //
-  // A LINHA DO PREÇO segue o ÚLTIMO PREÇO LIDO (o `ultimo` da leitura) e não o fecho da vela: é ele que dá a
-  // sensação de vivo sem inventar barra nenhuma — o que se desenha é um número do venue, lido agora. A barra em
-  // curso leva `update` quando chega uma vela nova (é a mesma ordem de grandeza do puxão do operador).
-  const comGrafico = instrumentoAtual();
-  const ultimo = (comGrafico?.leitura ?? {}).ultimo ?? null;
-  if (series.vela && ultimo !== null) {
-    const preco = Number(ultimo);
-    if (Number.isFinite(preco)) {
-      if (linhaDoPreco === null) {
-        linhaDoPreco = series.vela.createPriceLine({
-          price: preco, color: cor("--tinta-fraca"), lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "último",
-        });
-      } else {
-        linhaDoPreco.applyOptions({ price: preco });
-      }
-    }
-  }
-  const vela = comGrafico?.vela_em_curso ?? null;
-  if (series.vela && vela !== null) {
-    const barra = {
-      time: Math.floor(vela.t / 1000), open: Number(vela.o), high: Number(vela.h), low: Number(vela.l), close: Number(vela.c),
-    };
-    if (ultimoTempoNoGrafico === null || barra.time >= ultimoTempoNoGrafico) {
-      series.vela.update(barra);
-      ultimoTempoNoGrafico = barra.time;
-    }
-  }
-  // Os três desenhos do «agora» — e as mesmas duas guardas do `carregar`, porque o desenho reescreve o HTML e os
-  // botões novos nasceriam mortos (é o mesmo motivo que está dito lá em cima).
-  desenharFita();
-  desenharPares();
-  desenharODentro();
-  aplicarOsEstadosDeRecolher();
-  ligarOsBotoesDeRecolher();
-  reencaixarEmBreve(); // a idade do dado muda de largura ("há 1 s" → "há 2 min") e o topo pode partir uma linha
-}
-setInterval(carregarVivo, INTERVALO_VIVO_MS);
-</script>
+<script type="module" src="js/arranque.js"></script>
 </body>
 </html>

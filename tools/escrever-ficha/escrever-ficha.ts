@@ -32,14 +32,18 @@
 // simulação passou).
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, renameSync, cpSync } from "node:fs";
-import { join, isAbsolute, resolve, basename, sep } from "node:path";
+import { join, isAbsolute, resolve, basename, dirname, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { homedir, tmpdir } from "node:os";
 
 export const RAIZ = join(import.meta.dir, "..", "..");
 const PASTA_DAS_FICHAS = join(RAIZ, "fichas");
+/** A OUTRA família que esta porta cria: as contas. A lista é fechada em código (`pastasQueSeCriam`). */
+const PASTA_DAS_CONTAS = join(RAIZ, "config", "contas");
 const CONFERIDOR = join(RAIZ, "tools", "verificar-setup", "fichas.py");
+/** O conferidor das CONTAS — outro programa, porque outra família de documento. */
+const CONFERIR_CONFIG = join(RAIZ, "tools", "verificar-config", "conferir-config.ts");
 /** O registo vive FORA do repositório: `RN-E12` diz que em `/config` há três famílias de ficheiro, e só três —
  *  um histórico dentro de `config/` seria uma quarta, e a regra não é uma sugestão. */
 export const REGISTO = join(homedir(), ".config", "mesacore", "historico-de-fichas.jsonl");
@@ -134,20 +138,46 @@ export function diferencas(antes: Record<string, any>, depois: Record<string, an
  * Isto é o coração do «validar antes de escrever»: o veredicto é do conferidor (o mesmo binário que o portão
  * corre), e a árvore temporária garante que uma validação reprovada não deixa nada escrito.
  */
-export function conferirCandidato(relativo: string, candidato: Record<string, any>): Veredicto {
+export function conferirCandidato(relativo: string, candidato: Record<string, any>, familia: "fichas" | "config/contas" = "fichas"): Veredicto {
   const temporario = join(tmpdir(), `mesacore-ficha-${process.pid}-${Date.now()}`);
   try {
-    cpSync(PASTA_DAS_FICHAS, join(temporario, "fichas"), { recursive: true });
-    writeFileSync(join(temporario, "fichas", relativo), JSON.stringify(candidato, null, 1) + "\n", "utf8");
-    const r = spawnSync("python3", [CONFERIDOR, join(temporario, "fichas")], { encoding: "utf8", timeout: 30000 });
-    const saida = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim();
-    const nome = basename(relativo);
-    const reprovada = new RegExp(`REPROVA\\s+\\S*${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(saida);
-    const aprovada = new RegExp(`ok\\s+\\S*${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(saida);
-    if (r.error !== undefined || r.status === null) {
-      return { correu: false, codigo: null, saida: `o conferidor não correu: ${r.error?.message ?? "sem código de saída"}`, estaFichaAprovou: null };
+    if (familia === "fichas") {
+      // O CONFERIDOR DAS FICHAS LÊ A PASTA QUE LHE DEREM (com o argumento), e sem ele leria a do repositório —
+      // foi esse o defeito de uma primeira versão: o candidato era escrito na cópia e o veredicto saía sobre a
+      // árvore VERDADEIRA (três fichas, e nenhuma delas a nova).
+      const onde = join(temporario, "fichas");
+      cpSync(PASTA_DAS_FICHAS, onde, { recursive: true });
+      mkdirSync(dirname(join(onde, relativo)), { recursive: true });
+      writeFileSync(join(onde, relativo), JSON.stringify(candidato, null, 1) + "\n", "utf8");
+      const r = spawnSync("python3", [CONFERIDOR, onde], { encoding: "utf8", timeout: 30000 });
+      const saida = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim();
+      const nome = basename(relativo);
+      const reprovada = new RegExp(`REPROVA\\s+\\S*${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(saida);
+      const aprovada = new RegExp(`ok\\s+\\S*${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(saida);
+      if (r.error !== undefined || r.status === null) {
+        return { correu: false, codigo: null, saida: `o conferidor não correu: ${r.error?.message ?? "sem código de saída"}`, estaFichaAprovou: null };
+      }
+      return { correu: true, codigo: r.status, saida, estaFichaAprovou: reprovada ? false : aprovada ? true : null };
     }
-    return { correu: true, codigo: r.status, saida, estaFichaAprovou: reprovada ? false : aprovada ? true : null };
+    // AS CONTAS TÊM OUTRO CONFERIDOR (`tools/verificar-config/conferir-config.ts`): o das fichas só confere
+    // fichas, e usá-lo aqui daria um «veredicto» que não existe — a pior espécie de aprovação.
+    const onde = join(temporario, "config", "contas");
+    mkdirSync(onde, { recursive: true });
+    if (existsSync(PASTA_DAS_CONTAS)) cpSync(PASTA_DAS_CONTAS, onde, { recursive: true });
+    writeFileSync(join(onde, relativo), JSON.stringify(candidato, null, 1) + "\n", "utf8");
+    const r = spawnSync("bun", ["run", CONFERIR_CONFIG, join(onde, relativo), "--json"], { encoding: "utf8", timeout: 30000 });
+    const saida = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim();
+    if (r.error !== undefined || r.status === null) {
+      return { correu: false, codigo: null, saida: `o conferidor da configuração não correu: ${r.error?.message ?? "sem código de saída"}`, estaFichaAprovou: null };
+    }
+    let aprovada: boolean | null = null;
+    try {
+      const linha = saida.split("\n").filter((l) => l.trim().startsWith("{")).pop();
+      const j = JSON.parse(linha ?? "{}") as { veredicto?: string };
+      if (j.veredicto === "aprovado") aprovada = true;
+      else if (j.veredicto === "recusado") aprovada = false;
+    } catch { /* saída sem JSON: sem veredicto, e é isso que se devolve */ }
+    return { correu: true, codigo: r.status, saida, estaFichaAprovou: aprovada };
   } catch (e) {
     return { correu: false, codigo: null, saida: `não se conseguiu validar: ${e instanceof Error ? e.message : String(e)}`, estaFichaAprovou: null };
   } finally {
@@ -238,6 +268,70 @@ export function escrever(
     mudancas: dif,
   });
   return { ok: true, diferencas: dif, veredicto, escrito: true, hash_antes: antes.hash, hash_depois: sha(texto) };
+}
+
+/* ================================================================ CRIAR (o que ainda não existe)
+ * CRIAR NÃO É SOBREPOR, e é por isso que é OUTRA função: `escrever` exige uma ficha que já exista (precisa de um
+ * «antes» para comparar e de uma impressão para conferir). Criar parte de um CANDIDATO, e a guarda que substitui
+ * a impressão é outra: **o ficheiro não existir**. Se existir, recusa e manda usar o caminho da edição — uma
+ * porta que cria por cima do que existe é uma porta que apaga.
+ *
+ * DUAS FAMÍLIAS, E SÓ DUAS: as fichas (`fichas/<setup>/<PAR>-<conta>.json`) e as contas
+ * (`config/contas/<nome>.json`). A lista é fechada AQUI, em código. Uma porta que cria qualquer coisa não é uma
+ * porta, é um buraco — e é a mesma razão pela qual o `escrever` só serve fichas.
+ */
+export function pastasQueSeCriam(): { pasta: string; familia: "fichas" | "config/contas"; exemplo: string }[] {
+  return [
+    { pasta: PASTA_DAS_FICHAS, familia: "fichas", exemplo: "fichas/<setup>/<PAR>-<conta>.json" },
+    { pasta: PASTA_DAS_CONTAS, familia: "config/contas", exemplo: "config/contas/<nome>.json" },
+  ];
+}
+function caminhoNovo(pedido: string): { caminho: string; relativo: string; familia: "fichas" | "config/contas" } | { recusa: string } {
+  const caminho = resolve(isAbsolute(pedido) ? pedido : join(RAIZ, pedido));
+  const familia = pastasQueSeCriam().find((f) => caminho === f.pasta || caminho.startsWith(f.pasta + sep));
+  if (familia === undefined) {
+    return { recusa: `«${pedido}» não está dentro de fichas/ nem de config/contas/ — esta porta só cria estes dois documentos` };
+  }
+  return { caminho, relativo: caminho.slice(familia.pasta.length + 1), familia: familia.familia };
+}
+
+export function criar(
+  pedido: string,
+  candidato: Record<string, any>,
+  opcoes: { simular?: boolean; origem?: string } = {},
+): Resultado {
+  const alvo = caminhoNovo(pedido);
+  if ("recusa" in alvo) return { ok: false, porque: alvo.recusa };
+  const { caminho, relativo, familia } = alvo;
+  if (existsSync(caminho)) {
+    return { ok: false, porque: `já existe «${relativo}» — criar não é sobrepor: para mudar o que existe, use o caminho da edição` };
+  }
+  if (candidato === null || typeof candidato !== "object" || Array.isArray(candidato)) {
+    return { ok: false, porque: "o candidato não tem forma de documento (um objecto JSON)" };
+  }
+  const veredicto = conferirCandidato(relativo, candidato, familia);
+  if (!veredicto.correu || veredicto.estaFichaAprovou !== true) {
+    return {
+      ok: false,
+      porque: veredicto.correu
+        ? (veredicto.estaFichaAprovou === false ? "o conferidor REPROVOU o candidato — nada foi criado" : "o conferidor não deu veredicto sobre este candidato — nada foi criado")
+        : veredicto.saida,
+      veredicto,
+    };
+  }
+  if (opcoes.simular) return { ok: true, veredicto, escrito: false };
+  const texto = JSON.stringify(candidato, null, 1) + "\n";
+  escreverAtomico(caminho, texto);
+  registar({
+    instante: new Date().toISOString(),
+    ficha: `${familia}/${relativo}`,
+    origem: opcoes.origem ?? "linha de comando",
+    de: null,
+    para: sha(texto),
+    criado: true,
+    mudancas: [],
+  });
+  return { ok: true, veredicto, escrito: true, hash_depois: sha(texto) };
 }
 
 // ------------------------------------------------------------------ a linha de comando

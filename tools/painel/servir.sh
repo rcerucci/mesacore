@@ -1,35 +1,42 @@
 #!/usr/bin/env bash
-# O PAINEL A CORRER COM O SISTEMA — o retrato a renovar-se, a tela servida na rede local, e a porta de escrita.
+# O LANCADOR DO PAINEL — a linha que a unit do host corre. UMA porta de entrada, UM processo.
 #
-# O QUE ELE FAZ, e são três coisas:
-#   1. regenera `web/painel/painel.json` a cada `INTERVALO` segundos (por omissão 60 — o relógio do motor é a
-#      barra horária, e um retrato por minuto chega de sobra para o dono ver o que está vivo);
-#   2. serve `web/painel/` em `ENDERECO:PORTA`, **amarrado só ao endereço da LAN** (nunca a `0.0.0.0`): o painel
-#      lê posição, equity e decisões, e não se publica para fora da rede de casa;
-#   3. aceita o **pedido de escrita de uma ficha** (`POST /api/ficha`) — e não escreve: quem escreve é
-#      `tools/escrever-ficha`, que **valida o candidato com o conferidor do portão antes de tocar no ficheiro** e
-#      deixa a mudança registada com a origem e a hora (RN-E12/RN-M2). Ver `tools/painel/servidor.ts`.
+# O QUE ELE FAZ: descobre o endereco da LAN (se nao lhe derem um) e entrega tudo ao `servidor.ts`, que passa a ser
+# O processo do painel — serve a tela, aceita o pedido de escrita (`POST /api/ficha`) e GERA o fio que serve
+# (`web/painel/painel.json` ao minuto, `vivo.json` aos dois segundos).
 #
-# E NÃO OPERA NADA: o ciclo do retrato é um leitor, e um pedido de escrita é um gesto do dono, não da mesa. Se este
-# serviço estiver parado, a mesa opera igual — é essa a propriedade que o torna seguro de deixar ligado.
+# PORQUE E' SO' ISTO, quando antes tinha dois lacos `while` em segundo plano: aqueles lacos faziam do `servir.sh` a
+# METADE que gerava e do `servidor.ts` a metade que servia, e a tela dependia de os dois coexistirem. Um
+# `servidor.ts` arrancado sozinho servia a pasta sem nunca renovar o fio — duas metades, dois sitios onde o
+# comportamento pode divergir. Agora o gerador e' o proprio servidor (com `exec`, a unit ve um so' processo, e os
+# ciclos morrem com ele — nunca fica um `bun` orfao a ler ficheiros depois de a tela sair).
 #
-# Uso:  bash tools/painel/servir.sh [--porta 8788] [--endereco 192.168.15.24] [--corrida <dir>] [--intervalo 60]
+# E NAO OPERA NADA: gerar o fio e' um leitor, e um pedido de escrita e' um gesto do dono, nao da mesa. Se este
+# servico estiver parado, a mesa opera igual — e' essa a propriedade que o torna seguro de deixar ligado.
 #
-# Parar: Ctrl-C (mata o ciclo do retrato e o servidor juntos).
+# Uso:  bash tools/painel/servir.sh [--porta 8788] [--endereco 192.168.15.24] [--corrida <dir>]... [--intervalo 60] [--intervalo-vivo 2]
+#
+# AS INSTALACOES. O painel olha para N corridas: `--corrida` repete-se (uma por instalacao), e sem nenhuma ele
+# DESCOBRE as que estao vivas (a `operacao.json` reescrita ha' menos de 5 min) sob a raiz das corridas.
+#
+# Parar: Ctrl-C.
 set -uo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PORTA="${PORTA:-8788}"
 INTERVALO="${INTERVALO:-60}"
-# O «AGORA» tem relogio proprio, e por isso e' outro numero. Ver o ciclo la' em baixo.
 INTERVALO_VIVO="${INTERVALO_VIVO:-2}"
 ENDERECO="${ENDERECO:-}"
-DIR_DA_CORRIDA="${DIR_DE_OBSERVACAO:-$HOME/.hermes/profiles/appbuilder/cache/scratch/corrida-de-risco}"
+# As corridas explicitas (pode repetir-se). Uma so' continua a servir: `--corrida <dir>`.
+DIRS_DA_CORRIDA=()
+# A descoberta procura aqui quando nao ha `--corrida` nenhuma.
+RAIZ_DAS_CORRIDAS="${RAIZ_DAS_CORRIDAS:-${DIR_DE_OBSERVACAO:-$HOME/.hermes/profiles/appbuilder/cache/scratch}}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --porta) PORTA="$2"; shift 2 ;;
     --endereco) ENDERECO="$2"; shift 2 ;;
-    --corrida) DIR_DA_CORRIDA="$2"; shift 2 ;;
+    --corrida) DIRS_DA_CORRIDA+=("$2"); shift 2 ;;
+    --raiz-das-corridas) RAIZ_DAS_CORRIDAS="$2"; shift 2 ;;
     --intervalo) INTERVALO="$2"; shift 2 ;;
     --intervalo-vivo) INTERVALO_VIVO="$2"; shift 2 ;;
     *) echo "argumento desconhecido: $1" >&2; exit 2 ;;
@@ -46,46 +53,19 @@ if [ -z "$ENDERECO" ]; then
   exit 1
 fi
 
+# OS ARGUMENTOS DAS INSTALACOES, num so' sitio: o mesmo conjunto vai ao servidor (que gera o fio e o refaz a seguir
+# a uma escrita). Sem `--corrida`, so' a raiz viaja — e o retrato DESCOBRE as vivas.
+ARGS_DAS_CORRIDAS=()
+for d in "${DIRS_DA_CORRIDA[@]:-}"; do [ -n "$d" ] && ARGS_DAS_CORRIDAS+=(--corrida "$d"); done
+[ -n "$RAIZ_DAS_CORRIDAS" ] && ARGS_DAS_CORRIDAS+=(--raiz-das-corridas "$RAIZ_DAS_CORRIDAS")
+
 echo "painel: retrato a cada ${INTERVALO}s · vivo a cada ${INTERVALO_VIVO}s · tela em http://${ENDERECO}:${PORTA}/index.html"
-echo "painel: corrida ${DIR_DA_CORRIDA}"
+if [ "${#DIRS_DA_CORRIDA[@]}" -gt 0 ]; then
+  echo "painel: instalacoes (explicitas): ${DIRS_DA_CORRIDA[*]}"
+else
+  echo "painel: instalacoes: a descobrir as vivas sob ${RAIZ_DAS_CORRIDAS}"
+fi
 
-# O CICLO DO RETRATO. Um primeiro retrato À MÃO, para a tela não abrir vazia se alguém chegar antes do minuto.
-bun run "$RAIZ/tools/painel/retrato.ts" --corrida "$DIR_DA_CORRIDA" || echo "painel: o primeiro retrato falhou (a tela diz o que falta)"
-
-(
-  while true; do
-    sleep "$INTERVALO"
-    bun run "$RAIZ/tools/painel/retrato.ts" --corrida "$DIR_DA_CORRIDA" >/dev/null 2>&1 \
-      || echo "painel: retrato falhou nesta volta (o anterior fica na tela)"
-  done
-) &
-CICLO=$!
-
-# O CICLO DO «AGORA» — e é este que dá a sensação de vivo, e é por isso que tem relógio próprio.
-#
-# MEDIDO: o retrato completo custa 0,43 s e pesa 2,7 MB (1,67 MB só de séries), porque pergunta a cada setup a sua
-# série — e a série muda por BARRA, não a cada segundo. O modo leve (`--sem-serie`) custa 0,11 s e pesa 28 KB (98×
-# menos) e traz o que se move a cada segundo no motor: a leitura (com o preço e a idade do dado), a posição, a
-# proposta, a última decisão, o risco e as faltas.
-#
-# São DOIS relógios porque são duas coisas: o gráfico ao minuto, o «agora» ao segundo. A tela segue os dois — o
-# `vivo.json` renova os números, o `painel.json` redesenha o gráfico.
-bun run "$RAIZ/tools/painel/retrato.ts" --sem-serie --para web/painel/vivo.json --corrida "$DIR_DA_CORRIDA" \
-  || echo "painel: o primeiro retrato vivo falhou (a tela mantem o que tem)"
-(
-  while true; do
-    sleep "$INTERVALO_VIVO"
-    bun run "$RAIZ/tools/painel/retrato.ts" --sem-serie --para web/painel/vivo.json --corrida "$DIR_DA_CORRIDA" >/dev/null 2>&1 \
-      || echo "painel: retrato vivo falhou nesta volta (o anterior fica na tela)"
-  done
-) &
-VIVO=$!
-
-# Os ciclos morrem com o servidor — nunca fica um `bun` órfão a ler ficheiros depois de a tela sair.
-trap 'kill "$CICLO" "$VIVO" 2>/dev/null; wait "$CICLO" "$VIVO" 2>/dev/null' EXIT INT TERM
-
-# O SERVIDOR — a tela E a porta de escrita, no mesmo processo (`Bun.serve`).
-#
-# SEM `exec`, de propósito: com `exec` o servidor substituía esta shell, o `trap` nunca corria, e o ciclo do
-# retrato ficava órfão a ler ficheiros depois de a tela sair.
-bun run "$RAIZ/tools/painel/servidor.ts" --porta "$PORTA" --endereco "$ENDERECO" --corrida "$DIR_DA_CORRIDA"
+# O SERVIDOR — a tela, a porta de escrita E o gerador do fio, num so' processo. `exec` para a unit ter este pid.
+exec bun run "$RAIZ/tools/painel/servidor.ts" --porta "$PORTA" --endereco "$ENDERECO" \
+  --intervalo "$INTERVALO" --intervalo-vivo "$INTERVALO_VIVO" "${ARGS_DAS_CORRIDAS[@]}"
