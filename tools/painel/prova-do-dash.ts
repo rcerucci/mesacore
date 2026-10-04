@@ -8,7 +8,13 @@
 //      (`#dialogo` ausente do DOM): havia DUAS portas para a mesma configuracao;
 //   3. CAMPOS DUPLICADOS: a mesma chave do documento em mais de um SITIO da vista. Antes: 6 (conta, setup, relogio,
 //      ao_desligar na tabela + nas procedencias; run, enviar na tabela + na faixa). Depois: 0;
-//   4. o fio VAZIO (sem fichas) nao rebenta: a vista DIZ que nao ha' ficha, em vez de ficar em branco.
+//   4. o fio VAZIO (sem fichas) nao rebenta: a vista DIZ que nao ha' ficha, em vez de ficar em branco;
+//   5. A CREDENCIAL PELA TELA: o campo (type=password) e o botao de gravar existem, e o botao TEM gesto;
+//   6. O FORMULARIO DE CRIAR CONTA nao abre «cheio de erros»: o que falta vai em tom NEUTRO («por preencher»), e a
+//      RECUSA vermelha so' aparece quando ha' uma a serio. E abre no conector que JA' SE USA, nao no primeiro da lista;
+//   7. A TELA NUNCA FICA VELHA — e por isso nunca ha' DUAS SESSOES do painel com codigo diferente: o fio leva a
+//      versao da tela (`tela_em_ms`) e a pagina RECARREGA-SE sozinha quando o servidor passa a servir outra. Mede-se
+//      pelo NUMERO DE CARGAS da pagina (`sessionStorage`), e a prova REPROVA se essa comparacao for retirada.
 //
 // A PROVOCACAO: injecta-se uma linha com uma chave que JA' existe noutro sitio e exige-se que a contagem a apanhe —
 // sem isto, um criterio que nunca reprovou nao mediu nada.
@@ -81,8 +87,10 @@ const instrumento = {
   proposta: null, ultima_decisao: null, decisao_contagem: {}, parado: { travado: false }, decisoes_de_abrir_ms: [],
   marcas_nossas_conhecidas: [], fontes: {}, falhas: null, divergente: null,
 };
-const fio = (comFicha: boolean) => ({
+const fio = (comFicha: boolean, versao = 1000) => ({
   retrato: { gerado_em_ms: agora, gerado_em: new Date(agora).toISOString(), instalacoes: [{ instalacao: "bancada-do-dash", corrida: "/tmp/bancada" }], descoberta: "bancada" },
+  // A VERSAO DA TELA que este fio acompanha: e' ela que a pagina compara com a que carregou (ver o fim desta prova).
+  tela_em_ms: versao,
   registo_de_mesas: [],
   mesas: [{
     instalacao: "bancada-do-dash", identidade: "conta-de-bancada", corrida: "/tmp/bancada", plugin: "sigma", ambiente: null,
@@ -94,9 +102,27 @@ const fio = (comFicha: boolean) => ({
   }],
   geral: { n_instalacoes: 1, n_pares: 0, posicoes: [], ordens_vivas: [], parados: [] },
   plugins: [{ nome: "sigma", versao: "0.1.0", linguagem: "typescript", pasta: "setups/sigma", publica_serie: true, pares: [] }],
-  catalogo: { conectores: [], segredos_escondidos: 0 },
+  catalogo: {
+    segredos_escondidos: 2,
+    // DOIS CONECTORES, e o cTRAder PRIMEIRO de propósito (é a ordem alfabética): a prova exige que o formulário
+    // abra no conector que JÁ SE USA (o `hyperliquid` da conta), não no primeiro da lista.
+    conectores: [
+      { plugin: "ctrader", escreve_em: "conta", ficheiro: "brokers/ctrader/questionario.json", conta_de_exemplo: "ctrader-demo-a", tem_segredos: true,
+        perguntas: [
+          { id: "nome_da_conta", chave: "(nome do ficheiro)", pergunta: "nome da conta", tipo: "texto", obrigatorio: true },
+          { id: "ctidTraderAccountId", chave: "conta.identificador", pergunta: "Qual o ID da conta no cTrader (ctidTraderAccountId)?", tipo: "texto", obrigatorio: true },
+          { id: "client_id", chave: "conexao.credencial.arquivos.client_id", pergunta: "onde vive o client_id", tipo: "segredo", obrigatorio: true },
+        ] },
+      { plugin: "hyperliquid", escreve_em: "conta", ficheiro: "brokers/hyperliquid/questionario.json", conta_de_exemplo: "hl-teste-plugin", tem_segredos: true,
+        perguntas: [
+          { id: "nome_da_conta", chave: "(nome do ficheiro)", pergunta: "nome da conta", tipo: "texto", obrigatorio: true },
+          { id: "identificador", chave: "conta.identificador", pergunta: "qual a conta (endereço)?", tipo: "texto", obrigatorio: true },
+          { id: "chave", chave: "conexao.credencial.arquivos.chave", pergunta: "onde vive a chave", tipo: "segredo", obrigatorio: true },
+        ] },
+    ],
+  },
   configuracao: {
-    contas: [{ nome: "conta-de-bancada", caminho: "config/contas/conta-de-bancada.json", existe: true, conteudo: { conexao: { credencial: { valor_em: "ficheiro:/tmp/credenciais/conta-de-bancada.key" } } } }],
+    contas: [{ nome: "conta-de-bancada", caminho: "config/contas/conta-de-bancada.json", existe: true, conteudo: { conta: { conectores: ["hyperliquid"] }, conexao: { credencial: { valor_em: "ficheiro:/tmp/credenciais/conta-de-bancada.key" } } } }],
     fichas: comFicha ? [ficha] : [],
     conferidor: { correu: true, codigo: 0, saida: "bancada: 1 ficha conferida · 0 falhas" }, segredos_escondidos: 0, escreve: true, porta_que_escreve: "bash tools/ligar-par.sh",
   },
@@ -176,9 +202,60 @@ try {
   certeza(cred.temCampo === true && cred.temBotao === true, "a vista tem o CAMPO da credencial (type=password) e o botao de gravar");
   certeza(cred.ligado === true, "e o botao TEM gesto (a porta de escrita esta' ligada, nao e' um botao morto)");
 
+  // O FORMULÁRIO DE CRIAR CONTA: não abre «cheio de erros», e abre no conector que JÁ SE USA. Era aqui que o dono
+  // via uma parede vermelha («campo(s) obrigatório(s) em falta — …») ao abrir «+ conta», e um formulário de cTrader
+  // (17 campos) quando a conta dele é de outro venue.
+  writeFileSync(join(pasta, "painel.json"), JSON.stringify(fio(true)));
+  writeFileSync(join(pasta, "vivo.json"), JSON.stringify(fio(true)));
+  await bancada!.avaliar(`window.__painel.redesenho.recarregar()`);
+  await new Promise((r) => setTimeout(r, 600));
+  const clicou = await bancada!.avaliar(`(() => {
+    const b = [...document.querySelectorAll("#vista-de-config button, #vista-de-config .botao")].find((x) => /^\\+ conta/.test((x.textContent || "").trim()));
+    if (b) b.click();
+    return !!b;
+  })()`);
+  await new Promise((r) => setTimeout(r, 500));
+  const form = await bancada!.avaliar(`(() => {
+    const seletor = document.querySelector("#vista-de-config select[data-novo='__conector']");
+    const preencher = document.getElementById("por-preencher");
+    const aviso = document.getElementById("aviso-do-candidato");
+    return {
+      abriu: seletor !== null,
+      conector: seletor ? seletor.value : null,
+      porPreencher: preencher ? (preencher.innerText || "").replace(/\\s+/g, " ").trim().slice(0, 140) : null,
+      porPreencherNeutro: preencher !== null && !preencher.classList.contains("aviso"),
+      recusaVermelha: aviso !== null,
+    };
+  })()`);
+  certeza(clicou === true && form.abriu === true, "o botao «+ conta» abre o formulario (o gesto do dono)");
+  certeza(form.porPreencherNeutro === true, `o que FALTA por preencher e' dito em tom NEUTRO, nao como erro (${form.porPreencher})`);
+  certeza(form.recusaVermelha === false, "e NAO abre com a parede vermelha de «campos obrigatorios em falta» (0 recusas antes de o dono escrever)");
+  certeza(form.conector === "hyperliquid", `e abre no conector que JA' SE USA (medido ${form.conector}), nao no primeiro da lista (ctrader)`);
+
+  // A TELA NUNCA FICA VELHA — e por isso NUNCA HA' DUAS SESSOES do painel com codigo diferente. O fio leva a
+  // versao da tela (`tela_em_ms`), medida no disco pelo servidor; a pagina guarda a versao com QUE CARREGOU e
+  // compara-a em cada leitura (a cada 2 s). Quando o servidor passa a servir outra, ela RECARREGA-SE SOZINHA.
+  // Mede-se pelo NUMERO DE CARGAS da pagina (um contador no `sessionStorage`, injectado antes de cada documento):
+  // a unica forma de a versao guardada mudar e' uma carga nova — e a prova REPROVA se a comparacao for retirada.
+  await bancada!.mandar("Page.addScriptToEvaluateOnNewDocument", {
+    source: `try{ sessionStorage.setItem("cargas", String((Number(sessionStorage.getItem("cargas"))||0)+1)); }catch(e){}`,
+  });
+  await bancada!.ir(URL_DA_TELA.split("#")[0] + "?t=" + Date.now() + "#configuracao");
+  const cargas1 = await bancada!.avaliar(`Number(sessionStorage.getItem("cargas"))`);
+  const versao1 = await bancada!.avaliar(`window.__painel?.versaoDaTela ? window.__painel.versaoDaTela() : null`);
+  // O SERVIDOR PASSA A SERVIR OUTRA VERSAO DA TELA, sem mais nada mudar no fio (e' uma correccao a entrar).
+  writeFileSync(join(pasta, "painel.json"), JSON.stringify(fio(true, 2000)));
+  writeFileSync(join(pasta, "vivo.json"), JSON.stringify(fio(true, 2000)));
+  await new Promise((r) => setTimeout(r, 6000)); // o «agora» le' a cada 2 s: tres voltas chegam de sobra
+  const cargas2 = await bancada!.avaliar(`Number(sessionStorage.getItem("cargas"))`);
+  const versao2 = await bancada!.avaliar(`window.__painel?.versaoDaTela ? window.__painel.versaoDaTela() : null`);
+  certeza(versao1 === 1000, `a pagina fica com a versao da tela que o fio trazia (medido ${versao1})`);
+  certeza(cargas2 > cargas1, `e RECARREGA-SE SOZINHA quando o servidor passa a servir outra versao (cargas ${cargas1} -> ${cargas2})`);
+  certeza(versao2 === 2000, `sem o dono tocar em nada: a aba antiga passa a mostrar a tela nova (versao ${versao1} -> ${versao2})`);
+
   console.log("");
   if (problemas.length === 0) {
-    console.log("prova do dash: alvos de toque >=44 no telefone · gesto de editar à vista · zero chaves duplicadas · o fio vazio é dito");
+    console.log("prova do dash: alvos ≥44 no telefone · gesto de editar à vista · zero chaves duplicadas · criar conta sem parede de erros · a tela recarrega-se sozinha");
     saida = 0;
   } else {
     console.log(`prova do dash: FALHOU — ${problemas.length} verificacao(oes)`);

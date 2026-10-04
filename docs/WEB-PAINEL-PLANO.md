@@ -578,4 +578,26 @@ verde com o ficheiro restaurado (selo por `sha256`).
 - **`tipos.sh`: 0 erros em 6 directórios**; **fallbacks 0**; a árvore termina declarada (o que as bancadas criam,
   apagam).
 
+### H. UMA SESSÃO SÓ, E A TELA NUNCA VELHA (a exigência do dono, medida)
+
+**O que estava por trás do que o dono viu.** O painel que ele abria **era** o novo (o botão `recarregar` e o bloco
+da credencial são desta vaga) — mas a **aba aberta antes** do restart continuava a desenhar o código antigo: a página
+é um `<script type="module">`, e a renovação de 2 s/60 s só a redesenha com o módulo **que ela já carregou**. Duas
+abas abertas em momentos diferentes = **duas telas diferentes**. E o «cheio de erros», medido, eram três coisas:
+(i) abrir **«+ conta»** abria uma **parede vermelha** («campo(s) obrigatório(s) em falta — …») antes de o dono
+escrever nada, e num formulário de **cTrader** (17 campos) quando a conta dele é da Hyperliquid; (ii) um **Chrome de
+bancada órfão**, deixado por uma bateria que morreu a meio, ficou **6 h** a bater no painel — uma segunda sessão.
+
+| garantia | como se cumpre | prova |
+|---|---|---|
+| **nunca duas sessões do dash** | uma tela, um servidor, uma pasta (a unit + `prova-da-fonte.ts`); e o `provar.sh` **varre os clientes-fantasma órfãos** (ppid=1) antes e depois de cada bateria | `prova-da-fonte.ts` · a varredura no `provar.sh` |
+| **nunca desatualizada** | o fio leva `tela_em_ms` — a versão dos ficheiros da tela, medida no **disco** (não escrita à mão); a página compara-a em cada leitura (2 s) e **recarrega-se sozinha** | `prova-do-dash.ts` — cargas `1 → 2`, versão `1000 → 2000`; **reprova** (`1 → 1`) sem a comparação |
+| **criar conta sem parede de erros** | o que **falta preencher** vai em tom **neutro** («por preencher (N): …»); o vermelho fica para a **RECUSA** a sério. E o formulário abre no conector **que já se usa** | `prova-do-dash.ts` — `por preencher (1): qual a conta (endereço)?` neutro, **0** recusas no arranque, conector **`hyperliquid`** |
+
+**Medido ao vivo (04/10/2026, 1440×900, painel da unit):** o fio e a página com a **mesma** versão
+(`1791129781181`); o `+ conta` abre no **`hyperliquid`** com `por preencher (3): Qual o ENDEREÇO (master) da conta na
+Hyperliquid? · Quantos dias do ledger ficam integrais? · E depois desses dias, o que fica do l…` em tom neutro e
+**zero** recusas vermelhas; **0 erros** na página (excepções, promessas rejeitadas e `console.error` apanhados antes
+de cada documento).
+
 

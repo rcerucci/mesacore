@@ -19,6 +19,28 @@ import { desenharAConfiguracao, ligarAsAcoes } from "./configuracao.js";
 import { desenharAcoes, prepararAsAcoes } from "./acoes.js";
 import { desenharBarraDoTelefone } from "./telefone.js";
 
+/* --------------------------------------------------------------------------- a tela nunca fica velha */
+
+/* A TELA NUNCA ESTA DESATUALIZADA, e nunca ha DUAS SESSOES com codigo diferente.
+ *
+ * O fio traz `tela_em_ms` — a versao dos ficheiros que desenham esta pagina, medida no disco pelo servidor. Esta
+ * pagina guarda a versao com que FOI CARREGADA e, em cada leitura (a cada 2 s no «agora»), compara: se o servidor
+ * ja' serve outra, ela RECARREGA-SE SOZINHA. E' o que faz uma correcao entrar em qualquer aba ja' aberta sem o dono
+ * ter de saber o que e' uma cache — e o que impede a aba antiga e a aba nova mostrarem o painel em estados
+ * diferentes. So' dispara quando a versao MUDA (uma correcao), nunca em cada leitura.
+ */
+let versaoDaTelaCarregada = null;
+function versaoDoFio(dados) {
+  return dados && typeof dados.tela_em_ms === "number" ? dados.tela_em_ms : null;
+}
+/** Verdadeiro quando o que o servidor serve ja' nao e' o que esta pagina carregou — e entao recarrega. */
+function aTelaMudou(dados) {
+  const v = versaoDoFio(dados);
+  if (v === null) return false;
+  if (versaoDaTelaCarregada === null) { versaoDaTelaCarregada = v; return false; }
+  return v !== versaoDaTelaCarregada;
+}
+
 /* --------------------------------------------------------------------------- o desenho e as vistas */
 
 /** A VISTA PEDIDA PELO ENDEREÇO: `#configuracao` mostra a configuração, tudo o resto mostra o terminal. */
@@ -75,6 +97,8 @@ async function carregar() {
        <div class="fraco" style="margin-left:auto">não consegui ler <code>painel.json</code> (${escapar(e.message)}) — o painel é servido pelo sistema: corra <code class="mono">bun run tools/painel/retrato.ts</code></div>`;
     return;
   }
+  // A VERSÃO DA TELA ANTES DE DESENHAR: se o servidor já serve outra, recarrega (nada de desenhar o velho).
+  if (aTelaMudou(estado.dados)) { location.reload(); return; }
   aplicarAsOmissoes();
   const ms = estado.dados.mesas ?? [];
   // A INSTALAÇÃO POR OMISSÃO: a MAIS FRESCA (a operação lida há menos tempo) — é a que está a acontecer.
@@ -104,6 +128,8 @@ async function carregarVivo() {
   } catch {
     return;
   }
+  // A VERSÃO DA TELA, TAMBÉM NO CICLO CURTO (2 s): é isto que faz a correção entrar depressa em qualquer aba.
+  if (aTelaMudou(vivo)) { location.reload(); return; }
   // O MERGE É POR INSTALAÇÃO (nome), e não por índice: se a descoberta mudar a ordem entre duas voltas,
   // um merge por índice casaria as mesas erradas.
   for (const mesa of vivo.mesas ?? []) {
@@ -189,6 +215,9 @@ window.__painel = {
   estado,
   redesenho,
   nucleo: { alternarRecolhido, aplicarOsEstadosDeRecolher, ligarOsBotoesDeRecolher, estaRecolhido, podeRecolher, oQueAbre },
+  // A versão da tela com que ESTA página foi carregada: a prova do «nunca desatualizado» lê-a para mostrar que,
+  // quando o servidor passa a servir outra, a página se recarregou (a única forma de este valor mudar).
+  versaoDaTela: () => versaoDaTelaCarregada,
 };
 
 carregar();

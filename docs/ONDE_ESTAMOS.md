@@ -1,6 +1,13 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **04/10/2026, 06:3x (-03)** · contrato vigente **1.12.0** · portão **50 de 50** · árvore **limpa** · os títulos do `DEFEITOS.md` dizem o estado, cada um com o comando que o confirma (ver a última secção)
+medido em **04/10/2026, 13:0x (-03)** · contrato vigente **1.12.0** · portão **50 de 50** · árvore **limpa** · os títulos do `DEFEITOS.md` dizem o estado, cada um com o comando que o confirma (ver a última secção)
+
+> **UMA SESSÃO SÓ, E A TELA NUNCA VELHA** (04/10/2026). Dois invariantes que se medem, não se prometem:
+> **uma tela, um servidor, uma pasta** (a unit serve `web/painel/` do repositório, byte a byte; o `provar.sh` varre
+> ainda os **Chromes-fantasma órfãos** que uma bateria morta a meio deixa a bater no painel) e **a página recarrega-se
+> sozinha quando o servidor serve outra versão** — o fio leva `tela_em_ms` (a versão medida no disco) e a página
+> compara-a a cada 2 s; é o que impede **duas abas com código diferente** (uma antiga ao lado de uma nova) e o que
+> faz uma correcção entrar em qualquer aba já aberta. Prova: `prova-do-dash.ts` (cargas `1 → 2`) e `prova-da-fonte.ts`.
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este

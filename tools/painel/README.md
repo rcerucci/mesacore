@@ -88,7 +88,7 @@ Chrome e o cliente do protocolo, num só sítio — duas cópias seriam duas con
 | `prova-do-recolhido.ts` | percorre TODOS os `[data-recolhivel]`, recolhe cada um, e exige que **recolheu E que o botão que o abre continua visível**; injecta uma secção mal formada (cabeça sem `.cabeca`, botão fora dela) e exige que o critério a **reprove** — e mostra que recolher à força escondia mesmo o botão |
 | `prova-do-vivo.ts` | sobre um fio de bancada, mede que o painel diz o que **está vivo** (posições, ordens, a decisão) e o que **está parado e porquê** (a matriz: `trava` + `há X`), que a **última barra** e o **ciclo mais recente** trazem a hora, e que as três secções do «lado de dentro» dizem a fonte+idade e **sobrevivem ao recolhido** |
 | `prova-dos-buracos.ts` | o **vão do histórico**: com um fio que traz os dois vãos reais (1 barra e 17,5 h / 34 barras), mede no DOM que o cabeçalho do gráfico os **nomeia** (`de→até · faltam N`) e que o gráfico os conta; o controle (fio sem vão) prova que o aviso **não sai sempre** |
-| `prova-do-dash.ts` | o **dash de configuração**: no telefone (390×844) ZERO alvos de toque abaixo de **44 px**; o gesto de editar a ficha **à vista** e o **diálogo legado ausente** do DOM; **ZERO chaves em mais de um sítio**; o fio **vazio é dito**; o **campo da credencial** (type=password) presente e com gesto — com **provocação** (a mesma chave injectada noutro sítio faz a contagem subir) |
+| `prova-do-dash.ts` | o **dash de configuração**: no telefone (390×844) ZERO alvos de toque abaixo de **44 px**; o gesto de editar a ficha **à vista** e o **diálogo legado ausente** do DOM; **ZERO chaves em mais de um sítio**; o fio **vazio é dito**; o **campo da credencial** (type=password) presente e com gesto; o **formulário de criar conta** sem parede vermelha (o que falta vai em tom NEUTRO, «por preencher») e a abrir no conector que **já se usa**; e a **tela que se recarrega sozinha** quando o servidor serve outra versão (cargas `1 → 2`) — com **provocação** (a mesma chave injectada noutro sítio faz a contagem subir; sem a comparação de versão, o `cargas` fica em `1 → 1`) |
 | `prova-da-credencial.ts` | a **credencial pela tela**: arranca o `servidor.ts` a sério com uma pasta de credenciais de **bancada**, grava o valor (ficheiro 0600, fora do repo), confirma que o **valor não está na resposta nem no registo** (só a FORMA e a impressão) e prova as **guardas** (origem/cabeçalho, caminho dentro da pasta, valor curto). Apaga o que criou |
 | `prova-da-fonte.ts` | o invariante da **fonte única**: arranca o servidor com os argumentos da unit e compara o `sha256` de CADA ficheiro servido com o do repositório (16 de 16), confirma que o fio servido é o que o servidor gera na sua pasta, que a unit e o `servir.sh` não apontam a outra pasta — e **provoca** (serve uma cópia divergente e exige que o critério a reprove) |
 | `prova-do-log.ts` | o `operador.log` é um log **misto**: a **prosa** do conector (e o marcador `[<data>] fim`) NÃO é falta, uma linha com cara de JSON partido É — com o par de controlo (o mesmo log sem truncagem dá 0 faltas); e a **costura do buffer** (`vigia/linhas.ts`) não parte uma linha a meio (sem ela, a mesma linha viraria duas ilegíveis) |
@@ -185,6 +185,23 @@ amarra **só** `192.168.15.24:8788` (nunca `0.0.0.0`/`[::]`) · `GET /index.html
 `33e8e604…612a1` **igual** ao de `web/painel/index.html` em disco · travessia de directório `404` ·
 `painel.json` reescrito pelo ciclo da própria unit a cada 60 s · corre sob
 `user@1000.service/app.slice/mesacore-painel.service` (não sob a sessão de ninguém).
+
+## UMA SESSÃO SÓ — a tela nunca fica velha
+
+Dois invariantes que valem sempre, e que uma vez falharam os DOIS ao mesmo tempo:
+
+1. **UMA TELA, UM SERVIDOR, UMA PASTA.** Quem serve o painel é a unit e mais ninguém; a pasta servida é
+   `web/painel/` do repositório, byte a byte (`prova-da-fonte.ts`); uma segunda instância morre com `EADDRINUSE`;
+   e o `provar.sh` varre os **clientes-fantasma** — um Chrome de bancada que fica órfão depois de a bateria morrer
+   é uma segunda sessão a bater no sistema, para sempre (medido: um ficou 6 h).
+2. **A TELA RECARREGA-SE SOZINHA.** O fio leva `tela_em_ms` — a versão dos ficheiros que desenham a página, medida
+   no disco pelo servidor (não um número escrito à mão). A página guarda a versão com que **carregou** e compara-a
+   em cada leitura (a cada 2 s, no `vivo.json`): quando o servidor passa a servir outra, ela **recarrega-se**. É por
+   isso que uma correcção entra em qualquer aba já aberta — e que **nunca há duas sessões com código diferente**
+   (a aba antiga ao lado da nova).
+
+Medido (04/10/2026): o fio e a página com a **mesma** versão (`1791129781181`); muda-se a versão do fio e a página
+recarrega-se sozinha (cargas `1 → 2`, versão `1000 → 2000`) — e a prova **reprova** se a comparação for retirada.
 
 ## O que ele lê
 

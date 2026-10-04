@@ -29,7 +29,20 @@ if [ -f "$TRAVA" ]; then
   echo "provar: (trava do pid $outro, que ja nao existe — a limpar)"
 fi
 echo $$ > "$TRAVA"
-trap 'rm -f "$TRAVA"' EXIT
+# OS CLIENTES-FANTASMA DAS BANCADAS: uma bancada que morre a meio (timeout, SIGKILL) deixa o Chrome headless dela
+# a correr — e um Chrome deixado a apontar ao painel e' uma SEGUNDA SESSAO a bater no sistema, para sempre (foi
+# medido: um ficou 6 h depois de a bateria morrer). Antes e depois de cada bateria varrem-se os ORFAOS (o pai
+# morreu, ppid=1): so' se toca em chromes NOSSOS (o perfil temporario da bancada), nunca no browser do dono, e
+# nunca num que ainda tenha pai — esse esta' a ser usado por uma bancada viva.
+varrer_as_bancadas_fantasmas() {
+  for p in $(pgrep -f "user-data-dir=.*mesacore-bancada-chrome-" 2>/dev/null); do
+    pai="$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')"
+    [ "$pai" = "1" ] && kill "$p" 2>/dev/null
+  done
+  true
+}
+varrer_as_bancadas_fantasmas
+trap 'rm -f "$TRAVA"; varrer_as_bancadas_fantasmas' EXIT
 
 falhas=0
 corridas=0
@@ -148,7 +161,10 @@ if [ "$RAPIDO" -eq 0 ]; then
   # inventada. Mede os dois vaos reais (1 barra e 17,5 h) e o controle (sem vao, nenhum aviso).
   declarar "painel: o vao do historico (marcado)"  bun run tools/painel/prova-dos-buracos.ts
   # O DASH DE CONFIGURACAO: os quatro numeros do dono («impraticavel, confuso e cheio de bugs») — alvos de toque
-  # ≥44 no telefone, o gesto de editar À VISTA, ZERO chaves duplicadas, e o fio vazio DITO. Com provocacao.
+  # ≥44 no telefone, o gesto de editar À VISTA, ZERO chaves duplicadas, e o fio vazio DITO. E as duas garantias de
+  # 04/10/2026: o formulario de CRIAR CONTA nao abre «cheio de erros» (o que falta vai em tom neutro, e abre no
+  # conector que ja' se usa) e a TELA RECARREGA-SE SOZINHA quando o servidor serve outra versao (`tela_em_ms` no fio)
+  # — e' isto que impede DUAS SESSOES do painel com codigo diferente. Com provocacao (sem a comparacao, `cargas 1 -> 1`).
   declarar "painel: o dash de configuracao"        bun run tools/painel/prova-do-dash.ts
   # A CREDENCIAL PELA TELA: o dono cola o VALOR de uma chave e ele fica gravado no padrao da casa (um ficheiro
   # por valor, fora do repo, 0600), a conta a apontar por REFERENCIA. A prova arranca o servidor A SERIO com uma

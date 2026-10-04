@@ -233,9 +233,17 @@ function setupsConhecidos() {
 function conectoresQueCriamConta() {
   return (estado.dados?.catalogo?.conectores ?? []).filter((c) => (c.escreve_em ?? "conta") === "conta");
 }
+/** O conector que esta vista usa por OMISSÃO: o que JÁ SE USA (uma conta que existe aponta-o), não o primeiro da
+ *  lista por ordem alfabética. Quem abre «+ conta» quer outra conta do MESMO venue — e não um formulário de cTrader
+ *  com 17 campos que não lhe dizem nada (que foi o que abria, e o dono leu como «cheio de erros»). */
+function conectorPorOmissao() {
+  const cs = conectoresQueCriamConta();
+  const jaUsados = (estado.dados?.configuracao?.contas ?? []).flatMap((x) => x.conteudo?.conta?.conectores ?? []);
+  return cs.find((c) => jaUsados.includes(c.plugin)) ?? cs[0] ?? null;
+}
 function oConector() {
   const cs = conectoresQueCriamConta();
-  return cs.find((c) => c.plugin === modoDeCriacao?.conector) ?? cs[0] ?? null;
+  return cs.find((c) => c.plugin === modoDeCriacao?.conector) ?? conectorPorOmissao();
 }
 /** Um campo que a tela NÃO deixa digitar: o valor de um segredo vive fora (num ficheiro protegido), e o que
  *  viaja é o NOME da credencial ou o CAMINHO para o valor. */
@@ -284,25 +292,40 @@ function contaAPartirDaDeclaracao(campos) {
     porCaminhoPontuado(doc, q.chave, valorTipado(q, bruto));
   }
   if (faltam.length > 0) {
-    return { caminho: null, documento: null, porque: `campo(s) obrigatório(s) em falta — ${faltam.join(" · ")} (o conector ${conector.plugin} recusa sem eles)` };
+    // ISTO NÃO É UM ERRO — é o estado do formulário a meio. Diz-se o que FALTA, com o nome, em tom NEUTRO: o
+    // vermelho fica reservado para a RECUSA a sério (do conferidor ou do escritor). Antes, abrir «+ conta» era
+    // abrir uma parede vermelha de «campos obrigatórios em falta» — o dono leu isso como «cheio de erros».
+    return { caminho: null, documento: null, porque: null, por_preencher: faltam };
   }
-  return { caminho: `config/contas/${nome}.json`, documento: doc, conector: conector.plugin, porque: null };
+  return { caminho: `config/contas/${nome}.json`, documento: doc, conector: conector.plugin, porque: null, por_preencher: [] };
 }
 
-/** O candidato COMPOSTO a partir do modelo — o que vai ser validado (e o que se mostra, para não haver surpresa). */
+/** O candidato COMPOSTO a partir do modelo — o que vai ser validado (e o que se mostra, para não haver surpresa).
+ *  `porque` é uma RECUSA (vermelha); `por_preencher` é o que ainda falta escrever (neutro) — dois estados diferentes. */
 function candidatoComposto() {
-  if (modoDeCriacao === null) return { caminho: null, documento: null, porque: null };
+  if (modoDeCriacao === null) return { caminho: null, documento: null, porque: null, por_preencher: [] };
   const c = modoDeCriacao.campos;
   if (modoDeCriacao.tipo === "ficha") {
     const modelo = fichaModelo(c.setup);
-    if (modelo === null) return { caminho: null, documento: null, porque: `não há nenhuma ficha do setup «${c.setup ?? "?"}» para servir de modelo — a forma da ficha vem do que existe` };
-    if (!c.instrumento || !c.conta) return { caminho: null, documento: null, porque: "diga o instrumento e a conta" };
+    if (modelo === null) return { caminho: null, documento: null, porque: `não há nenhuma ficha do setup «${c.setup ?? "?"}» para servir de modelo — a forma da ficha vem do que existe`, por_preencher: [] };
+    if (!c.instrumento || !c.conta) return { caminho: null, documento: null, porque: null, por_preencher: ["instrumento", "conta"] };
     const cabecalho = { ...modelo.cabecalho, conta: c.conta, instrumento: c.instrumento, setup: c.setup, relogio: c.relogio || modelo.cabecalho?.relogio, run: false, enviar: false };
     const documento = { cabecalho, constantes: { ...modelo.constantes } };
-    return { caminho: `fichas/${c.setup}/${c.instrumento}-${c.conta}.json`, documento, porque: null };
+    return { caminho: `fichas/${c.setup}/${c.instrumento}-${c.conta}.json`, documento, porque: null, por_preencher: [] };
   }
   if (modoDeCriacao.tipo === "conta") return contaAPartirDaDeclaracao(c);
-  return { caminho: null, documento: null, porque: null };
+  return { caminho: null, documento: null, porque: null, por_preencher: [] };
+}
+
+/** A LINHA DO ESTADO DO CANDIDATO, e não uma só: o que ainda FALTA preencher é NEUTRO (é o formulário a meio); a
+ *  RECUSA (do conferidor ou do escritor) é vermelha. Misturar as duas coisas — como antes — fazia o formulário
+ *  abrir «cheio de erros» antes de o dono ter escrito nada. */
+function linhaDoCandidato(composto) {
+  const porPreencher = composto.por_preencher.length > 0
+    ? `<div class="fraco" id="por-preencher"><b>por preencher</b> (${composto.por_preencher.length}): ${escapar(composto.por_preencher.join(" · "))} — o conector recusa sem eles</div>`
+    : "";
+  const recusa = composto.porque !== null ? `<div class="aviso" id="aviso-do-candidato">${escapar(composto.porque)}</div>` : "";
+  return porPreencher + recusa;
 }
 
 function formularioDeCriacao() {
@@ -366,7 +389,7 @@ function formularioDeCriacao() {
         <code class="mono">${escapar(conector.ficheiro)}</code> · ${(conector.perguntas ?? []).length} campo(s)
         ${conector.tem_segredos ? ` · ${(conector.perguntas ?? []).filter((q) => ehSensivel(q)).length} sensível(is): o valor nunca entra aqui` : ""}</div>
       <table class="tab"><tbody>${linhas}</tbody></table>
-      ${composto.porque !== null ? `<div class="aviso" id="aviso-do-candidato">${escapar(composto.porque)}</div>` : ""}
+      ${linhaDoCandidato(composto)}
       ${mostraDoc}
       ${composto.documento !== null ? "" : `<div class="botoes-da-ficha"><button class="botao" data-acao="fechar-criacao">desistir</button></div>`}
       <div class="mini fraco" style="margin-top:4px">a criação passa pela MESMA porta: o candidato é conferido pelo mesmo conferidor,
@@ -382,7 +405,7 @@ function formularioDeCriacao() {
     </tbody></table>
     <div class="mini fraco" style="padding:2px 0">a forma vem da ficha do setup «${escapar(campos.setup ?? "")}»
       — a tela não inventa esquemas; quem julga o candidato é o conferidor do portão</div>
-    ${composto.porque !== null ? `<div class="aviso" id="aviso-do-candidato">${escapar(composto.porque)}</div>` : ""}
+    ${linhaDoCandidato(composto)}
     ${composto.documento === null ? "" : `
       <div class="mini fraco" style="margin-top:4px">o que vai ser escrito${composto.caminho ? ` em <b class="mono">${escapar(composto.caminho)}</b>` : ""}:</div>
       <table class="tab"><tbody>${Object.entries({ ...(composto.documento.cabecalho ?? {}) }).map(([k, v]) => `<tr><td class="fraco">${escapar(k)}</td><td class="n mono">${escapar(Array.isArray(v) ? v.join(" · ") : v !== null && typeof v === "object" ? JSON.stringify(v) : String(v))}</td></tr>`).join("")}</tbody></table>
@@ -426,9 +449,9 @@ function abrirACriacao(tipo) {
   // OS CAMPOS DE ESCOLHA NASCEM PREENCHIDOS com o que existe: um formulário que abre com um `<select>` por
   // escolher deixa o candidato incompleto e o botão de criar nunca aparece — «diga o instrumento e a conta» é uma
   // resposta honesta, mas um formulário que já tem a conta certa poupa o gesto.
-  // Na CONTA, o campo de partida é o `nome_da_conta` que o CONECTOR declara como exemplo — e o conector escolhido
-  // é o primeiro que publica um questionário de conta.
-  const primeiro = conectoresQueCriamConta()[0] ?? null;
+  // Na CONTA, o campo de partida é o `nome_da_conta` que o CONECTOR declara como exemplo — e o conector por
+  // omissão é o que JÁ SE USA (ver `conectorPorOmissao`), para não abrir um formulário de outro venue.
+  const primeiro = conectorPorOmissao();
   modoDeCriacao = {
     tipo,
     conector: tipo === "conta" ? (primeiro?.plugin ?? null) : undefined,

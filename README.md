@@ -143,6 +143,13 @@ aceite. O comportamento dele é o **oráculo de aceite**: medido, não opinado.
 "15 de 15" que aqui estava era do recorte 002, e o "35 de 35" tinha três bancadas atrás; o número verdadeiro
 lê-se sempre na última linha da própria porta, e é por isso que este número leva data).
 
+**Uma tela, um servidor, uma pasta — e a tela nunca fica velha.** Quem serve o painel é a unit
+(`192.168.15.24:8788`, só na LAN) e serve `web/painel/` do repositório, byte a byte; a página recebe no fio a
+**versão dos ficheiros que a desenham** (`tela_em_ms`, medida no disco) e **recarrega-se sozinha** quando o
+servidor passa a servir outra — é o que impede duas abas abertas com código diferente e o que faz uma correcção
+entrar em qualquer aba já aberta. O `provar.sh` varre ainda os Chromes de bancada **órfãos** (uma bateria morta a
+meio deixava um a bater no painel). Provas: `prova-do-dash.ts` e `prova-da-fonte.ts`.
+
 **O que o recorte 002 se recusa a fazer:** arredondar percentagens para comparar com um limite; corrigir o
 que entrou errado (recusa e diz porquê); avisar por omissão quando a lista do dono não existe; tratar
 silêncio do venue como aceite; e esperar por uma resposta que não vem.

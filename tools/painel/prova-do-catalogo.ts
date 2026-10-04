@@ -178,7 +178,9 @@ try {
     const r = document.querySelector("#corpo-da-ficha .resultado");
     const b = document.querySelector('#corpo-da-ficha [data-acao="criar"]');
     const a = document.querySelector("#aviso-do-candidato");
-    return JSON.stringify({ resposta: r ? r.innerText.replace(/\\n/g, " | ") : null, bom: r ? r.classList.contains("bom") : null, temBotaoCriar: b !== null, aviso: a ? a.innerText.replace(/\\n/g, " ") : null });
+    const p = document.getElementById("por-preencher");
+    const dito = [p ? p.innerText : null, a ? a.innerText : null].filter(Boolean).join(" | ").replace(/\\n/g, " ");
+    return JSON.stringify({ resposta: r ? r.innerText.replace(/\\n/g, " | ") : null, bom: r ? r.classList.contains("bom") : null, temBotaoCriar: b !== null, aviso: dito || null, recusaVermelha: a !== null });
   })()`).then((x: string) => JSON.parse(x));
   const validar = async () => { await bancada!.avaliar(`document.querySelector('#corpo-da-ficha [data-acao="validar-criacao"]')?.click()`); await sono(2500); };
 
@@ -215,6 +217,9 @@ try {
       certeza(rFalta.temBotaoCriar === false, "com o candidato incompleto, o botão de criar NÃO é oferecido");
       const avisou = semOmissao(decl).some((p: any) => (rFalta.aviso ?? "").includes(p.pergunta ?? p.chave));
       certeza(avisou, `a tela nomeia o campo que falta — ${(rFalta.aviso ?? "").slice(0, 220)}`);
+      // O TOM: o que FALTA preencher nao e' uma RECUSA. Antes o formulario abria com a parede vermelha de
+      // «campo(s) obrigatorio(s) em falta» antes de o dono escrever nada (o dono leu isso como «cheio de erros»).
+      certeza(rFalta.recusaVermelha === false, "e o que falta e' dito em tom NEUTRO, nao como recusa vermelha (o formulario nao abre «cheio de erros»)");
     }
     for (const q of semOmissao(decl)) await preencher(q.id, valorDeBancada(q));
     await validar();

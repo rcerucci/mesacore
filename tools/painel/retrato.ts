@@ -844,6 +844,28 @@ const plugins = [...manifestos.values()].map((m) => {
 // esconde, e o numero que a tela mostra e' o total (configuracao + catalogo), nao metade dele.
 const catalogo = { conectores: lerOsQuestionarios() };
 
+// A VERSAO DA TELA — o instante da alteracao mais recente dos ficheiros que a desenham. Vai no fio (na fita e no
+// fio leve) para a pagina a poder comparar: se a versao que ela carregou ja' nao e' a que o servidor serve, ela
+// RECARREGA-SE SOZINHA. E' isto que impede DUAS SESSOES do painel com codigo diferente — a aba aberta ha' uma hora
+// a mostrar a tela velha ao lado de uma nova — e e' a razao de nenhuma correcao ficar «fora do ar» para quem ja'
+// tinha a pagina aberta. Nao e' um numero escrito a mao: sai do disco, a cada fio.
+function versaoDaTela(): number {
+  const alvos = [join(RAIZ, "web", "painel", "index.html"), join(RAIZ, "web", "painel", "tema.css")];
+  try {
+    for (const f of readdirSync(join(RAIZ, "web", "painel", "js"))) {
+      if (f.endsWith(".js")) alvos.push(join(RAIZ, "web", "painel", "js", f));
+    }
+  } catch { /* sem a pasta dos js, a versao e' a do documento e do tema */ }
+  let maior = 0;
+  for (const a of alvos) {
+    try {
+      const m = statSync(a).mtimeMs;
+      if (m > maior) maior = m;
+    } catch { /* ficheiro ausente: nao conta para a versao */ }
+  }
+  return Math.round(maior);
+}
+
 const fio = {
   _o_que_e_isto:
     "O RETRATO: o fio entre o MesaCore e a tela. Leitor puro — le CADA instalacao (corrida), pergunta a cada setup a " +
@@ -902,6 +924,9 @@ const fio = {
     escreve: false,
     porta_que_escreve: "bash tools/ligar-par.sh <INSTRUMENTO> <sim|nao> [conta]",
   },
+  // A VERSAO DA TELA que este fio acompanha — a pagina compara-a com a que carregou e recarrega-se se mudou.
+  // (Sem ela, dois separadores abertos em momentos diferentes ficam com codigo diferente: e' o «2 sessao do dash».)
+  tela_em_ms: versaoDaTela(),
   faltas: falhasDoRetrato,
 };
 
