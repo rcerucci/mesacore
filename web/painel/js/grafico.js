@@ -6,7 +6,6 @@
  * aqui (RN-E9: uma conta, um dono). Quem a calcula é o setup, e o fio traz o resultado pronto.
  * ========================================================================================== */
 import { estado, cor, escapar, comoVeio, hora, diaEHora, ladoDoSig, instrumentoAtual, operacaoVelha, idadeDaOperacao, redesenho, fonteEIdade } from "./nucleo.js";
-import { abrirConfiguracao } from "./configuracao.js";
 
 const L = LightweightCharts;
 
@@ -204,14 +203,19 @@ export function desenharGrafico() {
   const ultimoPonto = serie[serie.length - 1] ?? null;
   const sig = ultimoPonto?.sig ?? null;
   const virou = ultimoPonto?.virada ? ultimoPonto.virada : 0;
+  // OS BURACOS DO HISTORICO (medido 04/10/2026): um vao REAL entre velas — a paragem da maquina, ou uma barra que
+  // se perdeu com a corrida viva. MARCA-SE e NOMEIA-SE (de/ate + quantas faltam); nunca se inventa a barra que
+  // faltou nem se atravessa o vao em silencio. Vem calculado do fio (o produtor conta as faltas).
+  const buracos = i.buracos ?? [];
 
   cabecalho.innerHTML = `
     <span class="titulo">${escapar(i.instrumento)}</span>
     <span class="fraco">${escapar(i.ficha?.setup ?? "?")} ${escapar(i.ficha?.versao_do_setup ?? "")} · ${escapar(i.ficha?.relogio ?? "?")}</span>
     ${sig !== null ? `<span class="lado ${ladoDoSig(sig)}">${sig === 1 ? "long" : sig === -1 ? "short" : "flat"}</span>` : ""}
     ${virou !== 0 ? `<span class="fraco"><span class="glifo ${virou === 1 ? "tri-cima" : "tri-baixo"}" style="vertical-align:-1px"></span> virou ${hora(últimaFechada)}</span>` : ""}
+    ${buracos.length > 0 ? `<span class="vao" title="o histórico tem ${buracos.length} vão(ões): a barra que faltou NÃO se inventa — o eixo do tempo fica com o vão, e o feed nomeia-o (buraco_no_historico)">vão${buracos.length > 1 ? `s · ${buracos.length}` : ""} ${buracos.map((b) => `${diaEHora(b.de)}→${diaEHora(b.ate)} · faltam ${b.faltam}`).join(" · ")}</span>` : ""}
     <span class="fraco" style="margin-left:auto">último <span class="${operacaoVelha() ? "fantasma" : ""}" title="${escapar(idadeDaOperacao() ?? "sem idade de leitura")}">${comoVeio(i.leitura?.ultimo)}</span> · barra ${diaEHora(últimaFechada)}${idadeDaOperacao() ? ` · <span class="${operacaoVelha() ? "venda-txt" : ""}">leitura ${escapar(idadeDaOperacao())}</span>` : ""}</span>
-    <button type="button" class="botao" id="bt-config" title="a configuração desta ficha">config</button>`;
+    <a class="botao" id="bt-config" href="#configuracao" title="a configuração desta ficha, na vista (onde se lê e se edita)">config</a>`;
 
   // A FONTE DESTE BLOCO: as VELAS vêm de um ficheiro do venue e a SÉRIE vem de o setup a ter respondido AGORA —
   // as duas vêm ditas no rodapé, com as suas idades, e os caminhos no `title`, para não haver número sem origem.
@@ -221,9 +225,8 @@ export function desenharGrafico() {
     daLeitura.innerHTML = [f.velas, f.ficha].filter(Boolean).map((x) => fonteEIdade(x)).join(" · ");
   }
 
-  // O botão da configuração é re-desenhado a cada volta (o cabeçalho é reescrito), e por isso a ligação é
-  // refeita aqui: um botão sem gesto é pior do que nenhum botão.
-  document.getElementById("bt-config").onclick = abrirConfiguracao;
+  // O `config` é um `<a href="#configuracao">`: o «voltar» do telefone funciona e a vista tem endereço próprio —
+  // não é preciso religar gesto nenhum (o `hashchange` do arranque trata disso).
 
   if (!grafico) { grafico = montarGrafico(); }
   ajustarAlturaDosPainéis();
@@ -271,6 +274,11 @@ export function desenharGrafico() {
     if (barra === undefined) continue;
     lista.push({ time: Math.floor(barra.t / 1000), position: "aboveBar", shape: "circle", color: cor("--tinta"), text: "decisão" });
   }
+  // OS BURACOS: um marcador na barra SEGUINTE ao vão, com o número de barras que faltam. Marcar não é preencher —
+  // o eixo do tempo fica com o vão de propósito (a barra que faltou não se inventa).
+  for (const b of buracos) {
+    lista.push({ time: Math.floor(b.ate / 1000), position: "belowBar", shape: "square", color: cor("--venda"), text: `↔${b.faltam}` });
+  }
   marcas.setMarkers(lista.sort((a, b) => a.time - b.time));
 
   // --- instrumentação mínima, para a verificação não depender do olho ---
@@ -283,6 +291,7 @@ export function desenharGrafico() {
       marcadores: lista.length,
       sig_da_ultima_barra: s.length ? s[s.length - 1].sig : null,
       faltas_do_cruzamento: i.faltas_do_cruzamento ?? null,
+      buracos: buracos.length,
       pintado: null,
     };
   } catch (e) {

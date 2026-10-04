@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **03/10/2026 (madrugada, 3ª parte), 06:0x (-03)** · contrato vigente **1.12.0** · portão **39 de 39** · árvore **limpa** · os títulos do `DEFEITOS.md` dizem o estado, cada um com o comando que o confirma (ver a última secção)
+medido em **04/10/2026, 06:3x (-03)** · contrato vigente **1.12.0** · portão **50 de 50** · árvore **limpa** · os títulos do `DEFEITOS.md` dizem o estado, cada um com o comando que o confirma (ver a última secção)
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
@@ -1010,3 +1010,22 @@ fica vermelha **a nomear o caso**. O portão vai de **38 para 39** bancadas.
 **O que continua a ser seu, e não se tocou:** **D-012(a)** (o `limite` continua declarado — tirá-lo é perda de
 capacidade) e **D-008(1)** (as duas chaves sem leitor nem comportamento). **D-003** segue bloqueado na superfície,
 e agora com a porta nomeada: é a porta **`contenda`** do arranque, alimentada pelas fichas da configuração.
+
+---
+
+## 04/10/2026 — as falhas de construção e o arranque de primeira vez
+
+O sistema estava **parado** e o host **limpo** (primeira execução: unit do painel `disabled`, scratch a zero,
+venue plano). Sete frentes, por ordem de risco, com o retrato completo em
+**`docs/WEB-PAINEL-PLANO.md` §13** (com as saídas cruas). O que muda o **estado**, em três linhas:
+
+- **a unit do painel ficou `enabled`** (`is-enabled`→`enabled`, `is-active`→`active`) — antes estava `disabled`,
+  e um reinício do host deixava a tela em baixo em silêncio; a observação da conta `hl-teste-plugin` está **no ar**
+  (operador + mesa `em_operacao`, o painel a servir a instalação `observacao`);
+- **a colisão de referências foi decidida pelo dono** (o `ciclo` continua de onde o registo ficou) e o **limite
+  ficou medido e dito**: numa pasta de corrida NOVA o contador volta a 1 e a referência pode colidir com uma ordem
+  antiga do venue — ao vivo, `mesa-sigma_v0-000007` foi recusada e só a `-000029` saiu (a posição ETH sell 0.004
+  abriu). É a decisão aberta que sobra desta vaga;
+- **o portão vai de 45 para 50** (`provar.sh`: 50 de 50), com cinco provas novas (`prova-do-arranque`,
+  `ciclo-continua`, `prova-dos-buracos`, `prova-do-dash`, `prova-da-credencial`), `tipos.sh` 0 erro(s), fallbacks
+  **0**, e a contagem corrigida onde era repetida.

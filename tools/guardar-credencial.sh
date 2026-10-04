@@ -24,8 +24,9 @@ PREFIXO="${CREDENCIAIS_PREFIXO:-ctrader_mesa_}"
 CAMPOS=(client_id client_secret access_token refresh_token)
 
 uso() {
-  echo "uso: $0 conferir | gravar <campo>" >&2
+  echo "uso: $0 conferir | gravar <campo> | gravar-de-stdin <ficheiro> [--origem <texto>]" >&2
   echo "     campos: ${CAMPOS[*]}" >&2
+  echo "     (gravar-de-stdin: o VALOR vem numa linha pelo stdin — nunca por argumento; para a tela)" >&2
   echo "     ($0 confere e grava em $DIR)" >&2
   exit 2
 }
@@ -129,8 +130,73 @@ gravar() {
   unset valor
 }
 
+# ---- A PORTA DE ESCRITA GENERICA (04/10/2026) ---------------------------------------------------------
+# PORQUE EXISTE. O unico escritor de credenciais era cTrader-only (4 campos fixos, `CREDENCIAIS_PREFIXO`), e o
+# valor da Hyperliquid vivia num ficheiro que NENHUMA ferramenta escrevia — a tela dizia «segredo · por caminho ·
+# nao se abre» e nao tinha caminho de escrita. Esta e' a MESMA porta, estendida: um valor por ficheiro, fora do
+# repositorio, modo 600, e o registo com instante, ficheiro, origem e impressao.
+#
+# O VALOR VEM DO `STDIN`, e nunca de um argumento de comando: um argumento ficaria no `ps` e no historico do
+# shell. E o que se imprime de volta e' SO' A FORMA (comprimento + primeiros caracteres) e a IMPRESSAO (sha256) —
+# nunca o valor. Quem chama (a tela, pelo `POST /api/credencial`) fecha o stdin e le' esta saida.
+#
+# Uso:  ... gravar-de-stdin <ficheiro> [--origem <texto>]      (o valor vem numa linha pelo stdin)
+gravar_de_stdin() {
+  local f="${1:-}" origem="desconhecida"
+  shift || true
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --origem) origem="${2:-desconhecida}"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  if [ -z "$f" ]; then echo "uso: $0 gravar-de-stdin <ficheiro> [--origem <texto>]" >&2; exit 2; fi
+
+  # O CAMINHO TEM DE VIVER NA PASTA DAS CREDENCIAIS: uma porta de escrita que aceita qualquer caminho e' uma
+  # porta que escreve em qualquer sitio.
+  case "$f" in
+    "$DIR"/*) ;;
+    *) echo "RECUSADO: o ficheiro da credencial tem de viver em $DIR (veio $f)" >&2; exit 1 ;;
+  esac
+
+  local valor
+  IFS= read -r valor || true
+  valor="${valor%$'\r'}"                      # um `\r` colado de um browser nao faz parte do segredo
+  if [ -z "$valor" ]; then echo "RECUSADO: nao veio valor nenhum pelo stdin" >&2; exit 1; fi
+  if [ "${#valor}" -lt 16 ]; then
+    echo "RECUSADO: o valor tem ${#valor} caracteres — curto de mais para um segredo (minimo 16)" >&2; exit 1
+  fi
+  if printf '%s' "$valor" | grep -qE '[[:space:]]'; then
+    echo "RECUSADO: o valor tem espacos ou texto — confira que colou so' a chave" >&2; exit 1
+  fi
+
+  printf '  forma: %d caracteres, a comecar por «%s»\n' "${#valor}" "${valor:0:4}"
+
+  mkdir -p "$DIR" && chmod 700 "$DIR" || { echo "nao consegui preparar $DIR" >&2; exit 1; }
+  # ESCRITA ATOMICA: um ficheiro novo no MESMO directorio, ja' com modo 600 (umask 077), e a troca de nome. Assim
+  # nunca existe um instante com a credencial a meio, nem um ficheiro com o valor e modo folgado.
+  local tmp="$f.tmp.$$"
+  ( umask 077; printf '%s' "$valor" > "$tmp" ) || { echo "nao consegui escrever o temporario" >&2; exit 1; }
+  chmod 600 "$tmp"
+  mv -f "$tmp" "$f"
+
+  local impressao
+  impressao="$(printf '%s' "$valor" | sha256sum | cut -d' ' -f1)"
+  # O REGISTO vive FORA do repositorio, ao lado da pasta das credenciais. Leva instante, ficheiro, ORIGEM, a
+  # impressao e a FORMA — e NUNCA o valor.
+  local historico="$DIR/../historico-de-credenciais.jsonl"
+  printf '{"instante":"%s","ficheiro":"%s","origem":"%s","impressao_sha256":"%s","forma":{"comprimento":%d,"primeiros":"%s"}}\n' \
+    "$(date -Iseconds)" "$f" "$origem" "$impressao" "${#valor}" "${valor:0:4}" >> "$historico"
+  chmod 600 "$historico" 2>/dev/null || true
+
+  echo "gravado: $(stat -c '%a %n' "$f")"
+  echo "impressao: $impressao"
+  unset valor
+}
+
 case "${1:-}" in
   conferir) conferir ;;
   gravar) gravar "${2:-}" "${3:-}" ;;
+  gravar-de-stdin) gravar_de_stdin "${2:-}" "${3:-}" "${4:-}" ;;
   *) uso ;;
 esac

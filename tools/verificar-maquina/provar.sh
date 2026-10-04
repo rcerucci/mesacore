@@ -54,6 +54,11 @@ echo
 declarar "tabela de transicoes"          bun run tools/verificar-maquina/tabela.ts
 declarar "porteiro do estado (negativo)" bun run tools/verificar-maquina/tabela.ts --prova-negativa
 declarar "a mesa (maquina + marcas)"     bun run core/mesa.prova.ts
+# O CICLO CONTINUA DE ONDE FICOU (04/10/2026): a referencia `mesa-<ficha>-<ciclo>` alimenta o `cloid`; um ciclo a
+# comecar em 0 re-usa as referencias da corrida anterior e o conector RECUSA-as no venue (o pedido perde-se). A
+# bancada corre a MESA a serio com o registo a 47 e exige que a volta nova saia em 48 — e o controle (registo
+# vazio) em 1; com o defeito reposto (`ciclo = 0`) fica vermelha.
+declarar "ciclo continua de onde ficou (cloid)" bun run tools/verificar-maquina/ciclo-continua.ts
 declarar "maquina de estados"            bun run core/estados/provar.ts
 declarar "condicoes, ciclo, desfecho"    bun run core/ciclo/provar.ts
 declarar "arranque (sete portas)"        bun run tools/verificar-maquina/arranque.ts
@@ -97,10 +102,13 @@ declarar "ordens do conector (53 casos)"  bun brokers/hyperliquid/casos/correr-o
 # medido pela propria bancada a 02/10/2026). A 03/10/2026 entraram as duas regras que a corrida viva mostrou
 # faltar: a agregacao so' toca em barra NOSSA (a do venue faz a agregacao CALAR-SE no periodo — antes ela mutava
 # a barra do venue, 316 do ETH-1m) e a lista fica ORDENADA por `t` (a barra atrasada do venue toma o lugar dela, e
-# a que e' anterior a' ultima fechada e' NOMEADA, nunca ignorada). O que ela NAO prova, dito no cabecalho dela: a
-# ligacao ao venue (o `SubscriptionClient`), que continua a ser prova de execucao ao vivo — a casa prefere a prova
-# declarada mais fraca a uma prova que finge ser do portao.
-declarar "feed de mercado (15 provas, SEM REDE)" bun run brokers/hyperliquid/casos/correr-feed.ts
+# a que e' anterior a' ultima fechada e' NOMEADA, nunca ignorada). A 04/10/2026 entrou a TROCA DE DONO INTEIRA
+# (derivado -> fonte -> derivado outra vez): a derivacao nao fica calada para sempre depois de a fonte mandar. O
+# que ela NAO prova, dito no cabecalho dela: a ligacao ao venue (o `SubscriptionClient`), que continua a ser prova
+# de execucao ao vivo — a casa prefere a prova declarada mais fraca a uma prova que finge ser do portao. A prova
+# NEGATIVA (10 defeitos injectados, a agregacao a mutar a barra do venue incluida) corre a' mao:
+# `bash brokers/hyperliquid/casos/prova-negativa-do-feed.sh` — 10 de 10 nomes de caso conferidos.
+declarar "feed de mercado (16 provas, SEM REDE)" bun run brokers/hyperliquid/casos/correr-feed.ts
 # O UNICO SETUP do repositorio e' o `sigma`: os moldes de exemplo (`cruzamento_de_media`, TS e Python) foram
 # retirados a pedido do dono (30/09/2026), e a bancada que os corria foi com eles. O que fica em pe' para o
 # setup e' o que interessa: a traducao do indicador e a regra da entrada (as duas bancadas abaixo).
@@ -125,6 +133,10 @@ if [ "$RAPIDO" -eq 0 ]; then
   # (`POST /api/ficha`), que e' a porta que o gesto do dono usa. Ficam na porta COMPLETA porque cada uma sobe um
   # Chrome (~5 s) e a da escrita cria e apaga uma ficha de bancada.
   declarar "painel: o recolhido conserva o botao"  bun run tools/painel/prova-do-recolhido.ts
+  # O ARRANQUE DE PRIMEIRA VEZ: o que falta e' dito pelo NOME, e as fichas ARMADAS ao venue sao contadas. O
+  # lancador corre o MESMO comando de checagem (`tools/checar-o-arranque.sh`) antes de levantar processo nenhum —
+  # a bancada corre-o contra repositorios de bancada, sem tocar no venue.
+  declarar "painel: o arranque de primeira vez"      bun run tools/painel/prova-do-arranque.ts
   declarar "painel: o catalogo dos conectores"     bun run tools/painel/prova-do-catalogo.ts
   declarar "painel: escrever ficha pela tela"      bun run tools/painel/prova-da-escrita.ts
   # A FONTE UNICA: o que a tela serve E' o que o repositorio tem, byte a byte, e ha' UMA pasta servida. Era aqui
@@ -132,6 +144,17 @@ if [ "$RAPIDO" -eq 0 ]; then
   declarar "painel: uma so' pasta servida (a fonte)" bun run tools/painel/prova-da-fonte.ts
   # O VIVO: o painel diz o que esta' vivo, o que esta' parado e porque, com horas — medido no DOM.
   declarar "painel: o que esta' vivo e o que esta' parado" bun run tools/painel/prova-do-vivo.ts
+  # OS BURACOS DO HISTORICO: o vao e' MARCADO e NOMEADO (de/ate + faltam), nunca silencioso nem uma barra
+  # inventada. Mede os dois vaos reais (1 barra e 17,5 h) e o controle (sem vao, nenhum aviso).
+  declarar "painel: o vao do historico (marcado)"  bun run tools/painel/prova-dos-buracos.ts
+  # O DASH DE CONFIGURACAO: os quatro numeros do dono («impraticavel, confuso e cheio de bugs») — alvos de toque
+  # ≥44 no telefone, o gesto de editar À VISTA, ZERO chaves duplicadas, e o fio vazio DITO. Com provocacao.
+  declarar "painel: o dash de configuracao"        bun run tools/painel/prova-do-dash.ts
+  # A CREDENCIAL PELA TELA: o dono cola o VALOR de uma chave e ele fica gravado no padrao da casa (um ficheiro
+  # por valor, fora do repo, 0600), a conta a apontar por REFERENCIA. A prova arranca o servidor A SERIO com uma
+  # pasta de credenciais de BANCADA, grava, confirma que o valor NAO esta' na resposta nem no registo, e prova as
+  # guardas (origem/cabecalho, caminho dentro da pasta, valor curto). Apaga o que criou.
+  declarar "painel: a credencial pela tela"        bun run tools/painel/prova-da-credencial.ts
   # O LOG MISTO: o `operador.log` tem prosa (o conector) e JSON (o operador); a prosa nao e' falta, e um `{` que
   # nao fecha e'. E a costura do buffer nao parte linhas a meio.
   declarar "painel: o log misto (prosa x truncagem)" bun run tools/painel/prova-do-log.ts

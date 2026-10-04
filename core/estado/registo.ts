@@ -206,6 +206,57 @@ export function barrasDasUltimasEntradas(caminho?: string): Map<string, number> 
   return barras;
 }
 
+/**
+ * O ULTIMO CICLO ESCRITO NO REGISTO — de onde a mesa CONTINUA, e nao de zero.
+ *
+ * PORQUE ISTO EXISTE (medido a 04/10/2026, decisao do dono). A referencia do cliente e' `mesa-<ficha>-<ciclo>` e o
+ * `cloid` do venue deriva dela. Com o `ciclo` a comecar em 0 em CADA arranque, a corrida nova RE-USA as referencias
+ * da anterior; o conector, ao reconciliar ANTES de enviar, encontra o `cloid` antigo no registo de ordens do venue
+ * e RECUSA nomeado (`referencia_ja_enviada_ao_venue`) — e o que o motor QUERIA enviar perde-se em silencio (medido:
+ * as referencias 47 e 48 de uma corrida apontavam para ordens antigas, oids 6168…/6167…). Continuar a contagem do
+ * registo mantem a referencia unica DENTRO da corrida, e a guarda do venue continua a travar o reenvio da MESMA
+ * boleta (o `cloid` so' repete para a mesma referencia, e a mesma referencia so' vem da mesma decisao).
+ *
+ * Le-se do que JA' esta' escrito, sem acrescentar campo nenhum: a `boleta` da linha (quando ha') traz
+ * `referencia_do_cliente` com o `ciclo` na cauda, e a `nota` de toda a linha de ciclo comeca por `ciclo N,`.
+ * Uma linha ilegivel e' SALTADA (nao se deixa cair o ficheiro todo por causa dela) — sem ciclo legivel nenhum,
+ * devolve 0, que e' o comportamento de hoje.
+ *
+ * LIMITE MEDIDO, e o dono decidiu mante-lo (04/10/2026): isto continua a contagem DENTRO deste registo. Numa
+ * pasta de corrida NOVA (o scratch e' podado), o contador volta a 1 e uma referencia pode colidir com uma ordem
+ * ANTIGA do venue — medido ao vivo nesta data: `mesa-sigma_v0-000007` foi RECUSADA (`referencia_ja_enviada_ao_venue`)
+ * e so' a `-000029` saiu. O risco e' real porque a regra e' «a entrada so' acontece na barra do flip»: uma recusa
+ * NESSA barra perde a entrada. Fica dito (e nao escondido); a decisao de o corrigir por outra via e' do dono.
+ */
+export function ultimoCicloDoRegisto(caminho: string = CAMINHO_DO_REGISTO): number {
+  let maior = 0;
+  let bruto: string;
+  try {
+    bruto = readFileSync(caminho, "utf8");
+  } catch {
+    return 0;
+  }
+  for (const linha of bruto.split("\n")) {
+    if (linha.trim() === "") continue;
+    let l: any;
+    try {
+      l = JSON.parse(linha);
+    } catch {
+      continue;
+    }
+    if (l?.tipo !== "ciclo") continue;
+    // Sem `?? "literal"` (a casa exige ZERO fallbacks): a ausencia le-se com `typeof`, e o `null` do ternario
+    // nao e' um valor por omissao — e' «nao ha'».
+    const refCrua = (l?.boleta as Record<string, unknown> | undefined)?.referencia_do_cliente;
+    const notaCrua = l?.nota;
+    const daReferencia = typeof refCrua === "string" ? /-(\d+)$/.exec(refCrua) : null;
+    const daNota = typeof notaCrua === "string" ? /^ciclo (\d+),/.exec(notaCrua) : null;
+    const n = daReferencia !== null ? Number(daReferencia[1]) : daNota !== null ? Number(daNota[1]) : null;
+    if (n !== null && n > maior) maior = n;
+  }
+  return maior;
+}
+
 /** Le as linhas do registo. Ficheiro ausente = nenhuma linha (e nao um erro). */
 export function lerRegisto(caminho: string = CAMINHO_DO_REGISTO): LinhaDoRegisto[] {
   try {

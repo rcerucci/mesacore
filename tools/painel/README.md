@@ -84,8 +84,12 @@ Chrome e o cliente do protocolo, num só sítio — duas cópias seriam duas con
 
 | prova | o que mede |
 |---|---|
+| `prova-do-arranque.ts` | o **arranque de primeira vez**: corre o MESMO comando de checagem do lançador (`tools/checar-o-arranque.sh`) contra repositórios de bancada e exige que cada falta (conta, credencial, ficha ligada) seja **dita pelo nome** e que o arranque **recuse**; conta as fichas **armadas ao venue** (`enviar: true`) e prova que o aviso não sai sempre |
 | `prova-do-recolhido.ts` | percorre TODOS os `[data-recolhivel]`, recolhe cada um, e exige que **recolheu E que o botão que o abre continua visível**; injecta uma secção mal formada (cabeça sem `.cabeca`, botão fora dela) e exige que o critério a **reprove** — e mostra que recolher à força escondia mesmo o botão |
 | `prova-do-vivo.ts` | sobre um fio de bancada, mede que o painel diz o que **está vivo** (posições, ordens, a decisão) e o que **está parado e porquê** (a matriz: `trava` + `há X`), que a **última barra** e o **ciclo mais recente** trazem a hora, e que as três secções do «lado de dentro» dizem a fonte+idade e **sobrevivem ao recolhido** |
+| `prova-dos-buracos.ts` | o **vão do histórico**: com um fio que traz os dois vãos reais (1 barra e 17,5 h / 34 barras), mede no DOM que o cabeçalho do gráfico os **nomeia** (`de→até · faltam N`) e que o gráfico os conta; o controle (fio sem vão) prova que o aviso **não sai sempre** |
+| `prova-do-dash.ts` | o **dash de configuração**: no telefone (390×844) ZERO alvos de toque abaixo de **44 px**; o gesto de editar a ficha **à vista** e o **diálogo legado ausente** do DOM; **ZERO chaves em mais de um sítio**; o fio **vazio é dito**; o **campo da credencial** (type=password) presente e com gesto — com **provocação** (a mesma chave injectada noutro sítio faz a contagem subir) |
+| `prova-da-credencial.ts` | a **credencial pela tela**: arranca o `servidor.ts` a sério com uma pasta de credenciais de **bancada**, grava o valor (ficheiro 0600, fora do repo), confirma que o **valor não está na resposta nem no registo** (só a FORMA e a impressão) e prova as **guardas** (origem/cabeçalho, caminho dentro da pasta, valor curto). Apaga o que criou |
 | `prova-da-fonte.ts` | o invariante da **fonte única**: arranca o servidor com os argumentos da unit e compara o `sha256` de CADA ficheiro servido com o do repositório (16 de 16), confirma que o fio servido é o que o servidor gera na sua pasta, que a unit e o `servir.sh` não apontam a outra pasta — e **provoca** (serve uma cópia divergente e exige que o critério a reprove) |
 | `prova-do-log.ts` | o `operador.log` é um log **misto**: a **prosa** do conector (e o marcador `[<data>] fim`) NÃO é falta, uma linha com cara de JSON partido É — com o par de controlo (o mesmo log sem truncagem dá 0 faltas); e a **costura do buffer** (`vigia/linhas.ts`) não parte uma linha a meio (sem ela, a mesma linha viraria duas ilegíveis) |
 | `prova-do-catalogo.ts` | o formulário de conta nasce do `questionario.json` do **conector** (medido contra o ficheiro), o obrigatório em falta recusa com nome, o segredo não é campo de digitação, e a conta é **criada pela tela**. Cria um conector de bancada e apaga-o, provando que «acrescentar um conector = acrescentar um ficheiro» |
@@ -119,6 +123,36 @@ O fio traz `fontes` — caminho + `em_ms` — por mesa (`operacao.json`, `regist
 instante absoluto (para envelhecer com o ciclo de 2 s, e não com o fio). **Um número sem a fonte e sem a hora não
 serve para decidir** — foi o defeito medido: a secção MERCADO dizia `lido: ha' 7,6 h` sem dizer de que corrida nem
 de que ficheiro vinham os números.
+
+## O arranque de primeira vez (do zero)
+
+**UM caminho só.** Com a máquina limpa e o sistema parado (nenhum processo, a unit `disabled`), são dois passos —
+nesta ordem — e um terceiro que só se faz uma vez:
+
+```bash
+# 1. A OBSERVAÇÃO (o operador + a mesa, na conta de teste) — em primeiro plano; Ctrl-C ou o pid mandam parar.
+bash tools/operar-em-observacao.sh hl-teste-plugin
+
+# 2. A TELA (a unit do host) — `enable` põe-na no ar E no arranque automático (com o linger, sobrevive ao reinício).
+cp tools/painel/mesacore-painel.service ~/.config/systemd/user/ && systemctl --user daemon-reload   # (só se a cópia em disco mudou)
+systemctl --user enable --now mesacore-painel.service
+
+# 3. A PROVA (o que se cola no relatório):
+systemctl --user is-enabled mesacore-painel.service     # -> enabled
+systemctl --user is-active  mesacore-painel.service     # -> active
+curl -s -o /dev/null -w '%{http_code}\n' http://192.168.15.24:8788/index.html   # -> 200
+```
+
+**O ARRANQUE NÃO CALA — DIZ O QUE FALTA.** O passo 1 corre `tools/checar-o-arranque.sh` ANTES de levantar processo
+nenhum. Se faltar a conta, a credencial (a conta aponta para ela por referência; o valor nunca se abre) ou uma ficha
+ligada (`run: true`), ele escreve a falta **pelo nome** e recusa subir — em vez de deixar a pasta vazia e o dono a
+adivinhar. E **conta as fichas ARMADAS ao venue** (`enviar: true`): quem trava o envio é a ficha, e só ela — um par
+armado faz o sinal SAIR, e isso é dito em voz alta antes de arrancar. (O cabeçalho antigo do lançador prometia
+«nenhuma ficha diz `enviar: true`» e era falso desde 02/10/2026; agora o número é **medido**, não afirmado.)
+
+**Porque `enable` importa.** A unit `disabled` (o estado de fábrica desta máquina a 04/10/2026) **não volta sozinha**
+depois de um reinício — o painel ficaria em baixo em silêncio. `is-enabled` = `enabled` é a prova de que ele volta;
+`is-active` = `active` é a prova de que está no ar **agora**. As duas juntas, nunca uma só.
 
 ## A correr com o sistema (a unit do host)
 

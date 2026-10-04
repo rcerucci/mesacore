@@ -15,7 +15,7 @@ import { desenharMatriz } from "./matriz.js";
 import { desenharGrafico, repintarOGrafico, ajustarAlturaDosPainéis, atualizarAoVivo } from "./grafico.js";
 import { desenharODentro } from "./dentro.js";
 import { desenharRegistoEFaltas } from "./registo.js";
-import { desenharAConfiguracao, ligarODialogo, ligarAsAcoes } from "./configuracao.js";
+import { desenharAConfiguracao, ligarAsAcoes } from "./configuracao.js";
 import { desenharAcoes, prepararAsAcoes } from "./acoes.js";
 import { desenharBarraDoTelefone } from "./telefone.js";
 
@@ -93,7 +93,7 @@ async function carregar() {
 /* --------------------------------------------------------------------------- o «agora» (2 s) */
 
 const INTERVALO_VIVO_MS = 2000;
-const CAMPOS_DA_SERIE = ["velas", "serie_do_setup", "janela", "em_curso", "sobreposicao_indisponivel", "faltas_do_cruzamento"];
+const CAMPOS_DA_SERIE = ["velas", "serie_do_setup", "janela", "em_curso", "sobreposicao_indisponivel", "faltas_do_cruzamento", "buracos"];
 async function carregarVivo() {
   if (!estado.dados || !Array.isArray(estado.dados.mesas) || estado.dados.mesas.length === 0) return;
   let vivo;
@@ -179,7 +179,6 @@ document.addEventListener("visibilitychange", () => {
   reencaixarEmBreve();
 });
 
-ligarODialogo();
 // A FAIXA DOS COMANDOS, ligada uma só vez: quem a desenha é a vista da configuração, que a chama ao desenhar.
 ligarAsAcoes(desenharAcoes);
 

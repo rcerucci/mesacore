@@ -17,12 +17,11 @@
 // Uso:  bun run tools/painel/prova-do-log.ts
 
 import { join } from "node:path";
-import { cpSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { linhasInteiras } from "../../vigia/linhas.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..");
-const CORRIDA_REAL = join(process.env.HOME ?? "", ".hermes", "profiles", "appbuilder", "cache", "scratch", "teste-de-auditoria");
 
 const problemas: string[] = [];
 const certeza = (condicao: boolean, texto: string) => {
@@ -60,15 +59,19 @@ try {
   // ------------------------------------------------------------------------------------------------
   console.log("\n── 2. o leitor do log: prosa NÃO é falta; uma linha com cara de JSON partido É falta");
   const real = join(copia, "corrida");
-  // A corrida viva está a ser ESCRITA enquanto a copiamos: lê-se a operação até ela estar inteira (um `operacao.json`
-  // apanhado a meio faria a bancada falhar por um motivo que não é dela), e escreve-se a cópia já validada.
-  let textoDaOperacao = "";
-  for (let i = 0; i < 20; i++) {
-    try { textoDaOperacao = readFileSync(join(CORRIDA_REAL, "operacao.json"), "utf8"); JSON.parse(textoDaOperacao); break; }
-    catch { await Bun.sleep(200); }
-  }
-  cpSync(CORRIDA_REAL, real, { recursive: true });
-  writeFileSync(join(real, "operacao.json"), textoDaOperacao);
+  // A CORRIDA DA PROVA É CONSTRUÍDA AQUI, e não copiada de uma corrida do dono. Uma prova que copia
+  // `scratch/<corrida>` fica VERMELHA no dia em que o scratch estiver vazio — e foi o que o arranque de
+  // primeira vez mediu (04/10/2026: `ENOENT …/scratch/teste-de-auditoria`, com a máquina limpa e o sistema
+  // parado). O `retrato` só precisa de uma `operacao.json` bem-formada e do `operador.log`: em `--sem-serie`
+  // nem as velas nem a série se pedem, e sem instrumentos nenhuns nada mais se lê.
+  mkdirSync(real, { recursive: true });
+  writeFileSync(join(real, "operacao.json"), JSON.stringify({
+    contrato: JSON.parse(readFileSync(join(RAIZ, "contracts", "versao.json"), "utf8")).versao ?? "0.0.0",
+    tipo: "operacao",
+    id: "prova-do-log",
+    conta: "prova-do-log",
+    instrumentos: {},
+  }));
   const agora = Date.now();
   const linhaDoOperador = (volta: number, etapa: string) => JSON.stringify({ instante_ms: agora, etapa, volta, instrumento: "BTC" });
   const PROSA = "a ligar ao venue… (diagnóstico do conector, em prosa — não é JSON)";

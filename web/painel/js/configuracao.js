@@ -11,100 +11,12 @@
  * ========================================================================================== */
 import { estado, escapar, hora, instrumentoAtual, aplicarOsEstadosDeRecolher, ligarOsBotoesDeRecolher, redesenho } from "./nucleo.js";
 
-/* ========================= A CONFIGURAÇÃO, EM DIÁLOGO =================== *
- * A configuração de um par é o que MENOS se olha e o que mais explica o resto — e estava a ocupar um
- * terço da coluna da direita com dezassete campos que se lêem de vez em quando. Passou a um diálogo,
- * aberto pelo botão ao lado do símbolo no título do gráfico. Os itens continuam a sair do TEMPLATE do
- * próprio setup (RN-S4) — a tela não conhece um item por nome — e continuam somente leitura.
+/* ========================= A CONFIGURAÇÃO, NA VISTA =================== *
+ * O DIÁLOGO DE CONFIGURAÇÃO SAIU (04/10/2026). Ele lia os itens do setup num diálogo aberto pelo botão
+ * `config` do gráfico — uma SEGUNDA porta para a MESMA coisa, só de leitura, e onde nada se editava. O que
+ * muda um DOCUMENTO vai a VISTA (`#configuracao`), e o botão `config` passou a ser um `<a href="#configuracao">`:
+ * há UMA porta, e é a vista — onde se lê, se compõe e se escreve. Este módulo deixou de saber de diálogo.
  */
-export function conteudoDaConfiguracao(i) {
-  const descritores = i.template ?? {};
-  const valores = { ...(i.valores_resolvidos ?? {}), ...(i.parametros ?? {}) };
-  const itens = Object.entries(descritores).map(([nome, d]) => {
-    const valor = valores[nome] ?? d.omissao;
-    // SEM `input` NEM `select`, mesmo desactivados: um controle desactivado FINGE. Num campo somente-leitura
-    // o valor é TEXTO, e ao lado dele vão as opções que existem.
-    const naoDeclarado = valor === undefined || valor === null || valor === "";
-    const mostra = d.tipo === "booleano" ? (valor ? "sim" : "não") : (naoDeclarado ? "(não declarado)" : String(valor));
-    const escolhas = d.tipo === "escolha" && Array.isArray(d.opcoes)
-      ? `<small class="opcoes">opções: ${d.opcoes.map((o) => escapar(o)).join(" · ")}</small>`
-      : "";
-    return `<div class="item-de-config">
-        <span class="nome-do-item mono">${escapar(nome)}<small>${escapar(d.tipo ?? "")}${d.unidade ? " · " + escapar(d.unidade) : ""}${d.nota ? " · " + escapar(d.nota) : ""}</small></span>
-        <span class="valor mono"><b class="${naoDeclarado ? "fraco" : ""}">${escapar(mostra)}</b>${escolhas}</span>
-      </div>`;
-  }).join("");
-
-  const f = i.ficha ?? {};
-  return `
-    <div class="secao">
-      <h3>Os itens do setup · ${Object.keys(descritores).length} · a partir do template</h3>
-      <div class="dentro-da-secao">
-        ${itens || "<span class='fraco'>o setup não publica template — sem ele não há item nenhum a mostrar</span>"}
-      </div>
-    </div>
-
-    <div class="secao">
-      <h3>De onde vem esta configuração</h3>
-      <div class="dentro-da-secao">
-        <dl class="pares mono">
-          <dt>ficha</dt><dd>${escapar(f.caminho ?? "—")}</dd>
-          <dt>conta</dt><dd>${escapar(i.conta ?? "—")}</dd>
-          <dt>setup</dt><dd>${escapar(f.setup ?? "—")} ${escapar(f.versao_do_setup ?? "")} ${f.linguagem ? `(${escapar(f.linguagem)})` : ""}</dd>
-          <dt>relógio</dt><dd>${escapar(f.relogio ?? "—")} <span class="fraco">(é da ficha, não do setup)</span></dd>
-          <dt>ao desligar</dt><dd>${escapar(f.ao_desligar ?? "—")}</dd>
-        </dl>
-      </div>
-    </div>
-
-    <div class="secao">
-      <h3>Os dois interruptores</h3>
-      <div class="dentro-da-secao">
-        <dl class="pares mono">
-          <dt>rodar (o par está na operação)</dt><dd class="${f.run ? "sig-compra" : "fraco"}">${f.run === true ? "sim" : f.run === false ? "não" : "não declarado"}</dd>
-          <dt>enviar (a mesa pode mandar ao venue)</dt><dd class="${f.enviar ? "sig-venda" : "fraco"}">${f.enviar === true ? "sim" : f.enviar === false ? "não" : "não declarado"}</dd>
-        </dl>
-        <div class="nota fraco" style="margin-top:8px">
-          Somente leitura nesta fatia — a escrita pela tela exige validação e assinatura (RN-E12, RN-M2). O passo
-          que muda o estado é este, por par:
-        </div>
-        <code class="comando mono">bash tools/ligar-par.sh ${escapar(i.instrumento)} ${f.run ? "nao" : "sim"}</code>
-        <code class="comando mono"># e o gatilho, na ficha: "enviar": ${f.enviar ? "false" : "true"}</code>
-      </div>
-    </div>`;
-}
-
-let ultimoFocoAntesDoDialogo = null;
-
-export function abrirConfiguracao() {
-  const i = instrumentoAtual();
-  if (!i) return;
-  document.getElementById("dialogo-titulo").textContent = `configuração · ${i.instrumento} · ${i.ficha?.setup ?? "?"} ${i.ficha?.versao_do_setup ?? ""}`;
-  document.getElementById("dialogo-corpo").innerHTML = conteudoDaConfiguracao(i);
-  ultimoFocoAntesDoDialogo = document.activeElement;
-  document.getElementById("veu").hidden = false;
-  document.getElementById("dialogo").hidden = false;
-  // Travar a rolagem do fundo: num telefone, o dedo que rola dentro de uma folha acaba a mexer na página de trás.
-  document.body.style.overflow = "hidden";
-  document.getElementById("fechar-dialogo").focus();
-}
-
-export function fecharConfiguracao() {
-  document.getElementById("dialogo").hidden = true;
-  document.getElementById("veu").hidden = true;
-  document.body.style.overflow = "";
-  // O foco volta a quem abriu. Quando o que estava focado era o `body`, volta ao botão que abre — nunca a nada.
-  const alvo = ultimoFocoAntesDoDialogo && ultimoFocoAntesDoDialogo !== document.body ? ultimoFocoAntesDoDialogo : document.getElementById("bt-config");
-  if (alvo && alvo.focus) alvo.focus();
-  ultimoFocoAntesDoDialogo = null;
-}
-
-/** Os três gestos de fechar, ligados uma só vez. */
-export function ligarODialogo() {
-  document.getElementById("fechar-dialogo").onclick = fecharConfiguracao;
-  document.getElementById("veu").onclick = fecharConfiguracao;
-  addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.getElementById("dialogo").hidden) fecharConfiguracao(); });
-}
 
 /* ---- A ESCRITA: compor, VALIDAR, e só então escrever (RN-E12 · RN-M2) ----------------------------------
  * O CAMINHO É SEMPRE O MESMO: **compor** → **validar** (o conferidor do portão corre sobre o CANDIDATO,
@@ -206,9 +118,14 @@ async function agirNaFicha(acao, caminho) {
  *  valor vira CAMPO — menos as três chaves de identidade (`conta`, `instrumento`, `setup`), que não se editam:
  *  mudá-las não é editar a ficha, é RENOMEAR o ficheiro. */
 const CHAVES_DE_IDENTIDADE = ["cabecalho.conta", "cabecalho.instrumento", "cabecalho.setup"];
+/** AS CHAVES QUE VIVEM NA FAIXA DOS COMANDOS, e nao na tabela do documento (`run`/`enviar`). Mostra-las nos dois
+ *  sitios era o «duplicado» medido a 04/10/2026: a MESMA chave em dois sitios do ecrã. Aqui a tabela é o DOCUMENTO
+ *  (identidade, risco, bandas, constantes) e o interruptor é o GESTO — que vive na faixa, a vista, onde se muda. */
+const CHAVES_NA_FAIXA = ["cabecalho.run", "cabecalho.enviar"];
 function linhasDoObjeto(o, prefixo = "", compor = false, f = null) {
   return Object.entries(o).map(([k, v]) => {
     const chave = prefixo === "" ? k : `${prefixo}.${k}`;
+    if (CHAVES_NA_FAIXA.includes(chave)) return "";   // o interruptor vive na faixa dos comandos
     if (v !== null && typeof v === "object" && !Array.isArray(v)) return linhasDoObjeto(v, chave, compor, f);
     const podeEditar = compor && !CHAVES_DE_IDENTIDADE.includes(chave);
     const valorDeVerdade = v;
@@ -232,17 +149,54 @@ function linhasDoObjeto(o, prefixo = "", compor = false, f = null) {
   }).join("");
 }
 
-/** Onde a config foi buscar cada coisa — e o que ela NÃO abre (o segredo aponta-se por caminho).
- *  AS CHAVES SÃO LIDAS DO SÍTIO ONDE ELAS VIVEM (`cabecalho.…`): escritas na raiz, três linhas desta tabela
- *  apareciam a «—» com o valor à vista na tabela de cima — duas respostas para a mesma pergunta. */
-function procedencias(i, f, c) {
-  const cab = f.cabecalho ?? {};
+/* ========================= A CREDENCIAL DA CONTA: o valor vive FORA, a tela mostra só a FORMA =============
+ * O dono cola o VALOR de uma chave na tela e ele fica gravado no padrão da casa — um ficheiro por valor, FORA do
+ * repositório, modo 600 — e a conta continua a apontar-lhe por REFERÊNCIA. O campo vem do `questionario.json` do
+ * conector (`tipo: segredo`); a porta é a MESMA que existe (`tools/guardar-credencial.sh`, modo `gravar-de-stdin`).
+ * O valor NUNCA entra no fio, num log ou no histórico: vai pelo `POST /api/credencial` e o servidor entrega-o ao
+ * escritor pelo STDIN. A tela mostra de volta só a FORMA (comprimento + primeiros) e a impressão.
+ */
+let recadoDaCredencial = null; // { conta, ok, forma, impressao, porque }
+
+async function falarComOCredencial(conta, valor) {
+  try {
+    const r = await fetch("/api/credencial", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-mesacore": "1" },
+      body: JSON.stringify({ conta, valor }),
+    });
+    return await r.json();
+  } catch (e) {
+    return { ok: false, porque: `não se conseguiu falar com o servidor (${e instanceof Error ? e.message : String(e)})` };
+  }
+}
+
+function blocoDaCredencial(c) {
+  const contas = (c.contas ?? []).filter((x) => x.nome);
+  if (contas.length === 0) return "";
+  const linhas = contas.map((conta) => {
+    const ref = conta.conteudo?.conexao?.credencial?.valor_em ?? null;
+    const caminho = typeof ref === "string" && ref.startsWith("ficheiro:") ? ref.slice("ficheiro:".length) : (conta.conteudo ? "—" : "(conta ilegível)");
+    const r = recadoDaCredencial?.conta === conta.nome ? recadoDaCredencial : null;
+    const recado = r === null ? "" : r.aviso
+      ? `<small class="fraco">${escapar(r.aviso)}</small>`
+      : r.ok
+        ? `<small class="fraco">gravada · forma ${r.forma?.comprimento ?? "?"} car., começa por «${escapar(r.forma?.primeiros ?? "")}» · impressão ${escapar(String(r.impressao ?? "").slice(0, 12))}…</small>`
+        : `<small class="venda-txt">RECUSADO — ${escapar(r.porque ?? "sem motivo dito")}</small>`;
+    return `<tr><td class="fraco">${escapar(conta.nome)}<small class="fraco mono" title="${escapar(String(caminho))}">${escapar(String(caminho).split("/").pop() ?? "")}</small></td>
+      <td class="n"><input type="password" data-credencial="${escapar(conta.nome)}" autocomplete="off" spellcheck="false" placeholder="cole o VALOR da chave" title="o valor não passa pelo fio: vai para o ficheiro por referência, fora do repositório, 0600">
+      <button class="botao" data-acao="gravar-credencial" data-conta="${escapar(conta.nome)}">gravar</button>${recado}</td></tr>`;
+  }).join("");
+  return `<div class="secao"><h4 class="cabeca">A credencial da conta <span class="contagem">uma chave por ficheiro · fora do repositório · 0600</span></h4>
+    <table class="tab"><tbody>${linhas}</tbody></table></div>`;
+}
+
+/** Onde a config foi buscar cada coisa — e o que ela NÃO abre (o segredo aponta-se por caminho). As quatro linhas que repetiam `cabecalho.conta/setup/relogio/
+ *  ao_desligar` (que já estão na tabela acima, com o valor) eram a mesma chave em DOIS sítios — o «duplicado» que o
+ *  dono reportou. Ficam as duas que dizem o que a tabela NÃO diz: o caminho do ficheiro e o segredo (por caminho). */
+function procedencias(f, c) {
   return `<table class="tab"><tbody>
     <tr><td class="fraco">ficha</td><td class="n">${escapar(f.caminho ?? "—")}</td></tr>
-    <tr><td class="fraco">conta</td><td class="n">${escapar(cab.conta ?? "—")}</td></tr>
-    <tr><td class="fraco">setup</td><td class="n">${escapar(cab.setup ?? "—")} ${escapar(f.versao_do_setup ?? "")} ${f.linguagem ? `· ${escapar(f.linguagem)}` : ""}</td></tr>
-    <tr><td class="fraco" title="o relógio é da FICHA, não do setup">relógio</td><td class="n">${escapar(cab.relogio ?? "—")}</td></tr>
-    <tr><td class="fraco">ao desligar</td><td class="n">${escapar(cab.ao_desligar ?? "—")}</td></tr>
     <tr><td class="fraco" title="o segredo não passa por aqui: a conta aponta para ele por caminho e esta tela não abre o ficheiro${c.segredos_escondidos > 0 ? ` · ${c.segredos_escondidos} valor(es) escondido(s) por parecerem segredo` : ""}">segredo</td><td class="n fantasma">por caminho · não se abre</td></tr>
   </tbody></table>`;
 }
@@ -540,7 +494,7 @@ export function desenharAConfiguracao() {
         <thead><tr><th>constantes · as do indicador, e as únicas que vão ao setup</th><th class="n">valor</th></tr></thead>
         <tbody>${linhasDoObjeto(f.constantes ?? {}, "constantes", compor, f)}</tbody>
       </table>
-      <table class="tab"><tbody>${procedencias(instrumentoDoCaminho(f.caminho), f, c)}</tbody></table>
+      <table class="tab"><tbody>${procedencias(f, c)}</tbody></table>
       <div class="botoes-da-ficha">
         ${compor
           ? `<button class="botao" data-acao="validar" data-ficha="${escapar(f.caminho)}">validar a mudança</button>
@@ -585,6 +539,7 @@ export function desenharAConfiguracao() {
             <tr><td class="fraco" title="${escapar(c.porta_que_escreve ?? "")}">porta</td><td class="n mono">${f !== null ? `bash tools/ligar-par.sh ${escapar(f.cabecalho?.instrumento ?? "")} ${f.cabecalho?.run ? "nao" : "sim"}` : escapar(c.porta_que_escreve ?? "—")}</td></tr>
             <tr><td class="fraco" title="a validação antes de aplicar · a impressão do ficheiro que se viu · o pedido só é aceite vindo desta tela">guardas</td><td class="n">validação · impressão · origem</td></tr>
           </tbody></table>
+          ${blocoDaCredencial(c)}
         </div>
       </aside>
     </div>
@@ -618,14 +573,24 @@ export function desenharAConfiguracao() {
     b.onclick = () => { void agirNaFicha(b.dataset.acao ?? "", b.dataset.ficha ?? ""); };
   }
   for (const b of caixa.querySelectorAll("[data-nova]")) b.onclick = () => abrirACriacao(b.dataset.nova);
+  // A CREDENCIAL: ler o valor do campo ANTES de redesenhar (o redesenho reescreve o DOM), entregar ao servidor, e
+  // mostrar de volta só a FORMA. O valor não fica em variável nenhuma do módulo — some com o campo.
+  for (const b of caixa.querySelectorAll("[data-acao='gravar-credencial']")) {
+    b.onclick = async () => {
+      const conta = b.dataset.conta;
+      const campo = caixa.querySelector(`[data-credencial="${CSS.escape(conta)}"]`);
+      const valor = campo ? campo.value : "";
+      b.disabled = true;
+      recadoDaCredencial = { conta, aviso: "a gravar a credencial…" };
+      desenharAConfiguracao();
+      const r = await falarComOCredencial(conta, valor);
+      recadoDaCredencial = { conta, ...r };
+      desenharAConfiguracao();
+      if (r.ok === true) redesenho.recarregar();
+    };
+  }
   ligarOFormularioDeCriacao(caixa);
   desenharAcoes(); // a faixa dos comandos, com o estado que vem do fio
-}
-
-/** O instrumento de uma ficha, pelo caminho dela — o fio dá-nos o caminho e o cabeçalho, e o painel usa o que tem. */
-function instrumentoDoCaminho(caminho) {
-  const f = (estado.dados?.configuracao?.fichas ?? []).find((x) => x.caminho === caminho);
-  return { conta: f?.cabecalho?.conta ?? null, instrumento: f?.cabecalho?.instrumento ?? null };
 }
 
 /** A faixa dos comandos: quem PEDE, quem executa, e o que está à espera. */

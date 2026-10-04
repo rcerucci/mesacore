@@ -65,6 +65,9 @@
   .glifo.tri-baixo { clip-path: polygon(50% 100%, 100% 0, 0 0); background: var(--venda); }
   .glifo.chevron { width: 9px; height: 9px; background: currentColor; clip-path: polygon(50% 62%, 4% 20%, 4% 40%, 50% 82%, 96% 40%, 96% 20%); }
   .glifo.chevron.aberto { clip-path: polygon(50% 38%, 4% 80%, 4% 60%, 50% 18%, 96% 60%, 96% 80%); }
+  /* O VÃO DO HISTÓRICO: um vao REAL entre velas, NOMEADO (de/ate + quantas faltam). Pinta-se de venda porque e'
+     uma falta — nao se inventa a barra que faltou nem se atravessa o vao em silencio. */
+  .vao { color: var(--venda); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46ch; }
 
   /* ======================= A BARRA DE ESTADO (uma faixa, o que muda depressa) ============== */
   /* DUAS LINHAS, DECIDIDAS: a primeira é a IDENTIDADE (produto · corrida · ambiente · estado · atenção), a
@@ -181,21 +184,12 @@
      INVARIANTE: quem escreve uma secção recolhível põe `.cabeca` na cabeça, e o botão DENTRO dela. */
   [data-recolhivel].recolhido > :not(.cabeca):not(header):not(h4) { display: none; }
 
-  /* ---------- o que fica por cima (diálogo) e a vista ---------- */
-  .veu { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, #0b0d10 62%, transparent); }
-  .dialogo {
-    position: fixed; z-index: 41; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    display: flex; flex-direction: column; width: min(760px, calc(100vw - 20px)); max-height: min(84vh, 780px);
-    background: var(--painel-baixo); border: 1px solid var(--borda); border-radius: 3px; box-shadow: 0 18px 50px var(--sombra);
-  }
-  .veu[hidden], .dialogo[hidden] { display: none; }
-  .cabeca-do-dialogo {
-    display: flex; align-items: center; gap: 10px; padding: 4px 10px;
-    background: var(--painel-alto); border-bottom: 1px solid var(--borda);
-    color: var(--titulo); font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
-  }
-  .cabeca-do-dialogo .botao { margin-left: auto; }
-  .corpo-do-dialogo { overflow: auto; padding: 8px 10px; }
+  /* ---------- a vista ---------- */
+  /* O DIÁLOGO DE CONFIGURAÇÃO SAIU (04/10/2026). Ele era uma SEGUNDA porta para a mesma configuração — só leitura,
+     aberto pelo botão `config` do gráfico, que dizia o mesmo que a vista `#configuracao` num sítio onde não se
+     editava nada. O que muda um DOCUMENTO vai a VISTA, não a diálogo: o botão `config` passou a ser um
+     `<a href="#configuracao">`, e esta vista é o único sítio onde a ficha se lê e se edita. (O CSS e o HTML do
+     diálogo saíram com ele — não fica código morto a fingir que existe uma caixa.) */
 
   .vista-de-config { padding: 8px; display: flex; flex-direction: column; gap: 6px; grid-row: 2 / 4; overflow: hidden; }
   /* A FAIXA DOS COMANDOS TEM DE ESTAR NO ECRÃ, não abaixo da dobra: o `#config-corpo` é uma grelha de duas
@@ -249,7 +243,7 @@
   .item-de-config .valor b { color: var(--tinta); font-weight: 600; }
   .item-de-config .valor b.fraco { color: var(--tinta-fraca); font-weight: 400; }
   .item-de-config .valor .opcoes { display: block; color: var(--tinta-fantasma); font-size: 10px; }
-  .vista-de-config input[type="text"], .vista-de-config select {
+  .vista-de-config input[type="text"], .vista-de-config input[type="password"], .vista-de-config select {
     width: 100%; min-height: 24px; padding: 2px 5px; background: var(--fundo); color: var(--tinta);
     border: 1px solid var(--tinta-fantasma); border-radius: 2px; font: inherit;
   }
@@ -314,7 +308,7 @@
     .acoes-grade { grid-template-columns: 1fr; }
     .acoes-grade .dentro { max-height: none; }
     .linha-de-acao .com { display: none; }
-    .config-grade .matriz .lr { min-height: 30px; }
+    .config-grade .matriz .lr { min-height: 44px; }
     .area { grid-template-columns: 1fr; height: auto; overflow: visible; }
     .col { height: auto; }
     .col-grafico .palco { height: 52vh; min-height: 250px; }
@@ -329,12 +323,13 @@
     .matriz .lh { display: none; }
     .matriz .lr { grid-template-columns: auto auto 34px; min-width: 150px; min-height: 32px; border-right: 1px solid var(--divisor); border-bottom: 0; }
     table.tab td, table.tab th { padding: 4px 8px; }
-    .botao { min-height: 30px; }
-    .numero.seletor select { min-height: 30px; max-width: 46%; }
-    /* um alvo de toque com 12 px não é um alvo: a caixa cresce, o rótulo cresce, o gesto acerta. */
-    .alternar { min-height: 30px; }
+    /* A RÉGUA DA CASA NO TELEFONE É ≥44 px — medido a 04/10/2026: os botões desta vista tinham 21 px no computador
+       e 30 px no telefone, abaixo de tudo. A caixa cresce, o rótulo cresce, o gesto acerta. */
+    .botao { min-height: 44px; }
+    .numero.seletor select { min-height: 44px; max-width: 46%; }
+    .alternar { min-height: 44px; }
     .alternar input { width: 16px; height: 16px; }
-    .abre-o-card { width: 30px; height: 30px; }
+    .abre-o-card { width: 44px; height: 44px; }
     .barra-do-telefone {
       display: flex; gap: 6px; align-items: center; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
       padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
@@ -343,11 +338,8 @@
     .barra-do-telefone .quem { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
     .barra-do-telefone .botao { flex: none; }
     .faltas { padding-bottom: 60px; }
-    .dialogo {
-      left: 0; right: 0; top: auto; bottom: 0; transform: none;
-      width: 100%; max-height: 88vh; border-radius: 3px 3px 0 0; padding-bottom: env(safe-area-inset-bottom);
-    }
-    .cabeca-do-dialogo { position: sticky; top: 0; z-index: 1; }
+    /* A GRELHA DE UM ITEM EM DUAS COLUNAS NAO CABE NUM ECRÃ DE 390: um item por linha, valor à esquerda. Vale para
+       o resultado de uma escrita (`.item-de-config`), que é onde isto ainda aparece. */
     .item-de-config { grid-template-columns: 1fr; }
     .item-de-config .valor { text-align: left; }
   }
@@ -419,15 +411,6 @@
 </section>
 
 <div class="barra-do-telefone" id="barra-do-telefone"></div>
-
-<div class="veu" id="veu" hidden></div>
-<div class="dialogo" id="dialogo" role="dialog" aria-modal="true" aria-labelledby="dialogo-titulo" hidden>
-  <header class="cabeca-do-dialogo">
-    <span id="dialogo-titulo">configuração da ficha</span>
-    <button class="botao" id="fechar-dialogo">fechar</button>
-  </header>
-  <div class="corpo-do-dialogo" id="dialogo-corpo"></div>
-</div>
 
 <!-- A BIBLIOTECA DO GRÁFICO vem antes dos módulos: um `<script>` clássico corre durante a análise, e os
      módulos (diferidos) correm depois — `LightweightCharts` existe quando `js/grafico.js` o lê. -->

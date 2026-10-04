@@ -55,7 +55,7 @@ import { conferirMandatos, correrUmCiclo, lerOperacao, semearTravosDeBarra } fro
 import { cargaDaPergunta, NUMEROS_DA_CORRETORA, type NumerosDaCorretora } from "./ciclo/encerramento.ts";
 import type { ConfiguracaoDaConta } from "./config/configuracao.ts";
 import type { ConfiguracaoEmVigor } from "./estado/marcas.ts";
-import { barrasDasUltimasEntradas, registarMudancaDeMandato, ultimaTransicaoPara } from "./estado/registo.ts";
+import { barrasDasUltimasEntradas, registarMudancaDeMandato, ultimaTransicaoPara, ultimoCicloDoRegisto } from "./estado/registo.ts";
 
 /** O contrato recusa a MENSAGEM; a mesa fala dos seus motivos. Nada atravessa sem nome de um dos dois. */
 export const TRADUCAO: Record<string, string> = {
@@ -563,7 +563,11 @@ async function main() {
     // volta a ler o que ela propria fez. Sem isto, um reinicio a meio de uma barra apagava o travao de uma entrada
     // por barra — e o reinicio passou a ser caminho normal (ficha ligada a quente).
     semearTravosDeBarra(barrasDasUltimasEntradas(opcoes.caminhoDoRegisto));
-    let ciclo = 0;
+    // O CICLO CONTINUA DE ONDE FICOU, e nao de zero (a referencia `mesa-<ficha>-<ciclo>` tem de ser unica DENTRO
+    // da corrida: um ciclo a repetir re-usa a referencia, e o conector RECUSA-a no venue — ver
+    // `ultimoCicloDoRegisto`, e a decisao do dono de 04/10/2026). A guarda do venue continua a travar o reenvio
+    // da MESMA boleta, e a referencia desta volta (`ciclo+1`) nunca colide com a de uma volta anterior.
+    let ciclo = ultimoCicloDoRegisto(opcoes.caminhoDoRegisto);
     relogio = setInterval(() => {
       if (mesa.estado === "parada") return; // sem operacao para defender, a volta nao decide
 

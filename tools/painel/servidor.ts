@@ -47,7 +47,9 @@ const PASTA = resolve(pega("--pasta") ?? join(import.meta.dir, "..", "..", "web"
 const CORRIDAS: string[] = [];
 const RAIZ_DAS_CORRIDAS = pega("--raiz-das-corridas") ?? null;
 for (let i = 0; i < argv.length; i++) if (argv[i] === "--corrida" && argv[i + 1] !== undefined) CORRIDAS.push(argv[i + 1]!);
-const ORIGEM = `http://${ENDERECO}:${PORTA}`;
+// A ORIGEM desta tela. `let` porque a porta EFECTIVA so' se sabe depois de o servidor ligar (`--porta 0` pede ao
+// sistema uma porta livre, e o `Origin` do browser traz essa, nao o zero que se pediu). Fica corrigida logo abaixo.
+let ORIGEM = `http://${ENDERECO}:${PORTA}`;
 // O RELOGIO DO FIO: este servidor E' o gerador. Antes disso o `servir.sh` corria dois lacos `while` em segundo
 // plano e o servidor era so' a outra metade — a tela dependia de os dois coexistirem, e um `servidor.ts` sozinho
 // servia uma pasta sem nunca renovar o fio. Agora ha' UM processo: a tela, a porta de escrita e os dois relogios
@@ -102,6 +104,29 @@ function gravarOsPedidos(pedidos: Pedido[]): void {
 function comandoDoVerbo(verbo: string, conta: string, dir: string | null): string {
   if (verbo === "iniciar") return `bash tools/operar-em-observacao.sh ${conta}`;
   return `kill $(cat ${dir ?? "<dir>/operacao-em-observacao.pid"}/operacao-em-observacao.pid)`;
+}
+
+/* ========================= A PASTA DAS CREDENCIAIS (fora do repositorio) =========================
+ * Um valor por ficheiro, modo 600 — o padrao da casa (RN-E14). A pasta pode ser apontada por `CREDENCIAIS_DIR`:
+ * e' assim que a bancada da credencial corre sem tocar nas credenciais do dono (o escritor honra a mesma variavel).
+ */
+const DIR_DAS_CREDENCIAIS = process.env.CREDENCIAIS_DIR ?? join(homedir(), ".config", "mesacore", "credenciais");
+
+/**
+ * A REFERENCIA que a conta declara para a sua credencial (`conexao.credencial.valor_em = ficheiro:<caminho>`).
+ * Sai daqui SO' o CAMINHO — o valor nunca se abre (o ficheiro pode nem existir; e' isso que a porta resolve).
+ * `null` quando a conta nao declara nada: quem chama cai no nome por omissao (`<pasta>/<conta>.key`).
+ */
+function lerReferenciaDaCredencial(conta: string): string | null {
+  const caminho = join(import.meta.dir, "..", "..", "config", "contas", `${conta}.json`);
+  try {
+    const c = JSON.parse(readFileSync(caminho, "utf8")) as Record<string, any>;
+    const ref = c?.conexao?.credencial?.valor_em;
+    if (typeof ref === "string" && ref.startsWith("ficheiro:")) {
+      return ref.slice("ficheiro:".length).replace(/^~(?=\/)/, homedir());
+    }
+  } catch { /* conta ausente ou ilegivel: cai no nome por omissao */ }
+  return null;
 }
 
 /* ================================ OS DOIS RELOGIOS DO FIO ================================
@@ -291,6 +316,71 @@ const servidor = Bun.serve({
       return responder({ ok: true, pedido, pedidos: todos });
     }
 
+    /* ============================ A CREDENCIAL (o valor vive fora, e a tela so' mostra a FORMA) ============
+     * O QUE ESTA PORTA E': a MESMA porta de escrita que ja' existe (`tools/guardar-credencial.sh`), estendida com
+     * um modo que le' o valor pelo STDIN. A tela cola o VALOR de uma chave e ele fica gravado no padrao da casa —
+     * um ficheiro por valor, FORA do repositorio, modo 600 — e a conta continua a apontar-lhe por REFERENCIA.
+     *
+     * AS GUARDAS, e o que NAO passa:
+     *   - origem + cabecalho proprio (as MESMAS da porta das fichas): outra pagina na LAN nao grava em nome de quem
+     *     tem o painel aberto;
+     *   - o VALOR NUNCA entra no fio, num log, num argumento de comando ou no historico: ele vai pelo stdin do
+     *     processo, e a resposta ao browser leva so' a FORMA (comprimento + primeiros) e a IMPRESSAO (sha256);
+     *   - o ficheiro tem de viver na pasta das credenciais (o guarda esta' no escritor E aqui);
+     *   - escrita atomica, e o registo (instante, ficheiro, origem, impressao) faz-se no ESCRITOR, fora do repo.
+     */
+    if (url.pathname === "/api/credencial") {
+      if (req.method !== "POST") return responder({ ok: false, porque: "esta porta só aceita POST" }, 405);
+      if (req.headers.get("origin") !== ORIGEM) {
+        return responder({ ok: false, porque: "o pedido não vem desta tela (origem diferente)" }, 403);
+      }
+      if (req.headers.get("x-mesacore") !== "1") {
+        return responder({ ok: false, porque: "falta o cabeçalho da própria tela" }, 403);
+      }
+      let corpo: Record<string, unknown>;
+      try {
+        corpo = (await req.json()) as Record<string, unknown>;
+      } catch {
+        return responder({ ok: false, porque: "o corpo do pedido está ilegível" }, 400);
+      }
+      const { conta, valor, ficheiro } = corpo;
+      if (typeof conta !== "string" || !CONTA_BOA.test(conta)) {
+        return responder({ ok: false, porque: "a conta não tem forma de nome de conta" }, 400);
+      }
+      if (typeof valor !== "string" || valor === "") {
+        return responder({ ok: false, porque: "não veio valor nenhum para gravar" }, 400);
+      }
+      // O CAMINHO: o que o dono indicou (se dentro da pasta) ou a REFERENCIA que a conta ja' declara.
+      let caminho: string;
+      if (typeof ficheiro === "string" && ficheiro !== "") {
+        caminho = ficheiro;
+      } else {
+        const declarado = lerReferenciaDaCredencial(conta);
+        caminho = declarado ?? join(DIR_DAS_CREDENCIAIS, `${conta}.key`);
+      }
+      if (caminho !== DIR_DAS_CREDENCIAIS && !caminho.startsWith(DIR_DAS_CREDENCIAIS + "/")) {
+        return responder({ ok: false, porque: `o ficheiro da credencial tem de viver em ${DIR_DAS_CREDENCIAIS}` }, 400);
+      }
+      const escritor = join(import.meta.dir, "..", "guardar-credencial.sh");
+      const p = Bun.spawn(["bash", escritor, "gravar-de-stdin", caminho, "--origem", "vista de configuração"], {
+        stdin: "pipe", stdout: "pipe", stderr: "pipe",
+        env: { ...process.env, CREDENCIAIS_DIR: DIR_DAS_CREDENCIAIS },
+      });
+      p.stdin.write(valor);              // O VALOR VAI PELO STDIN — nunca num argumento (nao fica no `ps`)
+      p.stdin.end();
+      const codigo = await p.exited;
+      const saida = (await new Response(p.stdout as ReadableStream<Uint8Array>).text()) + (await new Response(p.stderr as ReadableStream<Uint8Array>).text());
+      // A FORMA e a IMPRESSAO vem do ESCRITOR; o servidor nao recalcula nada (uma conta, um dono). E NUNCA se
+      // registam o valor: o `/api/credencial` so' imprime o caminho e o veredicto.
+      const forma = /forma: (\d+) caracteres, a comecar por «([^»]*)»/.exec(saida);
+      const impressao = /impressao: ([0-9a-f]{64})/.exec(saida)?.[1] ?? null;
+      console.log(`credencial ${codigo === 0 ? "GRAVADA" : "RECUSADA"} · ${caminho} · conta ${conta}`);
+      return responder(
+        { ok: codigo === 0, ficheiro: caminho, forma: forma ? { comprimento: Number(forma[1]), primeiros: forma[2] } : null, impressao, porque: codigo === 0 ? null : saida.trim() },
+        codigo === 0 ? 200 : 409,
+      );
+    }
+
     const pedido = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
     const caminho = resolve(join(PASTA, pedido));
     // SEM SAIR DA PASTA: um `..` no pedido não vai buscar nada de fora da tela.
@@ -302,6 +392,10 @@ const servidor = Bun.serve({
     });
   },
 });
+
+// A PORTA EFECTIVA (o `--porta 0` pede uma livre): a origem da tela tem de ser ESTA, senao o guarda do `Origin`
+// recusava todos os pedidos da propria pagina.
+ORIGEM = `http://${ENDERECO}:${servidor.port}`;
 
 console.log(`painel: tela em http://${ENDERECO}:${servidor.port}/index.html  (escrita pela vista, validada antes de aplicar)`);
 console.log(`painel: o fio é gerado AQUI — retrato a cada ${INTERVALO}s · agora a cada ${INTERVALO_VIVO}s · para ${PASTA}/painel.json`);

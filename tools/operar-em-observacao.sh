@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
-# O SISTEMA EM OBSERVAÇÃO — a mesa e o operador a correr sozinhos, por horas, na conta de TESTE.
+# O SISTEMA EM OBSERVACAO — a mesa e o operador a correr sozinhos, por horas, na conta de TESTE.
 #
 # O QUE ISTO FAZ, sem arredondar:
 #   * o OPERADOR lê as fichas ligadas da conta (`fichas/<setup>/<par>-<conta>.json` com `run: true`), puxa as
-#     velas no relógio de cada ficha, arranca o conector ao vivo, corre o SETUP e escreve a OPERAÇÃO;
+#     velas no relógio de cada ficha, arranca o conector ao vivo, corre o SETUP e escreve a OPERACAO;
 #   * a MESA lê a operação a cada volta e DECIDE (registo);
 #   * tudo o que ambos dizem vai para ficheiros de log e para o REGISTO.
 #
-# O QUE ISTO NÃO FAZ — e é a razão de ser dito aqui, em cima:
-#   ** nenhuma ordem sai para o venue. ** A mão mesa -> conector está FECHADA (o carteiro leva a boleta), e quem
-#   a trava é a ficha: `enviar: false` faz o carteiro entregar a boleta ao conector e REGISTAR que não a enviou,
-#   com a razão. Nenhuma ficha do repositório diz `enviar: true`, e nada sai por omissão.
-#   Isto é OPERAÇÃO EM OBSERVAÇÃO: junta o que o sistema decidiria, com números reais, sem risco.
+# O QUE ISTO NÃO FAZ — e é a razão de ser dito aqui, em cima, sem prometer o que nao cumpre:
+#   ** quem trava (ou nao) o envio ao venue e' a FICHA, e so' ela. ** Uma ficha com `enviar: true` faz o
+#   carteiro ENTREGAR a boleta ao conector e o conector manda-a ao venue; uma ficha com `enviar: false` faz o
+#   carteiro registar que NAO a enviou. Isto e' OPERACAO EM OBSERVACAO NESSE SENTIDO: a mesa e o setup correm
+#   com numeros reais e a decisao e' tomada a serio — mas o que sai para o venue depende das fichas ARMADAS.
+#   (O cabecalho anterior dizia «nenhuma ficha do repositorio diz enviar:true» e era FALSO desde que o dono
+#   armou o ETH/BTC/SOL a 02/10/2026 — medido no arranque de primeira vez, 04/10/2026. Uma promessa errada num
+#   lancador e' pior do que nenhuma: por isso este script CALCULA e DIZ quais estao armadas, antes de arrancar.)
+#
+# E O ARRANQUE NAO CAlA: antes de levantar o operador, diz o que FALTA — a conta, a credencial, as fichas
+# ligadas — e conta as fichas ARMADAS ao venue. Assim uma primeira execucao que nao sobe diz PORQUE, em vez de
+# deixar o dono a adivinhar.
 #
 # Uso:  bash tools/operar-em-observacao.sh <conta> [par]
 # Parar: o ficheiro de PID que este script escreve (`<dir>/operacao-em-observacao.pid`) — `kill $(cat ...)`.
@@ -21,6 +28,20 @@ CONTA="${1:-hl-teste-plugin}"
 PAR="${2:-}"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="${DIR_DE_OBSERVACAO:-/home/cerucci/.hermes/profiles/appbuilder/cache/scratch/observacao}"
+cd "$RAIZ" || exit 1
+
+# ================================ O QUE FALTA, DITO ANTES DE ARRANCAR ==================================
+# A VERIFICACAO VIVE NUM COMANDO PROPRIO (`tools/checar-o-arranque.sh`): o mesmo que a bancada prova. Ele diz o
+# que falta (a conta, a credencial, as fichas ligadas) e conta as fichas ARMADAS ao venue — e nao abre o valor
+# da credencial, so' confere que ela existe. Se faltar algo, NAO se arranca processo nenhum.
+if ! bash "$RAIZ/tools/checar-o-arranque.sh" "$CONTA" "$PAR"; then
+  echo
+  echo "operacao em observacao: NAO arrancou — resolva o que FALTA acima."
+  exit 1
+fi
+echo
+
+# ========================================= O ARRANQUE ==================================================
 mkdir -p "$DIR"
 
 echo "$$" > "$DIR/operacao-em-observacao.pid"
@@ -46,10 +67,15 @@ OPERADOR_PID=$!
 # wait for the first operation (the connector's arranque takes ~30-60 s before the first reading)
 for _ in $(seq 1 60); do
   [ -f "$OP" ] && break
+  kill -0 "$OPERADOR_PID" 2>/dev/null || break   # o operador morreu: nao se espera por um morto
   sleep 5
 done
 if [ ! -f "$OP" ]; then
-  echo "[$(date -Iseconds)] a operacao nao apareceu: o conector nao entregou leitura. nada a decidir." >> "$DIR/mesa.log"
+  echo "[$(date -Iseconds)] a operacao nao apareceu: o conector nao entregou leitura. o que ele disse:" >> "$DIR/mesa.log"
+  tail -n 8 "$DIR/operador.log" | sed 's/^/    /' >> "$DIR/mesa.log"
+  echo "operacao em observacao: NAO subiu — o operador nao escreveu a operacao (conector sem leitura ou credencial recusada)."
+  echo "o que ele disse (fim do operador.log):"
+  tail -n 8 "$DIR/operador.log" | sed 's/^/    /'
   kill "$OPERADOR_PID" 2>/dev/null
   exit 1
 fi
@@ -62,6 +88,9 @@ echo "[$(date -Iseconds)] operacao escrita: $OP" >> "$DIR/mesa.log"
         --portas "$OP.portas.json" --registo "$DIR/registo.jsonl" ) >> "$DIR/mesa.log" 2>&1 &
 MESA_PID=$!
 echo "$MESA_PID" >> "$DIR/operacao-em-observacao.pid"
+
+echo "operacao em observacao: NO AR — operador pid=$OPERADOR_PID · mesa pid=$MESA_PID · operacao=$OP"
+echo "para parar:  kill \$(cat $DIR/operacao-em-observacao.pid)"
 
 wait "$OPERADOR_PID" "$MESA_PID"
 echo "[$(date -Iseconds)] fim" >> "$DIR/operador.log"

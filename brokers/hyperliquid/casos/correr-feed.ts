@@ -219,6 +219,34 @@ function apanhar(): { linhas: Record<string, unknown>[]; dizer: (o: Record<strin
   registar("feed/a-agregacao-so-toca-em-barra-nossa-e-cala-se-no-periodo-do-venue", problemas);
 }
 
+// 2-c-bis. A TROCA DE DONO INTEIRA: derivado -> fonte -> derivado OUTRA VEZ (04/10/2026).
+//      A pergunta do dono («o grafico tem um gap, sao duplicados?») mostrou a classe: a agregacao tem de saber
+//      CALAR-SE quando a barra do venue chega, e VOLTAR a compor quando o periodo seguinte e' NOSSO outra vez. Sem
+//      esta VOLTA, a agregacao ficava calada para sempre depois do primeiro `bbo` do periodo — e a tela perdia a
+//      barra em curso. O controle esta' DENTRO: em N manda a FONTE (a barra do venue nao se toca) e em N+1 a
+//      derivacao volta (marcada).
+{
+  const problemas: string[] = [];
+  const e = estadoVazio();
+  agregarDoBbo(e, RELOGIO, 100, INICIO + 1_000);                                                 // N: DERIVADA (marcada)
+  encaixarVela(e, barraDoVenue(INICIO, "101", "3", 2), `${PAR}-${RELOGIO}`, RELOGIO, () => {});   // N: a FONTE manda
+  agregarDoBbo(e, RELOGIO, 105, INICIO + PASSO + 1_000);                                         // N+1: DERIVADA outra vez
+  if (e.velas.length !== 2) problemas.push(`a serie e' N (fonte) + N+1 (derivada): veio ${e.velas.length}`);
+  const n = barra(e, 0, problemas);
+  if (n !== null) {
+    if (n.t !== INICIO) problemas.push(`a barra do venue fica no periodo dela (${INICIO}), veio ${n.t}`);
+    if (n.c !== "101" || n.v !== "3") problemas.push(`a barra da FONTE nao se toca (veio ${JSON.stringify(n)})`);
+    if (n.agregada_do_bbo !== undefined) problemas.push(`a marca da NOSSA agregacao nao se carimba na barra da fonte (veio ${JSON.stringify(n.agregada_do_bbo)})`);
+  }
+  const n1 = barra(e, 1, problemas);
+  if (n1 !== null) {
+    if (n1.t !== INICIO + PASSO) problemas.push(`o periodo seguinte tinha de voltar a ser derivado (${INICIO + PASSO}), veio ${n1.t}`);
+    if (n1.agregada_do_bbo !== true) problemas.push("o periodo N+1 volta a ser DERIVADO e MARCADO (a derivacao nao fica calada para sempre)");
+    if (n1.c !== "105") problemas.push(`a barra derivada de N+1 traz o ultimo preco (105), veio ${n1.c}`);
+  }
+  registar("feed/a-troca-de-dono-derivado-fonte-derivado-outra-vez", problemas);
+}
+
 // 2-d. INSERCAO FORA DE ORDEM (achado 2): a agregacao ja' abriu o periodo SEGUINTE e o venue manda o ANTERIOR.
 //      E' a NOSSA agregada desse periodo que esta' la': o venue toma o LUGAR dela (a lista fica ordenada).
 {

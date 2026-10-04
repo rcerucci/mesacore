@@ -460,3 +460,122 @@ nomeada** — com o par de controlo (o leitor estrito antigo contava 3).
   provas novas medem contra fios de bancada e cópias em scratch, e o `prova-da-fonte` arranca o servidor com
   `--intervalo 0` (não escreve fio nenhum).
 
+## 13. AS FALHAS DE CONSTRUÇÃO E O ARRANQUE DE PRIMEIRA VEZ (04/10/2026)
+
+O estado de partida era o de **primeira execução**: host limpo, sistema parado (nenhum processo do MesaCore,
+nada a ouvir em `192.168.15.24:8788`, a unit `inactive (dead)` e **`disabled`**, o scratch a **zero** directorios,
+o venue plano — 991,63 USDC, 0 posições, 0 ordens). Sete frentes, por ordem de risco (dinheiro primeiro), cada
+uma com a prova que a mede.
+
+**`provar.sh`: 50 de 50** (era **45**) · `tipos.sh`: **0 erros em 6 directórios** · fallbacks **0** · a contagem
+do portão corrigida onde era repetida (o `provar.sh`, este plano, o `ONDE_ESTAMOS.md`, o `README.md`).
+
+### A. O arranque de primeira vez — um caminho só, e o arranque não cala
+
+**O que faltava, medido:** nenhum caminho documentado levantava o sistema do zero; a unit estava `disabled` (não
+voltava sozinha depois de um reinício) e o lançador **prometia o que não cumpria** («nenhuma ficha do repositório
+diz `enviar: true`» — e as três fichas dizem, desde 02/10/2026).
+
+**O que ficou:** um caminho no `tools/painel/README.md` (secção **O arranque de primeira vez**), e a verificação
+extraída para um comando próprio — `tools/checar-o-arranque.sh` — que o lançador corre ANTES de levantar processo
+nenhum. Ele diz **pelo nome** o que falta (a conta, a credencial por referência, as fichas ligadas) e **conta as
+fichas ARMADAS ao venue** (`enviar: true`), em voz alta. A unit ficou **`enabled`**.
+
+**Medido agora (o arranque real, não a intenção):**
+
+```
+systemctl --user is-enabled mesacore-painel.service   -> enabled
+systemctl --user is-active  mesacore-painel.service   -> active (MainPID 1001579, e 1003522 depois de um restart)
+GET http://192.168.15.24:8788/index.html               -> 200    ·   painel.json -> 200
+fio: mesas ['observacao'] · estado em_operacao · descoberta «operacao.json escrito ha' <= 300 s»
+venue: equity 991,62 · 0 posicoes · 0 ordens (no arranque)
+```
+
+**Prova no portão:** `prova-do-arranque.ts` — contra repositórios de bancada, exige que cada falta seja dita pelo
+nome e que o arranque RECUSE; e prova que o aviso das fichas armadas **não sai sempre** (o controle de uma ficha
+ligada e desarmada). O `prova-do-log` foi tornado **auto-suficiente**: ele dependia de uma corrida em
+`scratch/teste-de-auditoria` que a limpeza apagou (era a ÚNICA prova vermelha no portão do arranque de primeira
+vez — `ENOENT`), e passou a construir a sua própria corrida.
+
+### B. A colisão de referências — com a cronologia, e uma decisão do dono
+
+**Cronologia medida (a régua, sem adjectivos):**
+
+| quando | o que | cru |
+|---|---|---|
+| 09:15:05 | o ETH mandou a referência `mesa-sigma_v0-000007` | `classificacao: recusado · motivo: referencia_ja_enviada_ao_venue` — o `cloid` derivado já existia no venue, de uma corrida anterior; **nada foi enviado** |
+| 09:37:10 | a `mesa-sigma_v0-000029` saiu | `classificacao: aceite · oid 61809804678` · a posição ETH **sell 0.004 @ 2695,7** abriu (marca 29) |
+
+A referência é `mesa-<setup>_v<major>-<ciclo>` e o `cloid` é `sha256(domínio + conta + instrumento + referência)`.
+O **tratamento do venue está certo** (a P6 mediu que o mesmo `cloid` duplicava a ordem); o que estava errado era a
+**referência repetir**: o contador `ciclo` **começava em 0 em cada arranque** da mesa (`core/servidor.ts`).
+
+**Decisão do dono (04/10/2026):** *persistir o contador de ciclos entre arranques* — a mesa passa a **continuar de
+onde o registo ficou** (`ultimoCicloDoRegisto`), sem mudar a forma da referência. Prova no portão:
+`ciclo-continua.ts` (mesa a sério com o registo a 47 → a volta nova sai em **48**; o controle, registo vazio, em
+**1**; **reprova** com o defeito reposto).
+
+**O LIMITE, medido e DITO (não escondido):** continuar o contador só conta se o **registo sobreviver**. O scratch é
+podado; numa pasta de corrida nova o contador volta a 1 e pode colidir outra vez — foi o que aconteceu acima (a
+corrida começou vazia, o contador voltou a 1, e a 7 colidiu). E o risco não é um atraso: a regra é «a entrada só
+acontece na **barra do flip**», logo uma referência recusada nessa barra **perde a entrada** (salvou-se aqui por o
+ETH ter voltado a propor na 29). Fica declarado no código (`core/estado/registo.ts`) e aqui: a via para o corrigir
+(o conector a devolver a recusa e a mesa a re-emitir com referência NOVA) é decisão do dono e **não** se inventa.
+
+### C. O gráfico e o vão — marcado e nomeado
+
+O vão era **REAL** (0 duplicados nos três pares e 0 no fio), e o feed **já o nomeava** (`buraco_no_historico`),
+mas nunca chegava ao ecrã. Agora o produtor calcula os vãos das velas (`buracos.ts`, passo medido do próprio dado)
+e a tela **marca-os** (um marcador na barra seguinte, com `↔N`) e **nomeia-os** no cabeçalho do gráfico:
+`vão 03/10, 14:00→04/10, 07:30 · faltam 34`. Nunca se inventa a barra que faltou. Prova no portão:
+`prova-dos-buracos.ts` — os **dois** vãos medidos (1 barra e 17,5 h / 34 barras) e o controle (sem vão, nenhum
+aviso).
+
+### D. O dash de configuração — os quatro números do dono
+
+| | antes | depois |
+|---|---|---|
+| alvos de toque < 44 px **no telefone** (390×844) | **13 de 13** (30 px) | **0** (44 px) |
+| campos de formulário na vista (a ler) | 0 | 0 (a edição vive na vista, não num diálogo) |
+| chaves do documento em **mais de um sítio** | **6** (conta/setup/relógio/ao_desligar × procedências; run/enviar × faixa) | **0** |
+| o **diálogo legado** (segunda porta, só leitura) | presente (`#dialogo`) | **removido** — o botão `config` do gráfico passou a `<a href="#configuracao">` |
+
+O gesto principal de editar a ficha («mudar esta ficha») e os dois interruptores estão **à vista**, na vista. Prova
+no portão: `prova-do-dash.ts`, com **provocação** (a mesma chave injectada noutro sítio faz a contagem subir) e o
+fio **vazio** medido (sem fichas, a vista diz que não há ficha — não fica em branco). No computador os botões ficam
+a 21 px de propósito: 21 px é a densidade do terminal (a régua dos 44 px é a do **toque**, no telefone).
+
+### E. A porta de credencial pela tela
+
+**O que faltava:** o valor da Hyperliquid vivia num ficheiro que **nenhuma ferramenta escrevia**; a tela dizia
+«segredo · por caminho · não se abre» e não tinha caminho de escrita. **O que ficou:** a MESMA porta de escrita
+(`tools/guardar-credencial.sh`), estendida com um modo que lê o valor **pelo stdin** (`gravar-de-stdin`), e o
+`POST /api/credencial` no servidor, com as guardas da porta das fichas (origem + cabeçalho próprio). O campo nasce
+do `questionario.json` do conector (`tipo: segredo`); a conta continua a apontar por **referência**.
+
+**Medido** (`prova-da-credencial.ts`, com o servidor a sério e uma pasta de credenciais de **bancada**):
+
+```
+gravado: 600 <pasta>/zz-bancada.key · conteudo == o valor colado
+resposta: forma {comprimento, primeiros} + impressao sha256 — o VALOR nao aparece (busca literal)
+registo : instante, ficheiro, ORIGEM («vista de configuração»), impressao — o VALOR nao esta' la'
+guardas : sem cabecalho -> 403 · origem diferente -> 403 · ficheiro fora da pasta -> 400
+          derivar a conta do dono (fora da pasta) -> 400 · valor curto -> 409, e nada e' criado
+limpeza : o ficheiro que a bancada criou e' apagado no fim
+```
+
+### F. Duplicados/contaminação do feed — a prova da classe
+
+A bancada do feed (**16 provas**, era 15) ganhou a **troca de dono inteira**: derivado → fonte → derivado outra
+vez (a agregação tem de se calar quando a barra do venue chega e **voltar** a compor no período seguinte). E a
+**prova negativa** — `bash brokers/hyperliquid/casos/prova-negativa-do-feed.sh` — **reprovou 10 de 10** com os
+defeitos repostos, incluindo o que o dono nomeou (a agregação a **mutar a barra do venue**), e a bancada voltou ao
+verde com o ficheiro restaurado (selo por `sha256`).
+
+### G. A verificação
+
+- **`provar.sh`: 50 de 50**, exit 0 (as cinco provas novas somadas às 45).
+- **`tipos.sh`: 0 erros em 6 directórios**; **fallbacks 0**; a árvore termina declarada (o que as bancadas criam,
+  apagam).
+
+

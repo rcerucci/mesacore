@@ -30,6 +30,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, openSy
 import { join, dirname, isAbsolute, basename } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { buracosDeHistorico } from "./buracos.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..");
 const argv = process.argv.slice(2);
@@ -315,7 +316,9 @@ function ultimaVela(instrumento: string, relogio: string, pasta: string): any | 
   }
 }
 
-/** As velas do VENUE — o ficheiro que o operador escreve a cada leitura (`velas-<PAR>-<RELOGO>.jsonl`). */
+/**
+ * As velas do VENUE — o ficheiro que o operador escreve a cada leitura (`velas-<PAR>-<RELOGO>.jsonl`).
+ */
 function lerVelas(instrumento: string, relogio: string, pasta: string): any[] | null {
   const caminho = join(pasta, `velas-${instrumento}-${relogio}.jsonl`);
   if (!existsSync(caminho)) return null;
@@ -576,6 +579,9 @@ async function montarMesa(dirCorrida: string): Promise<any> {
             velas: cruzamento.velas,
             serie_do_setup: cruzamento.serie,
             janela: cruzamento.janela,
+            // OS BURACOS: o vao REAL no historico, NOMEADO (de/ate + quantas faltam). Calcula-se sobre as velas
+            // CRUAS do venue (antes do cruzamento), porque um vao e' do historico, nao da serie do setup.
+            buracos: buracosDeHistorico(velas ?? []),
             em_curso: sobreposicao.em_curso,
             sobreposicao_indisponivel: sobreposicao.porque,
             faltas_do_cruzamento: cruzamento.faltas_do_cruzamento,
