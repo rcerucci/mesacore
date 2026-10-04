@@ -31,6 +31,9 @@ import { join, dirname, isAbsolute, basename } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { buracosDeHistorico } from "./buracos.ts";
+// O QUE TRAVA UM PAR — `travado` e' uma abstencao que JA' DUROU MAIS DE UMA BARRA do proprio par, e nao uma volta
+// sem acao (ver `travado.ts`, e a medicao de 04/10/2026 que o obrigou).
+import { oQueTrava as oQueTravaDeVerdade } from "./travado.ts";
 
 const RAIZ = join(import.meta.dir, "..", "..");
 const argv = process.argv.slice(2);
@@ -423,18 +426,8 @@ function oQueOSetupDisse(logDoOperador: any[], instrumento: string) {
  * a CORRENTE FINAL de ciclos `nada` — do ultimo para tras enquanto o motivo se mantiver — e devolve-se um resumo:
  * o motivo dominante, o instante em que a corrida comecou, e quantos ciclos leva.
  */
-function oQueTrava(meusCiclos: any[]): { travado: boolean; porque: string | null; desde_ms: number | null; ciclos: number } {
-  let porque: string | null = null;
-  let desde: number | null = null;
-  let quantos = 0;
-  for (let k = meusCiclos.length - 1; k >= 0; k--) {
-    const c = meusCiclos[k]!;
-    if (c.acao !== "nada") break;
-    porque = c.motivo ?? null;
-    desde = c.instante_ms ?? null;
-    quantos++;
-  }
-  return { travado: quantos > 0, porque, desde_ms: desde, ciclos: quantos };
+function oQueTrava(meusCiclos: any[], relogio: string | null | undefined) {
+  return oQueTravaDeVerdade(meusCiclos, relogio);
 }
 
 // ---------------------------------------------------------------- montar UMA instalacao (mesa)
@@ -591,7 +584,8 @@ async function montarMesa(dirCorrida: string): Promise<any> {
       ultima_decisao: ultimoCiclo,
       decisao_contagem: contagem(meusCiclos, (c) => `${c.acao}:${c.motivo}`),
       // O QUE TRAVA ESTE PAR — o motivo da corrente final de ciclos `nada`, com o desde-quando e o quantos.
-      parado: oQueTrava(meusCiclos),
+      // O `relogio` da ficha entra aqui: e' ele que diz quantos ciclos fazem uma barra deste par (ver `oQueTrava`).
+      parado: oQueTrava(meusCiclos, relogio),
       // ONDE A MESA DECIDIU ABRIR — os instantes das decisoes de `abrir` deste par, lidos do registo. Vao para o
       // grafico como marca propria, e NAO se misturam com a virada do indicador: uma e' a regra a virar, a outra
       // e' a mesa a decidir — e no dia em que nao coincidirem, tem de se ver que nao coincidiram.

@@ -4,7 +4,7 @@
  * Tudo em `dl` de duas colunas, sem parágrafos. O que era a nota do livro é um `title` na linha do
  * livro: quem precisa do porquê passa o rato e lê; quem não precisa não lhe paga 100 px de ecrã.
  * ========================================================================================== */
-import { escapar, comoVeio, idade, diaEHora, instrumentoAtual, mesaAtual, motivoDito, operacaoVelha, idadeDaOperacao, botaoDeRecolher, fonteEIdade } from "./nucleo.js";
+import { escapar, comoVeio, idade, diaEHora, instrumentoAtual, mesaAtual, motivoDito, operacaoVelha, idadeDaOperacao, botaoDeRecolher, fonteEIdade, fonteDeDocumento } from "./nucleo.js";
 
 export function desenharODentro() {
   const i = instrumentoAtual();
@@ -35,7 +35,7 @@ export function desenharODentro() {
     </div>
 
     <div class="secao" data-recolhivel="dentro:risco">
-      <h3 class="cabeca"><span>Risco em vigor</span>${fonteEIdade(fontes.ficha)}${botaoDeRecolher("dentro:risco", "o risco em vigor")}</h3>
+      <h3 class="cabeca"><span>Risco em vigor</span>${fonteDeDocumento(fontes.ficha)}${botaoDeRecolher("dentro:risco", "o risco em vigor")}</h3>
       <div class="dentro-da-secao">
         <dl class="pares">
           <dt>saldo</dt><dd>${escapar(i.risco?.saldo_pct ?? "—")}%</dd>

@@ -81,6 +81,21 @@ export function fonteEIdade(fonte, limite = BLOCO_VELHO_MS) {
   return `<span class="fonte mono ${velho ? "venda-txt" : "fraco"}" title="fonte: ${escapar(caminho)} · escrito ${diaEHora(fonte.em_ms)}">${nome} · ${escapar(desde(fonte.em_ms))}</span>`;
 }
 
+/* A IDADE DE UM DOCUMENTO NÃO É UM ALARME. Uma FICHA é um documento do dono — pode ter semanas e estar certa.
+ * Pintá-la de vermelho por ter 26 h fazia o ecrã parecer avariado: medido a 04/10/2026, «RISCO EM VIGOR
+ * BTC-HL-TESTE-PLUGIN.JSON · 26,5 h» saía a vermelho ao lado do risco, e o dono leu aquilo como um erro. O que
+ * envelhece é a LEITURA (a operação, o retrato, o registo) — essa, sim, pinta-se. Esta função diz a idade do
+ * documento e nunca a pinta: a idade continua à vista, só deixa de gritar. */
+export function fonteDeDocumento(fonte) {
+  if (fonte === null || fonte === undefined || typeof fonte !== "object") return "";
+  const caminho = String(fonte.caminho ?? "?");
+  const nome = escapar(caminho.split("/").pop());
+  if (fonte.em_ms === null || fonte.em_ms === undefined) {
+    return `<span class="fonte mono fraco" title="o documento não foi encontrado: ${escapar(caminho)}">${nome} · sem ficheiro</span>`;
+  }
+  return `<span class="fonte mono fraco" title="documento do dono (não é uma leitura): ${escapar(caminho)} · escrito ${diaEHora(fonte.em_ms)}">${nome} · escrito há ${escapar(desde(fonte.em_ms))}</span>`;
+}
+
 /* ============================ OS MOTIVOS, DITOS EM PORTUGUÊS ============ *
  * O motivo cru (`proposta_ausente_tratada_como_hold`) é a prova, e vai sempre no `title`. Mas quem abre a tela
  * não lê chaves: ao lado vai a frase. Duas formas — a LONGA (para a lista do que está parado) e a CURTA (para

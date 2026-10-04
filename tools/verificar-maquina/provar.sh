@@ -160,6 +160,10 @@ if [ "$RAPIDO" -eq 0 ]; then
   # OS BURACOS DO HISTORICO: o vao e' MARCADO e NOMEADO (de/ate + faltam), nunca silencioso nem uma barra
   # inventada. Mede os dois vaos reais (1 barra e 17,5 h) e o controle (sem vao, nenhum aviso).
   declarar "painel: o vao do historico (marcado)"  bun run tools/painel/prova-dos-buracos.ts
+  # O «TRAVADO» — o que trava um par, e o que NAO trava: uma abstencao que ja' durou MAIS DE UMA barra do proprio
+  # par, e nao uma volta sem acao. Era isto que pintava de «travado» o par que estava a operar (o ETH de 1m, com uma
+  # ordem preenchida 10 min antes, saia `travado, 1 ciclo`, e o contador oscilava entre 2 e 3 a cada leitura).
+  declarar "painel: o que trava um par (e o que nao)" bun run tools/painel/prova-do-travado.ts
   # O DASH DE CONFIGURACAO: os quatro numeros do dono («impraticavel, confuso e cheio de bugs») — alvos de toque
   # ≥44 no telefone, o gesto de editar À VISTA, ZERO chaves duplicadas, e o fio vazio DITO. E as duas garantias de
   # 04/10/2026: o formulario de CRIAR CONTA nao abre «cheio de erros» (o que falta vai em tom neutro, e abre no

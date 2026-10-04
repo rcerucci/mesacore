@@ -467,7 +467,7 @@ nada a ouvir em `192.168.15.24:8788`, a unit `inactive (dead)` e **`disabled`**,
 o venue plano — 991,63 USDC, 0 posições, 0 ordens). Sete frentes, por ordem de risco (dinheiro primeiro), cada
 uma com a prova que a mede.
 
-**`provar.sh`: 50 de 50** (era **45**) · `tipos.sh`: **0 erros em 6 directórios** · fallbacks **0** · a contagem
+**`provar.sh`: 51 de 51** (era **45**) · `tipos.sh`: **0 erros em 6 directórios** · fallbacks **0** · a contagem
 do portão corrigida onde era repetida (o `provar.sh`, este plano, o `ONDE_ESTAMOS.md`, o `README.md`).
 
 ### A. O arranque de primeira vez — um caminho só, e o arranque não cala
@@ -572,9 +572,41 @@ vez (a agregação tem de se calar quando a barra do venue chega e **voltar** a 
 defeitos repostos, incluindo o que o dono nomeou (a agregação a **mutar a barra do venue**), e a bancada voltou ao
 verde com o ficheiro restaurado (selo por `sha256`).
 
+### I. O «TRAVADO» QUE PINTAVA O PAR A OPERAR (a queixa «3 pares travados e há ordem no venue em ETH»)
+
+**O que se mediu, e o que o dono via.** O painel **batia certo com o venue**: `clearinghouseState` devolvia
+`szi: "-0.004"` (**short** 0.004 @ 2692,3) e `frontendOpenOrders` devolvia **0 ordens** — exactamente o que a tela
+mostrava (`1 pos · 0 ord`, ETH entry 2692,3). E o sistema estava a operar: **273 preenchimentos** na corrida, com o
+ETH (1m) a alternar `Long > Short` / `Short > Long` a cada minuto. A «ordem no venue» que o dono via era a **posição
+short nossa** (o ETH tem 1m e o teste de flip rápido). O que estava errado era o painel **contradizer-se e chamar
+«travado» ao par que operava**:
+
+| o que | antes | depois |
+|---|---|---|
+| a fita | `3 TRAVADO(S)` | `2 TRAVADO(S) HÁ 7,4 H` |
+| a matriz | `3 par(es) · 3 travado(s)`, ETH com `sem lado` | `3 par(es) · 2 travado(s)`, ETH com `— — —` |
+| as posições vivas | `1 pos · 0 ord · 3 travados` | `1 pos · 0 ord · 2 travados` |
+| o bloco do risco | `RISCO EM VIGOR … · 26,5 h` a **vermelho** | cinza (`fonteDeDocumento`) |
+| os vermelhos da página | 3 | **0** |
+
+**A raiz, medida no código:** `oQueTrava` devolvia `travado: quantos > 0` — **uma única volta** sem ação bastava. O
+ETH (1m, com uma ordem preenchida 10 minutos antes) saía `travado, 1 ciclo`; e como o `vivo.json` (2 s) e o
+`painel.json` (60 s) são gerados em instantes diferentes, o contador **oscilava entre 2 e 3** a cada leitura.
+
+**A regra que ficou** (`tools/painel/travado.ts`, módulo puro): `travado` = a abstensão durou **mais de uma barra do
+próprio par** (o `relogio` da ficha: 1m → 1 ciclo, 30m → 30, 4h → 240). Sem relógio legível mantém-se o critério
+antigo — na dúvida diz-se que trava, nunca se esconde. E a frase passa a levar o tempo («2 travados **há 7,4 h**»).
+
+**Prova no portão:** `prova-do-travado.ts` (o ETH de 1 ciclo não travado; o mesmo com 2 travado; o BTC de 30m a 436
+travado e a 30 não; o ciclo com ação a zerar a corrente; o sem relógio a dizer que trava) — e a **provocação**: o
+critério antigo dá «travado» ao ETH de 1 ciclo, exactamente o defeito medido.
+
+**Corolário:** a idade de um **documento** não é um alarme. A ficha (26,5 h) saía a vermelho ao lado do risco e
+fazia o ecrã parecer avariado; `fonteDeDocumento()` diz a idade e nunca a pinta — o que envelhece é a **leitura**.
+
 ### G. A verificação
 
-- **`provar.sh`: 50 de 50**, exit 0 (as cinco provas novas somadas às 45).
+- **`provar.sh`: 51 de 51**, exit 0 (as seis provas novas somadas às 45 — a última é a do `travado`).
 - **`tipos.sh`: 0 erros em 6 directórios**; **fallbacks 0**; a árvore termina declarada (o que as bancadas criam,
   apagam).
 

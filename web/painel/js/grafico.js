@@ -5,7 +5,7 @@
  * motor viu (do setup). A tela desenha-as juntas e nunca as confunde — e a série NÃO se recalcula
  * aqui (RN-E9: uma conta, um dono). Quem a calcula é o setup, e o fio traz o resultado pronto.
  * ========================================================================================== */
-import { estado, cor, escapar, comoVeio, hora, diaEHora, ladoDoSig, instrumentoAtual, operacaoVelha, idadeDaOperacao, redesenho, fonteEIdade } from "./nucleo.js";
+import { estado, cor, escapar, comoVeio, hora, diaEHora, ladoDoSig, instrumentoAtual, operacaoVelha, idadeDaOperacao, redesenho, fonteEIdade, fonteDeDocumento } from "./nucleo.js";
 
 const L = LightweightCharts;
 
@@ -222,7 +222,9 @@ export function desenharGrafico() {
   const daLeitura = document.getElementById("fonte-da-leitura");
   if (daLeitura) {
     const f = i.fontes ?? {};
-    daLeitura.innerHTML = [f.velas, f.ficha].filter(Boolean).map((x) => fonteEIdade(x)).join(" · ");
+    // AS VELAS sao uma leitura (envelhecem, e a idade pinta-se); a FICHA e' um documento do dono — diz a idade
+    // e nao a pinta (ver `fonteDeDocumento`).
+    daLeitura.innerHTML = [f.velas ? fonteEIdade(f.velas) : "", f.ficha ? fonteDeDocumento(f.ficha) : ""].filter(Boolean).join(" · ");
   }
 
   // O `config` é um `<a href="#configuracao">`: o «voltar» do telefone funciona e a vista tem endereço próprio —

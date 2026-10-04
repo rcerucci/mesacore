@@ -1,6 +1,6 @@
 # ONDE ESTAMOS — o retrato medido do MesaCore
 
-medido em **04/10/2026, 13:0x (-03)** · contrato vigente **1.12.0** · portão **50 de 50** · árvore **limpa** · os títulos do `DEFEITOS.md` dizem o estado, cada um com o comando que o confirma (ver a última secção)
+medido em **04/10/2026, 13:4x (-03)** · contrato vigente **1.12.0** · portão **51 de 51** · árvore **limpa** · os títulos do `DEFEITOS.md` dizem o estado, cada um com o comando que o confirma (ver a última secção)
 
 > **UMA SESSÃO SÓ, E A TELA NUNCA VELHA** (04/10/2026). Dois invariantes que se medem, não se prometem:
 > **uma tela, um servidor, uma pasta** (a unit serve `web/painel/` do repositório, byte a byte; o `provar.sh` varre
@@ -8,6 +8,12 @@ medido em **04/10/2026, 13:0x (-03)** · contrato vigente **1.12.0** · portão 
 > sozinha quando o servidor serve outra versão** — o fio leva `tela_em_ms` (a versão medida no disco) e a página
 > compara-a a cada 2 s; é o que impede **duas abas com código diferente** (uma antiga ao lado de uma nova) e o que
 > faz uma correcção entrar em qualquer aba já aberta. Prova: `prova-do-dash.ts` (cargas `1 → 2`) e `prova-da-fonte.ts`.
+>
+> **«TRAVADO» É UMA ABSTENÇÃO DE MAIS DE UMA BARRA, NÃO UMA VOLTA SEM AÇÃO** (04/10/2026). O ETH (1m), com uma ordem
+> preenchida 10 minutos antes, saía `travado` com `1 ciclo` e o contador oscilava entre 2 e 3 a cada leitura — e o
+> dono lia «3 pares travados» com o par a operar. A regra vive em `tools/painel/travado.ts` e prova-se em
+> `prova-do-travado.ts`; e a idade de um **documento** (a ficha) deixou de se pintar de vermelho — o que envelhece é
+> a **leitura**.
 
 > **Nota de rigor:** este cabeçalho dizia `HEAD 08d13d3` e «contrato 1.7.0» durante cinco emendas — um número
 > escrito à mão num documento envelhece sozinho e passa a mentir. O `HEAD` lê-se do `git log`; o que este
@@ -1033,6 +1039,6 @@ venue plano). Sete frentes, por ordem de risco, com o retrato completo em
   ficou medido e dito**: numa pasta de corrida NOVA o contador volta a 1 e a referência pode colidir com uma ordem
   antiga do venue — ao vivo, `mesa-sigma_v0-000007` foi recusada e só a `-000029` saiu (a posição ETH sell 0.004
   abriu). É a decisão aberta que sobra desta vaga;
-- **o portão vai de 45 para 50** (`provar.sh`: 50 de 50), com cinco provas novas (`prova-do-arranque`,
+- **o portão vai de 45 para 51** (`provar.sh`: 51 de 51), com seis provas novas (`prova-do-arranque`,
   `ciclo-continua`, `prova-dos-buracos`, `prova-do-dash`, `prova-da-credencial`), `tipos.sh` 0 erro(s), fallbacks
   **0**, e a contagem corrigida onde era repetida.

@@ -39,13 +39,20 @@ export function desenharFita() {
   const parados = estado.instalacao === "geral"
     ? (estado.dados?.geral?.parados ?? []).length
     : instrumentos.filter((i) => i.parado?.travado).length;
+  // O MAIS ANTIGO: a idade do par que há mais tempo não consegue agir. Sem ela, «travado» é um adjectivo sem
+  // tempo — e o dono não sabe se é de agora ou de ontem. Com ela, a fita conta o que se passa.
+  const desdeMaisAntigo = estado.instalacao === "geral"
+    ? (estado.dados?.geral?.parados ?? []).reduce((a, p) => (p.desde_ms && (!a || p.desde_ms < a) ? p.desde_ms : a), null)
+    : instrumentos.filter((i) => i.parado?.travado).reduce((a, i) => (i.parado?.desde_ms && (!a || i.parado.desde_ms < a) ? i.parado.desde_ms : a), null);
   const faltas = (estado.dados?.faltas ?? []).length;
   const atencao = tOperacao
     ? { classe: "teste", texto: `sem dados há ${desde(mesa.operacao_em_ms)}` }
     : faltas > 0
       ? { classe: "teste", texto: `${faltas} falta(s) do retrato` }
       : parados > 0
-        ? { classe: "parado", texto: `${parados} travado(s)` }
+        // O TEMPO FAZ PARTE DA FRASE: «2 travados há 7,2 h» diz o que se passa; «2 travados» é só um adjectivo.
+        // (E é `travado` no sentido estrito — uma abstenao que já durou MAIS de uma barra do par: ver `retrato.ts`.)
+        ? { classe: "parado", texto: `${parados} travado(s)${desdeMaisAntigo ? ` há ${desde(desdeMaisAntigo)}` : ""}` }
         : { classe: "vivo", texto: "nada exige atenção" };
 
   fita.innerHTML = `
