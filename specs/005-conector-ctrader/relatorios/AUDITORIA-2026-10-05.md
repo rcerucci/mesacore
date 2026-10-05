@@ -687,3 +687,54 @@ bateria — **doze provas** cada», e não existem dois registos que o mostrem. 
 **critério de aceite que descreve um estado que nunca existiu**. Fica ao dono: (a) levar a bateria ao vivo ao
 hyperliquid (exige rede + chave e **assinar ordens** — o próprio registo dele diz que não as manda), (b) mudar a
 redação do SC-014 para o que as duas provas de facto são, ou (c1/c2) as variantes nomeadas.
+
+---
+
+# ADENDA 16 — 05/10/2026: as provas do dono (VENDA, VIRADA DE MAO, NOTIONAL, ALAVANCAGEM) e o commit
+
+**O pedido do dono, textual:** «faca voce mesmo o teste de sell e virada de mao, teste de notional, e alavancagem.
+se tudo correr ok, pode commitar para o github». A auditoria **estendeu a bateria** às três provas (13 = VENDA,
+14 = VIRADA DE MAO, 15 = ALAVANCAGEM 5), com uma **conferência** do notional e da alavancagem contra os números do
+próprio venue (sem substituir nenhum: o desfecho continua a transportar o que o venue deu — FR-064).
+
+| Verificação do auditor | Resultado |
+|---|---|
+| `bash tools/verificar-maquina/provar.sh` (corrido por mim, depois do último código) | **57 de 57, rc=0** — bancadas `109 · 36 · 6 · 7 · 19`, `fallbacks (ZERO exigido) OK` |
+| A bateria ao vivo (registo `-r12`) | **15 provas · 13 passou · 2 não forçável** |
+| **Prova 13 — a VENDA** | **PASSOU**: `posicao 246843477`, lado **SELL**, `volume 100000`, `preco 112176`; `executedVolume 100000 (=1000 un.) × executionPrice 112176 (=1.12176) → nocional 1121.76`, e o publicado **confere ao centésimo**; margem `1121.76/30 = 37.392` (o venue publica 37.4 — delta 0,008) |
+| **Prova 14 — a VIRADA DE MAO** | **PASSOU**: **2 mensagens** ao fio (`fechar_posicao=1`, `colocar_ordem=1`) — a perna do fecho **e** a da abertura na mesma passagem; a posição que fica é `246850042`, lado **BUY**, `volume 100000`, `preco 112236`, `margem 37.41`, `nocional 1122.36` conferido |
+| **Prova 15 — a ALAVANCAGEM 5** | **PASSOU** (na 2.ª corrida; ver a nota do meu defeito abaixo) |
+| `contracts/` | limpo (SC-015) |
+| **A conta, lida por MIM ao vivo** | `POSICOES: []` · `ORDENS VIVAS: []` — limpa |
+
+## A-20 — o tecto de ordens estava declarado e NÃO travava nada
+
+`MAXIMO_DE_ORDENS = 12` só existia escrito no cabeçalho do registo: nenhum sítio o conferia. Um limite que não
+limita é decoração — e numa corrida que manda ordens a sério, é a decoração perigosa. Passou a **kill switch**
+(`_enviar_envelope` levanta `TectoDeOrdens`; o `main` apanha, fecha tudo no `finally` e escreve a secção), e subiu
+para **18** com a data e a razão (as três provas novas do dono).
+
+## O defeito que era MEU, na prova 15 (dito, e não escondido)
+
+A 1.ª corrida reprovou a prova 15 — e a culpa **não** era do conector: dimensionei a boleta com o `saldo_pct`
+calculado para alavancagem 30 e pedi 5, o volume caiu fora da grelha e o conector **recusou correctamente**
+(`minimo_do_instrumento_acima_da_banda`, «não é inteiro e não se arredonda» — FR-056). Corrigi a sonda
+(`_saldo_pct_para_o_minimo(numeros, alavancagem)`); a lição para a bancada é esta: **o tamanho depende da
+alavancagem pedida, e a sonda tem de a levar consigo**.
+
+## A limitação que o dono desenterrou (a virada de mão existia recusada)
+
+Antes deste passo, `reverter: true` era **recusado** por desenho (`ordens.py:746`: «este venue nao faz a inversao
+numa ordem… as duas pernas nao se improvisam»). A recusa era honesta, mas o contrato **1.10.0 (c)** espera as
+**duas pernas na mesma passagem** quando o venue não faz netting — e sem isso o verbo **`reverse`** da mesa não
+funcionaria neste venue. Ficou implementado (fecho por `positionId` + abertura do lado declarado, **um só
+desfecho** a descrever a posição que fica, e nenhuma meia virada em silêncio: fecho recusado → abertura não
+enviada; fecho `desconhecido` → pendente e reconciliação).
+
+## O commit
+
+`7f17f5d` em `origin/master` (`github.com/rcerucci/mesacore`), verificado por leitura do remoto
+(`git ls-remote origin refs/heads/master` devolve o mesmo hash). **28 ficheiros** — a vaga do ctrader inteira.
+**De fora, de propósito:** as duas fichas `fichas/sigma/*.json`, que estão modificadas **desde 04/10** por **outra
+sessão** e não são desta vaga (a árvore fica com essas duas, e só essas). Os registos das corridas **não** vão no
+commit: `brokers/*/conformidade/` está no `.gitignore` por desenho — são ESTADO, não FORMA.
