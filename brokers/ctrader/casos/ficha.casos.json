@@ -1,0 +1,81 @@
+{
+  "nota": "Casos da FICHA do conector (`ficha.py`), sobre o campo `desvio_maximo` — o que a porta `sonda_e_manifesto` exigia e a ficha nao lia (achado A-1, fechado a 05/10/2026). O que se prova, com o PAR DE CONTROLE: (1) a FORMA BOA do campo PASSA e o valor e' lido tal como foi declarado; (2) a AUSENCIA do campo RECUSA pelo nome; (3) as FORMAS MAS (texto que nao e' decimal, `0`, `0.00`, negativo, numero JSON) RECUSAM pelo nome, com `formato_invalido`. A ficha continua FECHADA: o `desvio_maximo` so' entra porque passou a estar em `CAMPOS_LIDOS`. O caso que viola a regra poe a bancada VERMELHA: se o campo voltar a sair de `CAMPOS_LIDOS`, o caso `na-forma-do-contrato-passa` DIVERGE a nomear `campo_desconhecido`. A ficha de bancada usa caminhos de credencial INEXISTENTES de proposito: `ler_ficha` confere a FORMA e nao toca no disco.",
+  "ficha_base": {
+    "conector": "ctrader_mesa",
+    "contrato": "1.12.0",
+    "venue": "ctrader",
+    "ambiente": "demonstracao",
+    "url_da_api": "demo.ctraderapi.com:5035",
+    "conta": "conta-de-bancada",
+    "ctid_trader_account_id": 45292558,
+    "instrumentos": ["EURUSD"],
+    "desvio_maximo": "0.5",
+    "credencial": {
+      "referencia": "ctrader_mesa",
+      "arquivos": {
+        "client_id": "ficheiro:/fora/do/repo/client_id.key",
+        "client_secret": "ficheiro:/fora/do/repo/client_secret.key",
+        "access_token": "ficheiro:/fora/do/repo/access_token.key",
+        "refresh_token": "ficheiro:/fora/do/repo/refresh_token.key"
+      }
+    }
+  },
+  "casos": [
+    {
+      "caso": "ficha/desvio-maximo-na-forma-do-contrato-passa",
+      "ficha": {},
+      "esperadoOk": true,
+      "conferir": {"desvio_maximo": "0.5", "instrumentos": ["EURUSD"]},
+      "nota": "FORMA BOA: `0.5` e' decimal textual estritamente positivo (a forma do contrato). A ficha PASSA e le'-se o valor declarado, sem ser reescrito."
+    },
+    {
+      "caso": "ficha/desvio-maximo-como-inteiro-textual-passa",
+      "ficha": {"desvio_maximo": "1"},
+      "esperadoOk": true,
+      "conferir": {"desvio_maximo": "1"},
+      "nota": "A forma do contrato tambem admite um inteiro textual positivo (`1` = 1%): e' o outro ramo do padrao `decimal_positivo`, e nao um caso de tolerancia."
+    },
+    {
+      "caso": "ficha/sem-desvio-maximo-recusa",
+      "sem": ["desvio_maximo"],
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "AUSENCIA: o campo e' obrigatorio (esta' em `CAMPOS_LIDOS`). A recusa NOMEIA o campo — nao se inventa um desvio por omissao."
+    },
+    {
+      "caso": "ficha/desvio-maximo-como-texto-nao-decimal-recusa",
+      "ficha": {"desvio_maximo": "meio"},
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "nota": "FORMA MA': um texto que nao e' decimal. Recusa NOMEADA `formato_invalido` — nao um erro solto a meio da sonda."
+    },
+    {
+      "caso": "ficha/desvio-maximo-zero-recusa",
+      "ficha": {"desvio_maximo": "0"},
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "nota": "FORMA MA': `0` nao e' estritamente positivo. Um desvio de zero por cento seria uma capacidade a menos do que a real declarada como se fosse; recusa."
+    },
+    {
+      "caso": "ficha/desvio-maximo-zero-com-casas-recusa",
+      "ficha": {"desvio_maximo": "0.00"},
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "nota": "FORMA MA': `0.00` e' o mesmo zero escrito de outra maneira — e o padrao do contrato recusa-o de proposito (`decimal_positivo`)."
+    },
+    {
+      "caso": "ficha/desvio-maximo-negativo-recusa",
+      "ficha": {"desvio_maximo": "-1"},
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "nota": "FORMA MA': um desvio negativo nao existe — recusa nomeada."
+    },
+    {
+      "caso": "ficha/desvio-maximo-numero-json-recusa",
+      "ficha": {"desvio_maximo": 0.5},
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "nota": "FORMA MA': um numero JSON (decimal binario) nao e' o decimal TEXTUAL que o contrato exige (D4). Recusa por TIPO, nao por arredondamento."
+    }
+  ]
+}

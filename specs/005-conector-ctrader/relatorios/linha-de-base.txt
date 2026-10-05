@@ -54,3 +54,65 @@ PORTAO DA CASA — DUAS CORRECCOES QUE ESTE RECORTE OBRIGOU (ferramentas/verific
 O QUE AINDA NAO SE PODE MEDIR (e porque')
   portas 6, 7 e 8 (ligacao, sonda_e_manifesto, identidade) — exigem o transporte, que e' a proxima fatia.
   A bateria de conformidade (T049-T052) — exige a app registada na Open API e os tokens do dono.
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+NOTA DATADA — 05/10/2026: o retrato ACIMA (01/10/2026) ENVELHECEU. Nada foi apagado — o texto antigo fica, e
+esta nota e' o estado de HOJE. Cada numero abaixo saiu de um comando que CORREU neste dia (o comando vai colado).
+
+PORTAO DA CASA (tools/verificar-maquina/provar.sh)
+  $ bash tools/verificar-maquina/provar.sh
+  -> provar: 56 de 56 passaram — a maquina decide o que devia, e explica o que nao fez    (rc=0)
+  (acima dizia 33 de 33: e' o MESMO portao, com 23 verificacoes a mais — as bancadas deste conector entraram
+   nele, A-2. Os 33 nunca foram uma mentira; sao um retrato que envelheceu.)
+
+  AS QUATRO BANCADAS DO cTRADER, DENTRO DA PORTA (a saida crua de cada uma, copiada da corrida):
+    ctrader: boleta e fecho (73 casos)         OK   ctrader: 73 casos · 73 ok · 0 divergentes
+    ctrader: envio e reconciliacao (27)        OK   ctrader/prova-envio: 27 provas · 27 ok · 0 divergentes
+    ctrader: ritmo do venue (6 provas)         OK   ctrader/prova-ritmo: 6 provas · 6 ok · 0 divergentes
+    ctrader: leitura do mercado (7 provas)     OK   ctrader/prova-leitura: 7 provas · 7 ok · 0 divergentes
+
+CONTRATO
+  $ git status --short contracts/
+  -> (vazio)   — o contrato NAO cresceu por causa deste venue (SC-015 medido outra vez, a 05/10/2026)
+
+O CONECTOR, o que mudou desde 01/10/2026 (acima dizia «portas 6, 7 e 8: exigem o transporte»)
+  - as OITO portas PASSAM com credenciais validas (OAuth autorizado a 05/10/2026): o arranque da' 8 de 8 `passou`;
+  - o ENVIO existe (`colocar_ordem`/`fechar_posicao`); o ESTADO POR INSTRUMENTO e a RECONCILIACAO existem
+    (FR-068/069, motivo `prazo_excedido`); o RITMO existe (50/s · 5/s, FR-071); os EVENTOS DA SESSAO existem
+    (`nao_autorizada`·`autorizada`·`invalidada`, FR-070) e as DUAS CAMADAS conferem-se no envio (FR-048);
+    a LEITURA DO MERCADO (ultimo retrato por simbolo, bid/ask opcionais, livro por deltas) tem leitor.
+
+O QUE CONTINUA POR MEDIR (e e' do DONO, nao do codigo)
+  - a bateria das DOZE provas contra a demonstracao (T049/T050/T052) e as fixtures REAIS do venue (T046):
+    a app esta' registada e o OAuth autorizado, mas a corrida contra a demonstracao e' decisao do dono;
+  - o arranque do conector pelo OPERADOR (A-4 — nada arranca este conector hoje): dono / o outro recorte.
+
+Medido por: sessao do perfil `appbuilder`, 05/10/2026. Os nove passos da obra e a auditoria completa estao em
+`specs/005-conector-ctrader/relatorios/AUDITORIA-2026-10-05.md`. O estado medido das tarefas esta' no `tasks.md`.
+
+══════════════════════════════════════════════════════════════════════════════════════════════════════
+ADENDA — 05/10/2026: a T047 fechada (os casos do contrato nos DOIS lados). O retrato acima tinha 56 de 56 e
+QUATRO bancadas; entrou a QUINTA que faltava, e a porta unica passou a 57 de 57. Nada do retrato acima se apaga.
+
+PORTAO DA CASA (tools/verificar-maquina/provar.sh)
+  $ bash tools/verificar-maquina/provar.sh
+  -> provar: 57 de 57 passaram — a maquina decide o que devia, e explica o que nao fez    (rc=0)
+
+  AS CINCO BANCADAS DO cTRADER, DENTRO DA PORTA (a saida crua de cada uma):
+    ctrader: boleta e fecho (85 casos)          OK   ctrader: 85 casos · 85 ok · 0 divergentes
+    ctrader: envio e reconciliacao (27)         OK   ctrader/prova-envio: 27 provas · 27 ok · 0 divergentes
+    ctrader: ritmo do venue (6 provas)          OK   ctrader/prova-ritmo: 6 provas · 6 ok · 0 divergentes
+    ctrader: leitura do mercado (7 provas)      OK   ctrader/prova-leitura: 7 provas · 7 ok · 0 divergentes
+    ctrader: contrato nos dois lados (19 casos) OK   ctrader/duble: 19 casos · 0 divergentes · duble 19/19 · conector 19/19
+  (a nota de 05/10 acima dizia 73 na «boleta e fecho»: e' o mesmo portao, com os casos da T015/T021/T039 a
+   mais — 85. A T047 somou a QUINTA bancada: os casos do contrato correm agora pelo DUBLE DA MESA
+   (`contracts/mocks/mesa --papel conector`) E pelo lado do CONECTOR (`contracts/esqueleto/framing.py`, o que o
+   `desfecho.py` usa antes de publicar), com a contagem lado a lado e a DIVERGENCIA NOMEADA. A negativa corre
+   DENTRO da bancada — um veredicto do conector estragado de proposito fica VERMELHO a nomear o caso. Sem
+   credencial, sem rede, sem ordem ao venue.)
+
+CONTRATO
+  $ git status --short contracts/
+  -> (vazio)   — a paridade dos dois lados NAO fez o contrato crescer (SC-015 medido outra vez)
+
+Medido por: sessao do perfil `appbuilder`, 05/10/2026 (a T047).

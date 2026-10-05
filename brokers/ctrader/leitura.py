@@ -6,23 +6,24 @@ DADOS — o que o `transporte.py` ja' devolve, os `Resultado` com `{ok, valor, m
 carga do contrato; a ORQUESTRACAO (`ler_mercado`) e' a unica que fala com o `Transporte`. E' a mesma divisao
 da `sonda.py`, e pela mesma razao: a parte que decide prova-se em dado, sem rede e sem chave.
 
-O QUE O TRANSPORTE JA' DA', E O QUE AINDA NAO DA'. Da' a conta (`trader`), o simbolo por id
-(`simbolos_por_id`), as posicoes (`posicoes`), as ordens vivas (`ordens_vivas`) e o nao-realizado por posicao
-(`nao_realizado`). NAO da' — ainda — a cotacao nem o livro: o transporte sabe SUBSCREVER spots e profundidade
-(`subscrever_spots`/`subscrever_profundidade`), mas nao tem leitura do ultimo retrato, porque o retrato chega
-por ACONTECIMENTO do venue. Por isso a `EntradaMercado` entra como parametro declarado: o que o transporte
-ainda nao entrega diz-se, e nao se inventa.
+O QUE O TRANSPORTE DA'. Da' a conta (`trader`), o simbolo por id (`simbolos_por_id`), as posicoes
+(`posicoes`), as ordens vivas (`ordens_vivas`) e o nao-realizado por posicao (`nao_realizado`). E da' tambem o
+ULTIMO RETRATO do mercado por simbolo (`retrato_do_mercado`), que a subscricao de spots/profundidade
+(`seguir_o_mercado`) guarda a partir dos EVENTOS do venue — em INTEIROS RELATIVOS do contrato, para que a
+divisao do venue (`/100000` nos precos, `/100` nos tamanhos) fique so' na parte PURA, num so' caminho. A
+`EntradaMercado` continua a entrar como parametro declarado: e' ela que leva, para a parte pura, o retrato ja'
+na forma crua.
 
 AS UNIDADES DO VENUE (§0 do data-model), que e' onde se erra em silencio:
   * precos: inteiros relativos -> `/100000` (`EXPOENTE_DO_PRECO`);
   * volumes: centesimos de unidade -> `/100` (`EXPOENTE_DO_VOLUME`);
-  * valores monetarios (saldo, PnL): inteiros escalados -> `/10^moneyDigits`. O `moneyDigits` da CONTA nao vem
-    no modelo da biblioteca (achado medido, `transporte._conta_por_dentro`); vem por POSICAO
-    (`Position.money_digits`). A leitura usa o que a conta declarar e, quando ela o nao traz, o que a posicao
-    declara — e' o MESMO numero do venue, lido de onde ele o publica. Sem nenhum dos dois, ou com dois
-    valores DIFERENTES, a leitura RECUSA (`expoente_dos_valores_ausente`/`expoente_dos_valores_divergente`):
-    sem expoente nao se converte dinheiro, e um dinheiro convertido a' sorte e' um numero nosso a passar por
-    numero do venue.
+  * valores monetarios (saldo, PnL): inteiros escalados -> `/10^moneyDigits`. O `moneyDigits` da CONTA e' lido
+    do VENUE (`transporte.trader` pergunta-o por `ProtoOATraderReq`, D2 fechado a 05/10/2026) e chega aqui em
+    `conta["expoente_dos_valores"]`; a POSICAO (`Position.money_digits`) e' a SEGUNDA fonte. A leitura usa o que
+    a conta declarar e, quando ela o nao traz, o que a posicao declara — e' o MESMO numero do venue, lido de
+    onde ele o publica. Sem nenhum dos dois, ou com dois valores DIFERENTES, a leitura RECUSA
+    (`expoente_dos_valores_ausente`/`expoente_dos_valores_divergente`): sem expoente nao se converte dinheiro, e
+    um dinheiro convertido a' sorte e' um numero nosso a passar por numero do venue.
 
 O EQUITY E' DERIVADO, E A SOMA E' NOSSA (achado 1 do data-model). O venue NAO publica o total; publica as
 PARCELAS: `ProtoOATrader.balance` e, por posicao, `ProtoOAPositionUnrealizedPnL.gross_unrealized_pn_l`. A
@@ -87,7 +88,11 @@ LIMITE_DA_MARCA_DE_POSSE = 2147483647
 #: fechado PARA ABRIR (a leitura de estado so' sabe dizer aberto/fechado).
 ESTADOS_DO_VENUE = {
     "ENABLED": "aberto",
-    "DISABLED_WITHOUT_EXECUTION": "fechado",
+    # O NOME E' O DO PROTO (`ProtoOATradingMode.DISABLED_WITHOUT_PENDINGS_EXECUTION`), o MESMO que o
+    # `transporte._nome_do_modo_de_negociacao` publica e o `fecho.MODOS_DE_NEGOCIACAO_CONHECIDOS` fecha. A chave
+    # que aqui estava (`DISABLED_WITHOUT_EXECUTION`, sem `_PENDINGS`) nao e' nome de proto nenhum: um simbolo
+    # desabilitado atravessaria o mapa e RECUSARIA a leitura. FECHADO a 05/10/2026.
+    "DISABLED_WITHOUT_PENDINGS_EXECUTION": "fechado",
     "DISABLED_WITH_PENDINGS_EXECUTION": "fechado",
     "CLOSE_ONLY_MODE": "fechado",
 }

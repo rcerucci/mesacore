@@ -36,6 +36,11 @@ CAMPOS_LIDOS = (
     "conta",
     "ctid_trader_account_id",
     "instrumentos",
+    # O DESVIO MAXIMO que o venue aceita, em percentagem (A-1, fechado a 05/10/2026). Entra na lista
+    # dos que se LEEM porque a porta `sonda_e_manifesto` o exige como ULTIMA entrada: sem ele a porta
+    # ficava `nao_corrida` e o manifesto nunca era publicado — e declarar este campo era, ate' aqui,
+    # recusa `campo_desconhecido` (a ficha e' fechada e nao o lia). MEDIDO a 05/10/2026, antes e depois.
+    "desvio_maximo",
     "credencial",
 )
 CAMPOS_LIDOS_DA_CREDENCIAL = ("referencia", "arquivos")
@@ -51,6 +56,8 @@ class Ficha:
     conta: str
     ctid_trader_account_id: int
     instrumentos: tuple[str, ...]
+    #: O desvio maximo aceite, em percentagem de movimento — decimal TEXTUAL estritamente positivo.
+    desvio_maximo: str
     credencial_referencia: str
     credencial_arquivos: dict[str, str]
     origem: str
@@ -187,6 +194,23 @@ def ler_ficha(caminho: Path) -> Ficha | Recusa:
     if len(set(instrumentos)) != len(instrumentos):
         return recusa("valor_fora_da_banda", f"`instrumentos` repete um nome: {instrumentos}")
 
+    # O DESVIO MAXIMO — a FORMA e' a do contrato, e o campo novo valida-se como os outros (nao se aceita
+    # so' porque existe). E' um decimal TEXTUAL estritamente positivo, `_defs/forma.schema.json#/$defs/
+    # decimal_positivo`: aceita `0.5`, e RECUSA `0`, `0.00`, `-1`, `"abc"` e um numero JSON (decimal
+    # binario). A forma do contrato e' o que a sonda publica no manifesto (`manifesto.desvio_maximo`),
+    # logo uma forma que o manifesto recusaria e' recusada AQUI, com o nome do campo — e nunca mais
+    # tarde, a cair a meio da sonda. (A-1: sem este campo na lista dos lidos, a porta da sonda nem
+    # corria; a forma ma' tem de ser recusa NOMEADA, e nao um `ValueError` no vento.)
+    desvio = dados["desvio_maximo"]
+    if not isinstance(desvio, str) or not re.match(r"^(0*\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\.[0-9]+)?)$", desvio):
+        return recusa(
+            "formato_invalido",
+            f"`desvio_maximo` = {desvio!r} tem de ser a percentagem de desvio em decimal TEXTUAL "
+            "estritamente positivo, na forma do contrato (`0.5`): `0`, `0.00`, um negativo, um texto que "
+            "nao seja decimal ou um numero JSON (decimal binario) RECUSAM. E' o valor que a sonda publica "
+            "no manifesto (`desvio_maximo`), e um desvio inventado seria uma capacidade a mais do que a real",
+        )
+
     credencial = dados["credencial"]
     if not isinstance(credencial, dict):
         return recusa(
@@ -234,6 +258,7 @@ def ler_ficha(caminho: Path) -> Ficha | Recusa:
         conta=conta.strip(),
         ctid_trader_account_id=identidade,
         instrumentos=tuple(instrumentos),
+        desvio_maximo=desvio,
         credencial_referencia=str(credencial["referencia"]),
         credencial_arquivos={c: str(v) for c, v in arquivos.items() if not c.startswith("_")},
         origem=str(caminho),

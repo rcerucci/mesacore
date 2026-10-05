@@ -1,0 +1,272 @@
+{
+  "nota": "Os casos do CONTRATO do conector cTrader no DUBLE DA MESA (contracts/mocks/mesa, --papel conector): a boleta e' do duble, o desfecho e' deste venue. Serve DOIS leitores, e di-lo: (1) o duble de mesa le `resposta_do_plugin` no papel `conector` e confere-o contra o envelope e o esquema do tipo; (2) a bancada `casos/correr-duble.py` le os MESMOS casos e corre-os TAMBEM pelo lado do CONECTOR (o motor do contrato, contracts/esqueleto/framing.py, o mesmo que o `desfecho.py` usa antes de publicar). Divergencia entre os dois lados e' FALHA NOMEADA (T047). Nenhuma credencial e nenhuma rede: e' payload do venue EM DADO.",
+  "dono": "brokers/ctrader/casos/casos-duble.json",
+  "mensagem": "desfecho",
+  "fonte_do_venue": "brokers/ctrader/casos/desfecho.casos.json",
+  "nota_da_fonte": "Os casos VALIDOS (fonte: \"venue\") nao trazem o desfecho escrito: eles nomeiam o caso de `desfecho.casos.json` em `fonte`, e a bancada MONTA o desfecho por `desfecho_do_evento`/`desfecho_do_silencio` — o MESMO payload deste venue vem do conector, e nao de uma copia que envelhece. Os ADVERSARIOS (fonte: \"declarado\") trazem a `resposta_do_plugin` escrita a mao, porque um payload torto nao se produz de proposito.",
+  "versao_do_contrato": {
+    "nota": "A versao do contrato NAO se escreve aqui. Os casos escrevem o TOKEN (`$CONTRATO`, e `$CONTRATO_A_FRENTE` onde o caso e' ADVERSARIO), e o token e' trocado pela versao LIDA de `contracts/versao.json` no momento de os ler — pelo duble da mesa E pela bancada, que tem de resolver IGUAL.",
+    "vigente": "$CONTRATO",
+    "a_frente": "$CONTRATO_A_FRENTE"
+  },
+  "veredictos_do_duble": ["aceite", "recusado", "espera", "desconhecido"],
+  "nota_dos_veredictos": "O conjunto FECHADO do duble de mesa (contracts/mocks/mesa/main.py, VEREDICTOS). E' o veredicto sobre a MENSAGEM (ela passa o envelope e o esquema?), e nao a classificacao do desfecho (aceite|parcial|desconhecido|recusado) — uma recusa do venue e' uma MENSAGEM valida.",
+  "motivos_do_duble": [],
+  "nota_dos_motivos_do_duble": "Aqui nao ha motivo PROPRIO do duble: todos os motivos destes casos sao do CONTRATO (vocabulario.json) e aparecem nos dois lados. O duble que so' ele pronuncia (o plugin calado, o plugin que recusou) nao tem caso neste ficheiro — o `casos-duble.json` do hyperliquid e' que os exercita, com `modo_adversario`.",
+  "boleta_da_mesa": {
+    "nota": "A boleta so' entra quando o duble fala com um plugin A SERIO (`--plugin` + `com_plugin`). Aqui nao ha plugin a serio (o desfecho e' do proprio caso), e a boleta nao e' necessaria: o duble confere o `resposta_do_plugin` declarado. Fica dito para quem procurar a boleta e nao a achar.",
+    "presente": false
+  },
+  "casos": [
+    {
+      "nome": "ctrader/desfecho-preenchimento-total",
+      "fonte": "desfecho/preenchimento-total-traz-o-positionId-e-os-numeros-do-venue",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "ORDEN_FILLED: a posicao existe inteira, e a resolucao traz os numeros do venue. O desfecho e' do conector (desfecho.py) e a MENSAGEM tem de passar o envelope nos dois lados."
+    },
+    {
+      "nome": "ctrader/desfecho-parcial",
+      "fonte": "desfecho/parcial-nao-e-desconhecido",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "ORDER_PARTIAL_FILL: ha' posicao e sabe-se qual. Uma mensagem valida, apesar de a classificacao do desfecho ser `parcial`."
+    },
+    {
+      "nome": "ctrader/desfecho-recusado-com-errorCode",
+      "fonte": "desfecho/recusa-traz-o-errorCode-do-venue-intacto",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "ORDER_REJECTED com errorCode: a CLASSIFICACAO e' `recusado`, mas a MENSAGEM e' valida (traz `motivo`, como o esquema exige na recusa). O duble e o conector tem de dizer os dois `aceite` — a recusa e' da ordem, nao da mensagem."
+    },
+    {
+      "nome": "ctrader/desfecho-silencio-e-desconhecido",
+      "fonte": "desfecho/silencio-alem-do-prazo-e-desconhecido",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "`via: silencio`: a ordem sem resposta dentro do prazo e' `desconhecido` — nem falha nem sucesso. A mensagem leva resolucao e nao leva motivo: e' valida."
+    },
+    {
+      "nome": "ctrader/desfecho-executionType-fora-do-repertorio",
+      "fonte": "desfecho/executionType-fora-do-repertorio-recusa-e-nao-vira-aceite",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "O venue mandou um `executionType` que o conector nao conhece: a CLASSIFICACAO e' `recusado`/`valor_fora_do_conjunto`, e a mensagem sai valida (a palavra do venue fica intacta em resposta_do_venue)."
+    },
+    {
+      "nome": "ctrader/desfecho-orderStatus-fora-do-repertorio",
+      "fonte": "desfecho/orderStatus-fora-do-repertorio-recusa",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "orderStatus fora do repertorio: recusa do desfecho, mensagem valida."
+    },
+    {
+      "nome": "ctrader/desfecho-dealStatus-em-erro",
+      "fonte": "desfecho/dealStatus-em-erro-recusa",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "dealStatus ERROR: o negocio nao se fez — recusa do desfecho, mensagem valida."
+    },
+    {
+      "nome": "ctrader/desfecho-ordem-cancelada",
+      "fonte": "desfecho/ordem-cancelada-recusa",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "ORDER_CANCELLED: nao chegou a acontecer — recusa do desfecho, mensagem valida."
+    },
+    {
+      "nome": "ctrader/desfecho-order-accepted-em-repouso",
+      "fonte": "desfecho/order-accepted-em-repouso-e-aceite",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "ORDER_ACCEPTED: a ordem esta' em repouso e continua viva — mensagem valida."
+    },
+    {
+      "nome": "ctrader/desfecho-sem-executionType",
+      "fonte": "desfecho/sem-executionType-recusa-e-nao-adivinha",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "Sem `executionType`: o conector RECUSA (campo_obrigatorio_ausente) e nao adivinha — a mensagem sai valida, sem a palavra proibida."
+    },
+    {
+      "nome": "ctrader/desfecho-erro-do-venue-sem-tipo-novo",
+      "fonte": "desfecho/erro-do-venue-sem-tipo-novo-manda",
+      "veredicto_esperado": "aceite",
+      "motivo_esperado": null,
+      "nota": "errorCode sem tipo novo do repertorio: manda a recusa do venue, mensagem valida."
+    },
+
+    {
+      "nome": "adversario/recusado-sem-motivo",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "ADVERSARIO: `recusado` SEM `motivo` — o esquema tem DUAS condicoes if/then e uma delas exige o motivo na recusa. O duble e o conector tem de recusar a mensagem pelo MESMO motivo.",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/recusado-sem-motivo",
+        "carga": {
+          "classificacao": "recusado",
+          "resposta_do_venue": {"executionType": "ORDER_REJECTED"}
+        }
+      }
+    },
+    {
+      "nome": "adversario/aceite-sem-resolucao",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "nota": "ADVERSARIO: `aceite` SEM `resolucao` — fora da recusa, a resolucao e OBRIGATORIA (nao se aceita pela palavra, RN-C10).",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/aceite-sem-resolucao",
+        "carga": {
+          "classificacao": "aceite",
+          "resposta_do_venue": {"executionType": "ORDER_FILLED"}
+        }
+      }
+    },
+    {
+      "nome": "adversario/classificacao-fora-das-quatro",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "nota": "ADVERSARIO: uma quinta classificacao nao existe — o conjunto e' FECHADO (aceite|parcial|desconhecido|recusado).",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/classificacao-fora",
+        "carga": {
+          "classificacao": "provavelmente_entrou",
+          "resolucao": {
+            "quantidade": "10",
+            "nocional": "10850",
+            "margem_empenhada": "108.5",
+            "alavancagem_efectiva": "100",
+            "preco_de_liquidacao": "0"
+          },
+          "resposta_do_venue": {"executionType": "ORDER_FILLED"}
+        }
+      }
+    },
+    {
+      "nome": "adversario/campo-a-mais",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_desconhecido",
+      "nota": "ADVERSARIO: o contrato e' FECHADO (additionalProperties:false) — um campo que o esquema nao declara recusa a mensagem inteira.",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/campo-a-mais",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "10",
+            "nocional": "10850",
+            "margem_empenhada": "108.5",
+            "alavancagem_efectiva": "100",
+            "preco_de_liquidacao": "0"
+          },
+          "resposta_do_venue": {"executionType": "ORDER_FILLED"},
+          "campo_que_nao_existe": 1
+        }
+      }
+    },
+    {
+      "nome": "adversario/versao-a-frente",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "versao_do_contrato_divergente",
+      "nota": "ADVERSARIO: a versao do contrato e' por igualdade EXACTA (D7) — a versao a frente tambem e' divergente, nunca «compativel».",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO_A_FRENTE",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/versao-a-frente",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "10",
+            "nocional": "10850",
+            "margem_empenhada": "108.5",
+            "alavancagem_efectiva": "100",
+            "preco_de_liquidacao": "0"
+          },
+          "resposta_do_venue": {"executionType": "ORDER_FILLED"}
+        }
+      }
+    },
+    {
+      "nome": "adversario/nulo-na-resolucao",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "valor_nulo_nao_permitido",
+      "nota": "ADVERSARIO: `null` nao existe no contrato (D4) — a ausencia e' a chave que nao esta' la', e o valor nulo tem nome proprio.",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/nulo",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": null,
+            "nocional": "10850",
+            "margem_empenhada": "108.5",
+            "alavancagem_efectiva": "100",
+            "preco_de_liquidacao": "0"
+          },
+          "resposta_do_venue": {"executionType": "ORDER_FILLED"}
+        }
+      }
+    },
+    {
+      "nome": "adversario/decimal-com-expoente",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "formato_invalido",
+      "nota": "ADVERSARIO: o decimal viaja em TEXTO sem expoente (D4) — `1.23e-2` tem o tipo certo e a forma errada.",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/expoente",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "1.23e-2",
+            "nocional": "10850",
+            "margem_empenhada": "108.5",
+            "alavancagem_efectiva": "100",
+            "preco_de_liquidacao": "0"
+          },
+          "resposta_do_venue": {"executionType": "ORDER_FILLED"}
+        }
+      }
+    },
+    {
+      "nome": "adversario/unidade-de-corretora",
+      "fonte": "declarado",
+      "veredicto_esperado": "recusado",
+      "motivo_esperado": "campo_em_unidade_de_corretora",
+      "nota": "ADVERSARIO: um campo com nome de unidade de corretora (`pontos`) dentro de onde se espera unidade NEUTRA — a resolucao nao tem unidade nossa.",
+      "resposta_do_plugin": {
+        "contrato": "$CONTRATO",
+        "tipo": "desfecho",
+        "id": "ctrader-adv/unidade",
+        "carga": {
+          "classificacao": "aceite",
+          "resolucao": {
+            "quantidade": "10",
+            "nocional": "10850",
+            "margem_empenhada": "108.5",
+            "alavancagem_efectiva": "100",
+            "preco_de_liquidacao": "0",
+            "pontos": "108500"
+          },
+          "resposta_do_venue": {"executionType": "ORDER_FILLED"}
+        }
+      }
+    }
+  ]
+}

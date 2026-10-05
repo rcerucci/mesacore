@@ -76,6 +76,13 @@
       }
     },
     {
+      "caso": "ordens/mercado-por-faixa-desvio-que-nao-cai-em-pontos-inteiros-arredonda-para-baixo",
+      "esperadoOk": true,
+      "pedido": {"saldo": "1121.07", "preco": "1.12107"},
+      "conferir": {"volume": 10000, "slippageInPoints": 560, "baseSlippagePrice": 112107},
+      "nota": "D5 (05/10/2026): o `desvio_maximo` e' uma percentagem, e o venue so' aceita `slippageInPoints` INTEIRO. Sobre um preco de 5 decimais (EURUSD: 1.12107), 0,5% da' 560,535 pontos — o numero exacto nao cabe. Como a tolerancia e' um TETO, arredonda-se para BAIXO (560), nunca para cima. Antes RECUSAVA (`valor_fora_da_banda`), o que tornava impossivel enviar UMA ordem a mercado (um preco de 5 decimais quase nunca cai na grelha dos pontos). Volume 10000 confere a grelha; baseSlippagePrice = 1.12107 x 100000 = 112107. O caso que poe este a VERMELHO e' a negativa `desvio-arredonda-para-cima`."
+    },
+    {
       "caso": "ordens/mercado-por-faixa-com-os-numeros-do-venue-a-resolucao-fica-completa",
       "esperadoOk": true,
       "boleta": {"alavancagem": "2"},
@@ -92,6 +99,20 @@
           "preco_de_liquidacao": "0.625"
         }
       }
+    },
+    {
+      "caso": "ordens/mercado-por-faixa-alavancagem-30-projeta-o-preco-de-liquidacao",
+      "esperadoOk": true,
+      "boleta": {"alavancagem": "30"},
+      "conferir": {"volume": 240000, "resolucao": {"quantidade": "2400", "nocional": "3000", "preco_de_liquidacao": "1.2"}},
+      "nota": "A-12 (feito a 05/10/2026): sem os numeros do venue, o `preco_de_liquidacao` deixou de ficar AUSENTE quando a alavancagem NAO e' 1 — projeta-se pela regra da irmao, `preco x (A-1) / A` ao tick POR BAIXO. Aqui `1.25 x 29/30` = 1.20833... -> `1.2` (a projecao e' [C]; o numero do venue, quando existir, manda sobre ela). A resolucao pre-envio continua PARCIAL (margem_empenhada e alavancagem_efectiva so' o venue os da'), e o corredor exige a recusa por `campo_obrigatorio_ausente`."
+    },
+    {
+      "caso": "ordens/mercado-por-faixa-alavancagem-5-projeta-o-preco-de-liquidacao",
+      "esperadoOk": true,
+      "boleta": {"alavancagem": "5"},
+      "conferir": {"volume": 40000, "resolucao": {"quantidade": "400", "nocional": "500", "preco_de_liquidacao": "1"}},
+      "nota": "O par de controle da projecao: `1.25 x 4/5` = 1.0 exacto -> `1`. A regra nao distingue a alavancagem 5 da 30 — so' distingue a 1, que da' `0` (e zero e' VERDADE, dito pelo contrato)."
     },
     {
       "caso": "ordens/stop-limite-aceite-e-o-stop-e-o-alvo-saem-relativos-com-sinal",
@@ -232,6 +253,42 @@
       "motivo_esperado": "capacidade_nao_declarada",
       "boleta": {"reduce_only": true, "posicao_pct": "0.5"},
       "nota": "O ctrader nao tem `reduce_only` (RN-CT34) e a reducao parcial assenta nele: RECUSA nomeada, e nao uma abertura disfarcada de reducao (FR-007). O manifesto declara `reduce_only_suportado: false`."
+    },
+    {
+      "caso": "ordens/virada-com-posicao-oposta-abre-o-lado-declarado",
+      "esperadoOk": true,
+      "boleta": {"lado": "buy", "reverter": true},
+      "pedido": {"posicao_a_reverter": {"posicao": 555, "symbol_id": 42, "lado": "SELL", "volume": 8000}},
+      "conferir": {
+        "orderType": "MARKET_RANGE",
+        "tradeSide": "BUY",
+        "volume": 8000,
+        "resolucao": {"quantidade": "80", "nocional": "100", "preco_de_liquidacao": "0"}
+      },
+      "nota": "1.10.0(c): a virada NAO cabe numa ordem neste venue (nao faz netting, RN-CT34) — a traducao monta a perna de ABERTURA (o lado declarado) e CONFERE a posicao viva (entregue como DADO, o conector e' quem a le'). A perna de FECHO e' por POSICAO (`fecho.py`), e a costura envia as duas na mesma passagem (`processo._enviar_reversao_e_desfechar`). A recusa que este caso NÃO pode dar e' a antiga (`capacidade_nao_declarada`)."
+    },
+    {
+      "caso": "ordens/virada-com-posicao-oposta-e-reduce-only-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "reversao_com_reduce_only",
+      "boleta": {"lado": "buy", "reverter": true, "reduce_only": true, "posicao_pct": "1"},
+      "pedido": {"posicao_a_reverter": {"posicao": 555, "symbol_id": 42, "lado": "SELL", "volume": 8000}},
+      "nota": "1.10.0(b): «inverte» e «reduz, nunca inverte» nao cabem na mesma ordem — RECUSA antes de olhar a posicao."
+    },
+    {
+      "caso": "ordens/virada-sem-posicao-viva-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "reversao_sem_posicao_a_reverter",
+      "boleta": {"lado": "buy", "reverter": true},
+      "nota": "1.11.0#o_espelho_do_vocabulario: sem a posicao viva na traducao nao ha' o que virar — e mandar so' o lado novo seria uma entrada a mais com o registo a dizer `reverse`. A negativa `virada-sem-posicao-aceita` (correr.py) repoe o defeito e exige o VERMELHO."
+    },
+    {
+      "caso": "ordens/virada-com-posicao-do-mesmo-lado-recusa",
+      "esperadoOk": false,
+      "motivo_esperado": "reversao_sem_posicao_a_reverter",
+      "boleta": {"lado": "buy", "reverter": true},
+      "pedido": {"posicao_a_reverter": {"posicao": 555, "symbol_id": 42, "lado": "BUY", "volume": 8000}},
+      "nota": "A posicao viva ja' esta' do lado declarado: uma «virada» para o proprio lado seria uma entrada a mais — RECUSA nomeada (o irmao faz o mesmo, brokers/hyperliquid/ordens.ts:618)."
     }
   ],
   "nota_dos_casos_de_fecho": "O fecho fecha POR POSICAO (`positionId`) e NUNCA por lado contrario; sem posicao nao sai ordem nenhuma (`nada` com motivo); e os dois modos de «fechar sim, abrir nao» — o direito da CONTA (`accessRights = CLOSE_ONLY`) e o modo do SIMBOLO (`tradingMode = CLOSE_ONLY_MODE`) — recusam a ABERTURA e deixam o FECHO passar.",
@@ -325,6 +382,35 @@
       },
       "esperado_abertura": {"acao": "recusar", "motivo": "capacidade_nao_declarada"},
       "esperado": {"acao": "nada", "motivo": "sem_posicao_para_fechar", "tem_ordem": false}
+    }
+  ],
+  "nota_da_sequencia_de_fecho": "A SEQUENCIA (SC-017 no offline): os casos acima sao de UMA decisao cada; este corre a DECISAO ATRAS DA DECISAO sobre uma fixture de posicoes que EVOLUI — cada fecho tira a posicao (o venue fecha-a), cada abertura poe uma. No fim exige-se ZERO posicoes, TRES fechos e, sobre a lista vazia, o fecho do INEXISTENTE como `nada` SEM ordem. E' a prova de que o caminho do fecho nao deixa posicao a tras nem inventa uma ordem para fechar o que nao existe (um fecho por lado contrario ABRIRIA — RN-CT34).",
+  "sequencias_de_fecho": [
+    {
+      "caso": "fecho/sequencia-de-tres-aberturas-e-fechos-termina-com-zero-posicoes",
+      "conta": "demo-ctrader-1",
+      "instrumento": "EURUSD",
+      "symbol_id": 42,
+      "direitos_da_conta": "FULL_ACCESS",
+      "modo_do_simbolo": "ENABLED",
+      "marca_do_cliente": "7-ciclo-seq/linha-1",
+      "passos": [
+        {"abrir": {"posicao": 601, "lado": "BUY", "volume": 8000}},
+        {"fechar": {"posicao": 601}},
+        {"abrir": {"posicao": 602, "lado": "SELL", "volume": 5000}},
+        {"fechar": {"posicao": 602}},
+        {"abrir": {"posicao": 603, "lado": "BUY", "volume": 3000}},
+        {"fechar": {"posicao": 603}},
+        {"fechar_o_inexistente": true}
+      ],
+      "esperado": {
+        "aberturas": 3,
+        "fechos": 3,
+        "fechos_com_ordem": 3,
+        "posicoes_no_fim": 0,
+        "fecho_do_inexistente": {"acao": "nada", "motivo": "sem_posicao_para_fechar", "tem_ordem": false}
+      },
+      "nota": "Tres aberturas e tres fechos, um a seguir ao outro, sobre a fixture de posicoes. Cada fecho leva o `positionId` da posicao aberta e o lado OPOSTO, e tira-a da lista (o venue fecha-a). No fim: a lista fica VAZIA, houve TRES fechos com ordem, e o setimo passo (fechar o inexistente) devolve `nada` com `sem_posicao_para_fechar` e NENHUMA ordem (SC-017)."
     }
   ]
 }

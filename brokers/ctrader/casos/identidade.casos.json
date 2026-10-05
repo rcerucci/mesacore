@@ -1,0 +1,94 @@
+{
+  "nota": "Casos da PORTA DE IDENTIDADE do conector cTrader (`identidade.py`: `conferir_identidade` e `conferir_direitos`). A identidade e' pura: recebe o `ctid_trader_account_id` da ficha, a resposta CRUA do venue (a lista de contas do token) e os DIREITOS da conta, e devolve um veredicto — por isso e' um caso em DADO, corrido pelo `correr.py`. O que se prova, com o PAR DE CONTROLE: (1) o id da ficha NAO estar entre as contas do token RECUSA a nomear `identidade_da_conta_divergente`, com os ids todos ditos; (2) um `accessRights` INSUFICIENTE (`NO_TRADING`/`NO_LOGIN`) RECUSA a nomear `sem_direito_de_operar` — o conector nao arranca sem poder fechar (RN-CT12); (3) o fail-closed: sem lista de contas, ou com id nao-inteiro, RECUSA em vez de assumir; (4) as boas formas PASSAM (id entre as contas, `FULL_ACCESS`, e `CLOSE_ONLY` que arranca a DECLARAR que so' fecha). A recusa NOMEADA e' medida pelo `motivo` E pelo `porque_contem`: um nome de recusa que nao nomeia os ids/de o direito nao serve. O caso que viola a regra poe a bancada VERMELHA: se a comparacao de identidade regredir (aceitar um id que nao esta' entre as contas), o caso `divergente-...` DIVERGE a nomea'-lo.",
+  "casos": [
+    {
+      "caso": "identidade/divergente-o-id-da-ficha-nao-esta-entre-as-contas-do-token",
+      "funcao": "conferir_identidade",
+      "declarado": 45292558,
+      "devolvido": [{"ctidTraderAccountId": 11111111}, {"ctidTraderAccountId": 22222222}],
+      "conta": "conta-de-bancada",
+      "esperadoOk": false,
+      "motivo_esperado": "identidade_da_conta_divergente",
+      "porque_contem": ["11111111", "22222222", "45292558"],
+      "nota": "IDENTIDADE DIVERGENTE: o token autentica as contas 11111111 e 22222222 e a ficha declara 45292558. A recusa NOMEIA as contas do token e o id declarado — nao se opera por uma conta que o venue nao confirmou (FR-049/RN-CT8)."
+    },
+    {
+      "caso": "identidade/id-da-ficha-nao-inteiro-positivo-recusa",
+      "funcao": "conferir_identidade",
+      "declarado": 0,
+      "devolvido": [{"ctidTraderAccountId": 45292558}],
+      "conta": "conta-de-bancada",
+      "esperadoOk": false,
+      "motivo_esperado": "formato_invalido",
+      "nota": "Sem um id declarado utilizavel nao ha' o que comparar: recusa `formato_invalido`, e nao uma comparacao contra zero."
+    },
+    {
+      "caso": "identidade/venue-sem-a-lista-de-contas-recusa-em-vez-de-adivinhar",
+      "funcao": "conferir_identidade",
+      "declarado": 45292558,
+      "devolvido": null,
+      "conta": "conta-de-bancada",
+      "esperadoOk": false,
+      "motivo_esperado": "campo_obrigatorio_ausente",
+      "porque_contem": ["nao devolveu a lista de contas"],
+      "nota": "A lista ausente NUNCA vira «sim»: o desconhecido recusa (FR-023). E' o fail-closed da porta."
+    },
+    {
+      "caso": "identidade/id-entre-as-contas-do-token-passa",
+      "funcao": "conferir_identidade",
+      "declarado": 45292558,
+      "devolvido": [{"ctidTraderAccountId": 99999999}, {"ctidTraderAccountId": 45292558}],
+      "conta": "conta-de-bancada",
+      "esperadoOk": true,
+      "conferir": {"ok": true, "motivo": null, "so_fecha": false},
+      "nota": "CONTROLE: o id declarado esta' entre as contas que o token autentica — a porta PASSA e nao marca `so_fecha`."
+    },
+    {
+      "caso": "identidade/direitos-NO_TRADING-recusam-o-arranque",
+      "funcao": "conferir_direitos",
+      "direitos": "NO_TRADING",
+      "conta": "conta-de-bancada",
+      "esperadoOk": false,
+      "motivo_esperado": "sem_direito_de_operar",
+      "porque_contem": ["NO_TRADING", "nao arranca sem poder fechar"],
+      "nota": "DIREITOS INSUFICIENTES: uma conta que nao opera nem fecha nao deixa arrancar — um processo vivo que nao consegue desfazer posicao e' pior do que nenhum (RN-CT12). O `porque` nomeia o direito."
+    },
+    {
+      "caso": "identidade/direitos-NO_LOGIN-recusam-o-arranque",
+      "funcao": "conferir_direitos",
+      "direitos": "NO_LOGIN",
+      "conta": "conta-de-bancada",
+      "esperadoOk": false,
+      "motivo_esperado": "sem_direito_de_operar",
+      "porque_contem": ["NO_LOGIN"],
+      "nota": "O outro direito insuficiente do conjunto fechado: recusa pelo mesmo nome, e nomeia o direito."
+    },
+    {
+      "caso": "identidade/direitos-fora-do-conjunto-conhecido-recusam",
+      "funcao": "conferir_direitos",
+      "direitos": "SANDBOX_ACCESS",
+      "conta": "conta-de-bancada",
+      "esperadoOk": false,
+      "motivo_esperado": "valor_fora_do_conjunto",
+      "nota": "Um `accessRights` que nao se le' NAO se assume (conjunto fechado): recusa `valor_fora_do_conjunto`, e nao um direito adivinhado."
+    },
+    {
+      "caso": "identidade/direitos-CLOSE_ONLY-arranca-e-declara-so-fecha",
+      "funcao": "conferir_direitos",
+      "direitos": "CLOSE_ONLY",
+      "conta": "conta-de-bancada",
+      "esperadoOk": true,
+      "conferir": {"ok": true, "motivo": null, "so_fecha": true},
+      "nota": "CONTROLE do par: `CLOSE_ONLY` ARRANCA (o conector consegue fechar), mas sai marcado `so_fecha=true` — e' a semente da recusa da abertura (FR-066), declarada e nao recusada no arranque."
+    },
+    {
+      "caso": "identidade/direitos-FULL_ACCESS-arranca",
+      "funcao": "conferir_direitos",
+      "direitos": "FULL_ACCESS",
+      "conta": "conta-de-bancada",
+      "esperadoOk": true,
+      "conferir": {"ok": true, "motivo": null, "so_fecha": false},
+      "nota": "CONTROLE: `FULL_ACCESS` arranca a operar e a fechar, sem marca de `so_fecha`."
+    }
+  ]
+}

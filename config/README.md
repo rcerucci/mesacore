@@ -127,6 +127,16 @@ um vive no **seu** ficheiro. O sítio é o mesmo de sempre — `~/.config/mesaco
 nome: `ctrader_mesa_<campo>.key`. O nome da pasta é o da conta na Hyperliquid por uma razão, e aqui é o da
 aplicação por outra (abaixo).
 
+> **NOTA DATADA — 05/10/2026: passou a haver um QUINTO ficheiro, e ele NÃO é segredo.** O venue declara, na
+> rotação, o prazo do par (`expires_at`); sem o guardar, o conector tratava o token como expirado em cada
+> arranque e **rodava o par a cada ligação** (medido: os dois `.key` de token mudavam de mtime em cada corrida —
+> 10:08:02, 10:08:31), e a rotação matava o token que a porta da identidade ia usar (A-8/A-9 da auditoria de
+> 05/10/2026). Passou a existir `ctrader_mesa_expira_em.key`, na **mesma** pasta, modo **600**, **derivado do
+> caminho do access token** pelo conector (`_caminhos_da_credencial`, em `brokers/ctrader/processo.py`) — a ficha
+> **não** o declara e não se lhe toca. É **ESTADO** (um instante, que o venue reescreve), e **não um segredo**:
+> pode ser lido, e não serve para autenticar nada. Os passos abaixo continuam a descrever os **quatro** valores
+> que o dono põe à mão; este quinto nasce sozinho, do lado do conector, na primeira rotação.
+
 ```bash
 # 1. a pasta (0700) — a MESMA de sempre; o `install -d` nao se repete por venue
 install -d -m 700 ~/.config/mesacore/credenciais

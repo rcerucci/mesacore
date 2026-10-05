@@ -99,6 +99,11 @@ _PADRAO_DECIMAL = re.compile(r"^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$")
 _PADRAO_DECIMAL_POSITIVO = re.compile(r"^(?:0*\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(?:\.[0-9]+)?)$")
 _PADRAO_INSTRUMENTO = re.compile(r"^[A-Z0-9][A-Z0-9._/-]{1,31}$")
 
+#: A alavancagem que a PROJECCAO do preco de liquidacao ([C]) aceita: um INTEIRO positivo, escrito sem casas.
+#: E' a MESMA exigencia da irmao (`brokers/hyperliquid/conector.ts:304`): uma alavancagem com casas nao tem
+#: projeccao declarada, e o campo fica AUSENTE — nunca um numero meio-inventado.
+_PADRAO_INTEIRO_POSITIVO = re.compile(r"^[1-9][0-9]*$")
+
 
 # -----------------------------------------------------------------------------------------------------------
 # O RESULTADO. Duas formas, e so' duas: ou se traduziu, ou se recusou com motivo.
@@ -365,15 +370,20 @@ def desvio_em_pontos(
         return problema
     movimento = preco * desvio_pct / Decimal(100)
     bruto = movimento * (Decimal(10) ** int(digitos))
-    return _inteiro(
-        bruto,
-        "desvio em pontos",
-        "valor_fora_da_banda",
-        (
-            f"o desvio de {_texto(desvio_pct)}% sobre o preco {_texto(preco)} da' {_texto(bruto)} pontos, que "
-            "nao e' inteiro, e o venue so' aceita pontos inteiros de desvio"
-        ),
-    )
+    # [DECISAO 05/10/2026, para o dono corrigir se quiser] O DESVIO E' UMA TOLERANCIA MAXIMA, e o venue so'
+    # aceita pontos INTEIROS. Um preco de instrumento real (EURUSD = 5 decimais) quase nunca produz um numero
+    # EXACTO de pontos — 0,5% sobre 1,12107 da' 560,535 pontos. Recusar (como antes) tornava este conector
+    # incapaz de enviar UMA ordem: nao ha' percentagem finita que caia na grelha de um preco de 5 decimais.
+    # A tolerancia e' um TETO, logo arredonda-se para BAIXO (aceitar MENOS desvio do que o dono pediu e' o lado
+    # seguro; arredondar para CIMA aceitaria mais). Isto NAO e' o arredondamento que o FR-056 proibe: esse e' o
+    # do TAMANHO, e continua intacto (um tamanho fora da grelha RECUSA, nunca se ajusta).
+    if bruto < 1:
+        return _recusa(
+            "valor_fora_da_banda",
+            f"o desvio de {_texto(desvio_pct)}% sobre o preco {_texto(preco)} da' {_texto(bruto)} pontos, abaixo "
+            "de UM ponto inteiro: o venue nao representa esta tolerancia, e zero pontos nao e' uma tolerancia",
+        )
+    return int(bruto)
 
 
 def _grelha_do_ponto(digitos: Any, posicao_do_pip: Any) -> Recusa | None:
@@ -447,6 +457,88 @@ def _marca_do_inteiro(da_boleta: Any, referencia: Any) -> str | Recusa:
 
 
 # -----------------------------------------------------------------------------------------------------------
+# A PROJECCAO DO PRECO DE LIQUIDACAO ([C]) — a conta NOSSA que a resolucao pre-envio precisa.
+#
+# O venue desta ponta NAO publica o preco de liquidacao antes de a posicao existir, e o contrato EXIGE os cinco
+# campos da resolucao. A regra e' a da irmao (`brokers/hyperliquid/conector.ts:302`), portada a 05/10/2026 (A-12):
+# `preco x (A-1) / A`, quantizado ao `tick` POR BAIXO. Aritmetica EXACTA de inteiros — nunca virgula flutuante.
+# A projeccao e' [C] e vai dita como tal; quando o VENUE publicar o numero (a posicao lida depois do envio), e' ELE
+# que manda — a projeccao nao o substitui (`montar_resolucao` da' prioridade ao numero do venue).
+# -----------------------------------------------------------------------------------------------------------
+
+
+def _casas_decimais(texto: str) -> int:
+    """O numero de casas decimais de um decimal TEXTUAL, sem expoente (`1.25` -> 2) — conta da irmao."""
+    ponto = texto.find(".")
+    return 0 if ponto < 0 else len(texto) - ponto - 1
+
+
+def _escalado(texto: str) -> int:
+    """O decimal TEXTUAL -> inteiro na escala das suas casas (`1.25` -> `125`), sem virgula flutuante."""
+    ponto = texto.find(".")
+    return int(texto) if ponto < 0 else int(texto[:ponto] + texto[ponto + 1 :])
+
+
+def _formatar_escalado(valor: int, escala: int) -> str:
+    """O inteiro na escala `escala` -> decimal TEXTUAL, sem expoente e sem zeros a' direita (irmao `formatar`)."""
+    if escala == 0:
+        return str(valor)
+    digitos = str(valor).rjust(escala + 1, "0")
+    inteiro = digitos[: len(digitos) - escala]
+    fraccao = digitos[len(digitos) - escala :].rstrip("0")
+    return inteiro if fraccao == "" else f"{inteiro}.{fraccao}"
+
+
+def preco_de_liquidacao_projectado(preco: str, alavancagem: str, tick: str) -> str | None:
+    """O preco de liquidacao PROJECTADO, para a resolucao que sai ANTES do envio — **[C] declarado**.
+
+    A MESMA REGRA DA IRMAO (`brokers/hyperliquid/conector.ts:302 precoDeLiquidacaoProjectado`, medida a
+    05/10/2026 — A-12): `preco x (A-1) / A`, quantizado ao `tick` do simbolo POR BAIXO (o lado que nao
+    promete), em aritmetica EXACTA de inteiros. A alavancagem 1 liquida a preco ZERO — e zero e' um valor
+    LEGITIMO aqui, e nao «nao sei» (o contrato di-lo, `resolucao.schema.json`).
+
+    PORQUE EXISTE. O venue so' calcula o preco de liquidacao depois de a posicao existir, e o contrato exige o
+    campo na resolucao pre-envio (RN-C10). Sem esta projeccao, com alavancagem != 1 a resolucao saia com 4 dos
+    5 campos, o contrato recusava-a por `campo_obrigatorio_ausente`, e numa ordem SILENCIOSA nao saia linha
+    nenhuma — a mesa nunca ficava a saber que a ordem ficou em duvida (FR-067 quebrado no caso comum, medido).
+
+    E' uma conta [C] sobre um numero do venue ([V]). Quando o venue publicar o numero, e' ELE que manda.
+
+    `None` quando algum dos tres nao tem a forma que a irmao exige (preco/tick decimais, alavancagem inteiro
+    positivo): nao se projeta sobre o que nao se le', e o campo fica AUSENTE — o estado honesto.
+    """
+    if not isinstance(preco, str) or not _PADRAO_DECIMAL.match(preco):
+        return None
+    if not isinstance(alavancagem, str) or not _PADRAO_INTEIRO_POSITIVO.match(alavancagem):
+        return None
+    if not isinstance(tick, str) or not _PADRAO_DECIMAL.match(tick):
+        return None
+    p = _casas_decimais(preco)
+    t = _casas_decimais(tick)
+    A = int(alavancagem)
+    # A alavancagem 1 liquida a preco ZERO — e zero e' um valor LEGITIMO aqui, e nao «nao sei» (o contrato di-lo).
+    if A == 1:
+        return "0"
+    bruto = _escalado(preco) * (A - 1) // A  # em unidades de 10^-p, por baixo
+    if t >= p:
+        return _formatar_escalado(bruto * pow(10, t - p), t)
+    return _formatar_escalado(bruto // pow(10, p - t), t)
+
+
+def _tick_por_digitos(digitos: Any) -> str | None:
+    """O `tick` do simbolo, da GRADE que ele declara: `10^-digitos` (`digitos` casas). Sem ele, `None`.
+
+    E' a MESMA grade que o `desvio_em_pontos` ja' usa («o ponto deste venue e' o menor passo de preco,
+    `10^-digitos` — e' o `tick` que a sonda publica»): o tick nao se escreve a mao, sai dos `digitos` do simbolo.
+    """
+    if isinstance(digitos, bool) or not isinstance(digitos, int) or digitos < 0:
+        return None
+    if digitos == 0:
+        return "1"
+    return "0." + "0" * (digitos - 1) + "1"
+
+
+# -----------------------------------------------------------------------------------------------------------
 # A RESOLUCAO (RN-C10/FR-062). Os cinco campos; o que o venue NAO da' fica AUSENTE — nao se inventa (D4).
 # -----------------------------------------------------------------------------------------------------------
 
@@ -457,13 +549,18 @@ def montar_resolucao(
     preco: Decimal | None,
     alavancagem: Decimal | None,
     numeros_do_venue: Any,
+    tick: str | None = None,
 ) -> dict[str, str]:
     """Os cinco campos da resolucao, com os numeros do venue quando ele os da' (FR-062).
 
     O que o venue NAO da' fica AUSENTE, e a resolucao e' recusada pelo contrato com `campo_obrigatorio_ausente`:
     e' o estado honesto — a conta nao publica o preco de liquidacao (data-model §2), e um zero inventado seria um
-    numero do venue que ninguem mediu. Zero publica-se so' com alavancagem 1, onde ele e' VERDADE (o contrato
-    di-lo: a alavancagem 1 so' liquida a preco zero).
+    numero do venue que ninguem mediu.
+
+    UMA EXCEPCAO, e ela e' DECLARADA ([C], A-12 fechado a 05/10/2026): o `preco_de_liquidacao`. Quando o venue
+    nao o da', ele PROJETA-SE pela regra da irmao (`preco_de_liquidacao_projectado`, `preco x (A-1) / A` ao tick
+    por baixo) — a alavancagem 1 da' `"0"`, que e' VERDADE (o contrato di-lo). O numero do venue, quando existe,
+    manda sobre a projeccao. Sem `tick` (simbolo sem grelha legivel) o campo fica ausente, como antes.
     """
     do_venue: dict[str, Any] = {}
     if isinstance(numeros_do_venue, dict):
@@ -488,11 +585,18 @@ def montar_resolucao(
         if valor is not None:
             resolucao[nome] = _texto(valor)
 
+    # O NUMERO DO VENUE MANDA; sem ele, PROJETA-SE [C] (A-12). A alavancagem 1 liquida a preco ZERO — e' a
+    # VERDADE do contrato, e vale SEM o preco de referencia (o caminho do fecho, que traz os numeros do venue e
+    # nao um preco nosso, continua a completar a resolucao com ele). Sem preco nem tick, o campo fica ausente.
     liquidacao = _decimal_do_venue(do_venue, "preco_de_liquidacao")
     if liquidacao is not None:
         resolucao["preco_de_liquidacao"] = _texto(liquidacao)
     elif alavancagem is not None and alavancagem == Decimal(1):
         resolucao["preco_de_liquidacao"] = "0"
+    elif preco is not None and alavancagem is not None and tick is not None:
+        projectado = preco_de_liquidacao_projectado(_texto(preco), _texto(alavancagem), tick)
+        if projectado is not None:
+            resolucao["preco_de_liquidacao"] = projectado
 
     return resolucao
 
@@ -510,6 +614,60 @@ def _decimal_do_venue(do_venue: dict[str, Any], nome: str) -> Decimal | None:
 
 
 # -----------------------------------------------------------------------------------------------------------
+# A POSICAO VIVA que a VIRADA vai fechar (1.10.0).
+# -----------------------------------------------------------------------------------------------------------
+
+
+def _posicao_a_reverter(pedido: dict[str, Any], lado: str) -> dict[str, Any] | Recusa:
+    """A POSICAO VIVA que a virada vai fechar — LIDA do venue pelo conector e entregue como DADO.
+
+    Sem ela nao ha' virada: a boleta diz so' o LADO novo, e o que esta' aberto quem o sabe e' o venue (RN-B0).
+    A recusa e' NOMEADA, e cobre os tres casos em que nao ha' o que virar — a posicao nao entrou na traducao, o
+    lado dela e' ilegivel, ou ja' e' o lado declarado (uma virada para o proprio lado seria uma entrada a mais).
+    O `volume` tem de ser o que o venue publica (0,01 de unidade): o fecho e' por ele, e nao por um calculo nosso.
+
+    Devolve a posicao CONFERIDA (um mapa), ou a `Recusa`.
+    """
+    posicao = pedido.get("posicao_a_reverter")
+    if not isinstance(posicao, dict):
+        return _recusa(
+            "reversao_sem_posicao_a_reverter",
+            (
+                "a boleta pede a virada (`reverter: true`) e a posicao viva nao entrou na traducao: sem ela nao "
+                "se sabe o que fechar, e mandar so' o lado novo seria uma entrada a mais com o registo a dizer "
+                "`reverse`"
+            ),
+        )
+    lado_da_posicao = posicao.get("lado")
+    if lado_da_posicao not in LADO_DO_VENUE.values():
+        return _recusa(
+            "reversao_sem_posicao_a_reverter",
+            (
+                f"a posicao viva declara o lado {lado_da_posicao!r}, que nao esta' no conjunto conhecido deste "
+                f"venue ({', '.join(LADO_DO_VENUE.values())}): sem saber o lado da posicao nao se sabe o que virar"
+            ),
+        )
+    if lado_da_posicao == LADO_DO_VENUE[lado]:
+        return _recusa(
+            "reversao_sem_posicao_a_reverter",
+            (
+                f"a posicao viva ja' esta' do lado {lado!r}, que e' o lado da boleta: nao ha' nada a virar (uma "
+                "virada para o proprio lado seria uma entrada a mais)"
+            ),
+        )
+    volume = posicao.get("volume")
+    if isinstance(volume, bool) or not isinstance(volume, int) or volume <= 0:
+        return _recusa(
+            "reversao_sem_posicao_a_reverter",
+            (
+                f"a posicao viva nao traz `volume` em 0,01 de unidade ({volume!r}): o fecho e' pelo volume que o "
+                "venue publica, e nao por um calculo nosso"
+            ),
+        )
+    return posicao
+
+
+# -----------------------------------------------------------------------------------------------------------
 # A TRADUCAO. As portas correm por ordem, e o motivo que o dono le' e' o da PRIMEIRA que falha.
 # -----------------------------------------------------------------------------------------------------------
 
@@ -518,7 +676,9 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
     """A boleta neutra -> a accao do venue + a resolucao — ou uma recusa com motivo do contrato.
 
     O `pedido` traz: `boleta`, `manifesto` (sondado), `simbolo` (a unidade do instrumento), `saldo` e `preco`
-    (LIDOS do venue) e, opcionalmente, `numeros_do_venue` (o que o venue ja' deu, para a resolucao).
+    (LIDOS do venue) e, opcionalmente, `numeros_do_venue` (o que o venue ja' deu, para a resolucao). Quando a
+    boleta pede a VIRADA (`reverter: true`), traz tambem `posicao_a_reverter` — a POSICAO VIVA, LIDA do venue
+    pelo conector (o que esta' aberto so' o venue o sabe, RN-B0): sem ela a virada RECUSA por nome.
     """
     if not isinstance(pedido, dict):
         return _recusa("tipo_invalido", "o pedido nao e' um objecto: sem pedido nao ha' boleta a traduzir")
@@ -619,9 +779,20 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
 
     # ---- porta 5-bis: a VIRADA (1.10.0) -----------------------------------------------------------------------
     # A boleta passa a declarar `reverter` — OBRIGATORIO desde a 1.10.0 (a ausencia nao e' um valor: `false` diz
-    # «nao e' virada», e a ausencia diria «nao foi declarado», D4). Este venue NAO a sabe executar: ele nao tem
-    # `reduce_only` (porta 5) e a inversao exigiria as duas pernas, que aqui nao se improvisam. E' recusa
-    # NOMEADA, e nao meia virada — a mesma resposta que o `reduce_only` deste venue ja' da'.
+    # «nao e' virada», e a ausencia diria «nao foi declarado», D4).
+    #
+    # ESTE VENUE NAO FAZ NETTING, e a virada aqui NAO cabe numa ordem: o contrato di-lo (1.10.0(c)) — «onde nao
+    # fizer, o conector executa as DUAS pernas na MESMA passagem». Quem MONTA as duas pernas e' a costura
+    # (`processo.py`): a de FECHO e' POR POSICAO (`fecho.py`), a de ABERTURA e' este ficheiro. O que esta porta
+    # faz e' CONFERIR a DECLARACAO e a POSICAO VIVA que o conector LE' do venue (entra como `pedido.posicao_a_reverter`,
+    # como o `saldo` e o `preco`): sem posicao a reverter — ou com a posicao ja' do lado declarado — nao ha'
+    # virada a fazer, e mandar so' o lado novo seria uma entrada a mais com o registo a dizer `reverse`. A recusa
+    # e' NOMEADA (`reversao_sem_posicao_a_reverter`), a MESMA resposta que o conector irmao da' onde o venue FAZ
+    # netting (brokers/hyperliquid/ordens.ts:589-624).
+    #
+    # A CONTRADICAO continua a RECUSAR primeiro (1.10.0(b)): `reverter: true` com `reduce_only: true` — «reduz,
+    # nunca inverte» e «inverte» nao cabem na mesma ordem, e por isso `reverter: true` nunca chega a' regra da
+    # reducao parcial (1.11.0#e).
     reverter = _campo(boleta, "reverter")
     if isinstance(reverter, Recusa):
         return reverter
@@ -636,14 +807,9 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
             ),
         )
     if reverter:
-        return _recusa(
-            "capacidade_nao_declarada",
-            (
-                "a boleta pede a virada (`reverter: true`) e este conector nao a sabe executar: este venue nao faz "
-                "a inversao numa ordem (nao tem `reduce_only`, RN-CT34) e as duas pernas nao se improvisam — "
-                "recusa, em vez de deixar meia virada"
-            ),
-        )
+        posicao = _posicao_a_reverter(pedido, lado)
+        if isinstance(posicao, Recusa):
+            return posicao
 
     # ---- porta 5-ter: o TAMANHO RELATIVO A' POSICAO (1.11.0, D-013) -------------------------------------------
     # A boleta passa a declarar `posicao_pct` — OBRIGATORIO desde a 1.11.0 (D4: `1` diz «nao e' parcial», e a
@@ -833,6 +999,10 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
         preco=preco,
         alavancagem=alavancagem,
         numeros_do_venue=numeros_do_venue,
+        # O `tick` do simbolo, da grade que ele declara (`10^-digitos`), para a projeccao [C] do preco de
+        # liquidacao (A-12, 05/10/2026): sem ele o campo fica ausente, e a resolucao pre-envio volta a sair
+        # incompleta. A grade e' a MESMA que o `desvio_em_pontos` ja' usa.
+        tick=_tick_por_digitos(simbolo.get("digitos")),
     )
     return Feito(ok=True, accao=accao, resolucao=resolucao)
 

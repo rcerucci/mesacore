@@ -60,6 +60,38 @@
       "nota": "Um valor que nao esteja no conjunto fechado (1/2) NAO se assume: a sonda RECUSA com erro nomeado, em vez de uma unidade adivinhada."
     }
   ],
+  "manifesto_montado_base": {
+    "nome_do_conector": "ctrader_mesa",
+    "versao_do_conector": "0.1.0",
+    "conta": {"tipo_de_conta": "NETTED", "alavancagem": 30},
+    "desvio_maximo_pct": "0.5",
+    "profundidade": 5,
+    "tipos_de_ordem": ["mercado", "limite", "stop", "stop_limite", "mercado_por_faixa"],
+    "nomes_por_id": {"42": "EURUSD"},
+    "precos": {"42": "1.25"},
+    "simbolo_base": {
+      "symbol_id": 42,
+      "digitos": 5,
+      "posicao_do_pip": 3,
+      "minimo": 1000,
+      "passo": 10
+    }
+  },
+  "casos_do_manifesto": [
+    {
+      "caso": "sonda/manifesto-reflecte-o-passo-da-fixture-sem-tocar-em-codigo",
+      "conferir": {"simbolo": "EURUSD", "minimo": "10", "passo": "0.1", "tick": "0.00001", "alavancagem_maxima": "30"},
+      "nota": "O manifesto e' MONTADO a partir da fixture do simbolo (`passo` = 10, em 0,01 de unidade) e publica `passo` = `0.1`. Nenhum numero do venue vive no codigo (RN-C1): o `passo` sai do `simbolo` que a sonda le'."
+    },
+    {
+      "caso": "sonda/manifesto-seguinte-reflecte-a-mudanca-do-stepVolume-sem-tocar-em-codigo",
+      "mudanca": {"passo": 25},
+      "conferir_antes": {"passo": "0.1"},
+      "conferir_depois": {"passo": "0.25"},
+      "mudou": ["passo"],
+      "nota": "A FIXTURE MUDA (o `stepVolume` do venue passa de 10 para 25) e o manifesto SEGUINTE reflecte-a: `0.1` -> `0.25` (SC-015 no espirito, US1 cenario 2). NENHUMA linha de codigo muda entre o manifesto de antes e o de depois — o mesmo `montar_manifesto` le' o passo da fixture. Se alguem fixar o passo no codigo, ESTE caso DIVERGE a nomea'-lo em `instrumento.passo`."
+    }
+  ],
   "checagens_de_manifesto": [
     {
       "caso": "sonda/manifesto-sem-o-campo-no-instrumento-passa-o-contrato",

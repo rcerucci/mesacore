@@ -8,7 +8,9 @@
     "O prefixo e' da APLICACAO (`ctrader_mesa`, o nome da app no portal), e nao da conta: os tokens deste venue sao do UTILIZADOR (cTID), e apos o ApplicationAuth a lista de contas vem do token. Um conjunto de credenciais serve contas de demonstracao e contas reais — a conta escolhe-se pelo `ctid_trader_account_id` DESTA ficha.",
     "Duas formas aceites por valor: \"env:NOME_DA_VARIAVEL\" ou \"ficheiro:/caminho/fora/do/repo.key\".",
     "O carregador RECUSA se algum tiver modo diferente de 600, se faltar algum, ou se algum valor aparecer num ficheiro versionado.",
-    "O `ctid_trader_account_id` NAO e' segredo: e' a identidade da conta, e e' contra ela que o conector compara o que o venue devolve. Trocar de conta (demo <-> real) e' trocar este numero."
+    "O `ctid_trader_account_id` NAO e' segredo: e' a identidade da conta, e e' contra ela que o conector compara o que o venue devolve. Trocar de conta (demo <-> real) e' trocar este numero.",
+    "O `desvio_maximo` e' a percentagem de movimento que o venue aceita: decimal TEXTUAL estritamente positivo (a forma do contrato, ex. \"0.5\"). E' a ULTIMA entrada que a sonda exige para publicar o manifesto; sem ele a porta `sonda_e_manifesto` fica `nao_corrida` (A-1).",
+    "Os `instrumentos` sao NOMES do venue, sem barra: o cTrader escreve `EURUSD` (e nao `EUR/USD`, que e' o estilo do outro venue). O nome tem de existir no universo da conta, ou a sonda recusa e diz qual."
   ],
   "conector": "ctrader_mesa",
   "contrato": "1.12.0",
@@ -19,8 +21,10 @@
   "ctid_trader_account_id": 0,
   "_nota_do_id": "0 e' impossivel de proposito: o carregador exige um inteiro POSITIVO, e este modelo tem de ser editado antes de servir",
   "instrumentos": [
-    "EUR/USD"
+    "EURUSD"
   ],
+  "desvio_maximo": "0.5",
+  "_nota_do_desvio": "Percentagem de desvio que o venue aceita (`MARKET_RANGE`/`STOP_LIMIT`): decimal TEXTUAL estritamente positivo, na forma do contrato (`_defs/forma.schema.json#/$defs/decimal_positivo`). `0`, um negativo ou um numero JSON RECUSAM.",
   "credencial": {
     "referencia": "ctrader_mesa",
     "arquivos": {

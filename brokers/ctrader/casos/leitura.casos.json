@@ -328,6 +328,93 @@
       }
     },
     {
+      "nome": "leitura/expoente-do-venue-na-conta-plana-deixa-de-recusar",
+      "nota": "D2 FECHADO (05/10/2026): o `moneyDigits` passa a vir do VENUE na CONTA (`transporte.trader` pergunta-o por `ProtoOATraderReq`), e nao so' da posicao. A CONTA PLANA — saldo 100000, ZERO posicoes — deixa de recusar `expoente_dos_valores_ausente`: expoente 2 -> equity \"1000\". Era o ovo-e-galinha que impedia a PRIMEIRA ordem (nao se abria porque nao havia posicao de onde ler o expoente).",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 0,
+          "estado": "aberto",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ordens_abertas": [],
+          "equity": "1000"
+        }
+      }
+    },
+    {
+      "nome": "leitura/expoente-divergente-entre-conta-e-posicao-recusa",
+      "nota": "A regra que continua CERTA (e o D2 nao a afrouxou): com DUAS fontes do venue que DISCORDAM — a conta diz 2 e a posicao diz 3 — a leitura nao escolhe uma, RECUSA com `expoente_dos_valores_divergente`. O expoente decide a unidade do dinheiro; escolher um seria um numero nosso a passar por numero do venue.",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "ENABLED"}},
+        "posicoes": {
+          "ok": true,
+          "valor": [
+            {"posicao": 101, "symbol_id": 1, "lado": "BUY", "volume": 5, "preco_de_entrada": 108400, "estado": "OPEN", "expoente": 3}
+          ]
+        },
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": [{"posicao": 101, "bruto": 5000, "liquido": 5000}]}
+      },
+      "esperado": {
+        "ok": false,
+        "motivo": "expoente_dos_valores_divergente",
+        "porque": "o expoente dos valores divergiu ([2, 3]): a conta e as posicoes do venue nao dizem a mesma unidade, e a leitura nao escolhe uma"
+      }
+    },
+    {
+      "nome": "leitura/simbolo-desabilitado-sem-pendings-e-fechado",
+      "nota": "O NOME do proto `DISABLED_WITHOUT_PENDINGS_EXECUTION` — o mesmo que o `transporte.py` publica pelo mapa declarado. O mapa do estado do mercado estava com `DISABLED_WITHOUT_EXECUTION` (sem `_PENDINGS`), que NAO e' nome de proto nenhum: um simbolo desabilitado atravessava e RECUSAVA a leitura. FECHADO a 05/10/2026 — aqui o estado le'-se `fechado`. Saldo 100000, expoente 2, sem posicao: equity \"1000\".",
+      "dado": {
+        "instrumento": "EURUSD",
+        "symbol_id": 1,
+        "agora_ms": 1759000000000,
+        "tempo_do_venue_ms": 1759000000000,
+        "bid": 108541,
+        "ask": 108543,
+        "conta": {"ok": true, "valor": {"conta": 12345, "saldo": 100000, "expoente_dos_valores": 2}},
+        "simbolo": {"ok": true, "valor": {"symbol_id": 1, "modo_de_negociacao": "DISABLED_WITHOUT_PENDINGS_EXECUTION"}},
+        "posicoes": {"ok": true, "valor": []},
+        "ordens": {"ok": true, "valor": []},
+        "nao_realizado": {"ok": true, "valor": []}
+      },
+      "esperado": {
+        "ok": true,
+        "leitura": {
+          "instrumento": "EURUSD",
+          "tempo_do_venue_ms": 1759000000000,
+          "idade_do_dado_ms": 0,
+          "estado": "fechado",
+          "bid": "1.08541",
+          "ask": "1.08543",
+          "ordens_abertas": [],
+          "equity": "1000"
+        }
+      }
+    },
+    {
       "nome": "leitura/simbolo-em-close-only-e-fechado-para-abrir",
       "nota": "Tabela §5: `CLOSE_ONLY_MODE` e' o «fechado para ABRIR, aberto para fechar» do simbolo. A leitura de estado so' sabe dizer aberto/fechado, e di-lo: `fechado`. Um texto que o mapa nao conheca RECUSARIA (`valor_fora_do_conjunto`) — nao se adivinha o estado. Saldo 100000 com expoente 2 e sem posicao: equity \"1000\".",
       "dado": {

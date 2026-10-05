@@ -1,0 +1,165 @@
+{
+  "nota": "Casos do DESCODIFICADOR DE FRONTEIRA do transporte (`brokers/ctrader/transporte.py`), em DADO e SEM rede: exercitam os conversores que viram um TIPO da biblioteca num valor do CONTRATO. A LICAO DESTA BANCADA (o buraco do D1, 05/10/2026): as fixtures antigas levavam o valor JA' DESCODIFICADO (`\"ENABLED\"`), e por isso o descodificador NUNCA era exercido — o `tradingMode` saia como o ENUM cru da biblioteca e todas as aberturas recusavam `capacidade_nao_declarada`. Por isso aqui o caso injecta o ENUM (o `{\"biblioteca_enum\": \"TradingMode\", \"membro\": \"...\"}`), e nao a cadeia: o corredor resolve o marcador no MEMBRO REAL da biblioteca antes de chamar o conversor. Um caso por membro do `TradingMode`, o caso da recusa (um valor que o mapa nao conhece), e os casos do `moneyDigits` do VENUE (D2) e da comissao (os dois enums que atravessavam crus dentro do modelo).",
+  "simbolo_base": {
+    "symbol_id": 1,
+    "name": "EURUSD",
+    "digits": 5,
+    "pip_position": 4,
+    "lot_size": 10000000,
+    "min_volume": 100000,
+    "max_volume": 1000000000,
+    "step_volume": 100000,
+    "swap_long": "-0.73",
+    "swap_short": "0.16",
+    "commission": {
+      "objecto": {
+        "type": {"biblioteca_enum": "CommissionType", "membro": "USD_PER_LOT"},
+        "rate": "3",
+        "minimum": "0",
+        "minimum_type": {"biblioteca_enum": "MinCommissionType", "membro": "QUOTE_CURRENCY"},
+        "minimum_asset": "USD"
+      }
+    },
+    "max_exposure": 10000000000000,
+    "leverage_id": 51407,
+    "enable_short_selling": true,
+    "guaranteed_stop_loss": false,
+    "sl_distance": 0,
+    "tp_distance": 0,
+    "measurement_units": "EUR",
+    "schedule_timezone": "America/New_York"
+  },
+  "casos": [
+    {
+      "caso": "transporte/simbolo-ENABLED-atravessa-como-cadeia-do-proto",
+      "alvo": "simbolo",
+      "nota": "O membro `TradingMode.ENABLED` (o ENUM da biblioteca) injectado no simbolo — e' o caso que a fixture velha nao fazia. O mapa DECLARADO (`MODOS_DE_NEGOCIACAO_POR_MEMBRO`) publica o NOME do proto: `ENABLED`. AQUI e' que o `.value` (`\"ENABLED\"`) coincide com o proto — e e' por isso que este membro sozinho nao apanhava o defeito; os outros tres apanham.",
+      "simbolo": {"trading_mode": {"biblioteca_enum": "TradingMode", "membro": "ENABLED"}},
+      "esperado": {"ok": true, "campos": {"modo_de_negociacao": "ENABLED"}}
+    },
+    {
+      "caso": "transporte/simbolo-DISABLED_WITHOUT_PENDINGS_EXECUTION-atravessa-como-cadeia-do-proto",
+      "alvo": "simbolo",
+      "nota": "O membro do meio: o `.value` da biblioteca e' `\"DISABLED_WITHOUT_PENDINGS\"` (TRUNCADO), e o proto escreve `DISABLED_WITHOUT_PENDINGS_EXECUTION`. E' o par que PROVA que o `.value` sozinho nao serve, e que e' o MAPA que decide. Se o defeito voltar (publicar o `.value`), ESTE caso fica VERMELHO.",
+      "simbolo": {"trading_mode": {"biblioteca_enum": "TradingMode", "membro": "DISABLED_WITHOUT_PENDINGS_EXECUTION"}},
+      "esperado": {"ok": true, "campos": {"modo_de_negociacao": "DISABLED_WITHOUT_PENDINGS_EXECUTION"}}
+    },
+    {
+      "caso": "transporte/simbolo-DISABLED_WITH_PENDINGS_EXECUTION-atravessa-como-cadeia-do-proto",
+      "alvo": "simbolo",
+      "nota": "Segundo membro truncado: `.value == \"DISABLED_WITH_PENDINGS\"`, proto `DISABLED_WITH_PENDINGS_EXECUTION`.",
+      "simbolo": {"trading_mode": {"biblioteca_enum": "TradingMode", "membro": "DISABLED_WITH_PENDINGS_EXECUTION"}},
+      "esperado": {"ok": true, "campos": {"modo_de_negociacao": "DISABLED_WITH_PENDINGS_EXECUTION"}}
+    },
+    {
+      "caso": "transporte/simbolo-CLOSE_ONLY-atravessa-como-cadeia-do-proto",
+      "alvo": "simbolo",
+      "nota": "Terceiro membro divergente: `.value == \"CLOSE_ONLY\"`, mas o vocabulario da fronteira (e o conjunto FECHADO do `fecho.py`, RN-CT22) escreve `CLOSE_ONLY_MODE`. Um caso que publicasse `\"CLOSE_ONLY\"` faria a recusa do `fecho.recusar_abertura` cair no ramo `valor fora do conjunto` em vez do ramo `CLOSE_ONLY_MODE` — o defeito seguinte a espera.",
+      "simbolo": {"trading_mode": {"biblioteca_enum": "TradingMode", "membro": "CLOSE_ONLY"}},
+      "esperado": {"ok": true, "campos": {"modo_de_negociacao": "CLOSE_ONLY_MODE"}}
+    },
+    {
+      "caso": "transporte/simbolo-modo-fora-do-mapa-recusa-pelo-nome",
+      "alvo": "simbolo",
+      "nota": "O NEGATIVO do D1: um valor que o mapa DECLARADO nao conhece (um texto que nao e' nome de proto nenhum). NAO se adivinha o nome pelo `.value`/`.name`: o simbolo RECUSA pelo nome (`modo_de_negociacao_desconhecido`), e a recusa diz o valor e o conjunto conhecido. Fail-closed: um modo que nao se le' nao vira «abre».",
+      "simbolo": {"trading_mode": "MODO_QUE_NAO_E_DO_PROTO"},
+      "esperado": {"ok": false, "motivo": "modo_de_negociacao_desconhecido", "porque_contem": "MODO_QUE_NAO_E_DO_PROTO"}
+    },
+    {
+      "caso": "transporte/simbolo-enum-de-outro-tipo-recusa-pelo-nome",
+      "alvo": "simbolo",
+      "nota": "Segunda face do NEGATIVO: um ENUM da biblioteca que NAO e' `TradingMode` (outro tipo, outro repertorio). `isinstance(valor, TradingMode)` e' falso e nao e' texto do proto — RECUSA, em vez de publicar `\"BUY\"` como se fosse um modo de negociacao.",
+      "simbolo": {"trading_mode": {"biblioteca_enum": "OrderSide", "membro": "BUY"}},
+      "esperado": {"ok": false, "motivo": "modo_de_negociacao_desconhecido", "porque_contem": "OrderSide.BUY"}
+    },
+    {
+      "caso": "transporte/simbolo-comissao-com-os-dois-enums-em-cadeia",
+      "alvo": "simbolo",
+      "nota": "A comissao era o unico MODELO da biblioteca que atravessava a fronteira inteiro (o `str()` dele saia `type=<CommissionType.USD_PER_LOT: ...>`). Agora atravessa como dicionario do contrato, com os DOIS enums (`CommissionType`, `MinCommissionType`) como CADEIA do vocabulario, e o `rate`/`minimum` como texto. O membro ENABLED injectado para o simbolo publicar forma valida.",
+      "simbolo": {"trading_mode": {"biblioteca_enum": "TradingMode", "membro": "ENABLED"}},
+      "esperado": {"ok": true, "campos": {"comissao.type": "USD_PER_LOT", "comissao.minimum_type": "QUOTE_CURRENCY", "comissao.rate": "3", "comissao.minimum_asset": "USD"}}
+    },
+    {
+      "caso": "transporte/expoente-do-trader-lido-do-venue",
+      "alvo": "expoente_do_trader",
+      "nota": "D2 — o `moneyDigits` do VENUE: uma `ProtoOATraderRes` (a resposta REAL da biblioteca) com `trader.money_digits = 5`. O descodificador le'-o do proto e devolve 5 — a fonte que o modelo `Account` deita fora.",
+      "resposta": {"money_digits": 5},
+      "esperado": {"ok": true, "valor": 5}
+    },
+    {
+      "caso": "transporte/expoente-do-trader-sem-valor-fica-ausente",
+      "alvo": "expoente_do_trader",
+      "nota": "proto3 deixa um escalar nao posto a 0, e 0 nao distingue «o venue disse zero» de «nao disse» — a propria biblioteca o trata como ausente. Aqui fica `None` (AUSENTE), e a leitura cai na POSICAO como segunda fonte. NAO se usa o `DEFAULT_MONEY_DIGITS = 2` da biblioteca.",
+      "resposta": {"money_digits": 0},
+      "esperado": {"ok": true, "valor": null}
+    },
+    {
+      "caso": "transporte/expoente-do-trader-resposta-errada-recusa",
+      "alvo": "expoente_do_trader",
+      "nota": "Uma resposta que NAO e' o `ProtoOATraderRes` pedido nao vira expoente: RECUSA pelo nome (`resposta_inesperada`), em vez de ler um numero de outra mensagem.",
+      "resposta": {"tipo": "erro"},
+      "esperado": {"ok": false, "motivo": "resposta_inesperada", "porque_contem": "ProtoOATraderRes"}
+    },
+    {
+      "caso": "transporte/conta-publica-o-expoente-do-venue",
+      "alvo": "conta_por_dentro",
+      "nota": "A conta por dentro publica o expoente que veio do VENUE (`expoente_dos_valores`), em vez de `None`, E o SALDO no INTEIRO ESCALADO do venue (D3) — nao o `Decimal` ja' dividido que o modelo `Account` da biblioteca traz (`models/account.py:143`). E' o que faz a leitura de uma conta PLANA deixar de recusar `expoente_dos_valores_ausente` e de recusar o saldo por nao ser inteiro (a segunda metade do D2 + o D3).",
+      "expoente": 5,
+      "saldo_escalado": 4999758,
+      "conta": {
+        "account_id": 45292558,
+        "balance": "100000",
+        "leverage_in_cents": 3000,
+        "account_type": {"biblioteca_enum": "AccountType", "membro": "HEDGED"},
+        "access_rights": {"biblioteca_enum": "AccessRights", "membro": "FULL_ACCESS"},
+        "broker_name": "Pepperstone",
+        "deposit_asset_id": 1,
+        "swap_free": false,
+        "is_limited_risk": false,
+        "registration_timestamp": 0,
+        "max_leverage": 3000,
+        "_leverage": "1:30"
+      },
+      "esperado": {"ok": true, "campos": {"expoente_dos_valores": 5, "saldo": 4999758, "tipo_de_conta": "HEDGED", "direitos": "FULL_ACCESS", "alavancagem": 30.0}}
+    },
+    {
+      "caso": "transporte/nome-do-proto-execucao-vem-do-fio-como-inteiro",
+      "alvo": "nome_do_proto",
+      "nota": "O EVENTO DO VENUE LIDO DO FIO traz os enums do PROTO (betterproto) como INTEIROS, nao como membros: `ProtoOAExecutionEvent().parse(raw).execution_type` -> `3`. Esta MEDICAO (05/10/2026) mostrou que `_nome_do_proto` so' olhava para `.name` e por isso deixava passar o inteiro cru — o `desafecho.py` recusava o evento por `valor_fora_do_conjunto` e a ordem PREENCHIDA nunca virava desfecho. Agora o inteiro SOBE pela CLASSE do enum. Aqui injecta-se o INTEIRO (3), e nao a palavra ja' descodificada.",
+      "classe": "ProtoOAExecutionType",
+      "valor_int": 3,
+      "esperado": {"ok": true, "valor": "ORDER_FILLED"}
+    },
+    {
+      "caso": "transporte/nome-do-proto-lado-vem-do-fio-como-inteiro",
+      "alvo": "nome_do_proto",
+      "nota": "O lado do negocio/posicao do evento tambem chega como INTEIRO (2 = SELL).",
+      "classe": "ProtoOATradeSide",
+      "valor_int": 2,
+      "esperado": {"ok": true, "valor": "SELL"}
+    },
+    {
+      "caso": "transporte/nome-do-proto-estado-do-negocio-vem-do-fio-como-inteiro",
+      "alvo": "nome_do_proto",
+      "nota": "O estado do negocio (2 = FILLED) chega como inteiro.",
+      "classe": "ProtoOADealStatus",
+      "valor_int": 2,
+      "esperado": {"ok": true, "valor": "FILLED"}
+    },
+    {
+      "caso": "transporte/estado-da-ordem-tira-o-prefixo-do-proto",
+      "alvo": "status_da_ordem",
+      "nota": "O `orderStatus` do proto chega como inteiro (2) e o nome do proto e' `ORDER_STATUS_FILLED`; o contrato escreve `FILLED`, e `_status_da_ordem` tira-lhe o prefixo. Injecta-se o INTEIRO.",
+      "valor_int": 2,
+      "esperado": {"ok": true, "valor": "FILLED"}
+    },
+    {
+      "caso": "transporte/nome-do-proto-fora-do-repertorio-fica-numero",
+      "alvo": "nome_do_proto",
+      "nota": "NEGATIVO: um inteiro que NAO pertence a nenhum membro do enum NAO vira palavra nenhuma — fica o NUMERO, e o `desfecho.py` recusa-o por `valor_fora_do_conjunto` (fail-closed). Nunca se adivinha a palavra.",
+      "classe": "ProtoOATradeSide",
+      "valor_int": 99,
+      "esperado": {"ok": true, "valor": 99}
+    }
+  ]
+}

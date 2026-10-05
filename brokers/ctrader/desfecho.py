@@ -261,7 +261,12 @@ def desfecho_do_evento(evento: dict[str, Any], resolucao: dict[str, Any] | None 
     if veredicto.classificacao == "recusado":
         # A recusa do contrato EXIGE motivo — e o motivo e' do conjunto FECHADO (nunca a palavra do venue).
         carga["motivo"] = _exigir_motivo(veredicto)
-    if resolucao is not None:
+    # A RESOLUCAO NAO ENTRA NUMA RECUSA (05/10/2026, medido). O contrato di-lo — «recusa antes de resolver ...
+    # traz motivo e nao traz resolucao» — e um chamador que passe uma resolucao PARCIAL (a do pre-envio, que so'
+    # tem 3 dos 5 campos) fazia a recusa ser RECUSADA pelo proprio contrato com `campo_obrigatorio_ausente`:
+    # a linha da recusa nunca saia (medido no caminho real do `processo.py`). Aqui a resolucao so' acompanha o
+    # que NAO e' recusa — que e' o unico caso em que ela existiu de facto.
+    if resolucao is not None and veredicto.classificacao != "recusado":
         carga["resolucao"] = resolucao
 
     return _exigir_do_contrato(carga)

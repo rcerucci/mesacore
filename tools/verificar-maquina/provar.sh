@@ -138,6 +138,39 @@ declarar "sigma: entrada so' no flip (10 casos)" bash -c "cd contracts && uv run
 # do proprio inventario), com as que estao a espera de decisao do dono reportadas em vez de escondidas.
 declarar "fichas (cabecalho, tipos, lixo)" python3 tools/verificar-setup/fichas.py
 
+# AS BANCADAS DO cTRADER entram no portao (05/10/2026, A-2). Estavam fora, e sao o caminho do DINHEIRO: o
+# `ordens.py` e' «o UNICO sitio onde uma reducao parcial se vira em numero», e o `transporte.py` tem os dois
+# verbos de envio — a MESMA razao pela qual o portao ja' tinha puxado `correr-ordens.ts` do outro venue («um
+# caminho que mexe em dinheiro fora do portao e' um caminho que pode regredir sem ninguem dar por isso»).
+# A INVOCACAO e' o `.venv/bin/python` DIRETAMENTE (medido: 0,92 s contra 0,83 s do `uv run`, e sem resolver o
+# lockfile): o `uv run` resolve o `uv.lock` e PODE tentar sincronizar (rede) se algo no ambiente estiver
+# desalinhado — e o portao tem de correr SEMPRE. O venv ja' esta' materializado (`ctrader-api-client==0.11.0`,
+# `jsonschema`), e as bancadas sao offline: sem rede, sem chave, sem venue. A do RITMO (FR-071) usa um relogio
+# INJECTADO, e a prova negativa dela injecta o defeito e exige vermelho — por isso mede, e nao decora.
+declarar "ctrader: boleta e fecho (109 casos)" bash -c "cd brokers/ctrader && .venv/bin/python casos/correr.py"
+declarar "ctrader: envio e reconciliacao (36)" bash -c "cd brokers/ctrader && .venv/bin/python casos/prova-envio.py"
+declarar "ctrader: ritmo do venue (6 provas)"  bash -c "cd brokers/ctrader && .venv/bin/python casos/prova-ritmo.py"
+# A LEITURA DO MERCADO da ponta (US1 / data-model §6 / RN-CT29) entra no portao pela MESMA razao que o envio: e'
+# ela que alimenta o preco de referencia da mesa, e o caminho (a subscricao de spots/profundidade + o ULTIMO
+# retrato) estava fora de TODAS as bancadas — a `subscrever_spots` tinha 0 chamadores. A prova injecta os
+# `ProtoOA*Event` do VENUE pelo `EventRouter` ORIGINAL da biblioteca (offline, sem TCP, sem chave) e exige a
+# cotacao no `mercado` (a divisao /100000), o livro por deltas (e a remocao que nao inventa), o lado ausente
+# AUSENTE (nunca zero), a regua declarada (a ultima vela) quando nao ha' retrato, e a idade do dado do INSTANTE
+# do venue. As 2 NEGATIVAS (divisao errada, ausente->zero) injectam o defeito e exigem a bancada VERMELHA a
+# nomear o caso — sem esse vermelho a bancada media o duplo, nao a leitura.
+declarar "ctrader: leitura do mercado (7 provas)" bash -c "cd brokers/ctrader && .venv/bin/python casos/prova-leitura.py"
+
+# OS CASOS DO CONTRATO NO DUBLE DA MESA (T047, 05/10/2026). Os casos deste venue corriam SO' offline
+# (`correr.py`, 85) — pelo lado da MESA (o duble que ja' existe, `contracts/mocks/mesa --papel conector`)
+# nunca tinham corrido, e a T047 pedia os DOIS lados com a contagem lado a lado. A bancada monta o desfecho
+# pelo modulo PURO do conector (payload do venue EM DADO, sem credencial e sem rede), corre-o pelo DUBLE DA
+# MESA e pelo MOTOR DO CONTRATO (`framing.py`, o lado do conector), compara os veredictos caso a caso e
+# exige que concordem: DIVERGENCIA e' FALHA NOMEADA (qual caso, o que o duble disse, o que o conector disse).
+# A negativa (um veredicto estragado de proposito) corre DENTRO da bancada e exige o VERMELHO a nomear o
+# caso. Entra no portao pela MESMA razao das outras: um caminho fora do portao regride sem ninguem dar por
+# isso — e este e' o unico sitio onde a MESA e o CONECTOR se medem um contra o outro.
+declarar "ctrader: contrato nos dois lados (19 casos)" bash -c "cd brokers/ctrader && .venv/bin/python casos/correr-duble.py"
+
 # As bancadas da camada de OPERACAO (003): correm processos a serio (vigia + mesa), por isso ficam na porta
 # completa - a `--rapido` e a que se corre a cada passo.
 if [ "$RAPIDO" -eq 0 ]; then
