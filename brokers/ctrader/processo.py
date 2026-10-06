@@ -73,6 +73,7 @@ import leitura as Le  # noqa: E402
 import ordens as Or  # noqa: E402
 import sonda as So  # noqa: E402
 import transporte as Tr  # noqa: E402
+import velas as Ve  # noqa: E402
 
 PORTAS: tuple[tuple[str, str], ...] = (
     ("ficha", "FR-019: um processo por (corretora, conta), e a ficha diz qual — sem ficha legivel nao ha conector"),
@@ -133,6 +134,12 @@ PADRAO_CORRELACAO = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$")
 #: A janela do preco de referencia: quantas horas de velas se pedem para achar a ULTIMA FECHADA do instrumento.
 VELAS_PARA_O_PRECO_HORAS = 24 * 3
 PERIODO_DA_VELA_DE_REFERENCIA = "H1"
+
+#: O modo de VELAS (`--velas`): as omissoes do IRMAO (`brokers/hyperliquid/mercado.ts`: `--intervalo` 1h, `--dias`
+#: 7) — sao os nomes e os valores que o operador ja' sabe chamar. O `relogio` E' o da sigma (o vocabulario que ela
+#: le' no nome do ficheiro); o periodo do VENUE (M1/H1/...) sai do mapa em `velas.py`.
+RELOGIO_DE_VELAS_POR_OMISSAO = "1h"
+DIAS_DE_VELAS_POR_OMISSAO = 7
 
 #: A costura e' de UMA linha por mensagem: o relogio de leitura (um fio proprio) e o ciclo escrevem no MESMO
 #: `stdout`, e duas linhas entrelacadas fariam o outro lado ler a mensagem errada. Um so' cadeado.
@@ -2886,6 +2893,236 @@ def _fechar_no_encerramento(arranque: Arranque, instrumento: str) -> list[dict[s
 
 
 # -----------------------------------------------------------------------------------------------------------
+# O MODO DE VELAS — dar a esta ponta o que a irma' ja' da': o historico do par, escrito na forma que a sigma le'.
+#
+# PORQUE, E O QUE FALTAVA (medido 06/10/2026). O setup `sigma` (`setups/sigma/sinal.ts`) le' as barras de um
+# ficheiro `velas-<INSTRUMENTO>-<RELOGIO>.jsonl` — o ficheiro que o operador puxa. Hoje so' o conector do
+# HYPERLIQUID o escreve (`brokers/hyperliquid/mercado.ts`, modo `--velas`); o conector do cTrader sabia LER as
+# velas do venue mas NAO tinha modo nenhum que as escrevesse — e sem o ficheiro a sigma nao decide. Este modo
+# fecha esse buraco, com os MESMOS nomes de comando do irmao (`--velas/--intervalo/--dias/--para-pasta/
+# --actualizar`) — os que o operador ja' sabe chamar.
+#
+# E' SO' LEITURA. Le' o historico pelo `transporte.velas(...)` (o pedido HISTORICO do venue, a classe de 5/s; o
+# `_vez_historica` do transporte e' quem o espaca, e NAO se contorna) e escreve o ficheiro. Nao envia ordem
+# nenhuma: a unica coisa que sai daqui e' o JSONL do mercado e um descritor ao lado.
+#
+# O CAMINHO E' MINIMO DE PROPOSITO (como o `--velas` do irmao, que nem autentica): este modo NAO serve a mesa e
+# NAO publica capacidade — nao corre a sonda nem o manifesto. Corre as conferencias que importam a uma LEITURA
+# segura: a ficha legivel (porta 1), a versao exacta do contrato (porta 2), a chave (porta 5), a ligacao
+# autorizada (porta 6) e a IDENTIDADE (porta 8 — e' mesmo a conta da ficha que se vai ler). Reusa essas pecas do
+# `arranque`, sem as reimplementar; o que fica de fora (a sonda, porta 7) fica DITO em vez de fingido.
+# -----------------------------------------------------------------------------------------------------------
+
+
+def _ler_o_que_ja_esta(
+    pasta: Path, instrumento: str, relogio: str, actualizar: bool
+) -> tuple[Path, Path, list[dict[str, Any]], int | None]:
+    """O que ja' esta' no ficheiro e no descritor, para o `--actualizar` acrescentar sem duplicar.
+
+    Devolve `(descritor, ficheiro, ja, desde_guardado)`. Sem `--actualizar`, nao se le' nada (`ja` vazio) e o
+    ficheiro e' REESCRITO. Com `--actualizar`, so' se retoma quando o descritor traz o instrumento, o relogio, o
+    `desde_ms` e o `quantas` — o MESMO criterio do irmao: um descritor a que falte um campo nao e' um descritor,
+    e um ficheiro retomado com a janela errada perdia o que la' estava sem o dizer.
+    """
+    nome = Ve.nome_do_ficheiro(instrumento, relogio)
+    ficheiro = pasta / nome
+    descritor = pasta / f"{nome[: -len('.jsonl')]}.descritor.json"
+    if not actualizar or not ficheiro.is_file() or not descritor.is_file():
+        return descritor, ficheiro, [], None
+    try:
+        bruto = json.loads(descritor.read_text(encoding="utf-8"))
+        if (
+            bruto.get("instrumento") == instrumento
+            and bruto.get("relogio") == relogio
+            and isinstance(bruto.get("desde_ms"), int)
+            and isinstance(bruto.get("quantas"), int)
+        ):
+            ja = [json.loads(linha) for linha in ficheiro.read_text(encoding="utf-8").split("\n") if linha.strip()]
+            return descritor, ficheiro, ja, bruto["desde_ms"]
+    except Exception:
+        # Sem descritor legivel: escreve-se de novo (e a saida diz `ja_tinha: 0`), como o irmao.
+        pass
+    return descritor, ficheiro, [], None
+
+
+def _modo_velas(args: argparse.Namespace) -> int:
+    """Le' o historico do VENUE e escreve `velas-<INSTRUMENTO>-<RELOGIO>.jsonl`. Devolve o codigo de saida."""
+    instrumento = str(args.velas)
+    relogio = str(args.intervalo if args.intervalo is not None else RELOGIO_DE_VELAS_POR_OMISSAO)
+    dias = args.dias if args.dias is not None else DIAS_DE_VELAS_POR_OMISSAO
+    pasta = Path(str(args.para_pasta if args.para_pasta is not None else "velas")).expanduser()
+    actualizar = bool(args.actualizar)
+
+    periodos_servidos = sorted(Ve.RELOCIOS_DO_VENUE)
+    periodo = Ve.periodo_do_relogio(relogio)
+    if periodo is None:
+        diag(
+            etapa="velas",
+            veredicto="recusado",
+            motivo="relogio_sem_periodo_no_venue",
+            relogio=relogio,
+            porque=(
+                f"o venue deste conector nao publica trendbar para o relogio `{relogio}`: os que ele cobre sao "
+                f"{periodos_servidos} (periodos {sorted(set(Ve.RELOCIOS_DO_VENUE.values()))}), e o vocabulario da "
+                f"sigma {list(Ve.RELOCIOS_DA_SIGMA_SEM_PERIODO_DO_VENUE)} nao tem periodo equivalente aqui — "
+                "arredonda-lo para o vizinho media outras barras, e a sigma nao acharia este ficheiro"
+            ),
+        )
+        return 2
+    if not isinstance(dias, int) or isinstance(dias, bool) or dias <= 0:
+        diag(
+            etapa="velas",
+            veredicto="recusado",
+            motivo="dias_invalido",
+            dias=dias,
+            porque="`--dias` tem de ser um inteiro positivo de dias de historico",
+        )
+        return 2
+
+    caminho_da_ficha = _caminho_da_ficha(str(args.ficha))
+    lida = Fi.ler_ficha(caminho_da_ficha)
+    if isinstance(lida, Fi.Recusa):
+        diag(etapa="ficha", veredicto="recusado", motivo=lida.motivo, porque=lida.porque)
+        return 2
+    ficha = lida
+    vigente = versao_vigente()
+    if ficha.contrato != vigente:
+        diag(
+            etapa="versao_do_contrato",
+            veredicto="recusado",
+            motivo="versao_do_contrato_divergente",
+            porque=f"a ficha declara {ficha.contrato} e a vigente e' {vigente} (igualdade exacta, D7)",
+        )
+        return 2
+    credencial = Cr.carregar_trio(ficha.credencial_referencia, ficha.credencial_arquivos)
+    if isinstance(credencial, Cr.Recusa):
+        diag(etapa="chave", veredicto="recusado", motivo=credencial.motivo, porque=credencial.porque)
+        return 2
+
+    transporte = Tr.Transporte(
+        url_da_api=ficha.url_da_api, client_id=credencial.client_id, client_secret=credencial.client_secret
+    )
+    try:
+        resultado, ligacao, aberto = _abrir_ligacao(transporte, ficha, credencial)
+        if aberto is not None:
+            transporte = aberto
+        if not resultado.ok or aberto is None:
+            diag(etapa="ligacao", veredicto="recusado", motivo=str(resultado.motivo), porque=resultado.porque)
+            return 2
+        diag(etapa="ligacao", veredicto="passou", porque=ligacao)
+
+        identidade = _conferir_identidade(transporte, ficha)
+        if not identidade.ok:
+            diag(etapa="identidade", veredicto="recusado", motivo=identidade.motivo, porque=identidade.porque)
+            return 2
+        diag(etapa="identidade", veredicto="passou", porque=identidade.porque)
+
+        account_id = ficha.ctid_trader_account_id
+        symbol_id = _universo_do_instrumento(transporte, account_id, instrumento)
+        if isinstance(symbol_id, Le.Recusa):
+            diag(etapa="simbolo", veredicto="recusado", motivo=symbol_id.motivo, porque=symbol_id.porque)
+            return 2
+        diag(etapa="simbolo", veredicto="resolvido", instrumento=instrumento, symbol_id=symbol_id)
+
+        fim = datetime.now(timezone.utc)
+        inicio = fim - timedelta(days=dias)
+        lidas = transporte.velas(account_id, symbol_id, periodo, inicio, fim)
+        if not lidas.ok:
+            diag(etapa="velas", veredicto="recusado", motivo=str(lidas.motivo), porque=lidas.porque)
+            return 2
+        brutas = lidas.valor
+        if not isinstance(brutas, list):
+            diag(
+                etapa="velas",
+                veredicto="recusado",
+                motivo="formato_invalido",
+                porque=f"o venue nao devolveu uma lista de velas (veio {type(brutas).__name__})",
+            )
+            return 2
+
+        # A GUARDA DO PERIODO (a irma' da guarda do simbolo no conector 1): o periodo da vela e' do VENUE e nada o
+        # traduz. Se a vela que voltou traz outro periodo, o que se pediu nao e' o que veio — para-se aqui, em vez
+        # de escrever um ficheiro que a sigma leria como sendo deste relogio.
+        de_outro_periodo = [
+            v for v in brutas if isinstance(v, dict) and v.get("periodo") not in (None, periodo)
+        ]
+        if de_outro_periodo:
+            diag(
+                etapa="velas",
+                veredicto="recusado",
+                motivo="vela_de_outro_periodo",
+                pedido=periodo,
+                veio=de_outro_periodo[0].get("periodo"),
+                quantas=len(de_outro_periodo),
+                porque="uma vela de outro periodo nao e' deste relogio, e escreve-la seria medir outras barras",
+            )
+            return 2
+
+        convertidas = Ve.velas_para_a_sigma(brutas)
+        if isinstance(convertidas, Ve.Recusa):
+            diag(etapa="conversao", veredicto="recusado", motivo=convertidas.motivo, porque=convertidas.porque)
+            return 2
+
+        pasta.mkdir(parents=True, exist_ok=True)
+        descritor_path, ficheiro, ja, desde_guardado = _ler_o_que_ja_esta(
+            pasta, instrumento, relogio, actualizar
+        )
+        novas = Ve.novas_por_tempo(ja, convertidas)
+        todas = ja + novas
+        ficheiro.write_text(Ve.linhas_jsonl(todas), encoding="utf-8")
+        desde_ms = desde_guardado if desde_guardado is not None else int(inicio.timestamp() * 1000)
+        ate_ms = todas[-1]["t"] if todas else None
+        descritor_path.write_text(
+            json.dumps(
+                Ve.descritor(
+                    instrumento=instrumento,
+                    relogio=relogio,
+                    periodo_do_venue=periodo,
+                    ambiente=ficha.ambiente,
+                    url=ficha.url_da_api,
+                    desde_ms=desde_ms,
+                    ate_ms=ate_ms,
+                    quantas=len(todas),
+                    ficheiro=ficheiro.name,
+                    escrito_em_ms=int(time.time() * 1000),
+                ),
+                ensure_ascii=False,
+                indent=1,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        ritmo = transporte.estado_de_ritmo()
+        diag(
+            etapa="velas",
+            veredicto="escritas",
+            instrumento=instrumento,
+            relogio=relogio,
+            periodo_do_venue=periodo,
+            desde=inicio.isoformat(),
+            ate=fim.isoformat(),
+            pedidas=dias,
+            do_venue=len(brutas),
+            ja_tinha=len(ja),
+            novas=len(novas),
+            agora_tem=len(todas),
+            ficheiro=str(ficheiro),
+            descritor=str(descritor_path),
+            ritmo_historico=ritmo.get("historico"),
+            nota=(
+                "modo de VELAS: SO' LEITURA (nenhuma ordem). O periodo historic do venue e' a classe de 5/s, e o "
+                "`ritmo_historico` acima e' o estado DECLARADO do limitador — a espera foi dele, nao contornada"
+            ),
+        )
+        return 0
+    finally:
+        try:
+            transporte.fechar()
+        except Exception:
+            pass
+
+
+# -----------------------------------------------------------------------------------------------------------
 # O ARRANQUE DO EXECUTAVEL.
 # -----------------------------------------------------------------------------------------------------------
 
@@ -2918,7 +3155,27 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--leitura-a-cada", type=int, default=None, help="intervalo das leituras de mercado (ms)")
     ap.add_argument("--prazo-do-venue-ms", type=int, default=None, help="prazo declarado para a resposta do venue")
+    # ---- o MODO DE VELAS (06/10/2026): os nomes do irmao (`brokers/hyperliquid/mercado.ts`), os que o operador
+    # ja' sabe chamar. `--velas` e' o instrumento; o ficheiro sai na forma que o setup `sigma` consome. E' SO'
+    # LEITURA (nenhuma ordem) e corre ANTES das oito portas: nao serve a mesa nem publica manifesto.
+    ap.add_argument(
+        "--velas",
+        metavar="INSTRUMENTO",
+        default=None,
+        help="MODO DE VELAS: le' o historico do instrumento e escreve velas-<INSTRUMENTO>-<RELOGIO>.jsonl (so' leitura)",
+    )
+    ap.add_argument("--intervalo", default=None, help="o relogio da sigma (1m, 5m, ..., 4h, 1d) — o do ficheiro e do pedido")
+    ap.add_argument("--dias", type=int, default=None, help="dias de historico a pedir (por omissao 7, como o irmao)")
+    ap.add_argument("--para-pasta", dest="para_pasta", default=None, help="a pasta onde escrever o .jsonl e o descritor")
+    ap.add_argument(
+        "--actualizar",
+        action="store_true",
+        help="acrescenta as velas novas sem duplicar (le' o descritor ao lado; como o irmao)",
+    )
     args = ap.parse_args(argv)
+
+    if args.velas is not None:
+        return _modo_velas(args)
 
     arranque = arrancar(_caminho_da_ficha(str(args.ficha)))
     prazo = args.prazo_do_venue_ms

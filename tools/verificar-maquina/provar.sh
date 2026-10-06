@@ -160,6 +160,15 @@ declarar "ctrader: ritmo do venue (6 provas)"  bash -c "cd brokers/ctrader && .v
 # nomear o caso — sem esse vermelho a bancada media o duplo, nao a leitura.
 declarar "ctrader: leitura do mercado (7 provas)" bash -c "cd brokers/ctrader && .venv/bin/python casos/prova-leitura.py"
 
+# O MODO DE VELAS da ponta (06/10/2026): e' o que da' ao setup `sigma` as barras do cTrader (o irmao ja' as da' ao
+# hyperliquid). Entra no portao pela MESMA razao das outras bancadas do cTrader (A-2): e' o caminho por onde a
+# sigma le' o mercado deste venue, e um caminho fora do portao regride sem ninguem dar por isso. A bancada e' SO'
+# a parte PURA (o MAPA do relogio e a CONVERSAO para a forma que a sigma le'): OFFLINE, sem rede, sem chave e sem
+# venue. Mede a FORMA contra as chaves REAIS de uma linha do ficheiro do hyperliquid, e traz a NEGATIVA dentro
+# (tres defeitos injectados no modulo REAL — o numero em float, o preco de enfeite, o mapa arredondado —, cada um
+# a exigir o VERMELHO do caso que ele estraga). A LEITURA A SERIO contra o venue NAO se mede aqui, e a bancada di-lo.
+declarar "ctrader: velas p/ a sigma (7 + 3 neg)" bash -c "cd brokers/ctrader && .venv/bin/python casos/prova-velas.py"
+
 # OS CASOS DO CONTRATO NO DUBLE DA MESA (T047, 05/10/2026). Os casos deste venue corriam SO' offline
 # (`correr.py`, 85) — pelo lado da MESA (o duble que ja' existe, `contracts/mocks/mesa --papel conector`)
 # nunca tinham corrido, e a T047 pedia os DOIS lados com a contagem lado a lado. A bancada monta o desfecho

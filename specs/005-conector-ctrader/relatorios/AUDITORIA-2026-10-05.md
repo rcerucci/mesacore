@@ -738,3 +738,26 @@ enviada; fecho `desconhecido` → pendente e reconciliação).
 **De fora, de propósito:** as duas fichas `fichas/sigma/*.json`, que estão modificadas **desde 04/10** por **outra
 sessão** e não são desta vaga (a árvore fica com essas duas, e só essas). Os registos das corridas **não** vão no
 commit: `brokers/*/conformidade/` está no `.gitignore` por desenho — são ESTADO, não FORMA.
+
+---
+
+# ADENDA 17 — 06/10/2026: as VELAS do ctrader (o que a σ consome) — o primeiro passo dos dois venues
+
+O dono vai subir um **setup σ a 1m em EURUSD** nesta conta e pôr **os dois venues a operar em paralelo**. O primeiro
+passo era o que a σ come: **velas**. O conector do ctrader não tinha modo nenhum que as escrevesse.
+
+| Verificação do auditor | Resultado |
+|---|---|
+| `bash tools/verificar-maquina/provar.sh` (corrido por mim) | **58 de 58, rc=0** — a bancada nova entrou: `ctrader: velas p/ a sigma (7 + 3 neg)` |
+| `contracts/` | limpo (SC-015) |
+| O ficheiro escrito do venue | **7158 linhas** em `velas-EURUSD-1m.jsonl`, todas em múltiplos de 60000 ms; primeira `t 1790678100000` (2026-09-29 10:35Z), última `1791282840000` (2026-10-06 10:34Z); descritor com `periodo_do_venue: M1` |
+| A forma vs o irmão | os **mesmos campos na mesma ordem** (`t,o,c,h,l`); só o irmão tem `T,s,i,v,n` — e o `v` ficou de fora **por nome**: o venue dá volume em **ticks**, grandeza diferente (a σ não o lê) |
+| **A σ a consumi-las — MEDIDO POR MIM** | Com a receita do harness da casa (`tools/verificar-setup/sigma-casos.py`): as velas copiadas para a `PASTA_DE_MERCADO` como `velas-EURUSD-1m.jsonl`, `CONSTANTES` = as omissões do template, a leitura no stdin. **No instante real**: silêncio, com o diagnóstico (`7158 no ficheiro · 7158 fechadas · ultima 2026-10-06T10:34Z`). **No replay da barra `10:33Z`**: **proposta real** `{"lado":"sell","barra_ms":1791282780000}` — a barra da viragem (`sig=-1 · virada=-1`) |
+| A limitação declarada | o relógio **`2h`** (o 8.º da σ) **não tem trendbar** neste venue: recusado por nome, nunca arredondado para H1/H4 |
+
+**O que este passo NÃO fecha, e é o seguinte:** a σ consumiu as velas **numa corrida minha, à mão**. O que falta é o
+**operador** a pedi-las e a chamar a σ **a cada volta**, para os pares das duas contas — e é aí que entra o
+**roteamento** (os três sítios ainda fixos no hyperliquid: as velas em `operador.ts:463`, o conector em `:675`, o
+feed em `:703`). A σ a operar a 1m contra o venue **depende ainda** da decisão do **tamanho na grelha** (FR-055/
+FR-056): hoje quase todas as ordens caem fora do passo. Sem essa decisão, as velas chegam e a σ propõe — e a ordem
+é recusada.
