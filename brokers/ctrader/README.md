@@ -77,7 +77,7 @@ mesmo resumo, `12 provas · 2 nao_forcavel, 10 passou`.)*
 | 3 | sonda e manifesto: instrumentos e os numeros do venue | `passou` | r10:34,41 |
 | 4 | duas camadas com a sessao derrubada -> zero envios | **`nao_forcavel`** | r10:43,53 |
 | 5 | re-autenticacao: a conta LIDA antes de aceitar pedido novo | **`nao_forcavel`** | r10:55,65 |
-| 6 | boleta fora do passo -> recusa nomeada, zero ordens | `passou` | r10:67,73 |
+| 6 | boleta ao PADRAO DO DONO (`saldo_pct 10`, `alavancagem 1`) -> volume ao degrau com o ajuste DECLARADO (**reescrita a 06/10/2026**; era «boleta fora do passo -> recusa nomeada, zero ordens») | `passou` | r10:67,73 |
 | 7 | stop fora da grelha relativa do venue -> recusa nomeada, zero ordens | `passou` | r10:75,81 |
 | 8 | ordem a mercado no minimo -> resolucao + desfecho com os numeros do VENUE | `passou` | r10:83,92 |
 | 9 | marca reenviada -> a dedup trava a segunda, UMA posicao | `passou` | r10:94,103 |
@@ -163,6 +163,13 @@ Regras que este conector cumpre (e que se verificam por comando):
 - importa `contracts`, **NUNCA** o `core` (RN-E1);
 - nao decide nada: nao escolhe lado, tamanho, preco nem momento (RN-C5, RN-C15);
 - nada se ajusta em silencio: o que nao cabe e' **recusado com motivo** (RN-C3);
+  - **NOTA 06/10/2026** — decisao do dono, textual: «a ficha do eurusd pode ser igual ao btc, **10% notional e 1x
+    alavacagema** … **padrao independente do venue, riscos igual ao hl**». O `volume` que **nao cai no passo** do
+    venue agora **desce ao maior degrau ≤ pedido** (nunca sobe: o risco nunca excede o declarado) e o ajuste **sai
+    DECLARADO** na linha (`conversao`: volume pedido, efectivo, regra `volume_ajustado_ao_passo`, nocionais) —
+    **nao e' um ajuste silencioso**. A recusa continua, pelo nome que ja' existia
+    (`minimo_do_instrumento_acima_da_banda`), so' para o pedido **abaixo do minimo** do instrumento (nao ha' degrau
+    admissivel abaixo). Era isto que impedia a σ de operar EURUSD neste venue. FR-055/FR-056, com a nota datada;
 - a credencial entra por **referencia** e o valor vive **fora** do repositorio (RN-C20, RN-E14) — aqui sao QUATRO
   valores (client_id, client_secret, access_token, refresh_token), **um ficheiro `.key` por valor** e em modo
   600, porque o venue **reescreve dois deles** quando roda o par de tokens (com tudo num ficheiro so', a rotacao

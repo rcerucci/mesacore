@@ -133,7 +133,7 @@ O que ela há-de medir, com os números crus no relatório (em `brokers/ctrader/
 3. sonda e manifesto: instrumentos com deslistados, e os números do venue;
 4. **duas camadas**: sessão derrubada (rotação de token), transporte vivo → **zero envios**;
 5. re-autenticação → **lê a conta antes** de aceitar pedido;
-6. boleta fora do passo → recusa nomeada, **zero ordens** no venue;
+6. boleta ao **padrão do dono** (`saldo_pct: 10`, `alavancagem: 1`) cujo volume **não cai no passo**: o volume **desce ao degrau admissível** e a linha **declara o ajuste** (volume pedido, efectivo, regra `volume_ajustado_ao_passo`, nocionais) — **reescrita em 06/10/2026, era «boleta fora do passo → recusa nomeada, zero ordens»** (decisão do dono);
 7. stop abaixo de `slDistance` → recusa nomeada, **zero ordens**;
 8. ordem a mercado no tamanho mínimo → resolução + desfecho com preço/volume/comissão **do venue**;
 9. **marca reenviada** → uma ordem, uma posição;

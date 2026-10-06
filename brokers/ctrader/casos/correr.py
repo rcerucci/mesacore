@@ -47,11 +47,13 @@ esta' parcial, exige que o contrato a recuse pelo motivo certo. Qualquer outra r
 A PROVA NEGATIVA E' UM PASSO DA BANCADA, e NAO UM CASO. As bancadas irma's (`prova-ritmo.py`,
 `prova-leitura.py`) injectam o DEFEITO e exigem a MESMA medicao VERMELHA, a NOMEAR o caso — a linha
 `{"negativa": …}` sai no proprio `stdout`. Os casos em dado tinham as negativas num harness de SCRATCH, fora do
-repositorio: o portao levava so' os verdes, e a negativa era uma sessao que ninguem repetia. Aqui as quatro
-negativas (identidade divergente aceite, direitos aceitos, `passo` fixo no codigo, fecho do inexistente a mandar
-ordem) correm DENTRO do corredor. Nao entram na CONTAGEM dos casos — sao a mesma prova ja' contada, corrida
-outra vez com o defeito dentro: por isso o total verde fica o mesmo. O que a negativa acrescenta e' o VERMELHO;
-se o defeito NAO puser o caso a DIVERGIR, a bancada di-lo pelo nome e sai com codigo 1.
+repositorio: o portao levava so' os verdes, e a negativa era uma sessao que ninguem repetia. Aqui as negativas
+(identidade divergente aceite, direitos aceitos, `passo` fixo no codigo, fecho do inexistente a mandar ordem,
+enum cru, `moneyDigits` nao lido, nome do proto, desvio para cima, virada sem posicao, e as DUAS do AJUSTE DO
+VOLUME de 06/10/2026: `volume-fora-do-passo-volta-a-recusar` e `ajuste-ao-passo-em-silencio`) correm DENTRO do
+corredor. Nao entram na CONTAGEM dos casos — sao a mesma prova ja' contada, corrida outra vez com o defeito
+dentro: por isso o total verde fica o mesmo. O que a negativa acrescenta e' o VERMELHO; se o defeito NAO puser o
+caso a DIVERGIR, a bancada di-lo pelo nome e sai com codigo 1.
 """
 
 from __future__ import annotations
@@ -669,6 +671,11 @@ def _caso_de_ordem(caso: dict[str, Any], bases: tuple[Any, Any, Any, Any]) -> li
         if caminho == "resolucao":
             for sub, esperado_sub in _bloco(esperado, "conferir.resolucao").items():
                 problemas.extend(_um_campo(resultado.resolucao, sub, esperado_sub, f"resolucao.{sub}"))
+        elif caminho == "conversao":
+            # A DECLARACAO DA CONVERSAO (FR-055, decisao do dono de 06/10/2026): o volume pedido, o efectivo, a
+            # regra pelo nome e os dois nocionais. E' ela que prova que o ajuste ao passo NAO foi em silencio.
+            for sub, esperado_sub in _bloco(esperado, "conferir.conversao").items():
+                problemas.extend(_um_campo(resultado.conversao, sub, esperado_sub, f"conversao.{sub}"))
         else:
             problemas.extend(_um_campo(resultado.accao, caminho, esperado, caminho))
     problemas.extend(_conferir_resolucao(resultado.resolucao))
@@ -1391,6 +1398,81 @@ def negativa_virada_sem_posicao_aceita() -> list[str]:
     return _anunciar_negativa("virada-sem-posicao-aceita", "virada", problemas_do_caso, caso["caso"])
 
 
+def _caso_da_ordem_por_nome(nome: str) -> tuple[dict[str, Any], tuple[Any, Any, Any, Any]]:
+    """O caso das ordens com esse nome e as bases do ficheiro — para as negativas do volume."""
+    conteudo = _conteudo_dos_casos("ordens")
+    bases = (
+        _bloco(conteudo.get("manifesto_base"), "manifesto_base"),
+        _bloco(conteudo.get("simbolo_base"), "simbolo_base"),
+        _bloco(conteudo.get("boleta_base"), "boleta_base"),
+        _bloco(conteudo.get("pedido_base"), "pedido_base"),
+    )
+    for candidato in _lista(conteudo.get("casos"), "casos"):
+        if candidato.get("caso") == nome:
+            return candidato, bases
+    raise ValueError(f"o caso {nome!r} nao existe: a negativa nao tem onde injectar o defeito")
+
+
+def negativa_volume_fora_do_passo_volta_a_recusar() -> list[str]:
+    """O DEFEITO: o volume fora do passo volta a RECUSAR — o comportamento ANTIGO do FR-056 que a decisao do dono
+    de 06/10/2026 veio resolver. O caso do AJUSTE DECLARADO TEM de ficar VERMELHO a nomea'-lo.
+
+    A ordem do dono e' textual («a ficha do eurusd pode ser igual ao btc, 10% notional e 1x alavacagema ... padrao
+    independente do venue»). Repondo a recusa dentro do ajuste, o caso que afirma a ACEITACAO com o degrau
+    declarado DIVERGE em `ok=false, esperado=true` — sem este vermelho, o verde do caso prova a fixture, e nao a
+    regra do ajuste.
+    """
+    caso, bases = _caso_da_ordem_por_nome("ordens/volume-fora-do-passo-desce-ao-degrau-e-declara-o-ajuste")
+    original = modulo_ordens.ajustar_volume_ao_venue
+
+    def _recusa_quando_fora_do_passo(**kwargs: Any) -> Any:
+        conversao = original(**kwargs)
+        if isinstance(conversao, modulo_ordens.Recusa):
+            return conversao
+        if conversao.regra == modulo_ordens.REGRA_VOLUME_AJUSTADO:
+            # DEFEITO: a decisao antiga — o tamanho que nao cai na grelha RECUSAVA, nunca descia ao degrau.
+            return modulo_ordens._recusa(  # noqa: SLF001
+                "minimo_do_instrumento_acima_da_banda",
+                "DEFEITO injectado: o volume fora do passo volta a recusar (a decisao antiga do FR-056)",
+            )
+        return conversao
+
+    modulo_ordens.ajustar_volume_ao_venue = _recusa_quando_fora_do_passo  # type: ignore[assignment]
+    try:
+        problemas_do_caso = _caso_de_ordem(caso, bases)
+    finally:
+        modulo_ordens.ajustar_volume_ao_venue = original  # type: ignore[assignment]
+    return _anunciar_negativa(
+        "volume-fora-do-passo-volta-a-recusar", "ajuste", problemas_do_caso, caso["caso"]
+    )
+
+
+def negativa_ajuste_ao_passo_em_silencio() -> list[str]:
+    """O DEFEITO: o ajuste ao passo faz-se em SILENCIO — a declaracao perde a REGRA pelo nome. O caso TEM de ficar
+    VERMELHO em `conversao.regra`.
+
+    A decisao do dono exige que o ajuste SAIA DECLARADO (FR-055): um volume efectivo sem a regra que o liga ao
+    pedido e' um ajuste silencioso — o defeito que a decisao veio NOMEAR. Tira-se a regra da declaracao e exige-se
+    o vermelho do caso que a afirma.
+    """
+    caso, bases = _caso_da_ordem_por_nome("ordens/volume-fora-do-passo-desce-ao-degrau-e-declara-o-ajuste")
+    original = modulo_ordens.Conversao.declaracao
+
+    def _declaracao_sem_regra(self: Any) -> dict[str, str]:
+        declaracao = original(self)
+        declaracao.pop("regra", None)  # DEFEITO: o ajuste fica sem a regra que o nomeia
+        return declaracao
+
+    modulo_ordens.Conversao.declaracao = _declaracao_sem_regra  # type: ignore[assignment]
+    try:
+        problemas_do_caso = _caso_de_ordem(caso, bases)
+    finally:
+        modulo_ordens.Conversao.declaracao = original  # type: ignore[assignment]
+    return _anunciar_negativa(
+        "ajuste-ao-passo-em-silencio", "ajuste-declarado", problemas_do_caso, caso["caso"]
+    )
+
+
 #: As negativas, pela ordem das provas que vigiam. NAO copiam as bancadas de ritmo/leitura na contagem: ali a
 #: negativa e' mais um caso (`6 provas` inclui a negativa); aqui o total em dado fica o mesmo, e a negativa e'
 #: um passo proprio — o que ela acrescenta e' o VERMELHO, nao um caso.
@@ -1404,6 +1486,8 @@ NEGATIVAS: list[tuple[str, Any]] = [
     ("negativa/nome-do-proto-nao-le-o-inteiro", negativa_nome_do_proto_nao_le_o_inteiro),
     ("negativa/desvio-arredonda-para-cima", negativa_desvio_arredonda_para_cima),
     ("negativa/virada-sem-posicao-aceita", negativa_virada_sem_posicao_aceita),
+    ("negativa/volume-fora-do-passo-volta-a-recusar", negativa_volume_fora_do_passo_volta_a_recusar),
+    ("negativa/ajuste-ao-passo-em-silencio", negativa_ajuste_ao_passo_em_silencio),
 ]
 
 

@@ -10,8 +10,16 @@ AS DUAS UNIDADES ONDE ESTE VENUE SE ENGANHA EM SILENCIO (data-model §0). Sao co
 cada uma vive num so' sitio, com nome:
 
   1. `volume` — **0,01 de unidade**: `volume = unidades x 100` (CENTESIMOS_POR_UNIDADE). Conferido a
-     `minimo`/`maximo`/`passo` do simbolo (que a sonda publica JA' EM UNIDADES) ANTES de enviar. O que nao
-     couber e' RECUSADO: nunca se trunca nem se arredonda para caber (RN-CT20, FR-055/056).
+     `minimo`/`maximo`/`passo` do simbolo (que a sonda publica JA' EM UNIDADES) ANTES de enviar (RN-CT20,
+     FR-055/056). O volume que NAO cai na grelha DESCE ao maior degrau do passo <= pedido — nunca sobe, porque
+     o risco nunca excede o declarado — e o ajuste SAI DECLARADO (`Conversao`, `ajustar_volume_ao_venue`).
+     DECISAO DO DONO, datada de 06/10/2026, textual: «conta: ctrader-demo-pepperstone, a ficha do eurusd pode
+     ser igual ao btc, 10% notional e 1x alavacagema. isso tem que ser padrao independente do venue, riscos
+     igual ao hl. simples assim». Ate' aqui o conector RECUSAVA o tamanho fora do passo (o texto antigo do
+     FR-056 dizia «nunca truncado, arredondado ou ajustado em silencio»), e a sigma nao operava neste venue:
+     as velas chegavam, a sigma propunha, e a ordem caia' pela recusa. O que CONTINUA a recusar, pelo nome que
+     ja' existia: o pedido ABAIXO do minimo do instrumento (`minimo_do_instrumento_acima_da_banda`), porque
+     abaixo do minimo nao ha' degrau admissivel e subir ate' ao minimo aumentaria o risco que o dono nao pediu.
   2. `relativeStopLoss`/`relativeTakeProfit` — **1/100000 de preco**: `relativo = preco x (pct/100) x 100000`
      (RELATIVO_POR_PRECO), com o SINAL conforme o lado (RN-CT32: em BUY a distancia soma-se ao preco, em SELL
      subtrai-se).
@@ -35,7 +43,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_FLOOR, Decimal
 from typing import Any
 
 # -----------------------------------------------------------------------------------------------------------
@@ -45,6 +53,12 @@ from typing import Any
 
 #: `volume` das ordens do venue: **0,01 de unidade**. `volume = unidades x 100`, inteiro (data-model §0).
 CENTESIMOS_POR_UNIDADE = 100
+
+#: As REGRAS do volume, pelo NOME (FR-055, decisao do dono de 06/10/2026). A declaracao di-lo sempre: o pedido
+#: que JA' cai na grelha fica `exacto`; o que nao cai DESCE ao degrau admissivel e leva o nome do ajuste. Os dois
+#: nomes vivem aqui, num so' sitio, para que a linha e a bancada leiam o mesmo.
+REGRA_VOLUME_EXACTO = "volume_exacto_no_passo"
+REGRA_VOLUME_AJUSTADO = "volume_ajustado_ao_passo"
 
 #: `relativeStopLoss`/`relativeTakeProfit`: **1/100000 de preco**. `relativo = preco x (pct/100) x 100000`.
 RELATIVO_POR_PRECO = 100000
@@ -124,6 +138,10 @@ class Feito:
     accao: dict[str, Any]
     #: A resolucao (RN-C10/FR-062): os cinco campos, com os numeros do venue quando ele os da'.
     resolucao: dict[str, str]
+    #: A DECLARACAO da conversao do volume (FR-055): o volume pedido, o efectivo, a regra pelo nome e os dois
+    #: nocionais. NUNCA vai a' venue (nao ha' campo para ela no `ProtoOANewOrderReq`): e' a prova de que o ajuste
+    #: ao passo nao se fez em silencio. Vem `None` so' numa accao que nao seja de abertura com volume.
+    conversao: dict[str, str] | None = None
 
 
 def _recusa(motivo: str, porque: str) -> Recusa:
@@ -205,7 +223,35 @@ def _em_centesimos(valor: Decimal, nome: str) -> int | Recusa:
     )
 
 
-def volume_do_venue(
+@dataclass(frozen=True)
+class Conversao:
+    """A DECLARACAO da conversao do volume (FR-055) — o pedido, o efectivo, a regra e os dois nocionais.
+
+    Existe para que o ajuste ao passo NUNCA seja silencioso: quem le' a linha ve' o volume que a boleta pedia, o
+    que vai a' grelha do venue, e o nome da regra que liga os dois. A diferenca entre os dois nocionais e' o
+    DESVIO (o risco efectivo nunca excede o pedido, porque o ajuste so' desce). Os volumes vao na unidade do
+    `volume` do venue (0,01 de unidade); os nocionais, no dinheiro (`unidades x preco`). Os metodos PURA os
+    escrevem em TEXTO (D4) — o numero nunca viaja em float.
+    """
+
+    volume_pedido: Decimal
+    volume_efectivo: int
+    regra: str
+    nocional_pedido: Decimal
+    nocional_efectivo: Decimal
+
+    def declaracao(self) -> dict[str, str]:
+        """A declaracao em TEXTO (D4): o volume pedido, o efectivo, a regra pelo nome, e os nocionais."""
+        return {
+            "volume_pedido": _texto(self.volume_pedido),
+            "volume_efectivo": str(self.volume_efectivo),
+            "regra": self.regra,
+            "nocional_pedido": _texto(self.nocional_pedido),
+            "nocional_efectivo": _texto(self.nocional_efectivo),
+        }
+
+
+def ajustar_volume_ao_venue(
     *,
     saldo: Decimal,
     saldo_pct: Decimal,
@@ -215,26 +261,22 @@ def volume_do_venue(
     maximo: Decimal,
     passo: Decimal,
     instrumento: str,
-) -> int | Recusa:
-    """`unidades x 100`, INTEIRO, conferido a minimo/maximo/passo — ou recusa (RN-CT20, FR-055/056).
+) -> Conversao | Recusa:
+    """A CONVERSAO do tamanho (RN-CT20, FR-055/056) — com a DECISAO DO DONO, datada de 06/10/2026.
 
-    `unidades = saldo x (saldo_pct/100) x alavancagem / preco`. O resultado tem de cair na grelha de 0,01 de
-    unidade do venue E no passo do simbolo: o que nao cair e' RECUSADO, nunca truncado nem arredondado — um
-    numero ajustado por conta propria seria uma ordem que o dono nao autorizou.
+    `unidades = saldo x (saldo_pct/100) x alavancagem / preco`. O volume pedido, na unidade do venue (0,01 de
+    unidade), DESCE ao MAIOR degrau do passo que nao o exceda — nunca sobe, porque o risco nunca excede o
+    declarado — e a `Conversao` di-lo. A ordem do dono e' textual: «a ficha do eurusd pode ser igual ao btc, 10%
+    notional e 1x alavacagema ... padrao independente do venue, riscos igual ao hl». Ate' aqui o FR-056 fazia o
+    conector RECUSAR o tamanho fora da grelha, e a sigma nao operava neste venue.
+
+    A DECISAO NAO DESTRAVA TUDO, e o que fica de fora fica NOMEADO: o pedido ABAIXO do minimo do instrumento
+    RECUSA (`minimo_do_instrumento_acima_da_banda`) — abaixo do minimo nao ha' degrau admissivel, e subir ate' ao
+    minimo aumentaria o risco que o dono nao pediu (RN-C9); o pedido ACIMA do maximo RECUSA (`valor_fora_da_banda`)
+    — o venue recusaria a ordem, e nao se corta o tamanho por conta propria.
     """
     unidades = saldo * saldo_pct / Decimal(100) * alavancagem / preco
-    bruto = unidades * Decimal(CENTESIMOS_POR_UNIDADE)
-    volume = _inteiro(
-        bruto,
-        "volume calculado",
-        "minimo_do_instrumento_acima_da_banda",
-        (
-            f"a quantidade pedida em {instrumento} da' {_texto(bruto)} centesimos de unidade, que nao caem na "
-            "grelha do venue (0,01 de unidade)"
-        ),
-    )
-    if isinstance(volume, Recusa):
-        return volume
+    volume_pedido = unidades * Decimal(CENTESIMOS_POR_UNIDADE)
 
     passo_em_centesimos = _em_centesimos(passo, "passo")
     if isinstance(passo_em_centesimos, Recusa):
@@ -246,33 +288,81 @@ def volume_do_venue(
     if isinstance(maximo_em_centesimos, Recusa):
         return maximo_em_centesimos
 
-    if volume % passo_em_centesimos != 0:
+    # O PEDIDO FICA ABAIXO DO MINIMO: nao ha' degrau admissivel abaixo. A recusa continua, pelo nome que ja'
+    # existia — e' o unico caso em que a decisao do dono NAO destrava (o ajuste so' desce).
+    if volume_pedido < minimo_em_centesimos:
         return _recusa(
             "minimo_do_instrumento_acima_da_banda",
             (
-                f"o volume {volume} (0,01 de unidade) nao e' multiplo do passo do simbolo, que e' "
-                f"{passo_em_centesimos}: arredondar para o passo mais proximo mudaria o tamanho que o dono "
-                "autorizou — recusa (FR-056)"
+                f"o volume pedido {_texto(volume_pedido)} (0,01 de unidade) fica abaixo do minimo do simbolo "
+                f"{instrumento}, que e' {minimo_em_centesimos}: o ajuste do dono so' DESCE ao degrau do passo, e "
+                "abaixo do minimo nao ha' degrau admissivel — subir ate' ao minimo aumentaria o risco, e nao se faz "
+                "(RN-C9/FR-056)"
             ),
         )
-    if volume < minimo_em_centesimos:
-        return _recusa(
-            "minimo_do_instrumento_acima_da_banda",
-            (
-                f"o volume {volume} (0,01 de unidade) fica abaixo do minimo do simbolo, que e' "
-                f"{minimo_em_centesimos}: subir ate' ao minimo aumentaria o risco sem o dono o ter pedido — "
-                "recusa (RN-C9/FR-056)"
-            ),
-        )
-    if volume > maximo_em_centesimos:
+    # O PEDIDO EXCEDE O MAXIMO: o venue recusaria a ordem, e nao se corta o tamanho por conta propria.
+    if volume_pedido > maximo_em_centesimos:
         return _recusa(
             "valor_fora_da_banda",
             (
-                f"o volume {volume} (0,01 de unidade) excede o maximo do simbolo, que e' "
-                f"{maximo_em_centesimos}: o venue recusaria a ordem, e nao se corta o tamanho por conta propria"
+                f"o volume pedido {_texto(volume_pedido)} (0,01 de unidade) excede o maximo do simbolo {instrumento}, "
+                f"que e' {maximo_em_centesimos}: o venue recusaria a ordem, e nao se corta o tamanho por conta propria"
             ),
         )
-    return volume
+
+    # O MAIOR DEGRAU DO PASSO <= PEDIDO (floor; nunca acima: o risco nunca excede o declarado).
+    degrau = (volume_pedido / passo_em_centesimos).to_integral_value(rounding=ROUND_FLOOR) * passo_em_centesimos
+    if degrau < minimo_em_centesimos:
+        # So' acontece se o minimo do simbolo nao for multiplo do passo: o ajuste desceria abaixo do minimo.
+        return _recusa(
+            "minimo_do_instrumento_acima_da_banda",
+            (
+                f"o maior degrau do passo {passo_em_centesimos} que nao excede o volume pedido "
+                f"{_texto(volume_pedido)} e' {_texto(degrau)} (0,01 de unidade), abaixo do minimo "
+                f"{minimo_em_centesimos} do simbolo {instrumento}: nao ha' degrau admissivel abaixo — recusa "
+                "(RN-C9/FR-056)"
+            ),
+        )
+    volume_efectivo = int(degrau)
+    regra = REGRA_VOLUME_EXACTO if degrau == volume_pedido else REGRA_VOLUME_AJUSTADO
+    return Conversao(
+        volume_pedido=volume_pedido,
+        volume_efectivo=volume_efectivo,
+        regra=regra,
+        nocional_pedido=volume_pedido / Decimal(CENTESIMOS_POR_UNIDADE) * preco,
+        nocional_efectivo=Decimal(volume_efectivo) / Decimal(CENTESIMOS_POR_UNIDADE) * preco,
+    )
+
+
+def volume_do_venue(
+    *,
+    saldo: Decimal,
+    saldo_pct: Decimal,
+    alavancagem: Decimal,
+    preco: Decimal,
+    minimo: Decimal,
+    maximo: Decimal,
+    passo: Decimal,
+    instrumento: str,
+) -> int | Recusa:
+    """O `volume` (0,01 de unidade), INTEIRO e na grelha — ou recusa (RN-CT20, FR-055/056).
+
+    Embrulho fino da `ajustar_volume_ao_venue` (a regra vive num so' sitio): devolve o volume EFECTIVO (o degrau
+    do passo <= pedido) ou a recusa nomeada. Quem precisa da DECLARACAO do ajuste usa a `Conversao` directamente.
+    """
+    conversao = ajustar_volume_ao_venue(
+        saldo=saldo,
+        saldo_pct=saldo_pct,
+        alavancagem=alavancagem,
+        preco=preco,
+        minimo=minimo,
+        maximo=maximo,
+        passo=passo,
+        instrumento=instrumento,
+    )
+    if isinstance(conversao, Recusa):
+        return conversao
+    return conversao.volume_efectivo
 
 
 # -----------------------------------------------------------------------------------------------------------
@@ -888,7 +978,7 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
     passo = _decimal_do_campo(simbolo, "passo", "simbolo.passo", positivo=True)
     if isinstance(passo, Recusa):
         return passo
-    volume = volume_do_venue(
+    conversao = ajustar_volume_ao_venue(
         saldo=saldo,
         saldo_pct=saldo_pct,
         alavancagem=alavancagem,
@@ -898,8 +988,9 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
         passo=passo,
         instrumento=instrumento,
     )
-    if isinstance(volume, Recusa):
-        return volume
+    if isinstance(conversao, Recusa):
+        return conversao
+    volume = conversao.volume_efectivo
 
     # ---- porta 9: o stop e o alvo, relativos e com sinal, conferidos ao piso do simbolo ------------------------
     relativos: dict[str, int] = {}
@@ -1004,7 +1095,7 @@ def traduzir(pedido: dict[str, Any]) -> Feito | Recusa:
         # incompleta. A grade e' a MESMA que o `desvio_em_pontos` ja' usa.
         tick=_tick_por_digitos(simbolo.get("digitos")),
     )
-    return Feito(ok=True, accao=accao, resolucao=resolucao)
+    return Feito(ok=True, accao=accao, resolucao=resolucao, conversao=conversao.declaracao())
 
 
 def _nomes_declarados(instrumentos: Any) -> list[str]:

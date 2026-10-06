@@ -72,8 +72,10 @@
         "slippageInPoints": 625,
         "baseSlippagePrice": 125000,
         "clientOrderId": "7-ciclo-1/linha-1",
-        "resolucao": {"quantidade": "80", "nocional": "100", "preco_de_liquidacao": "0"}
-      }
+        "resolucao": {"quantidade": "80", "nocional": "100", "preco_de_liquidacao": "0"},
+        "conversao": {"volume_pedido": "8000", "volume_efectivo": "8000", "regra": "volume_exacto_no_passo", "nocional_pedido": "100", "nocional_efectivo": "100"}
+      },
+      "nota": "O CASO \"CAI EXACTO -> SEM AJUSTE\" (decisao do dono de 06/10/2026). saldo 1000 x 10% x 1 / 1.25 = 80 unidades = 8000 centesimos, que JA' e' multiplo do passo (0,1 un = 10 centesimos): a declaracao `conversao` di-lo pelo nome — regra `volume_exacto_no_passo`, pedido == efectivo, e os dois nocionais iguais (desvio ZERO). Nao ha' ajuste a fazer, e a linha di-lo em vez de o esconder."
     },
     {
       "caso": "ordens/mercado-por-faixa-desvio-que-nao-cai-em-pontos-inteiros-arredonda-para-baixo",
@@ -136,22 +138,31 @@
       "conferir": {"tradeSide": "SELL", "relativeStopLoss": -2500, "relativeTakeProfit": -3750}
     },
     {
-      "caso": "ordens/volume-fora-do-passo-do-simbolo-recusa",
-      "esperadoOk": false,
-      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
-      "pedido": {"preco": "3.2"}
+      "caso": "ordens/volume-fora-do-passo-desce-ao-degrau-e-declara-o-ajuste",
+      "esperadoOk": true,
+      "pedido": {"preco": "3.2"},
+      "conferir": {
+        "volume": 3120,
+        "conversao": {"volume_pedido": "3125", "volume_efectivo": "3120", "regra": "volume_ajustado_ao_passo", "nocional_pedido": "100", "nocional_efectivo": "99.84"}
+      },
+      "nota": "ESCRITO DE NOVO a 06/10/2026 (era `ordens/volume-fora-do-passo-do-simbolo-recusa`, `esperadoOk: false`, motivo `minimo_do_instrumento_acima_da_banda`). O sentido mudou por DECISAO DO DONO, textual: «a ficha do eurusd pode ser igual ao btc, 10% notional e 1x alavacagema ... padrao independente do venue, riscos igual ao hl». saldo 1000 x 10% x 1 / 3.2 = 31.25 unidades = 3125 centesimos; o passo e' 10 centesimos, logo o volume NAO cai na grelha. Antes RECUSAVA (o texto antigo do FR-056); agora DESCE ao maior degrau <= pedido — 3120 — e a linha DECLARA o ajuste (`conversao.regra = volume_ajustado_ao_passo`, pedido 3125, efectivo 3120, nocional 100 -> 99.84). O risco NUNCA sobe: o efectivo e' <= pedido. O caso que poe este a VERMELHO e' a negativa `volume-fora-do-passo-volta-a-recusar` (repõe a recusa antiga) e a `ajuste-ao-passo-em-silencio` (tira a regra da declaracao)."
     },
     {
-      "caso": "ordens/volume-que-nao-cai-na-grelha-de-0-01-do-venue-recusa",
-      "esperadoOk": false,
-      "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
-      "pedido": {"preco": "1.28"}
+      "caso": "ordens/volume-que-nao-cai-na-grelha-de-0-01-do-venue-desce-ao-degrau-e-declara-o-ajuste",
+      "esperadoOk": true,
+      "pedido": {"preco": "1.28"},
+      "conferir": {
+        "volume": 7810,
+        "conversao": {"volume_pedido": "7812.5", "volume_efectivo": "7810", "regra": "volume_ajustado_ao_passo", "nocional_pedido": "100", "nocional_efectivo": "99.968"}
+      },
+      "nota": "ESCRITO DE NOVO a 06/10/2026 (era `ordens/volume-que-nao-cai-na-grelha-de-0-01-do-venue-recusa`, `esperadoOk: false`). saldo 1000 x 10% x 1 / 1.28 = 78.125 unidades = 7812,5 centesimos — nem INTEIRO na grelha de 0,01 do venue e' (o pedido tem meio centesimo). Antes RECUSAVA; agora DESCE ao maior degrau do passo (10) <= pedido: 7810. A declaracao di-lo: regra `volume_ajustado_ao_passo`, pedido 7812.5, efectivo 7810, nocional 100 -> 99.968. O ajuste e' ao PASSO, e o pedido nao-inteiro tambem desce — nunca sobe."
     },
     {
       "caso": "ordens/volume-abaixo-do-minimo-do-simbolo-recusa",
       "esperadoOk": false,
       "motivo_esperado": "minimo_do_instrumento_acima_da_banda",
-      "boleta": {"saldo_pct": "1"}
+      "boleta": {"saldo_pct": "1"},
+      "nota": "O CASO \"ABAIXO DO MINIMO -> RECUSA POR NOME\" (decisao do dono de 06/10/2026). saldo 1000 x 1% x 1 / 1.25 = 8 unidades = 800 centesimos, abaixo do minimo do simbolo (10 unidades = 1000 centesimos). E' o UNICO caso que a decisao do dono NAO destrava: o ajuste so' DESCE ao degrau, e abaixo do minimo nao ha' degrau admissivel — subir ate' ao minimo aumentaria o risco. Recusa pelo motivo que ja' existia, `minimo_do_instrumento_acima_da_banda`."
     },
     {
       "caso": "ordens/volume-acima-do-maximo-do-simbolo-recusa",

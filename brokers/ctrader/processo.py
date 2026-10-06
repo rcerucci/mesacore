@@ -1586,6 +1586,10 @@ def _atender_ordem_no_venue(correlacao: str, boleta: dict[str, Any], arranque: A
             "symbol_id": symbol_id,
             "accao": traduzido.accao,
             "resolucao_antes_do_envio": traduzido.resolucao,
+            # A DECLARACAO DA CONVERSAO (FR-055, decisao do dono de 06/10/2026): o volume pedido, o efectivo, a
+            # regra pelo nome (`volume_ajustado_ao_passo`/`volume_exacto_no_passo`) e os dois nocionais. O ajuste
+            # ao passo do venue NUNCA e' silencioso — quem le' a linha ve' os dois numeros e a regra que os liga.
+            "conversao": traduzido.conversao,
             "regua_do_preco": f"{PERIODO_DA_VELA_DE_REFERENCIA} (ultima vela fechada) — [a confirmar em demonstracao]",
         }
     ]

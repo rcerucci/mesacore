@@ -761,3 +761,38 @@ passo era o que a σ come: **velas**. O conector do ctrader não tinha modo nenh
 feed em `:703`). A σ a operar a 1m contra o venue **depende ainda** da decisão do **tamanho na grelha** (FR-055/
 FR-056): hoje quase todas as ordens caem fora do passo. Sem essa decisão, as velas chegam e a σ propõe — e a ordem
 é recusada.
+
+---
+
+# ADENDA 18 — 06/10/2026: o padrão do dono no conector (a ficha é a mesma, quem cede é o tamanho)
+
+**A decisão do dono, textual:** «conta: ctrader-demo-pepperstone, a ficha do eurusd pode ser igual ao btc, **10%
+notional e 1x alavacagema**. isso tem que ser **padrão independente do venue, riscos igual ao hl**. simples assim».
+Traduzida: a ficha não muda por venue; quem se adapta é a conversão — **o tamanho desce ao degrau admissível do
+venue e o ajuste SAI DECLARADO** (nunca em silêncio).
+
+| Verificação do auditor | Resultado |
+|---|---|
+| `bash tools/verificar-maquina/provar.sh` (corrido por mim) | **58 de 58, rc=0** |
+| `casos/correr.py` | **109 · 109 ok · 0 divergentes**, e a etiqueta do portão diz o mesmo (`boleta e fecho (109 casos)`) |
+| As negativas novas | **`volume-fora-do-passo-volta-a-recusar`** e **`ajuste-ao-passo-em-silencio`** correm **dentro** da bancada e ficam **VERMELHO** (`o_caso_ajuste-declarado_ficou: VERMELHO`); a bancada tem agora **11** negativas |
+| A regra no código | `ordens.ajustar_volume_ao_venue(...)` (linha 254) devolve `Conversao` ou `Recusa` — o degrau **≤** pedido, e a recusa pelo nome antigo quando o pedido fica abaixo do mínimo |
+| A spec | **duas notas datadas (06/10/2026)** em `spec.md` (FR-055 e FR-056), com as palavras do dono citadas; o texto antigo fica |
+| Os casos em dado | `ordens.casos.json`: o volume fora do passo **desce ao degrau e declara o ajuste**; o que cai exacto declara `volume_exacto_no_passo`; abaixo do mínimo continua recusado |
+| **A corrida ao vivo** (`conformidade/1.12.0-2026-10-06.txt`, registo NOVO) | **`15 provas · 13 passou · 2 não forçável`** — a prova 6 (reescrita) **PASSOU**: `executedVolume 400000` (4000 un.), `executionPrice 112604`, `positionId 247222769`, e a **declaração** `{volume_pedido 444003.002…, volume_efectivo 400000, regra volume_ajustado_ao_passo, nocional_pedido 4998.719, nocional_efectivo 4503.32}` |
+| O desvio | **9,9105 %** do volume (o pedido de 10 % cai a 4000 un. porque o passo são 1000 un.) — o número está no registo |
+| `contracts/` | limpo (SC-015) |
+| **A conta, lida por MIM ao vivo** | `POSICOES: []` · `ORDENS VIVAS: []` — limpa |
+
+## A-21 (achado, para o dono) — a `alavancagem_efectiva` deste venue é uma DECLARAÇÃO de dimensionamento
+
+Medido ao vivo: a resolução publica `alavancagem_efectiva: "1"` (o que a boleta pediu) mas a margem que o **venue**
+empenha é `usedMargin 15014` (= 150,14, isto é `4504,16 / 30`) — o ctrader **não aplica alavancagem por ordem**:
+aplica o **escalão da conta** (1:30 nesta demo). No hyperliquid a `alavancagem` é real (o venue aplica-a); aqui é
+uma regra de **dimensionamento**. O risco (a exposição) fica **igual** — mas o campo não distingue as duas coisas,
+e a mesa pode ler `alavancagem_efectiva` a pensar no venue. A linha traz os dois números (a declarada e a
+`margem_empenhada`), por isso está dita — falta decidir se o **nome** deve dizer qual é qual (decisão do dono).
+
+**O que este passo NÃO fecha:** a σ a operar de ponta a ponta — o **roteamento do operador** é o passo seguinte
+(é o que falta para os dois venues em paralelo). E a bateria ao vivo **perdeu** a prova da recusa pela grelha (já
+não existe): a recusa abaixo do mínimo e as duas negativas medem-se **offline**.
